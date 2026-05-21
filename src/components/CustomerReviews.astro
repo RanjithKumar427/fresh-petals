@@ -1,0 +1,67 @@
+---
+const reviews = [
+  {
+    title: "Beautiful bouquet",
+    text: "Fresh flowers and neat packing. Looked exactly like the photos.",
+    name: "Hyderabad Customer",
+    product: "Rose Bouquet",
+  },
+  {
+    title: "Good pooja flowers",
+    text: "Ordered pooja flowers in the morning. Fresh and neatly packed.",
+    name: "Fresh Petals Customer",
+    product: "Daily Pooja Flowers",
+  },
+  {
+    title: "Loved the colours",
+    text: "The bouquet looked premium and delivery coordination was smooth.",
+    name: "Verified Customer",
+    product: "Mixed Bouquet",
+  },
+];
+---
+
+<section id="reviews" class="bg-white px-5 py-14 md:px-8 md:py-16">
+  <div class="mx-auto max-w-7xl text-center">
+    <div class="mb-10 text-center">
+      <h2 class="fp-serif text-2xl uppercase tracking-[0.24em] text-[#171717] md:text-3xl">
+        Let Customers Speak For Us
+      </h2>
+
+      <div class="mt-4 text-sm text-[#77706f]">
+        <span class="tracking-[0.18em] text-[#E8A7B8]">★★★★★</span>
+        <span class="ml-2">from Fresh Petals customers</span>
+      </div>
+    </div>
+
+    <div class="grid gap-5 md:grid-cols-3 md:gap-7">
+      {
+        reviews.map((review) => (
+          <article class="border border-[#eee5e8] bg-white px-6 py-8 text-center transition hover:border-[#E8A7B8]">
+            <div class="text-sm tracking-[0.18em] text-[#E8A7B8]">
+              ★★★★★
+            </div>
+
+            <h3 class="mt-4 text-sm font-semibold uppercase tracking-[0.16em] text-[#171717]">
+              {review.title}
+            </h3>
+
+            <p class="mx-auto mt-3 max-w-xs text-sm leading-7 text-[#77706f]">
+              {review.text}
+            </p>
+
+            <div class="mt-6 border-t border-[#eee5e8] pt-5">
+              <p class="text-xs font-semibold uppercase tracking-[0.18em] text-[#171717]">
+                {review.name}
+              </p>
+
+              <p class="mt-2 text-xs text-[#77706f]">
+                {review.product}
+              </p>
+            </div>
+          </article>
+        ))
+      }
+    </div>
+  </div>
+</section>

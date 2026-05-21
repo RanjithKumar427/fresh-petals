@@ -1,0 +1,19 @@
+---
+const whatsappNumber = "919652012274";
+
+const whatsappMessage = encodeURIComponent(
+  "Hi Fresh Petals, I want to place an order."
+);
+---
+
+<div class="fixed bottom-0 left-0 right-0 z-[999] border-t border-[#EEE5E8] bg-white/95 p-3 shadow-[0_-8px_24px_rgba(0,0,0,0.08)] backdrop-blur md:hidden">
+  <a
+    href={`https://wa.me/${whatsappNumber}?text=${whatsappMessage}`}
+    target="_blank"
+    rel="noopener noreferrer"
+    aria-label="Order Fresh Petals flowers on WhatsApp"
+    class="flex w-full items-center justify-center bg-[#111111] px-5 py-3 text-[11px] font-bold uppercase tracking-[0.22em] text-white transition hover:bg-[#E8A7B8] hover:text-[#111111]"
+  >
+    Order on WhatsApp
+  </a>
+</div>

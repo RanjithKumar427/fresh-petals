@@ -1,0 +1,91 @@
+---
+import subscriptions from "../data/subscriptions.json";
+
+const whatsappNumber = "919652012274";
+
+const formatPrice = (price) =>
+  new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
+  }).format(price);
+---
+
+<section id="subscription-products" class="bg-white px-5 py-14 md:px-8 md:py-16">
+  <div class="mx-auto max-w-7xl">
+    <div class="mb-9 text-center">
+      <h2 class="fp-serif text-2xl uppercase tracking-[0.24em] text-[#171717] md:text-3xl">
+        Flower Subscriptions
+      </h2>
+    </div>
+
+    <div class="grid grid-cols-2 gap-x-5 gap-y-10 md:grid-cols-3 md:gap-x-7 md:gap-y-12">
+      {
+        subscriptions.map((product) => {
+          const whatsappMessage = encodeURIComponent(product.whatsappText);
+
+          return (
+            <article class="group relative">
+              <a
+                href={`https://wa.me/${whatsappNumber}?text=${whatsappMessage}`}
+                class="block"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`Order ${product.name} on WhatsApp`}
+              >
+                <div class="relative aspect-square w-full overflow-hidden bg-[#f8eef2]">
+                  {product.sale && (
+                    <span class="absolute right-2 top-2 z-10 bg-[#111111] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white">
+                      Sale
+                    </span>
+                  )}
+
+                  <img
+                    src={product.image}
+                    alt={product.name}
+                    class="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                    loading="lazy"
+                  />
+                </div>
+
+                <div class="pt-4 text-center">
+                  <h3 class="min-h-9 text-[10px] font-semibold uppercase leading-5 tracking-[0.18em] text-[#171717] md:text-[11px] md:tracking-[0.22em]">
+                    {product.name}
+                  </h3>
+
+                  <div class="mt-2 flex flex-wrap items-center justify-center gap-1 text-[11px] text-[#E8A7B8]">
+                    {Array.from({ length: 5 }).map(() => (
+                      <span>★</span>
+                    ))}
+
+                    <span class="ml-1 text-[#77706f]">
+                      {product.reviews} reviews
+                    </span>
+                  </div>
+
+                  <div class="mt-2 flex flex-wrap items-center justify-center gap-2 text-[11px] md:text-xs">
+                    {product.compareAtPrice && (
+                      <span class="text-[#8c8085] line-through">
+                        {formatPrice(product.compareAtPrice)}
+                      </span>
+                    )}
+
+                    <span class="font-semibold text-[#171717]">
+                      from {formatPrice(product.price)}
+                    </span>
+
+                    {product.savePercent && (
+                      <span class="text-[10px] font-semibold text-[#D98B9A] md:text-[11px]">
+                        Save {product.savePercent}%
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </a>
+            </article>
+          );
+        })
+      }
+    </div>
+  </div>
+</section>

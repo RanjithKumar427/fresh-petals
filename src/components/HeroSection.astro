@@ -1,0 +1,62 @@
+---
+const whatsappNumber = "919652012274";
+const whatsappMessage = encodeURIComponent(
+  "Hi Fresh Petals, I want to place an order."
+);
+---
+
+<section class="bg-[#FFFDF7]">
+  <div class="mx-auto grid max-w-7xl items-center gap-12 px-6 py-16 md:grid-cols-2 md:py-24">
+    <div>
+      <p class="mb-4 text-sm font-bold uppercase tracking-[0.3em] text-[#7C243E]">
+        Fresh Petals Hyderabad
+      </p>
+
+      <h1 class="text-5xl font-semibold leading-[1.05] tracking-tight text-[#2A2025] md:text-7xl">
+        Fresh flowers for pooja, gifting, events and daily rituals.
+      </h1>
+
+      <p class="mt-6 max-w-xl text-lg leading-8 text-[#5f5257]">
+        Order pooja flowers, jasmine, bouquets, garlands, poola jada and bulk flowers directly on WhatsApp.
+      </p>
+
+      <div class="mt-9 flex flex-wrap gap-4">
+        <a
+          href={`https://wa.me/${whatsappNumber}?text=${whatsappMessage}`}
+          class="rounded-full bg-[#7C243E] px-7 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#642036]"
+        >
+          Order on WhatsApp
+        </a>
+
+        <a
+          href="#categories"
+          class="rounded-full border border-[#7C243E] px-7 py-3.5 text-sm font-bold text-[#7C243E] transition hover:bg-[#7C243E] hover:text-white"
+        >
+          View Categories
+        </a>
+      </div>
+    </div>
+
+    <div class="relative">
+      <div class="absolute -left-6 -top-6 h-32 w-32 rounded-full bg-[#F2A12B]/20"></div>
+      <div class="absolute -bottom-6 -right-6 h-40 w-40 rounded-full bg-[#B63F61]/15"></div>
+
+      <div class="relative overflow-hidden rounded-[2rem] border border-[#eadde2] bg-white shadow-xl">
+        <img
+          src="/images/hero-flowers.jpg"
+          alt="Fresh flowers from Fresh Petals Hyderabad"
+          class="h-[520px] w-full object-cover"
+        />
+
+        <div class="absolute bottom-5 left-5 right-5 rounded-2xl bg-white/90 p-5 shadow-lg backdrop-blur">
+          <p class="text-sm font-bold uppercase tracking-[0.2em] text-[#7C243E]">
+            Today’s Fresh Picks
+          </p>
+          <p class="mt-1 text-lg font-semibold text-[#2A2025]">
+            Pooja flowers, jasmine, bouquets and garlands
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

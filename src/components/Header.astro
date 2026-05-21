@@ -1,0 +1,43 @@
+---
+const navItems = [
+  { label: "Home", href: "/" },
+  { label: "Pooja Flowers", href: "#pooja-flowers" },
+  { label: "Jasmine", href: "#jasmine" },
+  { label: "Bouquets", href: "#bouquets" },
+  { label: "Garlands", href: "#garlands" },
+  { label: "Bulk Orders", href: "#bulk-orders" },
+];
+
+const whatsappNumber = "919652012274";
+const whatsappMessage = encodeURIComponent(
+  "Hi Fresh Petals, I want to place an order."
+);
+---
+
+<header class="sticky top-0 z-50 border-b border-[#eadde2] bg-[#FFFDF7]/95 backdrop-blur">
+  <div class="mx-auto flex max-w-7xl items-center justify-between px-5 py-4">
+    <a href="/" class="flex flex-col leading-none">
+      <span class="text-xl font-black tracking-wide text-[#7C243E]">
+        Fresh Petals
+      </span>
+      <span class="mt-1 text-xs font-semibold uppercase tracking-[0.25em] text-[#476B4D]">
+        Hyderabad
+      </span>
+    </a>
+
+    <nav class="hidden items-center gap-7 text-sm font-semibold text-[#2A2025] md:flex">
+      {navItems.map((item) => (
+        <a href={item.href} class="transition hover:text-[#7C243E]">
+          {item.label}
+        </a>
+      ))}
+    </nav>
+
+    <a
+      href={`https://wa.me/${whatsappNumber}?text=${whatsappMessage}`}
+      class="rounded-full bg-[#7C243E] px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#642036]"
+    >
+      WhatsApp Order
+    </a>
+  </div>
+</header>

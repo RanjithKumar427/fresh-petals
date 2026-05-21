@@ -1,0 +1,148 @@
+---
+const whatsappNumber = "919652012274";
+
+const whatsappMessage = encodeURIComponent(
+  "Hi Fresh Petals, I want to check today's fresh flower collections."
+);
+
+const slides = [
+  {
+    image: "/images/hero-main-banner.jpg",
+    label: "Fresh Flowers Delivered In Hyderabad",
+    title: "Same Day Delivery",
+    subtitle:
+      "Fresh pooja flowers, jasmine, bouquets and garlands delivered across Hyderabad.",
+    button: "Shop Now",
+  },
+  {
+    image: "/images/hero-bouquets.jpg",
+    label: "Grab Your Perfect Bouquet Today",
+    title: "Bouquets",
+    subtitle:
+      "Fresh hand-tied bouquets for birthdays, anniversaries and gifting.",
+    button: "Shop Here",
+  },
+  {
+    image: "/images/hero-pooja.jpg",
+    label: "Daily Fresh Flowers For Rituals",
+    title: "Pooja Flowers",
+    subtitle:
+      "Fresh flowers, jasmine, garlands and pooja essentials for daily rituals.",
+    button: "Order Now",
+  },
+];
+---
+
+<section class="bg-white">
+  <div
+    id="fresh-petals-hero-slider"
+    class="relative h-[390px] w-full overflow-hidden sm:h-[460px] md:h-[620px]"
+  >
+    {
+      slides.map((slide, index) => (
+        <div
+          class={`hero-slide absolute inset-0 transition-opacity duration-700 ease-out ${
+            index === 0 ? "opacity-100" : "opacity-0"
+          }`}
+          data-slide={index}
+        >
+          <img
+            src={slide.image}
+            alt={slide.title}
+            class="absolute inset-0 h-full w-full object-cover"
+            loading={index === 0 ? "eager" : "lazy"}
+          />
+
+          <div class="absolute inset-0 bg-black/25"></div>
+
+          <div class="relative z-10 mx-auto flex h-full max-w-7xl items-center px-5 md:px-8">
+            <div class="max-w-xl text-white md:max-w-2xl">
+              <p class="text-[10px] font-semibold uppercase tracking-[0.32em] text-white md:text-xs">
+                {slide.label}
+              </p>
+
+              <h1 class="fp-serif mt-3 text-4xl uppercase leading-[0.95] text-white sm:text-5xl md:mt-4 md:text-7xl">
+                {slide.title}
+              </h1>
+
+              <p class="mt-4 max-w-md text-xs leading-6 tracking-wide text-white/90 sm:text-sm md:max-w-xl md:text-base md:leading-7">
+                {slide.subtitle}
+              </p>
+
+              <div class="mt-6 md:mt-8">
+                <a
+                  href={`https://wa.me/${whatsappNumber}?text=${whatsappMessage}`}
+                  class="inline-flex items-center justify-center bg-[#E8A7B8] px-7 py-3 text-[11px] font-bold uppercase tracking-[0.24em] text-[#171717] transition hover:bg-white"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`${slide.button} on WhatsApp`}
+                >
+                  {slide.button}
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      ))
+    }
+
+    <div class="absolute bottom-5 left-1/2 z-20 flex -translate-x-1/2 items-center gap-3 md:bottom-8">
+      {
+        slides.map((_, index) => (
+          <button
+            type="button"
+            class={`hero-dot h-[3px] rounded-full transition-all duration-300 ${
+              index === 0 ? "w-12 bg-white" : "w-6 bg-white/45"
+            }`}
+            data-dot={index}
+            aria-label={`Go to slide ${index + 1}`}
+          />
+        ))
+      }
+    </div>
+  </div>
+</section>
+
+<script>
+  const slider = document.querySelector("#fresh-petals-hero-slider");
+
+  if (slider) {
+    const slides = Array.from(slider.querySelectorAll(".hero-slide"));
+    const dots = Array.from(slider.querySelectorAll(".hero-dot"));
+
+    let currentSlide = 0;
+    const totalSlides = slides.length;
+
+    const showSlide = (index) => {
+      slides.forEach((slide, slideIndex) => {
+        slide.classList.toggle("opacity-100", slideIndex === index);
+        slide.classList.toggle("opacity-0", slideIndex !== index);
+      });
+
+      dots.forEach((dot, dotIndex) => {
+        dot.classList.toggle("w-12", dotIndex === index);
+        dot.classList.toggle("bg-white", dotIndex === index);
+
+        dot.classList.toggle("w-6", dotIndex !== index);
+        dot.classList.toggle("bg-white/45", dotIndex !== index);
+      });
+
+      currentSlide = index;
+    };
+
+    const nextSlide = () => {
+      const next = (currentSlide + 1) % totalSlides;
+      showSlide(next);
+    };
+
+    let interval = window.setInterval(nextSlide, 4500);
+
+    dots.forEach((dot, index) => {
+      dot.addEventListener("click", () => {
+        window.clearInterval(interval);
+        showSlide(index);
+        interval = window.setInterval(nextSlide, 4500);
+      });
+    });
+  }
+</script>

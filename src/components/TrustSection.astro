@@ -1,0 +1,54 @@
+---
+const trustItems = [
+  {
+    title: "Same-Day Enquiry",
+    description: "Quick WhatsApp response for Hyderabad flower orders.",
+    icon: "↗",
+  },
+  {
+    title: "Freshness Guaranteed",
+    description: "Flowers sourced fresh based on daily market availability.",
+    icon: "✿",
+  },
+  {
+    title: "Eco-Friendly Packaging",
+    description: "Simple, neat packing for pooja, gifting and events.",
+    icon: "♻",
+  },
+  {
+    title: "Trusted by Hyderabad",
+    description: "Built for local pooja, bouquet, jasmine and event needs.",
+    icon: "♡",
+  },
+];
+---
+
+<section id="why-choose" class="bg-white px-5 py-14 md:px-8 md:py-16">
+  <div class="mx-auto max-w-7xl">
+    <div class="mb-9 text-center">
+      <h2 class="fp-serif text-2xl uppercase tracking-[0.24em] text-[#171717] md:text-3xl">
+        Why Choose Fresh Petals?
+      </h2>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-6">
+      {
+        trustItems.map((item) => (
+          <div class="border border-[#eee5e8] bg-white px-4 py-7 text-center transition hover:border-[#E8A7B8] md:px-5 md:py-8">
+            <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#f8eef2] text-2xl text-[#7C243E]">
+              {item.icon}
+            </div>
+
+            <h3 class="mt-5 min-h-10 text-[10px] font-bold uppercase leading-5 tracking-[0.18em] text-[#171717] md:text-[11px] md:tracking-[0.22em]">
+              {item.title}
+            </h3>
+
+            <p class="mx-auto mt-2 max-w-[210px] text-xs leading-6 text-[#77706f]">
+              {item.description}
+            </p>
+          </div>
+        ))
+      }
+    </div>
+  </div>
+</section>

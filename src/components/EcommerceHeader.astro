@@ -1,0 +1,99 @@
+---
+const whatsappNumber = "919652012274";
+
+const whatsappMessage = encodeURIComponent(
+  "Hi Fresh Petals, I want to check today's flower availability and prices."
+);
+---
+
+<header class="border-b border-[#EEE5E8] bg-white">
+  <div class="mx-auto grid max-w-7xl grid-cols-3 items-center px-4 py-3 md:px-8 md:py-4">
+    <div class="flex items-center gap-4 text-[#171717]">
+      <a
+        href="#bouquets"
+        aria-label="Search Fresh Petals flowers"
+        class="transition hover:text-[#D98B9A]"
+      >
+        <svg
+          class="h-5 w-5"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.6"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <circle cx="11" cy="11" r="7"></circle>
+          <path d="M20 20l-3.5-3.5"></path>
+        </svg>
+      </a>
+
+      <a
+        href={`https://wa.me/${whatsappNumber}?text=${whatsappMessage}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="hidden text-[10px] font-medium uppercase tracking-[0.22em] text-[#77706f] transition hover:text-[#D98B9A] md:inline-block"
+      >
+        Hyderabad
+      </a>
+    </div>
+
+    <a
+      href="/"
+      class="text-center"
+      aria-label="Fresh Petals Hyderabad home"
+    >
+      <span class="fp-serif block text-xl normal-case tracking-[0.03em] text-[#171717] md:text-2xl">
+        Fresh Petals
+      </span>
+
+      <span class="mt-1 block text-[8px] font-medium uppercase tracking-[0.34em] text-[#77706f] md:text-[9px]">
+        Hyderabad
+      </span>
+    </a>
+
+    <div class="flex items-center justify-end gap-4 text-[#171717] md:gap-5">
+      <a
+        href="#rewards"
+        aria-label="Fresh Petals rewards"
+        class="transition hover:text-[#D98B9A]"
+      >
+        <svg
+          class="h-5 w-5 md:h-6 md:w-6"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.6"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <circle cx="12" cy="7.5" r="3.5"></circle>
+          <path d="M4.5 21c.9-4.2 3.6-6.2 7.5-6.2s6.6 2 7.5 6.2"></path>
+        </svg>
+      </a>
+
+      <a
+        href={`https://wa.me/${whatsappNumber}?text=${whatsappMessage}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Order flowers on WhatsApp"
+        class="relative transition hover:text-[#D98B9A]"
+      >
+        <svg
+          class="h-6 w-6 md:h-7 md:w-7"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.6"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M6 8h12l1 13H5L6 8z"></path>
+          <path d="M9 8V6a3 3 0 0 1 6 0v2"></path>
+        </svg>
+
+        <span class="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-[#FF5A3D]"></span>
+      </a>
+    </div>
+  </div>
+</header>

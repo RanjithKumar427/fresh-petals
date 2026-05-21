@@ -1,0 +1,62 @@
+[
+  {
+    "id": "daily-pooja-subscription",
+    "name": "Daily Pooja Flower Subscription",
+    "price": 299,
+    "compareAtPrice": 599,
+    "savePercent": 50,
+    "rating": 5,
+    "reviews": 120,
+    "sale": true,
+    "image": "/images/subscription-1.jpg",
+    "whatsappText": "Hi Fresh Petals, I want to know about Daily Pooja Flower Subscription."
+  },
+  {
+    "id": "weekly-flowerbox",
+    "name": "Weekly Flowerbox Subscription",
+    "price": 549,
+    "compareAtPrice": 899,
+    "savePercent": 39,
+    "rating": 5,
+    "reviews": 304,
+    "sale": false,
+    "image": "/images/subscription-2.jpg",
+    "whatsappText": "Hi Fresh Petals, I want to know about Weekly Flowerbox Subscription."
+  },
+  {
+    "id": "jasmine-subscription",
+    "name": "Jasmine / Malli Subscription",
+    "price": 399,
+    "compareAtPrice": 699,
+    "savePercent": 43,
+    "rating": 5,
+    "reviews": 353,
+    "sale": false,
+    "image": "/images/subscription-3.jpg",
+    "whatsappText": "Hi Fresh Petals, I want to know about Jasmine/Malli Subscription."
+  },
+  {
+    "id": "fragrance-gift-subscription",
+    "name": "Flowerbox Fragrance Gift Subscription",
+    "price": 699,
+    "compareAtPrice": 1000,
+    "savePercent": 30,
+    "rating": 5,
+    "reviews": 304,
+    "sale": true,
+    "image": "/images/subscription-4.jpg",
+    "whatsappText": "Hi Fresh Petals, I want to know about Flowerbox Fragrance Gift Subscription."
+  },
+  {
+    "id": "designer-bouquet-subscription",
+    "name": "Designer Bouquet Subscription",
+    "price": 899,
+    "compareAtPrice": 1299,
+    "savePercent": 31,
+    "rating": 5,
+    "reviews": 6,
+    "sale": false,
+    "image": "/images/subscription-5.jpg",
+    "whatsappText": "Hi Fresh Petals, I want to know about Designer Bouquet Subscription."
+  }
+]

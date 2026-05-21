@@ -1,0 +1,91 @@
+---
+const whatsappNumber = "919652012274";
+
+const deliveryMessage = encodeURIComponent(
+  "Hi Fresh Petals, do you deliver to my area in Hyderabad?"
+);
+
+const instagramUrl = "https://www.instagram.com/freshpetals.hyderabad/";
+
+const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${deliveryMessage}`;
+---
+
+<section class="border-b border-[#EEE5E8] bg-white px-4 py-2 text-xs text-[#171717] md:px-8">
+  <div class="mx-auto flex max-w-7xl items-center justify-between gap-3">
+    <div class="flex min-w-0 items-center gap-2">
+      <svg
+        class="h-4 w-4 shrink-0 text-[#77706f]"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.7"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M12 21s7-5.4 7-12a7 7 0 1 0-14 0c0 6.6 7 12 7 12z"></path>
+        <circle cx="12" cy="9" r="2.4"></circle>
+      </svg>
+
+      <p class="truncate text-[11px] text-[#77706f]">
+        Delivering fresh flowers in <span class="font-semibold text-[#171717]">Hyderabad</span>
+      </p>
+
+      <a
+        href={whatsappUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="shrink-0 text-[11px] font-semibold text-[#171717] underline-offset-4 transition hover:text-[#D98B9A] hover:underline"
+      >
+        Check area
+      </a>
+    </div>
+
+    <div class="hidden items-center gap-4 text-[#171717] md:flex">
+      <a
+        href={instagramUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Fresh Petals Instagram"
+        class="transition hover:text-[#D98B9A]"
+      >
+        <svg
+          class="h-4 w-4"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <rect x="4" y="4" width="16" height="16" rx="5"></rect>
+          <circle cx="12" cy="12" r="3.4"></circle>
+          <circle cx="17" cy="7" r="0.8" fill="currentColor" stroke="none"></circle>
+        </svg>
+      </a>
+
+      <a
+        href={whatsappUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Fresh Petals WhatsApp"
+        class="transition hover:text-[#D98B9A]"
+      >
+        <svg
+          class="h-4 w-4"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M20.5 11.8a8.4 8.4 0 0 1-12.4 7.4L4 20.4l1.3-4A8.4 8.4 0 1 1 20.5 11.8Z"></path>
+          <path d="M9.2 8.6c.2-.4.4-.4.7-.4h.5c.2 0 .4.1.5.4l.7 1.6c.1.3.1.5-.1.7l-.4.5c.6 1.1 1.5 2 2.6 2.6l.5-.4c.2-.2.4-.2.7-.1l1.6.7c.3.1.4.3.4.6v.4c0 .3-.1.6-.4.7-.6.3-1.2.4-1.9.3-3.2-.5-5.8-3.1-6.3-6.3-.1-.6 0-1.3.4-1.9Z"></path>
+        </svg>
+      </a>
+    </div>
+  </div>
+</section>

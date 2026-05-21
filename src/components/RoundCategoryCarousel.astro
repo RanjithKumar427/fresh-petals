@@ -1,0 +1,98 @@
+---
+const categories = [
+  {
+    label: "Bouquets",
+    image: "/images/cat-bouquets.jpg",
+    href: "#bouquets",
+  },
+  {
+    label: "Anniversary",
+    image: "/images/cat-anniversary.jpg",
+    href: "#occasions",
+  },
+  {
+    label: "Birthday",
+    image: "/images/cat-birthday.jpg",
+    href: "#occasions",
+  },
+  {
+    label: "Subscription",
+    image: "/images/cat-subscription.jpg",
+    href: "#subscriptions",
+  },
+  {
+    label: "Flowerbox",
+    image: "/images/cat-flowerbox.jpg",
+    href: "#flowerbox",
+  },
+  {
+    label: "Baskets",
+    image: "/images/cat-basket.jpg",
+    href: "#baskets",
+  },
+  {
+    label: "Plants",
+    image: "/images/cat-plant.jpg",
+    href: "#popular-with-flowers",
+  },
+  {
+    label: "Hampers",
+    image: "/images/cat-hampers.jpg",
+    href: "#popular-with-flowers",
+  },
+  {
+    label: "Candles",
+    image: "/images/cat-candle.jpg",
+    href: "#popular-with-flowers",
+  },
+  {
+    label: "Pooja",
+    image: "/images/cat-pooja.jpg",
+    href: "#pooja",
+  },
+  {
+    label: "Under ₹1499",
+    image: "/images/cat-under-1499.jpg",
+    href: "#offers",
+  },
+  {
+    label: "Vases",
+    image: "/images/cat-vases.jpg",
+    href: "#popular-with-flowers",
+  },
+  {
+    label: "Wedding",
+    image: "/images/cat-wedding.jpg",
+    href: "#occasions",
+  },
+];
+---
+
+<section class="border-b border-[#EEE5E8] bg-white px-4 py-4 md:px-8 md:py-5">
+  <div class="mx-auto max-w-7xl overflow-hidden">
+    <div class="fp-scrollbar-hide flex gap-6 overflow-x-auto px-1 py-2 md:justify-center md:gap-7">
+      {
+        categories.map((category) => (
+          <a
+            href={category.href}
+            class="group w-[76px] shrink-0 text-center md:w-[86px]"
+            aria-label={`View ${category.label}`}
+          >
+            <div class="mx-auto h-[66px] w-[66px] overflow-hidden rounded-full border border-[#E9E2E5] bg-white p-[3px] transition duration-300 group-hover:border-[#D8B5BE] md:h-[74px] md:w-[74px]">
+              <img
+                src={category.image}
+                alt={category.label}
+                class="h-full w-full rounded-full object-cover transition duration-500 group-hover:scale-105"
+                loading="lazy"
+              />
+            </div>
+
+            <p class="mt-3 min-h-[30px] text-[10px] font-medium uppercase leading-[1.4] tracking-[0.12em] text-[#171717] transition group-hover:text-[#D98B9A] md:text-[10px]">
+              {category.label}
+            </p>
+          </a>
+        ))
+      }
+    </div>
+  </div>
+</section>

@@ -1,0 +1,133 @@
+@import "tailwindcss";
+
+:root {
+  --color-white: #ffffff;
+  --color-cream: #fffdf8;
+  --color-soft-pink: #e8a7b8;
+  --color-soft-pink-light: #f8dce5;
+  --color-text: #171717;
+  --color-muted: #77706f;
+  --color-border: #eee5e8;
+  --color-green: #075838;
+  --color-black: #111111;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--color-white);
+  color: var(--color-text);
+  font-family: "Jost", Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Premium serif heading utility */
+.fp-serif {
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+}
+
+/* Thin uppercase label style */
+.fp-label {
+    font-family: "Jost", Arial, Helvetica, sans-serif;
+    font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+}
+
+/* Shades-style small rectangular button */
+.fp-btn-dark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #111111;
+  color: #ffffff;
+  padding: 10px 20px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  transition: background 0.2s ease;
+}
+
+.fp-btn-dark:hover {
+  background: #7c243e;
+}
+
+.fp-btn-pink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #e8a7b8;
+  color: #111111;
+  padding: 10px 20px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  transition: background 0.2s ease;
+}
+
+.fp-btn-pink:hover {
+  background: #f8dce5;
+}
+
+/* Hide ugly horizontal scrollbar but keep scroll */
+.fp-scrollbar-hide {
+  scrollbar-width: none;
+}
+
+.fp-scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.fp-nav-font {
+  font-family: "Jost", Arial, Helvetica, sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+}
+
+.fp-category-font {
+  font-family: "Jost", Arial, Helvetica, sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+/* Final homepage rhythm polish */
+.fp-section-heading {
+  margin-bottom: 2rem;
+}
+
+@media (max-width: 767px) {
+  .fp-btn-dark,
+  .fp-btn-pink {
+    padding: 9px 16px;
+    font-size: 10px;
+    letter-spacing: 0.18em;
+  }
+
+  .fp-serif {
+    letter-spacing: 0.06em;
+  }
+}
+
+section[id],
+footer[id] {
+  scroll-margin-top: 150px;
+}
+
+@media (max-width: 767px) {
+  section[id],
+  footer[id] {
+    scroll-margin-top: 110px;
+  }
+}

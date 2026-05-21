@@ -1,0 +1,36 @@
+---
+const whatsappNumber = "919652012274";
+
+const referMessage = encodeURIComponent(
+  "Hi Fresh Petals, I want to know about Refer & Earn offers."
+);
+---
+
+<section id="rewards" class="border-t border-[#EEE5E8] bg-[#FFFDF7] px-5 py-14 md:px-8 md:py-16">
+  <div class="mx-auto max-w-4xl text-center">
+    <p class="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#77706f] md:text-[11px]">
+      Fresh Petals Rewards
+    </p>
+
+    <h2 class="fp-serif mt-3 text-2xl uppercase tracking-[0.24em] text-[#171717] md:text-3xl">
+      Refer & Earn
+    </h2>
+
+    <p class="mx-auto mt-5 max-w-2xl text-sm leading-7 text-[#555] md:text-[15px]">
+      Refer Fresh Petals to a friend and get special offers on your next flower order.
+      Perfect for pooja flowers, bouquets, subscriptions and event orders.
+    </p>
+
+    <div class="mt-7">
+      <a
+        href={`https://wa.me/${whatsappNumber}?text=${referMessage}`}
+        class="inline-flex items-center justify-center bg-[#171717] px-8 py-3 text-[11px] font-bold uppercase tracking-[0.24em] text-white transition hover:bg-[#E8A7B8] hover:text-[#171717]"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Ask about Fresh Petals Refer and Earn offers on WhatsApp"
+      >
+        Refer Now
+      </a>
+    </div>
+  </div>
+</section>

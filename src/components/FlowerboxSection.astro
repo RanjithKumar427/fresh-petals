@@ -1,0 +1,79 @@
+---
+const whatsappNumber = "919652012274";
+
+const products = [
+  {
+    name: "DIY Flowerbox",
+    price: "From ₹799",
+    image: "/images/cat-flowerbox.jpg",
+    text: "Hi Fresh Petals, I want to order a DIY flowerbox.",
+  },
+  {
+    name: "Loose Flower Box",
+    price: "Market price today",
+    image: "/images/subscription-2.jpg",
+    text: "Hi Fresh Petals, I want to order a loose flower box.",
+  },
+  {
+    name: "Gift Flower Box",
+    price: "From ₹999",
+    image: "/images/subscription-4.jpg",
+    text: "Hi Fresh Petals, I want to order a gift flower box.",
+  },
+  {
+    name: "Pooja Flower Box",
+    price: "From ₹299",
+    image: "/images/subscription-1.jpg",
+    text: "Hi Fresh Petals, I want to order a pooja flower box.",
+  },
+];
+---
+
+<section id="flowerbox" class="bg-white px-5 py-14 md:px-8 md:py-16">
+  <div class="mx-auto max-w-7xl">
+    <div class="mb-9 text-center">
+      <h2 class="fp-serif text-2xl uppercase tracking-[0.24em] text-[#171717] md:text-3xl">
+        Flowerbox
+      </h2>
+    </div>
+
+    <div class="grid grid-cols-2 gap-x-5 gap-y-10 md:grid-cols-4 md:gap-x-7 md:gap-y-12">
+      {
+        products.map((product) => {
+          const message = encodeURIComponent(product.text);
+
+          return (
+            <article class="group text-center">
+              <a
+                href={`https://wa.me/${whatsappNumber}?text=${message}`}
+                class="block"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`Order ${product.name} on WhatsApp`}
+              >
+                <div class="relative aspect-square w-full overflow-hidden bg-[#f8eef2]">
+                  <img
+                    src={product.image}
+                    alt={product.name}
+                    class="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                    loading="lazy"
+                  />
+                </div>
+
+                <div class="pt-4 text-center">
+                  <h3 class="min-h-9 text-[10px] font-semibold uppercase leading-5 tracking-[0.18em] text-[#171717] md:text-[11px] md:tracking-[0.22em]">
+                    {product.name}
+                  </h3>
+
+                  <p class="mt-2 text-xs font-medium text-[#77706f]">
+                    {product.price}
+                  </p>
+                </div>
+              </a>
+            </article>
+          );
+        })
+      }
+    </div>
+  </div>
+</section>

@@ -1,0 +1,270 @@
+---
+const menuItems = [
+  {
+    label: "All Flowers",
+    href: "#bouquets",
+    columns: [
+      {
+        title: "All Flowers",
+        links: [
+          { label: "All Flowers", href: "#bouquets" },
+          { label: "Hand-Tied Bouquets", href: "#bouquets" },
+          { label: "Subscription", href: "#subscriptions" },
+          { label: "Do-It-Yourself Flowerbox", href: "#flowerbox" },
+          { label: "By Stems", href: "#pooja" },
+          { label: "Dried Flowers", href: "#popular-with-flowers" },
+          { label: "Plants & Succulents", href: "#popular-with-flowers" },
+          { label: "Floral Basket", href: "#baskets" },
+          { label: "Vases", href: "#popular-with-flowers" },
+          { label: "Floral Tools", href: "#popular-with-flowers" },
+          { label: "Pet Friendly", href: "#popular-with-flowers" },
+          { label: "Flower Strings & Torans", href: "#pooja" },
+          { label: "Room Mist & Diffuser", href: "#popular-with-flowers" },
+        ],
+      },
+      {
+        title: "Flower Type",
+        links: [
+          { label: "Fragrant Lilies", href: "#bouquets" },
+          { label: "Tuberose / Rajnigandha", href: "#pooja" },
+          { label: "Hydrangeas", href: "#bouquets" },
+          { label: "Sunflower", href: "#bouquets" },
+          { label: "Orchid", href: "#bouquets" },
+          { label: "Rose", href: "#bouquets" },
+        ],
+      },
+      {
+        title: "Flower Color",
+        links: [
+          { label: "Pastel Flowers", href: "#bouquets" },
+          { label: "Pink Flowers", href: "#bouquets" },
+          { label: "White Flowers", href: "#pooja" },
+          { label: "Red Flowers", href: "#bouquets" },
+          { label: "Yellow Flowers", href: "#pooja" },
+          { label: "Blue Flowers", href: "#bouquets" },
+        ],
+      },
+      {
+        title: "Wedding",
+        links: [
+          { label: "Bride", href: "#occasions" },
+          { label: "Bridesmaid", href: "#occasions" },
+          { label: "Groom & Groomsmen", href: "#occasions" },
+        ],
+      },
+    ],
+  },
+  {
+    label: "Subscription",
+    href: "#subscriptions",
+    columns: [
+      {
+        title: "Subscriptions",
+        links: [
+          { label: "Daily Pooja Flowers", href: "#subscriptions" },
+          { label: "Weekly Flower Subscription", href: "#subscription-products" },
+          { label: "Saturday Subscriptions", href: "#subscription-products" },
+          { label: "All Day Subscriptions", href: "#subscription-products" },
+          { label: "How Subscription Works", href: "#subscriptions" },
+        ],
+      },
+    ],
+  },
+  {
+    label: "Bouquets",
+    href: "#bouquets",
+    columns: [
+      {
+        title: "Bouquets",
+        links: [
+          { label: "Bestselling Bouquets", href: "#bouquets" },
+          { label: "Mini Bouquets", href: "#bouquets" },
+          { label: "Bouquets With Vases", href: "#popular-with-flowers" },
+          { label: "Rose Bouquets", href: "#bouquets" },
+          { label: "Birthday Bouquets", href: "#occasions" },
+          { label: "All Bouquets", href: "#bouquets" },
+        ],
+      },
+    ],
+  },
+  {
+    label: "Flowerbox",
+    href: "#flowerbox",
+    columns: [
+      {
+        title: "Flowerbox",
+        links: [
+          { label: "DIY Flowerbox", href: "#flowerbox" },
+          { label: "Loose Flower Box", href: "#flowerbox" },
+          { label: "Pooja Flower Box", href: "#pooja" },
+          { label: "Gift Flower Box", href: "#flowerbox" },
+        ],
+      },
+    ],
+  },
+  {
+    label: "Baskets",
+    href: "#baskets",
+    columns: [
+      {
+        title: "Baskets",
+        links: [
+          { label: "Flower Baskets", href: "#baskets" },
+          { label: "Gift Baskets", href: "#baskets" },
+          { label: "Pooja Baskets", href: "#pooja" },
+          { label: "Premium Baskets", href: "#baskets" },
+        ],
+      },
+    ],
+  },
+  {
+    label: "Pooja",
+    href: "#pooja",
+    columns: [
+      {
+        title: "Pooja Decor",
+        links: [
+          { label: "Daily Pooja Flowers", href: "#pooja" },
+          { label: "Jasmine / Malli", href: "#pooja" },
+          { label: "Floral Torans & Strings", href: "#pooja" },
+          { label: "Handcrafted Torans & Streamers", href: "#pooja" },
+          { label: "Pooja & Urli Boxes", href: "#pooja" },
+          { label: "Fairy Lights", href: "#popular-with-flowers" },
+          { label: "Diyas & Tea Light Holders", href: "#popular-with-flowers" },
+          { label: "All Pooja Decor", href: "#pooja" },
+        ],
+      },
+    ],
+  },
+  {
+    label: "Occasions",
+    href: "#occasions",
+    columns: [
+      {
+        title: "Shop By Occasion",
+        links: [
+          { label: "Birthday", href: "#occasions" },
+          { label: "Anniversary", href: "#occasions" },
+          { label: "Mom To Be / New Mom", href: "#occasions" },
+          { label: "Sympathy", href: "#occasions" },
+          { label: "House Warming", href: "#occasions" },
+          { label: "Just Because", href: "#occasions" },
+          { label: "Thank You", href: "#occasions" },
+          { label: "Get Well Soon", href: "#occasions" },
+          { label: "I Am Sorry", href: "#occasions" },
+          { label: "Wedding Collection", href: "#occasions" },
+        ],
+      },
+    ],
+  },
+  {
+    label: "Hampers",
+    href: "#popular-with-flowers",
+    columns: [
+      {
+        title: "Gifting",
+        links: [
+          { label: "All Gifts", href: "#popular-with-flowers" },
+          { label: "Flowers & Chocolates", href: "#popular-with-flowers" },
+          { label: "Flowers & Jewellery", href: "#popular-with-flowers" },
+          { label: "Candles & Diffuser", href: "#popular-with-flowers" },
+          { label: "Stationery", href: "#popular-with-flowers" },
+          { label: "Planners & Journal", href: "#popular-with-flowers" },
+          { label: "DIY Kits", href: "#flowerbox" },
+          { label: "Skincare", href: "#popular-with-flowers" },
+          { label: "Tea", href: "#popular-with-flowers" },
+          { label: "Vases", href: "#popular-with-flowers" },
+        ],
+      },
+    ],
+  },
+  {
+    label: "50% Off",
+    href: "#offers",
+    columns: [
+      {
+        title: "Offers",
+        links: [
+          { label: "Under ₹499", href: "#offers" },
+          { label: "Under ₹999", href: "#offers" },
+          { label: "Under ₹1499", href: "#offers" },
+          { label: "Today's Offers", href: "#offers" },
+        ],
+      },
+    ],
+  },
+  {
+    label: "Rewards",
+    href: "#rewards",
+    columns: [
+      {
+        title: "Rewards",
+        links: [
+          { label: "Refer A Friend", href: "#rewards" },
+          { label: "Loyalty Points", href: "#rewards" },
+          { label: "Customer Reviews", href: "#reviews" },
+          { label: "Contact Us", href: "#footer" },
+        ],
+      },
+    ],
+  },
+];
+---
+
+<nav class="relative z-40 hidden border-b border-[#EEE5E8] bg-white lg:block">
+  <div class="mx-auto flex max-w-7xl items-center justify-center gap-9 px-8">
+    {
+      menuItems.map((item) => (
+        <div class="group">
+          <a
+            href={item.href}
+            class="relative block whitespace-nowrap py-4 text-[13px] font-medium uppercase tracking-[0.28em] text-[#111111] transition-colors duration-300 ease-out hover:text-[#D98B9A]"
+          >
+            {item.label}
+
+            <span class="absolute bottom-0 left-0 h-px w-0 bg-[#111111] transition-all duration-500 ease-out group-hover:w-full" />
+          </a>
+
+          <div class="pointer-events-none absolute left-0 top-full z-50 w-full translate-y-3 border-b border-[#EEE5E8] bg-white/95 opacity-0 shadow-[0_18px_45px_rgba(0,0,0,0.04)] backdrop-blur-sm transition-all duration-500 ease-out group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100">
+            <div
+              class={`mx-auto grid max-w-7xl gap-20 px-12 py-14 ${
+                item.columns.length === 1 ? "md:grid-cols-1" : "md:grid-cols-4"
+              }`}
+            >
+              {
+                item.columns.map((column, columnIndex) => (
+                  <div
+                    class="translate-y-2 opacity-0 transition-all duration-500 ease-out group-hover:translate-y-0 group-hover:opacity-100"
+                    style={`transition-delay: ${columnIndex * 70}ms`}
+                  >
+                    <h3 class="mb-6 text-[13px] font-medium uppercase tracking-[0.32em] text-[#333333]">
+                      {column.title}
+                    </h3>
+
+                    <ul class="space-y-5">
+                      {
+                        column.links.map((link, linkIndex) => (
+                          <li
+                            class="translate-y-1 opacity-0 transition-all duration-500 ease-out group-hover:translate-y-0 group-hover:opacity-100"
+                            style={`transition-delay: ${120 + linkIndex * 25}ms`}
+                          >
+                            <a
+                              href={link.href}
+                              class="text-[14px] font-normal uppercase tracking-[0.28em] text-[#333333] transition-colors duration-300 ease-out hover:text-[#000000]"
+                            >
+                              {link.label}
+                            </a>
+                          </li>
+                        ))
+                      }
+                    </ul>
+                  </div>
+                ))
+              }
+            </div>
+          </div>
+        </div>
+      ))
+    }
+  </div>
+</nav>

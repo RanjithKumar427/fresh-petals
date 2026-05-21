@@ -1,0 +1,63 @@
+---
+const occasions = [
+  {
+    title: "Express Delivery",
+    subtitle: "In Hyderabad",
+    image: "/images/occasion-pooja.jpg",
+    href: "#pooja",
+  },
+  {
+    title: "Birthday Collection",
+    subtitle: "Fresh bouquets",
+    image: "/images/occasion-birthday.jpg",
+    href: "#occasions",
+  },
+  {
+    title: "Flat 10% Off",
+    subtitle: "First order",
+    image: "/images/occasion-wedding.jpg",
+    href: "#offers",
+  },
+  {
+    title: "Subscription Starting At ₹299",
+    subtitle: "Daily pooja flowers",
+    image: "/images/occasion-event.jpg",
+    href: "#subscriptions",
+  },
+];
+---
+
+<section id="occasions" class="bg-white px-5 py-14 md:px-8 md:py-16">
+  <div class="mx-auto max-w-7xl">
+    <div class="grid grid-cols-2 gap-x-5 gap-y-10 md:grid-cols-4 md:gap-x-7 md:gap-y-12">
+      {
+        occasions.map((item) => (
+          <a
+            href={item.href}
+            class="group block text-center"
+            aria-label={`View ${item.title}`}
+          >
+            <div class="relative aspect-square w-full overflow-hidden bg-[#f6f1f3]">
+              <img
+                src={item.image}
+                alt={item.title}
+                class="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                loading="lazy"
+              />
+            </div>
+
+            <div class="pt-4 text-center">
+              <h3 class="min-h-9 text-[10px] font-semibold uppercase leading-5 tracking-[0.18em] text-[#171717] transition group-hover:text-[#D98B9A] md:text-[11px] md:tracking-[0.22em]">
+                {item.title}
+              </h3>
+
+              <p class="mt-1 text-[10px] font-medium uppercase tracking-[0.18em] text-[#77706f]">
+                {item.subtitle}
+              </p>
+            </div>
+          </a>
+        ))
+      }
+    </div>
+  </div>
+</section>
