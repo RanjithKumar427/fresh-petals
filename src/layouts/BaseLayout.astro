@@ -7,6 +7,8 @@ import EcommerceHeader from "../components/EcommerceHeader.astro";
 import MegaNav from "../components/MegaNav.astro";
 import RoundCategoryCarousel from "../components/RoundCategoryCarousel.astro";
 import MobileBottomBar from "../components/MobileBottomBar.astro";
+import Footer from "../components/Footer.astro";
+
 
 const {
   title = "Fresh Petals Hyderabad",
@@ -39,7 +41,7 @@ const {
     <RoundCategoryCarousel />
 
     <slot />
-
+    <Footer />
     <MobileBottomBar />
   </body>
 </html>

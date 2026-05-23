@@ -4,14 +4,16 @@ const whatsappNumber = "919652012274";
 const whatsappMessage = encodeURIComponent(
   "Hi Fresh Petals, I want to check today's flower availability and prices."
 );
+
+const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
 ---
 
 <header class="border-b border-[#EEE5E8] bg-white">
   <div class="mx-auto grid max-w-7xl grid-cols-3 items-center px-4 py-3 md:px-8 md:py-4">
     <div class="flex items-center gap-4 text-[#171717]">
       <a
-        href="#bouquets"
-        aria-label="Search Fresh Petals flowers"
+        href="/categories/bouquets"
+        aria-label="Browse Fresh Petals flowers"
         class="transition hover:text-[#D98B9A]"
       >
         <svg
@@ -29,7 +31,7 @@ const whatsappMessage = encodeURIComponent(
       </a>
 
       <a
-        href={`https://wa.me/${whatsappNumber}?text=${whatsappMessage}`}
+        href={whatsappUrl}
         target="_blank"
         rel="noopener noreferrer"
         class="hidden text-[10px] font-medium uppercase tracking-[0.22em] text-[#77706f] transition hover:text-[#D98B9A] md:inline-block"
@@ -73,7 +75,7 @@ const whatsappMessage = encodeURIComponent(
       </a>
 
       <a
-        href={`https://wa.me/${whatsappNumber}?text=${whatsappMessage}`}
+        href={whatsappUrl}
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Order flowers on WhatsApp"

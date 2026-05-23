@@ -1,0 +1,120 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { productCatalog } from "../../data/productCatalog";
+
+export function getStaticPaths() {
+  return productCatalog.map((product) => ({
+    params: {
+      slug: product.slug,
+    },
+    props: {
+      product,
+    },
+  }));
+}
+
+const { product } = Astro.props;
+
+const whatsappNumber = "919652012274";
+
+const whatsappMessage = encodeURIComponent(
+  `Hi Fresh Petals, I want to order:\n\nProduct: ${product.name}\nPrice: ${product.priceLabel}\n\nPlease confirm today's availability and final price.`
+);
+
+const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
+---
+
+<BaseLayout
+  title={`${product.name} | Fresh Petals Hyderabad`}
+  description={product.description}
+>
+  <main class="bg-white">
+    <section class="px-5 py-12 md:px-8 md:py-16">
+      <div class="mx-auto grid max-w-7xl gap-10 lg:grid-cols-2 lg:items-start">
+        <div class="overflow-hidden rounded-[28px] bg-[#F8F1F3]">
+          <img
+            src={product.image}
+            alt={product.name}
+            class="h-full w-full object-cover"
+            loading="eager"
+          />
+        </div>
+
+        <div>
+          <p class="text-[11px] font-semibold uppercase tracking-[0.32em] text-[#9B6B78]">
+            {product.category}
+          </p>
+
+          <h1 class="fp-serif mt-4 text-4xl uppercase tracking-[0.16em] text-[#171717] md:text-5xl">
+            {product.name}
+          </h1>
+
+          <p class="mt-5 text-xl font-bold text-[#7C243E]">
+            {product.priceLabel}
+          </p>
+
+          <p class="mt-5 max-w-xl text-base leading-8 text-[#5E5358]">
+            {product.longDescription}
+          </p>
+
+          {
+            product.requiresConfirmation && (
+              <div class="mt-6 rounded-2xl border border-[#E8D8DE] bg-[#FFF8FA] p-5">
+                <p class="text-sm font-semibold text-[#7C243E]">
+                  Final price and availability will be confirmed on WhatsApp before payment.
+                </p>
+              </div>
+            )
+          }
+
+          <div class="mt-8">
+            <a
+              href={whatsappUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="inline-flex items-center justify-center rounded-full bg-[#075838] px-8 py-4 text-[12px] font-bold uppercase tracking-[0.22em] text-white transition hover:bg-[#7C243E]"
+            >
+              Order on WhatsApp
+            </a>
+          </div>
+
+          <div class="mt-10 grid gap-6 md:grid-cols-2">
+            <div>
+              <h2 class="text-[12px] font-bold uppercase tracking-[0.24em] text-[#171717]">
+                What’s Included
+              </h2>
+
+              <ul class="mt-4 space-y-3 text-sm leading-6 text-[#5E5358]">
+                {
+                  product.whatsIncluded.map((item) => (
+                    <li class="flex gap-2">
+                      <span class="mt-1 text-[#7C243E]">•</span>
+                      <span>{item}</span>
+                    </li>
+                  ))
+                }
+              </ul>
+            </div>
+
+            <div>
+              <h2 class="text-[12px] font-bold uppercase tracking-[0.24em] text-[#171717]">
+                Care Notes
+              </h2>
+
+              <ul class="mt-4 space-y-3 text-sm leading-6 text-[#5E5358]">
+                {
+                  product.careNotes.map((item) => (
+                    <li class="flex gap-2">
+                      <span class="mt-1 text-[#7C243E]">•</span>
+                      <span>{item}</span>
+                    </li>
+                  ))
+                }
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</BaseLayout>

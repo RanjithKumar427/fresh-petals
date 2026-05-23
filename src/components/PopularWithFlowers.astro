@@ -1,61 +1,52 @@
 ---
-const addOns = [
-  {
-    title: "Chocolates",
-    image: "/images/addon-chocolates.jpg",
-    href: "#popular-with-flowers",
-  },
-  {
-    title: "Candle & Diffusers",
-    image: "/images/addon-candle.jpg",
-    href: "#popular-with-flowers",
-  },
-  {
-    title: "Premium Cards",
-    image: "/images/addon-card.jpg",
-    href: "#popular-with-flowers",
-  },
-  {
-    title: "Table Decor",
-    image: "/images/addon-table-decor.jpg",
-    href: "#popular-with-flowers",
-  },
-];
+import ProductCard from "./ProductCard.astro";
+import { productCatalog } from "../data/productCatalog";
+
+const addOns = productCatalog.filter(
+  (product) => product.category === "Add-ons"
+);
 ---
 
 <section id="popular-with-flowers" class="bg-white px-5 py-14 md:px-8 md:py-16">
   <div class="mx-auto max-w-7xl">
     <div class="mb-9 text-center">
-      <h2 class="fp-serif text-2xl font-medium uppercase tracking-[0.22em] text-[#171717] md:text-3xl">
+      <p class="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#9B6B78]">
+        Fresh Petals Hyderabad
+      </p>
+
+      <h2 class="fp-serif mt-3 text-2xl font-medium uppercase tracking-[0.22em] text-[#171717] md:text-3xl">
         Popular With Flowers
       </h2>
+
+      <p class="mx-auto mt-4 max-w-2xl text-sm leading-7 text-[#66565D]">
+        Add chocolates, candles, premium cards or decor items with your flower gifting order.
+      </p>
     </div>
 
-    <div class="grid grid-cols-2 gap-x-5 gap-y-10 md:grid-cols-4 md:gap-x-7 md:gap-y-12">
+    <div class="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
       {
-        addOns.map((item) => (
-          <a
-            href={item.href}
-            class="group block text-center"
-            aria-label={`View ${item.title}`}
-          >
-            <div class="relative aspect-square w-full overflow-hidden bg-[#f8eef2]">
-              <img
-                src={item.image}
-                alt={item.title}
-                class="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                loading="lazy"
-              />
-            </div>
-
-            <div class="pt-4 text-center">
-              <h3 class="min-h-9 text-[10px] font-semibold uppercase leading-5 tracking-[0.18em] text-[#171717] transition group-hover:text-[#D98B9A] md:text-[11px] md:tracking-[0.22em]">
-                {item.title}
-              </h3>
-            </div>
-          </a>
+        addOns.map((product) => (
+          <ProductCard
+            name={product.name}
+            image={product.image}
+            priceLabel={product.priceLabel}
+            priceType={product.priceType}
+            category={product.category}
+            description={product.description}
+            slug={product.slug}
+            isAvailable={product.isAvailable}
+          />
         ))
       }
+    </div>
+
+    <div class="mt-12 flex justify-center">
+      <a
+        href="/categories/add-ons"
+        class="bg-[#111111] px-8 py-3 text-[11px] font-bold uppercase tracking-[0.25em] text-white transition hover:bg-[#E8A7B8] hover:text-[#111111]"
+      >
+        View All Add-ons
+      </a>
     </div>
   </div>
 </section>

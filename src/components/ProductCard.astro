@@ -1,0 +1,111 @@
+---
+type PriceType = "fixed" | "from" | "market" | "quote";
+
+interface Props {
+  name: string;
+  image: string;
+  priceLabel?: string;
+  category?: string;
+  description?: string;
+  slug?: string;
+  priceType?: PriceType;
+  isAvailable?: boolean;
+  whatsappText?: string;
+}
+
+const {
+  name,
+  image,
+  priceLabel = "Market price today",
+  category = "Fresh Flowers",
+  description = "Fresh flowers made on order based on availability.",
+  slug,
+  priceType = "market",
+  isAvailable = true,
+  whatsappText,
+} = Astro.props;
+
+const whatsappNumber = "919652012274";
+
+const productUrl = slug ? `/products/${slug}` : "#";
+
+const defaultMessage = `Hi Fresh Petals, I want to order ${name}. Please confirm today's availability and price.`;
+
+const finalMessage = whatsappText || defaultMessage;
+
+const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(finalMessage)}`;
+
+const priceBadge =
+  priceType === "fixed"
+    ? "Fixed price"
+    : priceType === "from"
+      ? "Starting price"
+      : priceType === "quote"
+        ? "Custom quote"
+        : "Today’s price";
+---
+
+<article
+  class="group overflow-hidden rounded-[22px] border border-[#EEE5E8] bg-white shadow-[0_10px_30px_rgba(40,24,32,0.06)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_18px_45px_rgba(40,24,32,0.10)]"
+>
+  <a href={productUrl} class="block" aria-label={`View ${name}`}>
+    <div class="relative aspect-square overflow-hidden bg-[#F8F1F3]">
+      <img
+        src={image}
+        alt={name}
+        loading="lazy"
+        class="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+      />
+
+      {
+        !isAvailable && (
+          <div class="absolute inset-0 flex items-center justify-center bg-black/45">
+            <span class="rounded-full bg-white px-4 py-2 text-[11px] font-bold uppercase tracking-[0.22em] text-[#2A2025]">
+              Unavailable
+            </span>
+          </div>
+        )
+      }
+
+      <span class="absolute left-3 top-3 rounded-full bg-white/95 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[#7C243E] shadow-sm">
+        {priceBadge}
+      </span>
+    </div>
+  </a>
+
+  <div class="p-4">
+    <p class="text-[10px] font-semibold uppercase tracking-[0.24em] text-[#9B6B78]">
+      {category}
+    </p>
+
+    <a href={productUrl} class="mt-2 block">
+      <h3 class="line-clamp-2 min-h-[42px] text-[15px] font-semibold leading-snug text-[#2A2025] transition group-hover:text-[#7C243E]">
+        {name}
+      </h3>
+    </a>
+
+    <p class="mt-2 line-clamp-2 min-h-[38px] text-[13px] leading-5 text-[#66565D]">
+      {description}
+    </p>
+
+    <div class="mt-4 flex items-center justify-between gap-3">
+      <p class="text-[14px] font-bold text-[#7C243E]">
+        {priceLabel}
+      </p>
+
+      <a
+        href={whatsappUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        class:list={[
+          "inline-flex shrink-0 items-center justify-center rounded-full px-4 py-2 text-[10px] font-bold uppercase tracking-[0.18em] transition",
+          isAvailable
+            ? "bg-[#075838] text-white hover:bg-[#7C243E]"
+            : "pointer-events-none bg-[#D8D1D4] text-[#7A6E73]",
+        ]}
+      >
+        {isAvailable ? "Order" : "Closed"}
+      </a>
+    </div>
+  </div>
+</article>

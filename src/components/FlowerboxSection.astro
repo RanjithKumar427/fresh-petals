@@ -1,79 +1,52 @@
 ---
-const whatsappNumber = "919652012274";
+import ProductCard from "./ProductCard.astro";
+import { productCatalog } from "../data/productCatalog";
 
-const products = [
-  {
-    name: "DIY Flowerbox",
-    price: "From ₹799",
-    image: "/images/cat-flowerbox.jpg",
-    text: "Hi Fresh Petals, I want to order a DIY flowerbox.",
-  },
-  {
-    name: "Loose Flower Box",
-    price: "Market price today",
-    image: "/images/subscription-2.jpg",
-    text: "Hi Fresh Petals, I want to order a loose flower box.",
-  },
-  {
-    name: "Gift Flower Box",
-    price: "From ₹999",
-    image: "/images/subscription-4.jpg",
-    text: "Hi Fresh Petals, I want to order a gift flower box.",
-  },
-  {
-    name: "Pooja Flower Box",
-    price: "From ₹299",
-    image: "/images/subscription-1.jpg",
-    text: "Hi Fresh Petals, I want to order a pooja flower box.",
-  },
-];
+const products = productCatalog.filter(
+  (product) => product.category === "Flowerbox"
+);
 ---
 
 <section id="flowerbox" class="bg-white px-5 py-14 md:px-8 md:py-16">
   <div class="mx-auto max-w-7xl">
     <div class="mb-9 text-center">
-      <h2 class="fp-serif text-2xl uppercase tracking-[0.24em] text-[#171717] md:text-3xl">
+      <p class="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#9B6B78]">
+        Fresh Petals Hyderabad
+      </p>
+
+      <h2 class="fp-serif mt-3 text-2xl uppercase tracking-[0.24em] text-[#171717] md:text-3xl">
         Flowerbox
       </h2>
+
+      <p class="mx-auto mt-4 max-w-2xl text-sm leading-7 text-[#66565D]">
+        Fresh flower boxes for DIY arrangements, gifting, pooja use and custom flower requirements.
+      </p>
     </div>
 
-    <div class="grid grid-cols-2 gap-x-5 gap-y-10 md:grid-cols-4 md:gap-x-7 md:gap-y-12">
+    <div class="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
       {
-        products.map((product) => {
-          const message = encodeURIComponent(product.text);
-
-          return (
-            <article class="group text-center">
-              <a
-                href={`https://wa.me/${whatsappNumber}?text=${message}`}
-                class="block"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={`Order ${product.name} on WhatsApp`}
-              >
-                <div class="relative aspect-square w-full overflow-hidden bg-[#f8eef2]">
-                  <img
-                    src={product.image}
-                    alt={product.name}
-                    class="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                    loading="lazy"
-                  />
-                </div>
-
-                <div class="pt-4 text-center">
-                  <h3 class="min-h-9 text-[10px] font-semibold uppercase leading-5 tracking-[0.18em] text-[#171717] md:text-[11px] md:tracking-[0.22em]">
-                    {product.name}
-                  </h3>
-
-                  <p class="mt-2 text-xs font-medium text-[#77706f]">
-                    {product.price}
-                  </p>
-                </div>
-              </a>
-            </article>
-          );
-        })
+        products.map((product) => (
+          <ProductCard
+            name={product.name}
+            image={product.image}
+            priceLabel={product.priceLabel}
+            priceType={product.priceType}
+            category={product.category}
+            description={product.description}
+            slug={product.slug}
+            isAvailable={product.isAvailable}
+          />
+        ))
       }
+    </div>
+
+    <div class="mt-12 flex justify-center">
+      <a
+        href="/categories/flowerbox"
+        class="bg-[#111111] px-8 py-3 text-[11px] font-bold uppercase tracking-[0.25em] text-white transition hover:bg-[#E8A7B8] hover:text-[#111111]"
+      >
+        View All Flowerboxes
+      </a>
     </div>
   </div>
 </section>
