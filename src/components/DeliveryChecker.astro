@@ -143,6 +143,11 @@ const timeSlots = [
     class="mt-5 hidden rounded-2xl border p-4 text-sm leading-7"
   ></div>
 
+  <div
+    data-summary-box
+    class="mt-5 hidden rounded-[24px] border border-[#EEE5E8] bg-white p-5"
+  ></div>
+
   <a
     href="#"
     target="_blank"
@@ -164,6 +169,7 @@ const timeSlots = [
       const noteInput = checker.querySelector("[data-note-input]");
       const checkButton = checker.querySelector("[data-check-button]");
       const resultBox = checker.querySelector("[data-result-box]");
+      const summaryBox = checker.querySelector("[data-summary-box]");
       const whatsappButton = checker.querySelector("[data-whatsapp-order-button]");
 
       const productName = checker.dataset.productName;
@@ -196,6 +202,88 @@ const timeSlots = [
         whatsappButton.href = url;
         whatsappButton.classList.remove("hidden");
         whatsappButton.classList.add("inline-flex");
+      }
+
+      function hideSummary() {
+        summaryBox.classList.add("hidden");
+        summaryBox.innerHTML = "";
+      }
+
+      function showSummary({
+        productName,
+        priceLabel,
+        quantity,
+        pincode,
+        area,
+        deliveryFee,
+        deliveryDate,
+        timeSlot,
+        note,
+        statusLabel,
+      }) {
+        summaryBox.classList.remove("hidden");
+
+        summaryBox.innerHTML = `
+          <h3 class="text-[12px] font-bold uppercase tracking-[0.24em] text-[#171717]">
+            Order Summary
+          </h3>
+
+          <div class="mt-4 space-y-3 text-sm leading-6 text-[#5E5358]">
+            <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
+              <span>Product</span>
+              <strong class="text-right text-[#171717]">${productName}</strong>
+            </div>
+
+            <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
+              <span>Price</span>
+              <strong class="text-right text-[#7C243E]">${priceLabel}</strong>
+            </div>
+
+            <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
+              <span>Quantity</span>
+              <strong class="text-right text-[#171717]">${quantity}</strong>
+            </div>
+
+            <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
+              <span>Pincode</span>
+              <strong class="text-right text-[#171717]">${pincode}</strong>
+            </div>
+
+            <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
+              <span>Area</span>
+              <strong class="text-right text-[#171717]">${area}</strong>
+            </div>
+
+            <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
+              <span>Delivery Fee</span>
+              <strong class="text-right text-[#171717]">${deliveryFee}</strong>
+            </div>
+
+            <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
+              <span>Delivery Date</span>
+              <strong class="text-right text-[#171717]">${deliveryDate}</strong>
+            </div>
+
+            <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
+              <span>Time Slot</span>
+              <strong class="text-right text-[#171717]">${timeSlot}</strong>
+            </div>
+
+            <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
+              <span>Status</span>
+              <strong class="text-right text-[#075838]">${statusLabel}</strong>
+            </div>
+
+            <div>
+              <span class="block text-[#66565D]">Note</span>
+              <strong class="mt-1 block text-[#171717]">${note || "None"}</strong>
+            </div>
+          </div>
+
+          <p class="mt-4 rounded-2xl bg-[#FFF8FA] p-4 text-xs leading-6 text-[#7C243E]">
+            This is an estimated order summary. Final price, flower availability and payment confirmation will happen on WhatsApp.
+          </p>
+        `;
       }
 
       function buildWhatsAppUrl({
@@ -259,6 +347,7 @@ Please confirm if delivery is available for this pincode.
         const note = noteInput.value.trim();
 
         hideWhatsappButton();
+        hideSummary();
 
         if (!/^[0-9]{6}$/.test(pincode)) {
           showResult({
@@ -306,6 +395,19 @@ Please confirm if delivery is available for this pincode.
             `,
           });
 
+          showSummary({
+            productName,
+            priceLabel,
+            quantity,
+            pincode,
+            area: "Manual confirmation needed",
+            deliveryFee: "To be confirmed",
+            deliveryDate,
+            timeSlot,
+            note,
+            statusLabel: "Manual confirmation needed",
+          });
+
           showWhatsappButton(
             buildFallbackWhatsAppUrl({
               pincode,
@@ -325,6 +427,19 @@ Please confirm if delivery is available for this pincode.
               <strong>Morning delivery is not currently available in ${areaData.area}.</strong><br />
               Please select Afternoon, Evening, or continue on WhatsApp for manual confirmation.
             `,
+          });
+
+          showSummary({
+            productName,
+            priceLabel,
+            quantity,
+            pincode,
+            area: areaData.area,
+            deliveryFee: `₹${areaData.deliveryFee}`,
+            deliveryDate,
+            timeSlot,
+            note,
+            statusLabel: "Slot needs manual confirmation",
           });
 
           showWhatsappButton(
@@ -349,6 +464,19 @@ Please confirm if delivery is available for this pincode.
             `,
           });
 
+          showSummary({
+            productName,
+            priceLabel,
+            quantity,
+            pincode,
+            area: areaData.area,
+            deliveryFee: `₹${areaData.deliveryFee}`,
+            deliveryDate,
+            timeSlot,
+            note,
+            statusLabel: "Express needs manual confirmation",
+          });
+
           showWhatsappButton(
             buildWhatsAppUrl({
               areaData,
@@ -368,10 +496,21 @@ Please confirm if delivery is available for this pincode.
             <strong>Delivery available in ${areaData.area}.</strong><br />
             Delivery fee: ₹${areaData.deliveryFee}<br />
             Delivery date: ${deliveryDate}<br />
-            Time slot: ${timeSlot}<br />
-            Same-day delivery: ${areaData.sameDayAvailable ? "Available" : "Not available"}<br />
-            Morning delivery: ${areaData.morningDeliveryAvailable ? "Available" : "Not available"}
+            Time slot: ${timeSlot}
           `,
+        });
+
+        showSummary({
+          productName,
+          priceLabel,
+          quantity,
+          pincode,
+          area: areaData.area,
+          deliveryFee: `₹${areaData.deliveryFee}`,
+          deliveryDate,
+          timeSlot,
+          note,
+          statusLabel: "Delivery available",
         });
 
         showWhatsappButton(
