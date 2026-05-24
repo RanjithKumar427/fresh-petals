@@ -1,0 +1,116 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+const whatsappText = encodeURIComponent(
+  "Hi Fresh Petals, I want to know about your rewards, referral and fresh flower offers."
+);
+
+const whatsappHref = `https://wa.me/?text=${whatsappText}`;
+
+const rewardCards = [
+  {
+    title: "Refer a Friend",
+    description:
+      "Share Fresh Petals with a friend. When they place their first confirmed order, both of you can claim a manual reward on WhatsApp.",
+    href: "/refer-a-friend",
+    cta: "View Referral Flow",
+  },
+  {
+    title: "Loyalty Points",
+    description:
+      "A simple manual loyalty flow for repeat customers ordering pooja flowers, jasmine, bouquets, baskets or subscriptions.",
+    href: "/loyalty",
+    cta: "View Loyalty Details",
+  },
+  {
+    title: "Customer Reviews",
+    description:
+      "See early Fresh Petals customer feedback for bouquets, pooja flowers, jasmine, flowerboxes and WhatsApp ordering.",
+    href: "/reviews",
+    cta: "Read Reviews",
+  },
+];
+---
+
+<BaseLayout
+  title="Rewards | Fresh Petals Hyderabad"
+  description="Fresh Petals Hyderabad rewards, referral benefits, loyalty flow and customer review links."
+>
+  <main class="bg-white">
+    <section class="px-5 py-14 md:px-8 md:py-20">
+      <div class="mx-auto max-w-7xl">
+        <div class="mx-auto max-w-3xl text-center">
+          <p class="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#9B6B78]">
+            Fresh Petals Rewards
+          </p>
+
+          <h1 class="fp-serif mt-4 text-3xl uppercase tracking-[0.20em] text-[#171717] md:text-5xl">
+            Refer, Repeat & Save
+          </h1>
+
+          <p class="mx-auto mt-5 max-w-2xl text-sm leading-7 text-[#66565D] md:text-base">
+            Fresh Petals is WhatsApp-first, so rewards are currently confirmed manually. Refer friends,
+            order regularly, and claim rewards when your order is confirmed on WhatsApp.
+          </p>
+
+          <div class="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <a
+              href={whatsappHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="rounded-full bg-[#075838] px-7 py-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-white transition hover:bg-[#06492f]"
+            >
+              Ask on WhatsApp
+            </a>
+
+            <a
+              href="/reviews"
+              class="rounded-full border border-[#7C243E] px-7 py-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-[#7C243E] transition hover:bg-[#FFF8FA]"
+            >
+              Customer Reviews
+            </a>
+          </div>
+        </div>
+
+        <div class="mt-14 grid gap-5 md:grid-cols-3">
+          {
+            rewardCards.map((card) => (
+              <article class="rounded-[28px] border border-[#EEE5E8] bg-[#FFF8FA] p-7">
+                <p class="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#9B6B78]">
+                  Fresh Petals
+                </p>
+
+                <h2 class="mt-4 text-xl font-semibold text-[#171717]">
+                  {card.title}
+                </h2>
+
+                <p class="mt-4 text-sm leading-7 text-[#66565D]">
+                  {card.description}
+                </p>
+
+                <a
+                  href={card.href}
+                  class="mt-6 inline-flex text-[11px] font-semibold uppercase tracking-[0.22em] text-[#075838]"
+                >
+                  {card.cta}
+                </a>
+              </article>
+            ))
+          }
+        </div>
+
+        <div class="mt-12 rounded-[32px] border border-[#E5EFE9] bg-[#F6FBF8] p-8 text-center">
+          <h2 class="text-xl font-semibold text-[#171717]">
+            Current reward system is manual
+          </h2>
+
+          <p class="mx-auto mt-4 max-w-2xl text-sm leading-7 text-[#66565D]">
+            Since flower prices and availability change daily, rewards are applied only after order
+            confirmation on WhatsApp. This keeps the system simple, honest and manageable while Fresh
+            Petals grows.
+          </p>
+        </div>
+      </div>
+    </section>
+  </main>
+</BaseLayout>

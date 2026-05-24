@@ -1,0 +1,105 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+const whatsappText = encodeURIComponent(
+  "Hi Fresh Petals, I want to know about loyalty benefits for repeat flower orders."
+);
+
+const whatsappHref = `https://wa.me/?text=${whatsappText}`;
+
+const loyaltyTiers = [
+  {
+    title: "Repeat Buyer",
+    description:
+      "For customers who order bouquets, pooja flowers, jasmine or hampers more than once.",
+  },
+  {
+    title: "Subscription Customer",
+    description:
+      "For customers who take recurring pooja flowers, jasmine/malli or weekly flowerbox plans.",
+  },
+  {
+    title: "Bulk / Event Customer",
+    description:
+      "For temples, events, functions, wedding flower needs and repeated large orders.",
+  },
+];
+
+const notes = [
+  "Loyalty is manually tracked for now.",
+  "Final benefit depends on order value, frequency and flower availability.",
+  "Rewards are confirmed on WhatsApp before final payment.",
+  "No automatic points wallet is active yet.",
+];
+---
+
+<BaseLayout
+  title="Loyalty Points | Fresh Petals Hyderabad"
+  description="Fresh Petals Hyderabad loyalty page for repeat flower orders, subscriptions, pooja flowers and bulk customers."
+>
+  <main class="bg-white">
+    <section class="px-5 py-14 md:px-8 md:py-20">
+      <div class="mx-auto max-w-7xl">
+        <div class="mx-auto max-w-3xl text-center">
+          <p class="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#9B6B78]">
+            Loyalty
+          </p>
+
+          <h1 class="fp-serif mt-4 text-3xl uppercase tracking-[0.20em] text-[#171717] md:text-5xl">
+            Loyalty Benefits For Repeat Orders
+          </h1>
+
+          <p class="mx-auto mt-5 max-w-2xl text-sm leading-7 text-[#66565D] md:text-base">
+            Fresh Petals does not run fake automatic points yet. Loyalty is currently managed
+            manually for repeat customers, subscriptions and bulk/event flower orders.
+          </p>
+
+          <a
+            href={whatsappHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="mt-8 inline-flex rounded-full bg-[#075838] px-7 py-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-white transition hover:bg-[#06492f]"
+          >
+            Ask About Loyalty
+          </a>
+        </div>
+
+        <div class="mt-14 grid gap-5 md:grid-cols-3">
+          {
+            loyaltyTiers.map((tier) => (
+              <article class="rounded-[28px] border border-[#EEE5E8] bg-[#FFF8FA] p-7">
+                <p class="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#9B6B78]">
+                  Fresh Petals Loyalty
+                </p>
+
+                <h2 class="mt-4 text-xl font-semibold text-[#171717]">
+                  {tier.title}
+                </h2>
+
+                <p class="mt-4 text-sm leading-7 text-[#66565D]">
+                  {tier.description}
+                </p>
+              </article>
+            ))
+          }
+        </div>
+
+        <div class="mt-12 rounded-[32px] border border-[#EEE5E8] bg-white p-8 md:p-10">
+          <h2 class="text-2xl font-semibold text-[#171717]">
+            Important loyalty notes
+          </h2>
+
+          <div class="mt-6 grid gap-3 md:grid-cols-2">
+            {
+              notes.map((note) => (
+                <div class="rounded-2xl border border-[#EEE5E8] bg-[#FFF8FA] px-5 py-4 text-sm leading-6 text-[#66565D]">
+                  {note}
+                </div>
+              ))
+            }
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</BaseLayout>

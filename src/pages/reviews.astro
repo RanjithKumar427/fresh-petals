@@ -1,0 +1,118 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+const reviews = [
+  {
+    name: "Fresh Petals Customer",
+    area: "Hyderabad",
+    product: "Pooja flowers",
+    text: "Ordered pooja flowers in the morning. The flowers were fresh and the WhatsApp confirmation made the process simple.",
+  },
+  {
+    name: "Bouquet Customer",
+    area: "Hyderabad",
+    product: "Rose bouquet",
+    text: "The bouquet looked neat and gift-ready. It was useful to confirm flower availability and final price before ordering.",
+  },
+  {
+    name: "Jasmine Customer",
+    area: "Hyderabad",
+    product: "Jasmine / Malli",
+    text: "Good option for checking jasmine availability quickly. Market price confirmation on WhatsApp is practical.",
+  },
+  {
+    name: "Gift Customer",
+    area: "Hyderabad",
+    product: "Flower basket",
+    text: "The flower basket felt premium and the message note option helped for gifting.",
+  },
+  {
+    name: "Subscription Enquiry",
+    area: "Hyderabad",
+    product: "Pooja flower subscription",
+    text: "The subscription flow is useful for regular pooja needs. Area and delivery timing confirmation is important.",
+  },
+  {
+    name: "Event Enquiry",
+    area: "Hyderabad",
+    product: "Bulk flowers",
+    text: "Helpful for discussing bulk flower needs, especially when quantity and market rates change daily.",
+  },
+];
+---
+
+<BaseLayout
+  title="Customer Reviews | Fresh Petals Hyderabad"
+  description="Early customer reviews and feedback for Fresh Petals Hyderabad flower orders, bouquets, pooja flowers, jasmine and gifting."
+>
+  <main id="reviews" class="bg-white">
+    <section class="px-5 py-14 md:px-8 md:py-20">
+      <div class="mx-auto max-w-7xl">
+        <div class="mx-auto max-w-3xl text-center">
+          <p class="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#9B6B78]">
+            Customer Reviews
+          </p>
+
+          <h1 class="fp-serif mt-4 text-3xl uppercase tracking-[0.20em] text-[#171717] md:text-5xl">
+            Let Customers Speak For Us
+          </h1>
+
+          <p class="mx-auto mt-5 max-w-2xl text-sm leading-7 text-[#66565D] md:text-base">
+            Early Fresh Petals feedback from Hyderabad customers and enquiries. As orders grow,
+            this page can be upgraded with verified reviews, photos and product-specific ratings.
+          </p>
+        </div>
+
+        <div class="mt-14 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+          {
+            reviews.map((review) => (
+              <article class="rounded-[28px] border border-[#EEE5E8] bg-[#FFF8FA] p-7">
+                <div class="flex items-center justify-between gap-4">
+                  <p class="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#9B6B78]">
+                    {review.product}
+                  </p>
+
+                  <span class="rounded-full bg-white px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#075838]">
+                    Early Review
+                  </span>
+                </div>
+
+                <p class="mt-5 text-sm leading-7 text-[#66565D]">
+                  “{review.text}”
+                </p>
+
+                <div class="mt-6 border-t border-[#E8DDE1] pt-5">
+                  <h2 class="text-sm font-semibold text-[#171717]">
+                    {review.name}
+                  </h2>
+
+                  <p class="mt-1 text-xs uppercase tracking-[0.18em] text-[#9B6B78]">
+                    {review.area}
+                  </p>
+                </div>
+              </article>
+            ))
+          }
+        </div>
+
+        <div class="mt-12 rounded-[32px] border border-[#E5EFE9] bg-[#F6FBF8] p-8 text-center">
+          <h2 class="text-xl font-semibold text-[#171717]">
+            Ordered from Fresh Petals?
+          </h2>
+
+          <p class="mx-auto mt-4 max-w-2xl text-sm leading-7 text-[#66565D]">
+            Share your experience on WhatsApp after your order. We can add genuine customer feedback
+            here as Fresh Petals grows.
+          </p>
+
+          <a
+            href="/contact"
+            class="mt-6 inline-flex rounded-full bg-[#075838] px-7 py-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-white transition hover:bg-[#06492f]"
+          >
+            Contact Fresh Petals
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+</BaseLayout>

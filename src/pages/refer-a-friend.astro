@@ -1,0 +1,119 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+const whatsappText = encodeURIComponent(
+  "Hi Fresh Petals, I want to refer a friend and claim the referral reward."
+);
+
+const whatsappHref = `https://wa.me/?text=${whatsappText}`;
+
+const steps = [
+  {
+    title: "Share Fresh Petals",
+    description:
+      "Send Fresh Petals to a friend who may need pooja flowers, jasmine, bouquets, hampers or subscription flowers in Hyderabad.",
+  },
+  {
+    title: "Friend places first order",
+    description:
+      "Your friend confirms their first Fresh Petals order on WhatsApp with name, delivery area and product requirement.",
+  },
+  {
+    title: "Reward is confirmed manually",
+    description:
+      "Once the first order is completed, both of you can claim the referral benefit on your next eligible order.",
+  },
+];
+
+const eligibleOrders = [
+  "Bouquets",
+  "Pooja flowers",
+  "Jasmine / Malli",
+  "Flower boxes",
+  "Flower baskets",
+  "Hampers",
+  "Subscriptions",
+];
+---
+
+<BaseLayout
+  title="Refer a Friend | Fresh Petals Hyderabad"
+  description="Refer a friend to Fresh Petals Hyderabad and claim manual WhatsApp-confirmed rewards on eligible flower orders."
+>
+  <main class="bg-white">
+    <section class="px-5 py-14 md:px-8 md:py-20">
+      <div class="mx-auto max-w-7xl">
+        <div class="mx-auto max-w-3xl text-center">
+          <p class="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#9B6B78]">
+            Refer & Earn
+          </p>
+
+          <h1 class="fp-serif mt-4 text-3xl uppercase tracking-[0.20em] text-[#171717] md:text-5xl">
+            Refer Fresh Petals To A Friend
+          </h1>
+
+          <p class="mx-auto mt-5 max-w-2xl text-sm leading-7 text-[#66565D] md:text-base">
+            Refer someone who needs fresh flowers in Hyderabad. When their first order is confirmed
+            and completed, both of you can claim a manual reward on WhatsApp.
+          </p>
+
+          <a
+            href={whatsappHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="mt-8 inline-flex rounded-full bg-[#075838] px-7 py-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-white transition hover:bg-[#06492f]"
+          >
+            Refer on WhatsApp
+          </a>
+        </div>
+
+        <div class="mt-14 grid gap-5 md:grid-cols-3">
+          {
+            steps.map((step, index) => (
+              <article class="rounded-[28px] border border-[#EEE5E8] bg-[#FFF8FA] p-7">
+                <span class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#7C243E] text-sm font-semibold text-white">
+                  {index + 1}
+                </span>
+
+                <h2 class="mt-5 text-xl font-semibold text-[#171717]">
+                  {step.title}
+                </h2>
+
+                <p class="mt-4 text-sm leading-7 text-[#66565D]">
+                  {step.description}
+                </p>
+              </article>
+            ))
+          }
+        </div>
+
+        <div class="mt-12 grid gap-6 rounded-[32px] border border-[#E5EFE9] bg-[#F6FBF8] p-8 md:grid-cols-[0.9fr_1.1fr] md:p-10">
+          <div>
+            <p class="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#075838]">
+              Eligible orders
+            </p>
+
+            <h2 class="mt-3 text-2xl font-semibold text-[#171717]">
+              Referral can be used on real Fresh Petals orders
+            </h2>
+
+            <p class="mt-4 text-sm leading-7 text-[#66565D]">
+              Since Fresh Petals pricing depends on daily flower availability, referral benefits are
+              applied manually after final order confirmation.
+            </p>
+          </div>
+
+          <div class="grid gap-3 sm:grid-cols-2">
+            {
+              eligibleOrders.map((item) => (
+                <div class="rounded-2xl border border-[#D8E7DD] bg-white px-4 py-3 text-sm font-medium text-[#171717]">
+                  {item}
+                </div>
+              ))
+            }
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</BaseLayout>
