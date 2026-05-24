@@ -28,16 +28,21 @@ const navItems = [
     href: "/categories/offers",
     icon: "tag",
   },
+  {
+    label: "Cart",
+    href: "/cart",
+    icon: "cart",
+  },
 ];
 ---
 
 <div class="fixed bottom-0 left-0 right-0 z-[999] border-t border-[#EEE5E8] bg-white/95 shadow-[0_-8px_24px_rgba(0,0,0,0.08)] backdrop-blur md:hidden">
-  <div class="grid grid-cols-[1fr_1fr_1fr_1fr_1.4fr] items-center">
+  <div class="grid grid-cols-[1fr_1fr_1fr_1fr_1fr_1.25fr] items-center">
     {
       navItems.map((item) => (
         <a
           href={item.href}
-          class="flex flex-col items-center justify-center gap-1 px-2 py-2.5 text-[#171717] transition hover:text-[#D98B9A]"
+          class="relative flex flex-col items-center justify-center gap-1 px-1.5 py-2.5 text-[#171717] transition hover:text-[#D98B9A]"
           aria-label={item.label}
         >
           {
@@ -111,7 +116,33 @@ const navItems = [
             )
           }
 
-          <span class="text-[9px] font-semibold uppercase tracking-[0.16em]">
+          {
+            item.icon === "cart" && (
+              <>
+                <svg
+                  class="h-5 w-5"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.7"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M6 8h12l1 13H5L6 8z"></path>
+                  <path d="M9 8V6a3 3 0 0 1 6 0v2"></path>
+                </svg>
+
+                <span
+                  data-mobile-cart-count-badge
+                  class="absolute right-2 top-1 hidden min-h-4 min-w-4 items-center justify-center rounded-full bg-[#FF5A3D] px-1 text-[9px] font-bold leading-none text-white"
+                >
+                  0
+                </span>
+              </>
+            )
+          }
+
+          <span class="text-[8px] font-semibold uppercase tracking-[0.13em]">
             {item.label}
           </span>
         </a>
@@ -123,9 +154,35 @@ const navItems = [
       target="_blank"
       rel="noopener noreferrer"
       aria-label="Order Fresh Petals flowers on WhatsApp"
-      class="mx-2 flex items-center justify-center rounded-full bg-[#075838] px-3 py-3 text-[10px] font-bold uppercase tracking-[0.16em] text-white transition hover:bg-[#E8A7B8] hover:text-[#111111]"
+      class="mx-1.5 flex items-center justify-center rounded-full bg-[#075838] px-2 py-3 text-[9px] font-bold uppercase tracking-[0.13em] text-white transition hover:bg-[#E8A7B8] hover:text-[#111111]"
     >
       Order
     </a>
   </div>
+
+  <script>
+    import { getCartCount } from "../utils/cart";
+
+    function updateMobileCartCount() {
+      const badge = document.querySelector("[data-mobile-cart-count-badge]");
+      if (!badge) return;
+
+      const count = getCartCount();
+
+      if (count > 0) {
+        badge.textContent = String(count);
+        badge.classList.remove("hidden");
+        badge.classList.add("inline-flex");
+      } else {
+        badge.textContent = "0";
+        badge.classList.add("hidden");
+        badge.classList.remove("inline-flex");
+      }
+    }
+
+    updateMobileCartCount();
+
+    window.addEventListener("fresh-petals-cart-updated", updateMobileCartCount);
+    window.addEventListener("storage", updateMobileCartCount);
+  </script>
 </div>

@@ -56,8 +56,8 @@ const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
 
     <div class="flex items-center justify-end gap-4 text-[#171717] md:gap-5">
       <a
-        href="#rewards"
-        aria-label="Fresh Petals rewards"
+        href="/categories/offers"
+        aria-label="Fresh Petals offers"
         class="transition hover:text-[#D98B9A]"
       >
         <svg
@@ -69,16 +69,14 @@ const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
           stroke-linecap="round"
           stroke-linejoin="round"
         >
-          <circle cx="12" cy="7.5" r="3.5"></circle>
-          <path d="M4.5 21c.9-4.2 3.6-6.2 7.5-6.2s6.6 2 7.5 6.2"></path>
+          <path d="M20 13 11 22l-9-9V4h9l9 9Z"></path>
+          <path d="M7.5 7.5h.01"></path>
         </svg>
       </a>
 
       <a
-        href={whatsappUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="Order flowers on WhatsApp"
+        href="/cart"
+        aria-label="View Fresh Petals cart"
         class="relative transition hover:text-[#D98B9A]"
       >
         <svg
@@ -94,8 +92,39 @@ const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
           <path d="M9 8V6a3 3 0 0 1 6 0v2"></path>
         </svg>
 
-        <span class="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-[#FF5A3D]"></span>
+        <span
+          data-cart-count-badge
+          class="absolute -right-2 -top-2 hidden min-h-5 min-w-5 items-center justify-center rounded-full bg-[#FF5A3D] px-1.5 text-[10px] font-bold leading-none text-white"
+        >
+          0
+        </span>
       </a>
     </div>
   </div>
+
+  <script>
+    import { getCartCount } from "../utils/cart";
+
+    function updateHeaderCartCount() {
+      const badge = document.querySelector("[data-cart-count-badge]");
+      if (!badge) return;
+
+      const count = getCartCount();
+
+      if (count > 0) {
+        badge.textContent = String(count);
+        badge.classList.remove("hidden");
+        badge.classList.add("inline-flex");
+      } else {
+        badge.textContent = "0";
+        badge.classList.add("hidden");
+        badge.classList.remove("inline-flex");
+      }
+    }
+
+    updateHeaderCartCount();
+
+    window.addEventListener("fresh-petals-cart-updated", updateHeaderCartCount);
+    window.addEventListener("storage", updateHeaderCartCount);
+  </script>
 </header>
