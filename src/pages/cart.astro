@@ -1,0 +1,404 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+const whatsappNumber = "919652012274";
+---
+
+<BaseLayout
+  title="Cart | Fresh Petals Hyderabad"
+  description="Review your Fresh Petals flower order cart and continue on WhatsApp."
+>
+  <main class="bg-white">
+    <section class="px-5 py-12 md:px-8 md:py-16">
+      <div class="mx-auto max-w-5xl">
+        <div class="mb-10 text-center">
+          <p class="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#9B6B78]">
+            Fresh Petals Hyderabad
+          </p>
+
+          <h1 class="fp-serif mt-3 text-3xl uppercase tracking-[0.20em] text-[#171717] md:text-5xl">
+            Your Cart
+          </h1>
+
+          <p class="mx-auto mt-5 max-w-2xl text-sm leading-7 text-[#66565D] md:text-base">
+            Review your selected flowers and continue on WhatsApp for availability, final price and payment confirmation.
+          </p>
+        </div>
+
+        <div
+          data-cart-empty
+          class="hidden rounded-[24px] border border-[#EEE5E8] bg-[#FFF8FA] p-8 text-center"
+        >
+          <h2 class="text-lg font-semibold text-[#171717]">
+            Your cart is empty
+          </h2>
+
+          <p class="mt-3 text-sm leading-7 text-[#66565D]">
+            Add bouquets, pooja flowers, flower boxes, baskets or add-ons to prepare your order.
+          </p>
+
+          <a
+            href="/categories/bouquets"
+            class="mt-6 inline-flex rounded-full bg-[#111111] px-7 py-3 text-[11px] font-bold uppercase tracking-[0.22em] text-white transition hover:bg-[#7C243E]"
+          >
+            Start Shopping
+          </a>
+        </div>
+
+        <div data-cart-content class="hidden">
+          <div data-cart-items class="space-y-5"></div>
+
+          <div class="mt-8 rounded-[24px] border border-[#EEE5E8] bg-[#FFF8FA] p-5">
+            <h2 class="text-[12px] font-bold uppercase tracking-[0.24em] text-[#171717]">
+              Order Details
+            </h2>
+
+            <div class="mt-5 grid gap-3 md:grid-cols-2">
+              <div>
+                <label class="mb-2 block text-[10px] font-bold uppercase tracking-[0.22em] text-[#7C243E]">
+                  Name
+                </label>
+
+                <input
+                  type="text"
+                  data-customer-name
+                  placeholder="Your name"
+                  class="w-full rounded-full border border-[#E5D6DC] bg-white px-5 py-3 text-sm text-[#171717] outline-none transition placeholder:text-[#A99DA3] focus:border-[#7C243E]"
+                />
+              </div>
+
+              <div>
+                <label class="mb-2 block text-[10px] font-bold uppercase tracking-[0.22em] text-[#7C243E]">
+                  Phone / WhatsApp
+                </label>
+
+                <input
+                  type="tel"
+                  data-customer-phone
+                  placeholder="Your phone number"
+                  class="w-full rounded-full border border-[#E5D6DC] bg-white px-5 py-3 text-sm text-[#171717] outline-none transition placeholder:text-[#A99DA3] focus:border-[#7C243E]"
+                />
+              </div>
+
+              <div>
+                <label class="mb-2 block text-[10px] font-bold uppercase tracking-[0.22em] text-[#7C243E]">
+                  Pincode
+                </label>
+
+                <input
+                  type="text"
+                  inputmode="numeric"
+                  maxlength="6"
+                  data-customer-pincode
+                  placeholder="Delivery pincode"
+                  class="w-full rounded-full border border-[#E5D6DC] bg-white px-5 py-3 text-sm text-[#171717] outline-none transition placeholder:text-[#A99DA3] focus:border-[#7C243E]"
+                />
+              </div>
+
+              <div>
+                <label class="mb-2 block text-[10px] font-bold uppercase tracking-[0.22em] text-[#7C243E]">
+                  Delivery Date
+                </label>
+
+                <input
+                  type="date"
+                  data-delivery-date
+                  class="w-full rounded-full border border-[#E5D6DC] bg-white px-5 py-3 text-sm text-[#171717] outline-none transition focus:border-[#7C243E]"
+                />
+              </div>
+
+              <div class="md:col-span-2">
+                <label class="mb-2 block text-[10px] font-bold uppercase tracking-[0.22em] text-[#7C243E]">
+                  Delivery Address / Note
+                </label>
+
+                <textarea
+                  rows="3"
+                  data-customer-note
+                  placeholder="Address, landmark, occasion, preferred flowers, gift message, etc."
+                  class="w-full rounded-[20px] border border-[#E5D6DC] bg-white px-5 py-3 text-sm text-[#171717] outline-none transition placeholder:text-[#A99DA3] focus:border-[#7C243E]"
+                ></textarea>
+              </div>
+            </div>
+
+            <div
+              data-cart-error
+              class="mt-5 hidden rounded-2xl border border-[#E7B7C0] bg-[#FFF3F5] p-4 text-sm font-semibold text-[#7C243E]"
+            ></div>
+
+            <div class="mt-6 flex flex-col gap-3 sm:flex-row">
+              <a
+                href="#"
+                data-send-cart-whatsapp
+                target="_blank"
+                rel="noopener noreferrer"
+                class="inline-flex items-center justify-center rounded-full bg-[#075838] px-7 py-4 text-[11px] font-bold uppercase tracking-[0.22em] text-white transition hover:bg-[#7C243E]"
+              >
+                Send Cart on WhatsApp
+              </a>
+
+              <button
+                type="button"
+                data-clear-cart
+                class="inline-flex items-center justify-center rounded-full border border-[#111111] px-7 py-4 text-[11px] font-bold uppercase tracking-[0.22em] text-[#111111] transition hover:bg-[#111111] hover:text-white"
+              >
+                Clear Cart
+              </button>
+            </div>
+
+            <p class="mt-4 text-xs leading-6 text-[#66565D]">
+              Final flower availability, price, delivery fee and payment confirmation will happen on WhatsApp.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script define:vars={{ whatsappNumber }}>
+    import {
+      getCartItems,
+      updateCartItemQuantity,
+      removeCartItem,
+      clearCart,
+    } from "../utils/cart";
+
+    const emptyState = document.querySelector("[data-cart-empty]");
+    const cartContent = document.querySelector("[data-cart-content]");
+    const cartItemsContainer = document.querySelector("[data-cart-items]");
+    const clearCartButton = document.querySelector("[data-clear-cart]");
+    const sendWhatsappButton = document.querySelector("[data-send-cart-whatsapp]");
+    const errorBox = document.querySelector("[data-cart-error]");
+
+    const nameInput = document.querySelector("[data-customer-name]");
+    const phoneInput = document.querySelector("[data-customer-phone]");
+    const pincodeInput = document.querySelector("[data-customer-pincode]");
+    const dateInput = document.querySelector("[data-delivery-date]");
+    const noteInput = document.querySelector("[data-customer-note]");
+
+    const today = new Date();
+    const todayIso = today.toISOString().split("T")[0];
+
+    if (dateInput) {
+      dateInput.min = todayIso;
+    }
+
+    function showError(message) {
+      if (!errorBox) return;
+
+      errorBox.textContent = message;
+      errorBox.classList.remove("hidden");
+    }
+
+    function hideError() {
+      if (!errorBox) return;
+
+      errorBox.textContent = "";
+      errorBox.classList.add("hidden");
+    }
+
+    function renderCart() {
+      const items = getCartItems();
+
+      if (!cartItemsContainer || !emptyState || !cartContent) return;
+
+      cartItemsContainer.innerHTML = "";
+
+      if (items.length === 0) {
+        emptyState.classList.remove("hidden");
+        cartContent.classList.add("hidden");
+        return;
+      }
+
+      emptyState.classList.add("hidden");
+      cartContent.classList.remove("hidden");
+
+      items.forEach((item) => {
+        const itemElement = document.createElement("div");
+
+        itemElement.className =
+          "grid gap-4 rounded-[24px] border border-[#EEE5E8] bg-white p-4 shadow-[0_10px_30px_rgba(40,24,32,0.05)] md:grid-cols-[110px_1fr_auto] md:items-center";
+
+        itemElement.innerHTML = `
+          <a href="/products/${item.slug}" class="block overflow-hidden rounded-2xl bg-[#F8F1F3]">
+            <img
+              src="${item.image}"
+              alt="${item.name}"
+              class="h-[110px] w-full object-cover md:w-[110px]"
+            />
+          </a>
+
+          <div>
+            <p class="text-[10px] font-semibold uppercase tracking-[0.24em] text-[#9B6B78]">
+              ${item.category}
+            </p>
+
+            <a href="/products/${item.slug}" class="mt-2 block">
+              <h2 class="text-base font-semibold text-[#171717]">
+                ${item.name}
+              </h2>
+            </a>
+
+            <p class="mt-2 text-sm font-bold text-[#7C243E]">
+              ${item.priceLabel}
+            </p>
+          </div>
+
+          <div class="flex items-center justify-between gap-3 md:flex-col md:items-end">
+            <div class="flex items-center rounded-full border border-[#E5D6DC] bg-white">
+              <button
+                type="button"
+                data-decrease="${item.id}"
+                class="px-4 py-2 text-sm font-bold text-[#171717]"
+              >
+                -
+              </button>
+
+              <span class="min-w-8 text-center text-sm font-semibold text-[#171717]">
+                ${item.quantity}
+              </span>
+
+              <button
+                type="button"
+                data-increase="${item.id}"
+                class="px-4 py-2 text-sm font-bold text-[#171717]"
+              >
+                +
+              </button>
+            </div>
+
+            <button
+              type="button"
+              data-remove="${item.id}"
+              class="text-[10px] font-bold uppercase tracking-[0.18em] text-[#7C243E] underline underline-offset-4"
+            >
+              Remove
+            </button>
+          </div>
+        `;
+
+        cartItemsContainer.appendChild(itemElement);
+      });
+
+      bindCartButtons();
+    }
+
+    function bindCartButtons() {
+      document.querySelectorAll("[data-increase]").forEach((button) => {
+        button.addEventListener("click", () => {
+          const id = button.getAttribute("data-increase");
+          const item = getCartItems().find((cartItem) => cartItem.id === id);
+
+          if (!item) return;
+
+          updateCartItemQuantity(item.id, item.quantity + 1);
+          renderCart();
+        });
+      });
+
+      document.querySelectorAll("[data-decrease]").forEach((button) => {
+        button.addEventListener("click", () => {
+          const id = button.getAttribute("data-decrease");
+          const item = getCartItems().find((cartItem) => cartItem.id === id);
+
+          if (!item) return;
+
+          updateCartItemQuantity(item.id, item.quantity - 1);
+          renderCart();
+        });
+      });
+
+      document.querySelectorAll("[data-remove]").forEach((button) => {
+        button.addEventListener("click", () => {
+          const id = button.getAttribute("data-remove");
+
+          if (!id) return;
+
+          removeCartItem(id);
+          renderCart();
+        });
+      });
+    }
+
+    function buildCartWhatsappUrl() {
+      const items = getCartItems();
+
+      const customerName = nameInput?.value.trim() || "";
+      const customerPhone = phoneInput?.value.trim() || "";
+      const pincode = pincodeInput?.value.trim() || "";
+      const deliveryDate = dateInput?.value || "";
+      const note = noteInput?.value.trim() || "";
+
+      hideError();
+
+      if (items.length === 0) {
+        showError("Your cart is empty.");
+        return "#";
+      }
+
+      if (!customerName) {
+        showError("Please enter your name.");
+        return "#";
+      }
+
+      if (!customerPhone) {
+        showError("Please enter your phone number.");
+        return "#";
+      }
+
+      if (!/^[0-9]{6}$/.test(pincode)) {
+        showError("Please enter a valid 6-digit delivery pincode.");
+        return "#";
+      }
+
+      if (!deliveryDate) {
+        showError("Please select a delivery date.");
+        return "#";
+      }
+
+      const cartLines = items
+        .map(
+          (item, index) =>
+            `${index + 1}. ${item.name} | ${item.priceLabel} | Qty: ${item.quantity}`
+        )
+        .join("\n");
+
+      const message = `
+Hi Fresh Petals, I want to place a cart order:
+
+Customer Name: ${customerName}
+Phone: ${customerPhone}
+Pincode: ${pincode}
+Delivery Date: ${deliveryDate}
+
+Items:
+${cartLines}
+
+Order Note / Address:
+${note || "None"}
+
+Please confirm availability, delivery fee, final price and payment details.
+      `.trim();
+
+      return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+    }
+
+    sendWhatsappButton?.addEventListener("click", (event) => {
+      const url = buildCartWhatsappUrl();
+
+      if (url === "#") {
+        event.preventDefault();
+        return;
+      }
+
+      sendWhatsappButton.href = url;
+    });
+
+    clearCartButton?.addEventListener("click", () => {
+      clearCart();
+      renderCart();
+    });
+
+    renderCart();
+  </script>
+</BaseLayout>

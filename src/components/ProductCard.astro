@@ -2,6 +2,7 @@
 type PriceType = "fixed" | "from" | "market" | "quote";
 
 interface Props {
+  id?: string;
   name: string;
   image: string;
   priceLabel?: string;
@@ -14,6 +15,7 @@ interface Props {
 }
 
 const {
+  id,
   name,
   image,
   priceLabel = "Market price today",
@@ -28,6 +30,8 @@ const {
 const whatsappNumber = "919652012274";
 
 const productUrl = slug ? `/products/${slug}` : "#";
+
+const cartId = id || slug || name.toLowerCase().replaceAll(" ", "-");
 
 const defaultMessage = `Hi Fresh Petals, I want to order ${name}. Please confirm today's availability and price.`;
 
@@ -88,24 +92,98 @@ const priceBadge =
       {description}
     </p>
 
-    <div class="mt-4 flex items-center justify-between gap-3">
-      <p class="text-[14px] font-bold text-[#7C243E]">
-        {priceLabel}
-      </p>
+    <p class="mt-4 text-[14px] font-bold text-[#7C243E]">
+      {priceLabel}
+    </p>
 
+    <div class="mt-4 grid grid-cols-2 gap-2">
       <a
-        href={whatsappUrl}
-        target="_blank"
-        rel="noopener noreferrer"
+        href={productUrl}
+        class="inline-flex items-center justify-center rounded-full border border-[#111111] px-4 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[#111111] transition hover:bg-[#111111] hover:text-white"
+      >
+        View
+      </a>
+
+      <button
+        type="button"
+        data-add-to-cart
+        data-cart-id={cartId}
+        data-cart-slug={slug || ""}
+        data-cart-name={name}
+        data-cart-image={image}
+        data-cart-price-label={priceLabel}
+        data-cart-category={category}
         class:list={[
-          "inline-flex shrink-0 items-center justify-center rounded-full px-4 py-2 text-[10px] font-bold uppercase tracking-[0.18em] transition",
+          "inline-flex items-center justify-center rounded-full px-4 py-2 text-[10px] font-bold uppercase tracking-[0.16em] transition",
           isAvailable
-            ? "bg-[#075838] text-white hover:bg-[#7C243E]"
+            ? "bg-[#7C243E] text-white hover:bg-[#111111]"
             : "pointer-events-none bg-[#D8D1D4] text-[#7A6E73]",
         ]}
       >
-        {isAvailable ? "Order" : "Closed"}
-      </a>
+        {isAvailable ? "Add" : "Closed"}
+      </button>
     </div>
+
+    <a
+      href={whatsappUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      class:list={[
+        "mt-3 inline-flex w-full items-center justify-center rounded-full px-4 py-2 text-[10px] font-bold uppercase tracking-[0.18em] transition",
+        isAvailable
+          ? "bg-[#075838] text-white hover:bg-[#7C243E]"
+          : "pointer-events-none bg-[#D8D1D4] text-[#7A6E73]",
+      ]}
+    >
+      {isAvailable ? "Order on WhatsApp" : "Unavailable"}
+    </a>
+
+    <p
+      data-cart-feedback={cartId}
+      class="mt-3 hidden rounded-full bg-[#F3FFF7] px-3 py-2 text-center text-[11px] font-semibold text-[#075838]"
+    >
+      Added to cart
+    </p>
   </div>
 </article>
+
+<script>
+  import { addToCart } from "../utils/cart";
+
+  const buttons = document.querySelectorAll("[data-add-to-cart]");
+
+  buttons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const htmlButton = button as HTMLButtonElement;
+
+      const id = htmlButton.dataset.cartId || "";
+      const slug = htmlButton.dataset.cartSlug || "";
+      const name = htmlButton.dataset.cartName || "";
+      const image = htmlButton.dataset.cartImage || "";
+      const priceLabel = htmlButton.dataset.cartPriceLabel || "";
+      const category = htmlButton.dataset.cartCategory || "";
+
+      addToCart(
+        {
+          id,
+          slug,
+          name,
+          image,
+          priceLabel,
+          category,
+        },
+        1
+      );
+
+      const feedback = document.querySelector(`[data-cart-feedback="${id}"]`);
+
+      if (feedback) {
+        feedback.classList.remove("hidden");
+
+        setTimeout(() => {
+          feedback.classList.add("hidden");
+        }, 1600);
+      }
+    });
+  });
+</script>
