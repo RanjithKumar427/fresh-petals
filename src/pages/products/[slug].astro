@@ -30,7 +30,16 @@ const fallbackWhatsappUrl = `https://wa.me/${whatsappNumber}?text=${fallbackWhat
   description={product.description}
 >
   <main class="bg-white">
-    <section class="px-5 py-12 md:px-8 md:py-16">
+    <section
+      class="px-5 py-12 md:px-8 md:py-16"
+      data-product-detail
+      data-cart-id={product.id}
+      data-cart-slug={product.slug}
+      data-cart-name={product.name}
+      data-cart-image={product.image}
+      data-cart-price-label={product.priceLabel}
+      data-cart-category={product.category}
+    >
       <div class="mx-auto grid max-w-7xl gap-10 lg:grid-cols-2 lg:items-start">
         <div class="overflow-hidden rounded-[28px] bg-[#F8F1F3]">
           <img
@@ -67,6 +76,45 @@ const fallbackWhatsappUrl = `https://wa.me/${whatsappNumber}?text=${fallbackWhat
               </div>
             )
           }
+
+          <div class="mt-6 rounded-[24px] border border-[#EEE5E8] bg-white p-5 shadow-[0_10px_30px_rgba(40,24,32,0.05)]">
+            <h2 class="text-[12px] font-bold uppercase tracking-[0.24em] text-[#171717]">
+              Add to Cart
+            </h2>
+
+            <p class="mt-3 text-sm leading-7 text-[#66565D]">
+              Add this product to your cart if you want to combine it with other flowers, add-ons or gift items.
+            </p>
+
+            <div class="mt-5 flex flex-col gap-3 sm:flex-row">
+              <button
+                type="button"
+                data-product-add-to-cart
+                class:list={[
+                  "inline-flex items-center justify-center rounded-full px-7 py-4 text-[11px] font-bold uppercase tracking-[0.22em] transition",
+                  product.isAvailable
+                    ? "bg-[#7C243E] text-white hover:bg-[#111111]"
+                    : "pointer-events-none bg-[#D8D1D4] text-[#7A6E73]",
+                ]}
+              >
+                {product.isAvailable ? "Add to Cart" : "Unavailable"}
+              </button>
+
+              <a
+                href="/cart"
+                class="inline-flex items-center justify-center rounded-full border border-[#111111] px-7 py-4 text-[11px] font-bold uppercase tracking-[0.22em] text-[#111111] transition hover:bg-[#111111] hover:text-white"
+              >
+                View Cart
+              </a>
+            </div>
+
+            <p
+              data-product-cart-feedback
+              class="mt-4 hidden rounded-full bg-[#F3FFF7] px-4 py-3 text-center text-sm font-semibold text-[#075838]"
+            >
+              Added to cart. You can continue shopping or view cart.
+            </p>
+          </div>
 
           <DeliveryChecker
             productName={product.name}
@@ -124,4 +172,43 @@ const fallbackWhatsappUrl = `https://wa.me/${whatsappNumber}?text=${fallbackWhat
       </div>
     </section>
   </main>
+
+  <script>
+    import { addToCart } from "../../utils/cart";
+
+    const productDetail = document.querySelector("[data-product-detail]");
+    const addButton = document.querySelector("[data-product-add-to-cart]");
+    const feedback = document.querySelector("[data-product-cart-feedback]");
+
+    addButton?.addEventListener("click", () => {
+      if (!productDetail) return;
+
+      const section = productDetail as HTMLElement;
+
+      const id = section.dataset.cartId || "";
+      const slug = section.dataset.cartSlug || "";
+      const name = section.dataset.cartName || "";
+      const image = section.dataset.cartImage || "";
+      const priceLabel = section.dataset.cartPriceLabel || "";
+      const category = section.dataset.cartCategory || "";
+
+      addToCart(
+        {
+          id,
+          slug,
+          name,
+          image,
+          priceLabel,
+          category,
+        },
+        1
+      );
+
+      feedback?.classList.remove("hidden");
+
+      setTimeout(() => {
+        feedback?.classList.add("hidden");
+      }, 1800);
+    });
+  </script>
 </BaseLayout>

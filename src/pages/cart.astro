@@ -1,7 +1,5 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
-
-const whatsappNumber = "919652012274";
 ---
 
 <BaseLayout
@@ -155,13 +153,56 @@ const whatsappNumber = "919652012274";
     </section>
   </main>
 
-  <script define:vars={{ whatsappNumber }}>
-    import {
-      getCartItems,
-      updateCartItemQuantity,
-      removeCartItem,
-      clearCart,
-    } from "../utils/cart";
+  <script>
+    const whatsappNumber = "919652012274";
+    const CART_KEY = "fresh_petals_cart";
+
+    function getCartItems() {
+      const storedCart = window.localStorage.getItem(CART_KEY);
+
+      if (!storedCart) return [];
+
+      try {
+        return JSON.parse(storedCart);
+      } catch {
+        return [];
+      }
+    }
+
+    function saveCartItems(items) {
+      window.localStorage.setItem(CART_KEY, JSON.stringify(items));
+      window.dispatchEvent(new Event("fresh-petals-cart-updated"));
+    }
+
+    function updateCartItemQuantity(id, quantity) {
+      const currentItems = getCartItems();
+
+      if (quantity <= 0) {
+        removeCartItem(id);
+        return;
+      }
+
+      const updatedItems = currentItems.map((item) =>
+        item.id === id
+          ? {
+              ...item,
+              quantity,
+            }
+          : item
+      );
+
+      saveCartItems(updatedItems);
+    }
+
+    function removeCartItem(id) {
+      const currentItems = getCartItems();
+      const updatedItems = currentItems.filter((item) => item.id !== id);
+      saveCartItems(updatedItems);
+    }
+
+    function clearCart() {
+      saveCartItems([]);
+    }
 
     const emptyState = document.querySelector("[data-cart-empty]");
     const cartContent = document.querySelector("[data-cart-content]");
