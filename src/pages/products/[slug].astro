@@ -1,7 +1,8 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import { productCatalog } from "../../data/productCatalog";
 import DeliveryChecker from "../../components/DeliveryChecker.astro";
+import { productCatalog } from "../../data/productCatalog";
+
 export function getStaticPaths() {
   return productCatalog.map((product) => ({
     params: {
@@ -17,11 +18,11 @@ const { product } = Astro.props;
 
 const whatsappNumber = "919652012274";
 
-const whatsappMessage = encodeURIComponent(
-  `Hi Fresh Petals, I want to order:\n\nProduct: ${product.name}\nPrice: ${product.priceLabel}\n\nPlease confirm today's availability and final price.`
+const fallbackWhatsappMessage = encodeURIComponent(
+  `Hi Fresh Petals, I want to enquire about:\n\nProduct: ${product.name}\nPrice: ${product.priceLabel}\n\nPlease help me with availability, delivery and final price.`
 );
 
-const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
+const fallbackWhatsappUrl = `https://wa.me/${whatsappNumber}?text=${fallbackWhatsappMessage}`;
 ---
 
 <BaseLayout
@@ -66,20 +67,23 @@ const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
               </div>
             )
           }
-                <DeliveryChecker
-  productName={product.name}
-  priceLabel={product.priceLabel}
-/>
-          <div class="mt-8">
+
+          <DeliveryChecker
+            productName={product.name}
+            priceLabel={product.priceLabel}
+          />
+
+          <p class="mt-4 text-sm leading-7 text-[#66565D]">
+            Not sure about delivery area or custom requirement?
             <a
-              href={whatsappUrl}
+              href={fallbackWhatsappUrl}
               target="_blank"
               rel="noopener noreferrer"
-              class="inline-flex items-center justify-center rounded-full bg-[#075838] px-8 py-4 text-[12px] font-bold uppercase tracking-[0.22em] text-white transition hover:bg-[#7C243E]"
+              class="font-semibold text-[#075838] underline underline-offset-4 transition hover:text-[#7C243E]"
             >
-              Order on WhatsApp
+              Chat with us directly on WhatsApp.
             </a>
-          </div>
+          </p>
 
           <div class="mt-10 grid gap-6 md:grid-cols-2">
             <div>
