@@ -1,0 +1,121 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+const faqs = [
+  {
+    question: "How do I place an order with Fresh Petals?",
+    answer:
+      "You can browse products on the website, add items to cart, fill delivery details, and send the order on WhatsApp. We will confirm flower availability, final price, delivery fee, and payment details before processing.",
+  },
+  {
+    question: "Are the prices fixed?",
+    answer:
+      "Some products have starting prices, while pooja flowers, jasmine, garlands, bulk flowers, and event flowers may depend on the daily flower market price. Final price is confirmed on WhatsApp before payment.",
+  },
+  {
+    question: "Do you deliver across Hyderabad?",
+    answer:
+      "We deliver to selected Hyderabad areas based on pincode, distance, order value, and delivery timing. If your pincode is not confirmed on the website, you can still message us on WhatsApp for manual confirmation.",
+  },
+  {
+    question: "Can I order pooja flowers daily?",
+    answer:
+      "Yes. We support daily pooja flowers, jasmine/malli, flower boxes, and custom subscription-style requirements based on availability and delivery area.",
+  },
+  {
+    question: "Do you provide jasmine, gajra, poola jada and garlands?",
+    answer:
+      "Yes. We take orders for jasmine/malli, gajra, poola jada, garlands, pooja flowers, and temple or event bulk flowers depending on market availability.",
+  },
+  {
+    question: "Can I order for events or bulk requirements?",
+    answer:
+      "Yes. For events, temple orders, garlands, wedding flowers, decor flowers, and bulk pooja flowers, please share your requirement on WhatsApp. We will confirm quantity, price, sourcing, and delivery feasibility.",
+  },
+  {
+    question: "Do you offer same-day delivery?",
+    answer:
+      "Same-day delivery depends on product type, order time, pincode, and flower availability. Some areas support same-day delivery, while others may need manual confirmation.",
+  },
+  {
+    question: "Do you accept online payment?",
+    answer:
+      "For now, payment details are confirmed manually on WhatsApp after order confirmation. We may support online payment links or UPI checkout later.",
+  },
+  {
+    question: "Can I customize a bouquet or flower box?",
+    answer:
+      "Yes. You can mention preferred flowers, colors, occasion, note card, or budget in the order note. Customization depends on daily flower availability.",
+  },
+  {
+    question: "What if flowers are unavailable after I place an order?",
+    answer:
+      "Fresh flowers depend on market supply. If a specific flower is unavailable, we will suggest alternatives before confirming payment.",
+  },
+];
+---
+
+<BaseLayout
+  title="FAQs | Fresh Petals Hyderabad"
+  description="Frequently asked questions about Fresh Petals Hyderabad flower delivery, pooja flowers, bouquets, jasmine, garlands, bulk orders and WhatsApp ordering."
+>
+  <main class="bg-white">
+    <section class="px-5 py-12 md:px-8 md:py-16">
+      <div class="mx-auto max-w-4xl">
+        <div class="mb-10 text-center">
+          <p class="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#9B6B78]">
+            Fresh Petals Hyderabad
+          </p>
+
+          <h1 class="fp-serif mt-3 text-3xl uppercase tracking-[0.20em] text-[#171717] md:text-5xl">
+            FAQs
+          </h1>
+
+          <p class="mx-auto mt-5 max-w-2xl text-sm leading-7 text-[#66565D] md:text-base">
+            Answers to common questions about flower orders, delivery, pricing, customization and WhatsApp checkout.
+          </p>
+        </div>
+
+        <div class="space-y-4">
+          {
+            faqs.map((faq) => (
+              <details class="group rounded-[22px] border border-[#EEE5E8] bg-[#FFF8FA] p-5">
+                <summary class="cursor-pointer list-none text-sm font-bold uppercase tracking-[0.14em] text-[#171717]">
+                  <span class="flex items-center justify-between gap-4">
+                    {faq.question}
+                    <span class="text-xl text-[#7C243E] transition group-open:rotate-45">
+                      +
+                    </span>
+                  </span>
+                </summary>
+
+                <p class="mt-4 text-sm leading-7 text-[#66565D]">
+                  {faq.answer}
+                </p>
+              </details>
+            ))
+          }
+        </div>
+
+        <div class="mt-10 rounded-[24px] border border-[#E8D8DE] bg-white p-6 text-center shadow-[0_10px_30px_rgba(40,24,32,0.05)]">
+          <h2 class="text-[12px] font-bold uppercase tracking-[0.24em] text-[#171717]">
+            Still have a question?
+          </h2>
+
+          <p class="mx-auto mt-3 max-w-2xl text-sm leading-7 text-[#66565D]">
+            Message us on WhatsApp with your flower requirement, delivery area, date and preferred budget.
+          </p>
+
+          <a
+            href="https://wa.me/919652012274?text=Hi%20Fresh%20Petals%2C%20I%20have%20a%20question%20about%20flower%20orders."
+            target="_blank"
+            rel="noopener noreferrer"
+            class="mt-6 inline-flex rounded-full bg-[#075838] px-7 py-4 text-[11px] font-bold uppercase tracking-[0.22em] text-white transition hover:bg-[#7C243E]"
+          >
+            Ask on WhatsApp
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+</BaseLayout>
