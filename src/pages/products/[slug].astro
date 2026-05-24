@@ -1,7 +1,7 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { productCatalog } from "../../data/productCatalog";
-
+import DeliveryChecker from "../../components/DeliveryChecker.astro";
 export function getStaticPaths() {
   return productCatalog.map((product) => ({
     params: {
@@ -66,7 +66,10 @@ const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
               </div>
             )
           }
-
+                <DeliveryChecker
+  productName={product.name}
+  priceLabel={product.priceLabel}
+/>
           <div class="mt-8">
             <a
               href={whatsappUrl}
