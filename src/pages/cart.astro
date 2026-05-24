@@ -1,5 +1,6 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+import { serviceAreas } from "../data/serviceAreas";
 ---
 
 <BaseLayout
@@ -120,6 +121,11 @@ import BaseLayout from "../layouts/BaseLayout.astro";
             </div>
 
             <div
+              data-service-area-result
+              class="mt-5 hidden rounded-2xl border p-4 text-sm leading-7"
+            ></div>
+
+            <div
               data-cart-error
               class="mt-5 hidden rounded-2xl border border-[#E7B7C0] bg-[#FFF3F5] p-4 text-sm font-semibold text-[#7C243E]"
             ></div>
@@ -153,7 +159,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     </section>
   </main>
 
-  <script>
+  <script define:vars={{ serviceAreas }}>
     const whatsappNumber = "919652012274";
     const CART_KEY = "fresh_petals_cart";
 
@@ -210,6 +216,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     const clearCartButton = document.querySelector("[data-clear-cart]");
     const sendWhatsappButton = document.querySelector("[data-send-cart-whatsapp]");
     const errorBox = document.querySelector("[data-cart-error]");
+    const serviceAreaResult = document.querySelector("[data-service-area-result]");
 
     const nameInput = document.querySelector("[data-customer-name]");
     const phoneInput = document.querySelector("[data-customer-phone]");
@@ -236,6 +243,32 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 
       errorBox.textContent = "";
       errorBox.classList.add("hidden");
+    }
+
+    function showServiceAreaResult({ type, html }) {
+      if (!serviceAreaResult) return;
+
+      serviceAreaResult.classList.remove("hidden");
+      serviceAreaResult.innerHTML = html;
+
+      if (type === "success") {
+        serviceAreaResult.className =
+          "mt-5 rounded-2xl border border-[#B9D8C6] bg-[#F3FFF7] p-4 text-sm leading-7 text-[#075838]";
+      } else {
+        serviceAreaResult.className =
+          "mt-5 rounded-2xl border border-[#E7B7C0] bg-[#FFF3F5] p-4 text-sm leading-7 text-[#7C243E]";
+      }
+    }
+
+    function hideServiceAreaResult() {
+      if (!serviceAreaResult) return;
+
+      serviceAreaResult.classList.add("hidden");
+      serviceAreaResult.innerHTML = "";
+    }
+
+    function findServiceArea(pincode) {
+      return serviceAreas.find((area) => area.pincode === pincode);
     }
 
     function renderCart() {
@@ -371,6 +404,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       const note = noteInput?.value.trim() || "";
 
       hideError();
+      hideServiceAreaResult();
 
       if (items.length === 0) {
         showError("Your cart is empty.");
@@ -397,6 +431,8 @@ import BaseLayout from "../layouts/BaseLayout.astro";
         return "#";
       }
 
+      const areaData = findServiceArea(pincode);
+
       const cartLines = items
         .map(
           (item, index) =>
@@ -404,12 +440,43 @@ import BaseLayout from "../layouts/BaseLayout.astro";
         )
         .join("\n");
 
+      let areaText = "Manual confirmation needed";
+      let deliveryFeeText = "To be confirmed";
+      let serviceStatusText = "Manual confirmation needed";
+
+      if (areaData) {
+        areaText = `${areaData.area}, ${areaData.city}`;
+        deliveryFeeText = `₹${areaData.deliveryFee}`;
+        serviceStatusText = "Delivery available";
+
+        showServiceAreaResult({
+          type: "success",
+          html: `
+            <strong>Delivery available in ${areaData.area}.</strong><br />
+            Delivery fee: ₹${areaData.deliveryFee}<br />
+            Same-day delivery: ${areaData.sameDayAvailable ? "Available" : "Not available"}<br />
+            Morning delivery: ${areaData.morningDeliveryAvailable ? "Available" : "Not available"}
+          `,
+        });
+      } else {
+        showServiceAreaResult({
+          type: "error",
+          html: `
+            <strong>Delivery is not confirmed for this pincode yet.</strong><br />
+            You can still continue on WhatsApp. We will manually confirm delivery possibility, fee and timing.
+          `,
+        });
+      }
+
       const message = `
 Hi Fresh Petals, I want to place a cart order:
 
 Customer Name: ${customerName}
 Phone: ${customerPhone}
 Pincode: ${pincode}
+Area: ${areaText}
+Delivery Fee: ${deliveryFeeText}
+Service Status: ${serviceStatusText}
 Delivery Date: ${deliveryDate}
 
 Items:
@@ -418,7 +485,7 @@ ${cartLines}
 Order Note / Address:
 ${note || "None"}
 
-Please confirm availability, delivery fee, final price and payment details.
+Please confirm availability, final price, delivery fee and payment details.
       `.trim();
 
       return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
@@ -433,6 +500,11 @@ Please confirm availability, delivery fee, final price and payment details.
       }
 
       sendWhatsappButton.href = url;
+    });
+
+    pincodeInput?.addEventListener("input", () => {
+      hideServiceAreaResult();
+      hideError();
     });
 
     clearCartButton?.addEventListener("click", () => {
