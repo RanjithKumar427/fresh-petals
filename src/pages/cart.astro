@@ -1,6 +1,29 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { serviceAreas } from "../data/serviceAreas";
+
+const timeSlots = [
+  {
+    value: "Morning Slot: 7 AM - 10 AM",
+    label: "Morning Slot: 7 AM - 10 AM",
+    type: "morning",
+  },
+  {
+    value: "Afternoon Slot: 12 PM - 3 PM",
+    label: "Afternoon Slot: 12 PM - 3 PM",
+    type: "standard",
+  },
+  {
+    value: "Evening Slot: 5 PM - 8 PM",
+    label: "Evening Slot: 5 PM - 8 PM",
+    type: "standard",
+  },
+  {
+    value: "Express Delivery: Within 4-6 Hours",
+    label: "Express Delivery: Within 4-6 Hours",
+    type: "express",
+  },
+];
 ---
 
 <BaseLayout
@@ -108,6 +131,26 @@ import { serviceAreas } from "../data/serviceAreas";
 
               <div class="md:col-span-2">
                 <label class="mb-2 block text-[10px] font-bold uppercase tracking-[0.22em] text-[#7C243E]">
+                  Delivery Time Slot
+                </label>
+
+                <select
+                  data-delivery-slot
+                  class="w-full rounded-full border border-[#E5D6DC] bg-white px-5 py-3 text-sm text-[#171717] outline-none transition focus:border-[#7C243E]"
+                >
+                  <option value="">Select delivery time slot</option>
+                  {
+                    timeSlots.map((slot) => (
+                      <option value={slot.value} data-slot-type={slot.type}>
+                        {slot.label}
+                      </option>
+                    ))
+                  }
+                </select>
+              </div>
+
+              <div class="md:col-span-2">
+                <label class="mb-2 block text-[10px] font-bold uppercase tracking-[0.22em] text-[#7C243E]">
                   Delivery Address / Note
                 </label>
 
@@ -123,6 +166,11 @@ import { serviceAreas } from "../data/serviceAreas";
             <div
               data-service-area-result
               class="mt-5 hidden rounded-2xl border p-4 text-sm leading-7"
+            ></div>
+
+            <div
+              data-cart-summary
+              class="mt-5 hidden rounded-[24px] border border-[#EEE5E8] bg-white p-5"
             ></div>
 
             <div
@@ -217,11 +265,13 @@ import { serviceAreas } from "../data/serviceAreas";
     const sendWhatsappButton = document.querySelector("[data-send-cart-whatsapp]");
     const errorBox = document.querySelector("[data-cart-error]");
     const serviceAreaResult = document.querySelector("[data-service-area-result]");
+    const cartSummary = document.querySelector("[data-cart-summary]");
 
     const nameInput = document.querySelector("[data-customer-name]");
     const phoneInput = document.querySelector("[data-customer-phone]");
     const pincodeInput = document.querySelector("[data-customer-pincode]");
     const dateInput = document.querySelector("[data-delivery-date]");
+    const slotInput = document.querySelector("[data-delivery-slot]");
     const noteInput = document.querySelector("[data-customer-note]");
 
     const today = new Date();
@@ -267,8 +317,20 @@ import { serviceAreas } from "../data/serviceAreas";
       serviceAreaResult.innerHTML = "";
     }
 
+    function hideCartSummary() {
+      if (!cartSummary) return;
+
+      cartSummary.classList.add("hidden");
+      cartSummary.innerHTML = "";
+    }
+
     function findServiceArea(pincode) {
       return serviceAreas.find((area) => area.pincode === pincode);
+    }
+
+    function getSelectedSlotType() {
+      const selectedOption = slotInput?.options?.[slotInput.selectedIndex];
+      return selectedOption?.dataset?.slotType || "standard";
     }
 
     function renderCart() {
@@ -366,6 +428,7 @@ import { serviceAreas } from "../data/serviceAreas";
           if (!item) return;
 
           updateCartItemQuantity(item.id, item.quantity + 1);
+          hideCartSummary();
           renderCart();
         });
       });
@@ -378,6 +441,7 @@ import { serviceAreas } from "../data/serviceAreas";
           if (!item) return;
 
           updateCartItemQuantity(item.id, item.quantity - 1);
+          hideCartSummary();
           renderCart();
         });
       });
@@ -389,9 +453,110 @@ import { serviceAreas } from "../data/serviceAreas";
           if (!id) return;
 
           removeCartItem(id);
+          hideCartSummary();
           renderCart();
         });
       });
+    }
+
+    function renderCartSummary({
+      customerName,
+      customerPhone,
+      pincode,
+      areaText,
+      deliveryFeeText,
+      serviceStatusText,
+      deliveryDate,
+      deliverySlot,
+      slotStatusText,
+      note,
+      items,
+    }) {
+      if (!cartSummary) return;
+
+      const itemRows = items
+        .map(
+          (item, index) => `
+            <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
+              <span>${index + 1}. ${item.name}</span>
+              <strong class="text-right text-[#171717]">${item.priceLabel} × ${item.quantity}</strong>
+            </div>
+          `
+        )
+        .join("");
+
+      cartSummary.classList.remove("hidden");
+
+      cartSummary.innerHTML = `
+        <h3 class="text-[12px] font-bold uppercase tracking-[0.24em] text-[#171717]">
+          Cart Order Summary
+        </h3>
+
+        <div class="mt-4 space-y-3 text-sm leading-6 text-[#5E5358]">
+          <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
+            <span>Name</span>
+            <strong class="text-right text-[#171717]">${customerName}</strong>
+          </div>
+
+          <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
+            <span>Phone</span>
+            <strong class="text-right text-[#171717]">${customerPhone}</strong>
+          </div>
+
+          <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
+            <span>Pincode</span>
+            <strong class="text-right text-[#171717]">${pincode}</strong>
+          </div>
+
+          <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
+            <span>Area</span>
+            <strong class="text-right text-[#171717]">${areaText}</strong>
+          </div>
+
+          <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
+            <span>Delivery Fee</span>
+            <strong class="text-right text-[#171717]">${deliveryFeeText}</strong>
+          </div>
+
+          <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
+            <span>Service Status</span>
+            <strong class="text-right text-[#075838]">${serviceStatusText}</strong>
+          </div>
+
+          <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
+            <span>Delivery Date</span>
+            <strong class="text-right text-[#171717]">${deliveryDate}</strong>
+          </div>
+
+          <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
+            <span>Delivery Slot</span>
+            <strong class="text-right text-[#171717]">${deliverySlot}</strong>
+          </div>
+
+          <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
+            <span>Slot Status</span>
+            <strong class="text-right text-[#075838]">${slotStatusText}</strong>
+          </div>
+
+          <div class="pt-2">
+            <h4 class="mb-3 text-[11px] font-bold uppercase tracking-[0.20em] text-[#171717]">
+              Items
+            </h4>
+            <div class="space-y-3">
+              ${itemRows}
+            </div>
+          </div>
+
+          <div>
+            <span class="block text-[#66565D]">Address / Note</span>
+            <strong class="mt-1 block text-[#171717]">${note || "None"}</strong>
+          </div>
+        </div>
+
+        <p class="mt-4 rounded-2xl bg-[#FFF8FA] p-4 text-xs leading-6 text-[#7C243E]">
+          This is an estimated cart summary. Final price, flower availability, delivery fee and payment confirmation will happen on WhatsApp.
+        </p>
+      `;
     }
 
     function buildCartWhatsappUrl() {
@@ -401,10 +566,12 @@ import { serviceAreas } from "../data/serviceAreas";
       const customerPhone = phoneInput?.value.trim() || "";
       const pincode = pincodeInput?.value.trim() || "";
       const deliveryDate = dateInput?.value || "";
+      const deliverySlot = slotInput?.value || "";
       const note = noteInput?.value.trim() || "";
 
       hideError();
       hideServiceAreaResult();
+      hideCartSummary();
 
       if (items.length === 0) {
         showError("Your cart is empty.");
@@ -431,7 +598,13 @@ import { serviceAreas } from "../data/serviceAreas";
         return "#";
       }
 
+      if (!deliverySlot) {
+        showError("Please select a delivery time slot.");
+        return "#";
+      }
+
       const areaData = findServiceArea(pincode);
+      const slotType = getSelectedSlotType();
 
       const cartLines = items
         .map(
@@ -443,21 +616,48 @@ import { serviceAreas } from "../data/serviceAreas";
       let areaText = "Manual confirmation needed";
       let deliveryFeeText = "To be confirmed";
       let serviceStatusText = "Manual confirmation needed";
+      let slotStatusText = "Manual confirmation needed";
 
       if (areaData) {
         areaText = `${areaData.area}, ${areaData.city}`;
         deliveryFeeText = `₹${areaData.deliveryFee}`;
         serviceStatusText = "Delivery available";
+        slotStatusText = "Slot available";
 
-        showServiceAreaResult({
-          type: "success",
-          html: `
-            <strong>Delivery available in ${areaData.area}.</strong><br />
-            Delivery fee: ₹${areaData.deliveryFee}<br />
-            Same-day delivery: ${areaData.sameDayAvailable ? "Available" : "Not available"}<br />
-            Morning delivery: ${areaData.morningDeliveryAvailable ? "Available" : "Not available"}
-          `,
-        });
+        if (slotType === "morning" && !areaData.morningDeliveryAvailable) {
+          slotStatusText = "Morning slot needs manual confirmation";
+
+          showServiceAreaResult({
+            type: "error",
+            html: `
+              <strong>Delivery available in ${areaData.area}, but morning slot needs confirmation.</strong><br />
+              Delivery fee: ₹${areaData.deliveryFee}<br />
+              Please continue on WhatsApp. We will manually confirm morning delivery possibility.
+            `,
+          });
+        } else if (slotType === "express" && !areaData.sameDayAvailable) {
+          slotStatusText = "Express slot needs manual confirmation";
+
+          showServiceAreaResult({
+            type: "error",
+            html: `
+              <strong>Delivery available in ${areaData.area}, but express delivery needs confirmation.</strong><br />
+              Delivery fee: ₹${areaData.deliveryFee}<br />
+              Please continue on WhatsApp. We will manually confirm express delivery possibility.
+            `,
+          });
+        } else {
+          showServiceAreaResult({
+            type: "success",
+            html: `
+              <strong>Delivery available in ${areaData.area}.</strong><br />
+              Delivery fee: ₹${areaData.deliveryFee}<br />
+              Delivery slot: ${deliverySlot}<br />
+              Same-day delivery: ${areaData.sameDayAvailable ? "Available" : "Not available"}<br />
+              Morning delivery: ${areaData.morningDeliveryAvailable ? "Available" : "Not available"}
+            `,
+          });
+        }
       } else {
         showServiceAreaResult({
           type: "error",
@@ -467,6 +667,20 @@ import { serviceAreas } from "../data/serviceAreas";
           `,
         });
       }
+
+      renderCartSummary({
+        customerName,
+        customerPhone,
+        pincode,
+        areaText,
+        deliveryFeeText,
+        serviceStatusText,
+        deliveryDate,
+        deliverySlot,
+        slotStatusText,
+        note,
+        items,
+      });
 
       const message = `
 Hi Fresh Petals, I want to place a cart order:
@@ -478,6 +692,8 @@ Area: ${areaText}
 Delivery Fee: ${deliveryFeeText}
 Service Status: ${serviceStatusText}
 Delivery Date: ${deliveryDate}
+Delivery Slot: ${deliverySlot}
+Slot Status: ${slotStatusText}
 
 Items:
 ${cartLines}
@@ -504,11 +720,29 @@ Please confirm availability, final price, delivery fee and payment details.
 
     pincodeInput?.addEventListener("input", () => {
       hideServiceAreaResult();
+      hideCartSummary();
+      hideError();
+    });
+
+    slotInput?.addEventListener("change", () => {
+      hideServiceAreaResult();
+      hideCartSummary();
+      hideError();
+    });
+
+    dateInput?.addEventListener("change", () => {
+      hideCartSummary();
+      hideError();
+    });
+
+    noteInput?.addEventListener("input", () => {
+      hideCartSummary();
       hideError();
     });
 
     clearCartButton?.addEventListener("click", () => {
       clearCart();
+      hideCartSummary();
       renderCart();
     });
 
