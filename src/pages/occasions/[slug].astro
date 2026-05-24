@@ -1,0 +1,232 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import ProductCard from "../../components/ProductCard.astro";
+import { productCatalog } from "../../data/productCatalog";
+
+export function getStaticPaths() {
+  const occasions = [
+    {
+      name: "Birthday Flowers",
+      slug: "birthday",
+      eyebrow: "Shop By Occasion",
+      description:
+        "Fresh bouquets, flower baskets, chocolates, cards and gifting add-ons for birthdays.",
+      keywords: ["Bouquets", "Baskets", "Add-ons", "Offers"],
+      heroImage: "/images/occasion-birthday.jpg",
+    },
+    {
+      name: "Anniversary Flowers",
+      slug: "anniversary",
+      eyebrow: "Shop By Occasion",
+      description:
+        "Romantic bouquets, premium gift flowers, baskets and add-ons for anniversaries.",
+      keywords: ["Bouquets", "Baskets", "Add-ons"],
+      heroImage: "/images/cat-anniversary.jpg",
+    },
+    {
+      name: "Wedding Flowers",
+      slug: "wedding",
+      eyebrow: "Wedding Collection",
+      description:
+        "Wedding flowers, garlands, poola jada, baskets and custom floral requirements based on availability.",
+      keywords: ["Pooja Flowers", "Baskets", "Flowerbox"],
+      heroImage: "/images/occasion-wedding.jpg",
+    },
+    {
+      name: "Pooja Flowers",
+      slug: "pooja",
+      eyebrow: "Pooja & Temple Flowers",
+      description:
+        "Daily pooja flowers, jasmine, flower boxes, temple bulk flowers and pooja baskets.",
+      keywords: ["Pooja Flowers", "Subscriptions", "Flowerbox", "Baskets"],
+      heroImage: "/images/occasion-pooja.jpg",
+    },
+    {
+      name: "Housewarming Flowers",
+      slug: "housewarming",
+      eyebrow: "Shop By Occasion",
+      description:
+        "Fresh flowers, pooja flowers, baskets and gifting add-ons for housewarming ceremonies.",
+      keywords: ["Pooja Flowers", "Baskets", "Bouquets", "Add-ons"],
+      heroImage: "/images/cat-wedding.jpg",
+    },
+    {
+      name: "Thank You Flowers",
+      slug: "thank-you",
+      eyebrow: "Shop By Occasion",
+      description:
+        "Simple, thoughtful bouquets, cards and flower gifts to say thank you beautifully.",
+      keywords: ["Bouquets", "Add-ons", "Offers"],
+      heroImage: "/images/bouquet-1.jpg",
+    },
+    {
+      name: "Get Well Soon Flowers",
+      slug: "get-well-soon",
+      eyebrow: "Shop By Occasion",
+      description:
+        "Soft, fresh and thoughtful flower gifts for care, comfort and recovery wishes.",
+      keywords: ["Bouquets", "Baskets", "Add-ons"],
+      heroImage: "/images/bouquet-2.jpg",
+    },
+    {
+      name: "I Am Sorry Flowers",
+      slug: "i-am-sorry",
+      eyebrow: "Shop By Occasion",
+      description:
+        "Fresh bouquets and thoughtful flower gifts to express apology with warmth.",
+      keywords: ["Bouquets", "Add-ons"],
+      heroImage: "/images/rose-bouquet.jpg",
+    },
+  ];
+
+  return occasions.map((occasion) => {
+    const products = productCatalog.filter((product) =>
+      occasion.keywords.includes(product.category)
+    );
+
+    return {
+      params: {
+        slug: occasion.slug,
+      },
+      props: {
+        occasion,
+        products,
+      },
+    };
+  });
+}
+
+const { occasion, products } = Astro.props;
+
+const whatsappNumber = "919652012274";
+
+const whatsappMessage = encodeURIComponent(
+  `Hi Fresh Petals, I want flower suggestions for ${occasion.name}. Please share available options and prices.`
+);
+
+const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
+---
+
+<BaseLayout
+  title={`${occasion.name} | Fresh Petals Hyderabad`}
+  description={occasion.description}
+>
+  <main class="bg-white">
+    <section class="px-5 py-10 md:px-8 md:py-14">
+      <div class="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[1fr_0.85fr] lg:items-center">
+        <div>
+          <p class="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#9B6B78]">
+            {occasion.eyebrow}
+          </p>
+
+          <h1 class="fp-serif mt-4 text-4xl uppercase tracking-[0.16em] text-[#171717] md:text-6xl">
+            {occasion.name}
+          </h1>
+
+          <p class="mt-5 max-w-2xl text-sm leading-7 text-[#66565D] md:text-base md:leading-8">
+            {occasion.description}
+          </p>
+
+          <div class="mt-7 flex flex-col gap-3 sm:flex-row">
+            <a
+              href="#occasion-products"
+              class="inline-flex items-center justify-center rounded-full bg-[#111111] px-7 py-4 text-[11px] font-bold uppercase tracking-[0.22em] text-white transition hover:bg-[#7C243E]"
+            >
+              View Products
+            </a>
+
+            <a
+              href={whatsappUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="inline-flex items-center justify-center rounded-full border border-[#075838] px-7 py-4 text-[11px] font-bold uppercase tracking-[0.22em] text-[#075838] transition hover:bg-[#075838] hover:text-white"
+            >
+              Ask on WhatsApp
+            </a>
+          </div>
+        </div>
+
+        <div class="overflow-hidden rounded-[32px] bg-[#F8F1F3]">
+          <img
+            src={occasion.heroImage}
+            alt={occasion.name}
+            class="h-full min-h-[320px] w-full object-cover"
+            loading="eager"
+          />
+        </div>
+      </div>
+    </section>
+
+    <section
+      id="occasion-products"
+      class="border-t border-[#EEE5E8] px-5 py-12 md:px-8 md:py-16"
+    >
+      <div class="mx-auto max-w-7xl">
+        <div class="mb-9 text-center">
+          <p class="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#9B6B78]">
+            Recommended For This Occasion
+          </p>
+
+          <h2 class="fp-serif mt-3 text-2xl uppercase tracking-[0.24em] text-[#171717] md:text-3xl">
+            Fresh Picks
+          </h2>
+
+          <p class="mx-auto mt-4 max-w-2xl text-sm leading-7 text-[#66565D]">
+            These products are suggested based on occasion fit. Final availability and flower combinations will be confirmed on WhatsApp.
+          </p>
+        </div>
+
+        {
+          products.length > 0 ? (
+            <div class="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+              {products.map((product) => (
+                <ProductCard
+                  id={product.id}
+                  name={product.name}
+                  image={product.image}
+                  priceLabel={product.priceLabel}
+                  priceType={product.priceType}
+                  category={product.category}
+                  description={product.description}
+                  slug={product.slug}
+                  isAvailable={product.isAvailable}
+                />
+              ))}
+            </div>
+          ) : (
+            <div class="rounded-[24px] border border-[#EEE5E8] bg-[#FFF8FA] p-8 text-center">
+              <h2 class="text-lg font-semibold text-[#171717]">
+                No products found
+              </h2>
+
+              <p class="mt-3 text-sm leading-7 text-[#66565D]">
+                Please message us on WhatsApp for custom flower suggestions.
+              </p>
+            </div>
+          )
+        }
+      </div>
+    </section>
+
+    <section class="px-5 pb-14 md:px-8 md:pb-20">
+      <div class="mx-auto max-w-7xl rounded-[32px] border border-[#E8D8DE] bg-[#FFF8FA] p-6 text-center md:p-8">
+        <h2 class="text-[12px] font-bold uppercase tracking-[0.24em] text-[#171717]">
+          Need a custom arrangement?
+        </h2>
+
+        <p class="mx-auto mt-3 max-w-2xl text-sm leading-7 text-[#66565D]">
+          Share the occasion, date, delivery area, preferred colours, flowers and budget. We will suggest options based on fresh flower availability.
+        </p>
+
+        <a
+          href={whatsappUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="mt-6 inline-flex rounded-full bg-[#075838] px-7 py-4 text-[11px] font-bold uppercase tracking-[0.22em] text-white transition hover:bg-[#7C243E]"
+        >
+          Customize on WhatsApp
+        </a>
+      </div>
+    </section>
+  </main>
+</BaseLayout>
