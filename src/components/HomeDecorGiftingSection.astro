@@ -1,0 +1,74 @@
+---
+import ProductCard from "./ProductCard.astro";
+import { productCatalog } from "../data/productCatalog";
+
+const sectionProductSlugs = [
+  "dried-flower-bunch",
+  "clear-glass-vase",
+  "mini-succulent-gift",
+  "room-mist-flower-gift-addon",
+];
+
+const products = sectionProductSlugs
+  .map((slug) => productCatalog.find((product) => product.slug === slug))
+  .filter(Boolean);
+---
+
+<section class="bg-white px-5 py-14 md:px-8 md:py-16">
+  <div class="mx-auto max-w-7xl">
+    <div class="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+      <div>
+        <p class="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#9B6B78]">
+          Decor & Gifting
+        </p>
+
+        <h2 class="fp-serif mt-3 text-3xl uppercase tracking-[0.18em] text-[#171717] md:text-4xl">
+          Home Decor & Gifting
+        </h2>
+
+        <p class="mt-4 max-w-2xl text-sm leading-7 text-[#66565D]">
+          Add dried flowers, vases, plants and room mist to make flower gifting feel more complete and premium.
+        </p>
+      </div>
+
+      <a
+        href="/categories/dried-flowers"
+        class="inline-flex w-fit rounded-full border border-[#171717] px-6 py-3 text-[11px] font-bold uppercase tracking-[0.22em] text-[#171717] transition hover:bg-[#171717] hover:text-white"
+      >
+        View Decor & Add-ons
+      </a>
+    </div>
+
+    {
+      products.length > 0 ? (
+        <div class="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+          {products.map((product) => (
+            product && (
+              <ProductCard
+                id={product.id}
+                name={product.name}
+                image={product.image}
+                priceLabel={product.priceLabel}
+                priceType={product.priceType}
+                category={product.category}
+                description={product.description}
+                slug={product.slug}
+                isAvailable={product.isAvailable}
+              />
+            )
+          ))}
+        </div>
+      ) : (
+        <div class="rounded-[24px] border border-[#EEE5E8] bg-[#FFF8FA] p-8 text-center">
+          <h3 class="text-lg font-semibold text-[#171717]">
+            Decor products coming soon
+          </h3>
+
+          <p class="mt-3 text-sm leading-7 text-[#66565D]">
+            We are updating dried flowers, vases, plants and decor add-ons.
+          </p>
+        </div>
+      )
+    }
+  </div>
+</section>
