@@ -1,4 +1,4 @@
----
+ ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { serviceAreas } from "../data/serviceAreas";
 
@@ -104,7 +104,7 @@ const timeSlots = [
 
               <div>
                 <label class="mb-2 block text-[10px] font-bold uppercase tracking-[0.22em] text-[#7C243E]">
-                  Pincode
+                  Main Delivery Pincode
                 </label>
 
                 <input
@@ -119,7 +119,7 @@ const timeSlots = [
 
               <div>
                 <label class="mb-2 block text-[10px] font-bold uppercase tracking-[0.22em] text-[#7C243E]">
-                  Delivery Date
+                  Main Delivery Date
                 </label>
 
                 <input
@@ -131,7 +131,7 @@ const timeSlots = [
 
               <div class="md:col-span-2">
                 <label class="mb-2 block text-[10px] font-bold uppercase tracking-[0.22em] text-[#7C243E]">
-                  Delivery Time Slot
+                  Main Delivery Time Slot
                 </label>
 
                 <select
@@ -151,7 +151,7 @@ const timeSlots = [
 
               <div class="md:col-span-2">
                 <label class="mb-2 block text-[10px] font-bold uppercase tracking-[0.22em] text-[#7C243E]">
-                  Delivery Address / Note
+                  Delivery Address / Order Note
                 </label>
 
                 <textarea
@@ -179,15 +179,13 @@ const timeSlots = [
             ></div>
 
             <div class="mt-6 flex flex-col gap-3 sm:flex-row">
-              <a
-                href="#"
+              <button
+                type="button"
                 data-send-cart-whatsapp
-                target="_blank"
-                rel="noopener noreferrer"
                 class="inline-flex items-center justify-center rounded-full bg-[#075838] px-7 py-4 text-[11px] font-bold uppercase tracking-[0.22em] text-white transition hover:bg-[#7C243E]"
               >
                 Send Cart on WhatsApp
-              </a>
+              </button>
 
               <button
                 type="button"
@@ -281,6 +279,15 @@ const timeSlots = [
       dateInput.min = todayIso;
     }
 
+    function escapeHtml(value) {
+      return String(value || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
     function showError(message) {
       if (!errorBox) return;
 
@@ -333,6 +340,131 @@ const timeSlots = [
       return selectedOption?.dataset?.slotType || "standard";
     }
 
+    function hasConfiguredDetails(item) {
+      return Boolean(
+        item.deliveryDate ||
+          item.deliverySlot ||
+          item.pincode ||
+          item.greetingCard ||
+          item.message ||
+          item.note ||
+          (item.addOns && item.addOns.length > 0) ||
+          item.subscription
+      );
+    }
+
+    function renderAddOnsHtml(addOns) {
+      if (!addOns || addOns.length === 0) return "";
+
+      const addOnRows = addOns
+        .map(
+          (addOn) => `
+            <li>
+              ${escapeHtml(addOn.name)} (${escapeHtml(addOn.priceLabel)}) × ${escapeHtml(addOn.quantity || 1)}
+            </li>
+          `
+        )
+        .join("");
+
+      return `
+        <div>
+          <p class="font-semibold text-[#171717]">Add-ons</p>
+          <ul class="mt-1 list-disc space-y-1 pl-5">
+            ${addOnRows}
+          </ul>
+        </div>
+      `;
+    }
+
+    function renderSubscriptionHtml(subscription) {
+      if (!subscription) return "";
+
+      const rows = [
+        subscription.frequency ? `Frequency: ${subscription.frequency}` : "",
+        subscription.duration ? `Duration: ${subscription.duration}` : "",
+        subscription.startDate ? `Start Date: ${subscription.startDate}` : "",
+      ].filter(Boolean);
+
+      if (rows.length === 0) return "";
+
+      return `
+        <div>
+          <p class="font-semibold text-[#171717]">Subscription</p>
+          <ul class="mt-1 list-disc space-y-1 pl-5">
+            ${rows.map((row) => `<li>${escapeHtml(row)}</li>`).join("")}
+          </ul>
+        </div>
+      `;
+    }
+
+    function renderConfiguredDetailsHtml(item) {
+      if (!hasConfiguredDetails(item)) return "";
+
+      const deliveryRows = [
+        item.pincode ? `Item Pincode: ${item.pincode}` : "",
+        item.deliveryDate ? `Item Delivery Date: ${item.deliveryDate}` : "",
+        item.deliverySlot ? `Item Delivery Slot: ${item.deliverySlot}` : "",
+        item.greetingCard ? `Greeting Card: ${item.greetingCard}` : "",
+        item.message ? `Message: ${item.message}` : "",
+        item.note ? `Item Note: ${item.note}` : "",
+      ].filter(Boolean);
+
+      const deliveryHtml =
+        deliveryRows.length > 0
+          ? `
+            <div>
+              <p class="font-semibold text-[#171717]">Configured Details</p>
+              <ul class="mt-1 list-disc space-y-1 pl-5">
+                ${deliveryRows.map((row) => `<li>${escapeHtml(row)}</li>`).join("")}
+              </ul>
+            </div>
+          `
+          : "";
+
+      return `
+        <div class="mt-4 space-y-3 rounded-2xl border border-[#EEE5E8] bg-[#FFF8FA] p-4 text-xs leading-6 text-[#66565D]">
+          ${deliveryHtml}
+          ${renderAddOnsHtml(item.addOns)}
+          ${renderSubscriptionHtml(item.subscription)}
+        </div>
+      `;
+    }
+
+    function buildConfiguredDetailsText(item) {
+      const lines = [];
+
+      if (item.pincode) lines.push(`Item Pincode: ${item.pincode}`);
+      if (item.deliveryDate) lines.push(`Item Delivery Date: ${item.deliveryDate}`);
+      if (item.deliverySlot) lines.push(`Item Delivery Slot: ${item.deliverySlot}`);
+      if (item.greetingCard) lines.push(`Greeting Card: ${item.greetingCard}`);
+      if (item.message) lines.push(`Message: ${item.message}`);
+      if (item.note) lines.push(`Item Note: ${item.note}`);
+
+      if (item.addOns && item.addOns.length > 0) {
+        lines.push("Add-ons:");
+        item.addOns.forEach((addOn) => {
+          lines.push(
+            `- ${addOn.name} (${addOn.priceLabel}) × ${addOn.quantity || 1}`
+          );
+        });
+      }
+
+      if (item.subscription) {
+        lines.push("Subscription:");
+        if (item.subscription.frequency) {
+          lines.push(`- Frequency: ${item.subscription.frequency}`);
+        }
+        if (item.subscription.duration) {
+          lines.push(`- Duration: ${item.subscription.duration}`);
+        }
+        if (item.subscription.startDate) {
+          lines.push(`- Start Date: ${item.subscription.startDate}`);
+        }
+      }
+
+      return lines.length > 0 ? lines.join("\n") : "No item-level configuration";
+    }
+
     function renderCart() {
       const items = getCartItems();
 
@@ -353,50 +485,52 @@ const timeSlots = [
         const itemElement = document.createElement("div");
 
         itemElement.className =
-          "grid gap-4 rounded-[24px] border border-[#EEE5E8] bg-white p-4 shadow-[0_10px_30px_rgba(40,24,32,0.05)] md:grid-cols-[110px_1fr_auto] md:items-center";
+          "grid gap-4 rounded-[24px] border border-[#EEE5E8] bg-white p-4 shadow-[0_10px_30px_rgba(40,24,32,0.05)] md:grid-cols-[110px_1fr_auto] md:items-start";
 
         itemElement.innerHTML = `
-          <a href="/products/${item.slug}" class="block overflow-hidden rounded-2xl bg-[#F8F1F3]">
+          <a href="/products/${escapeHtml(item.slug)}" class="block overflow-hidden rounded-2xl bg-[#F8F1F3]">
             <img
-              src="${item.image}"
-              alt="${item.name}"
+              src="${escapeHtml(item.image)}"
+              alt="${escapeHtml(item.name)}"
               class="h-[110px] w-full object-cover md:w-[110px]"
             />
           </a>
 
           <div>
             <p class="text-[10px] font-semibold uppercase tracking-[0.24em] text-[#9B6B78]">
-              ${item.category}
+              ${escapeHtml(item.category)}
             </p>
 
-            <a href="/products/${item.slug}" class="mt-2 block">
+            <a href="/products/${escapeHtml(item.slug)}" class="mt-2 block">
               <h2 class="text-base font-semibold text-[#171717]">
-                ${item.name}
+                ${escapeHtml(item.name)}
               </h2>
             </a>
 
             <p class="mt-2 text-sm font-bold text-[#7C243E]">
-              ${item.priceLabel}
+              ${escapeHtml(item.priceLabel)}
             </p>
+
+            ${renderConfiguredDetailsHtml(item)}
           </div>
 
           <div class="flex items-center justify-between gap-3 md:flex-col md:items-end">
             <div class="flex items-center rounded-full border border-[#E5D6DC] bg-white">
               <button
                 type="button"
-                data-decrease="${item.id}"
+                data-decrease="${escapeHtml(item.id)}"
                 class="px-4 py-2 text-sm font-bold text-[#171717]"
               >
                 -
               </button>
 
               <span class="min-w-8 text-center text-sm font-semibold text-[#171717]">
-                ${item.quantity}
+                ${escapeHtml(item.quantity)}
               </span>
 
               <button
                 type="button"
-                data-increase="${item.id}"
+                data-increase="${escapeHtml(item.id)}"
                 class="px-4 py-2 text-sm font-bold text-[#171717]"
               >
                 +
@@ -405,7 +539,7 @@ const timeSlots = [
 
             <button
               type="button"
-              data-remove="${item.id}"
+              data-remove="${escapeHtml(item.id)}"
               class="text-[10px] font-bold uppercase tracking-[0.18em] text-[#7C243E] underline underline-offset-4"
             >
               Remove
@@ -459,6 +593,27 @@ const timeSlots = [
       });
     }
 
+    function renderCartSummaryItemRows(items) {
+      return items
+        .map((item, index) => {
+          const configuredHtml = renderConfiguredDetailsHtml(item);
+
+          return `
+            <div class="border-b border-[#F0E4E8] pb-3">
+              <div class="flex justify-between gap-4">
+                <span>${index + 1}. ${escapeHtml(item.name)}</span>
+                <strong class="text-right text-[#171717]">
+                  ${escapeHtml(item.priceLabel)} × ${escapeHtml(item.quantity)}
+                </strong>
+              </div>
+
+              ${configuredHtml}
+            </div>
+          `;
+        })
+        .join("");
+    }
+
     function renderCartSummary({
       customerName,
       customerPhone,
@@ -474,16 +629,7 @@ const timeSlots = [
     }) {
       if (!cartSummary) return;
 
-      const itemRows = items
-        .map(
-          (item, index) => `
-            <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
-              <span>${index + 1}. ${item.name}</span>
-              <strong class="text-right text-[#171717]">${item.priceLabel} × ${item.quantity}</strong>
-            </div>
-          `
-        )
-        .join("");
+      const itemRows = renderCartSummaryItemRows(items);
 
       cartSummary.classList.remove("hidden");
 
@@ -495,47 +641,47 @@ const timeSlots = [
         <div class="mt-4 space-y-3 text-sm leading-6 text-[#5E5358]">
           <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
             <span>Name</span>
-            <strong class="text-right text-[#171717]">${customerName}</strong>
+            <strong class="text-right text-[#171717]">${escapeHtml(customerName)}</strong>
           </div>
 
           <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
             <span>Phone</span>
-            <strong class="text-right text-[#171717]">${customerPhone}</strong>
+            <strong class="text-right text-[#171717]">${escapeHtml(customerPhone)}</strong>
           </div>
 
           <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
-            <span>Pincode</span>
-            <strong class="text-right text-[#171717]">${pincode}</strong>
+            <span>Main Pincode</span>
+            <strong class="text-right text-[#171717]">${escapeHtml(pincode)}</strong>
           </div>
 
           <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
             <span>Area</span>
-            <strong class="text-right text-[#171717]">${areaText}</strong>
+            <strong class="text-right text-[#171717]">${escapeHtml(areaText)}</strong>
           </div>
 
           <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
             <span>Delivery Fee</span>
-            <strong class="text-right text-[#171717]">${deliveryFeeText}</strong>
+            <strong class="text-right text-[#171717]">${escapeHtml(deliveryFeeText)}</strong>
           </div>
 
           <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
             <span>Service Status</span>
-            <strong class="text-right text-[#075838]">${serviceStatusText}</strong>
+            <strong class="text-right text-[#075838]">${escapeHtml(serviceStatusText)}</strong>
           </div>
 
           <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
-            <span>Delivery Date</span>
-            <strong class="text-right text-[#171717]">${deliveryDate}</strong>
+            <span>Main Delivery Date</span>
+            <strong class="text-right text-[#171717]">${escapeHtml(deliveryDate)}</strong>
           </div>
 
           <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
-            <span>Delivery Slot</span>
-            <strong class="text-right text-[#171717]">${deliverySlot}</strong>
+            <span>Main Delivery Slot</span>
+            <strong class="text-right text-[#171717]">${escapeHtml(deliverySlot)}</strong>
           </div>
 
           <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
             <span>Slot Status</span>
-            <strong class="text-right text-[#075838]">${slotStatusText}</strong>
+            <strong class="text-right text-[#075838]">${escapeHtml(slotStatusText)}</strong>
           </div>
 
           <div class="pt-2">
@@ -548,8 +694,8 @@ const timeSlots = [
           </div>
 
           <div>
-            <span class="block text-[#66565D]">Address / Note</span>
-            <strong class="mt-1 block text-[#171717]">${note || "None"}</strong>
+            <span class="block text-[#66565D]">Address / Order Note</span>
+            <strong class="mt-1 block text-[#171717]">${escapeHtml(note || "None")}</strong>
           </div>
         </div>
 
@@ -557,6 +703,20 @@ const timeSlots = [
           This is an estimated cart summary. Final price, flower availability, delivery fee and payment confirmation will happen on WhatsApp.
         </p>
       `;
+    }
+
+    function buildCartLineText(item, index) {
+      const configuredText = buildConfiguredDetailsText(item);
+
+      return [
+        `${index + 1}. ${item.name}`,
+        `Price: ${item.priceLabel}`,
+        `Qty: ${item.quantity}`,
+        `Category: ${item.category}`,
+        configuredText !== "No item-level configuration"
+          ? `Configured Details:\n${configuredText}`
+          : "Configured Details: None",
+      ].join("\n");
     }
 
     function buildCartWhatsappUrl() {
@@ -607,11 +767,8 @@ const timeSlots = [
       const slotType = getSelectedSlotType();
 
       const cartLines = items
-        .map(
-          (item, index) =>
-            `${index + 1}. ${item.name} | ${item.priceLabel} | Qty: ${item.quantity}`
-        )
-        .join("\n");
+        .map((item, index) => buildCartLineText(item, index))
+        .join("\n\n");
 
       let areaText = "Manual confirmation needed";
       let deliveryFeeText = "To be confirmed";
@@ -630,8 +787,8 @@ const timeSlots = [
           showServiceAreaResult({
             type: "error",
             html: `
-              <strong>Delivery available in ${areaData.area}, but morning slot needs confirmation.</strong><br />
-              Delivery fee: ₹${areaData.deliveryFee}<br />
+              <strong>Delivery available in ${escapeHtml(areaData.area)}, but morning slot needs confirmation.</strong><br />
+              Delivery fee: ₹${escapeHtml(areaData.deliveryFee)}<br />
               Please continue on WhatsApp. We will manually confirm morning delivery possibility.
             `,
           });
@@ -641,8 +798,8 @@ const timeSlots = [
           showServiceAreaResult({
             type: "error",
             html: `
-              <strong>Delivery available in ${areaData.area}, but express delivery needs confirmation.</strong><br />
-              Delivery fee: ₹${areaData.deliveryFee}<br />
+              <strong>Delivery available in ${escapeHtml(areaData.area)}, but express delivery needs confirmation.</strong><br />
+              Delivery fee: ₹${escapeHtml(areaData.deliveryFee)}<br />
               Please continue on WhatsApp. We will manually confirm express delivery possibility.
             `,
           });
@@ -650,9 +807,9 @@ const timeSlots = [
           showServiceAreaResult({
             type: "success",
             html: `
-              <strong>Delivery available in ${areaData.area}.</strong><br />
-              Delivery fee: ₹${areaData.deliveryFee}<br />
-              Delivery slot: ${deliverySlot}<br />
+              <strong>Delivery available in ${escapeHtml(areaData.area)}.</strong><br />
+              Delivery fee: ₹${escapeHtml(areaData.deliveryFee)}<br />
+              Delivery slot: ${escapeHtml(deliverySlot)}<br />
               Same-day delivery: ${areaData.sameDayAvailable ? "Available" : "Not available"}<br />
               Morning delivery: ${areaData.morningDeliveryAvailable ? "Available" : "Not available"}
             `,
@@ -687,12 +844,12 @@ Hi Fresh Petals, I want to place a cart order:
 
 Customer Name: ${customerName}
 Phone: ${customerPhone}
-Pincode: ${pincode}
+Main Pincode: ${pincode}
 Area: ${areaText}
 Delivery Fee: ${deliveryFeeText}
 Service Status: ${serviceStatusText}
-Delivery Date: ${deliveryDate}
-Delivery Slot: ${deliverySlot}
+Main Delivery Date: ${deliveryDate}
+Main Delivery Slot: ${deliverySlot}
 Slot Status: ${slotStatusText}
 
 Items:
@@ -707,15 +864,12 @@ Please confirm availability, final price, delivery fee and payment details.
       return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
     }
 
-    sendWhatsappButton?.addEventListener("click", (event) => {
+    sendWhatsappButton?.addEventListener("click", () => {
       const url = buildCartWhatsappUrl();
 
-      if (url === "#") {
-        event.preventDefault();
-        return;
-      }
+      if (url === "#") return;
 
-      sendWhatsappButton.href = url;
+      window.open(url, "_blank", "noopener,noreferrer");
     });
 
     pincodeInput?.addEventListener("input", () => {
