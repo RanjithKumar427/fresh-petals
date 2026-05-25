@@ -1,87 +1,268 @@
----
+ ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import ProductCard from "../../components/ProductCard.astro";
 import { productCatalog } from "../../data/productCatalog";
 
+type OccasionMeta = {
+  name: string;
+  slug: string;
+  description: string;
+  eyebrow: string;
+  heroNote: string;
+  fallbackProductSlugs: string[];
+};
+
 export function getStaticPaths() {
-  const occasions = [
+  const occasions: OccasionMeta[] = [
     {
-      name: "Birthday Flowers",
+      name: "Birthday",
       slug: "birthday",
-      eyebrow: "Shop By Occasion",
+      eyebrow: "Birthday Flowers",
       description:
-        "Fresh bouquets, flower baskets, chocolates, cards and gifting add-ons for birthdays.",
-      keywords: ["Bouquets", "Baskets", "Add-ons", "Offers"],
-      heroImage: "/images/occasion-birthday.jpg",
+        "Fresh bouquets, baskets, flower boxes and hampers for birthday gifting in Hyderabad.",
+      heroNote:
+        "Choose a birthday-ready flower gift and confirm today’s flower availability on WhatsApp.",
+      fallbackProductSlugs: [
+        "mixed-flower-bouquet",
+        "rose-bouquet",
+        "premium-gift-bouquet",
+        "flower-chocolate-hamper",
+        "gift-basket",
+        "premium-card-addon",
+      ],
     },
     {
-      name: "Anniversary Flowers",
+      name: "Anniversary",
       slug: "anniversary",
-      eyebrow: "Shop By Occasion",
+      eyebrow: "Anniversary Flowers",
       description:
-        "Romantic bouquets, premium gift flowers, baskets and add-ons for anniversaries.",
-      keywords: ["Bouquets", "Baskets", "Add-ons"],
-      heroImage: "/images/cat-anniversary.jpg",
+        "Romantic rose bouquets, premium gift bouquets, hampers and flower baskets for anniversaries.",
+      heroNote:
+        "Best for romantic gifting, surprise deliveries and premium flower combinations.",
+      fallbackProductSlugs: [
+        "rose-bouquet",
+        "premium-gift-bouquet",
+        "flower-chocolate-hamper",
+        "candle-diffuser-addon",
+        "room-mist-flower-gift-addon",
+        "premium-decor-vase",
+      ],
     },
     {
-      name: "Wedding Flowers",
+      name: "Wedding",
       slug: "wedding",
-      eyebrow: "Wedding Collection",
+      eyebrow: "Wedding Flowers",
       description:
-        "Wedding flowers, garlands, poola jada, baskets and custom floral requirements based on availability.",
-      keywords: ["Pooja Flowers", "Baskets", "Flowerbox"],
-      heroImage: "/images/occasion-wedding.jpg",
+        "Fresh wedding flowers, bridal accessories, garlands, jasmine gajra and event flower requirements.",
+      heroNote:
+        "Wedding and event flower pricing depends on flower type, quantity, date and market rate.",
+      fallbackProductSlugs: [
+        "bridal-flower-accessories",
+        "event-garlands",
+        "jasmine-gajra",
+        "fresh-flower-toran",
+        "temple-bulk-flowers",
+        "jasmine-malli",
+      ],
     },
     {
-      name: "Pooja Flowers",
+      name: "Pooja",
       slug: "pooja",
-      eyebrow: "Pooja & Temple Flowers",
+      eyebrow: "Pooja Flowers",
       description:
-        "Daily pooja flowers, jasmine, flower boxes, temple bulk flowers and pooja baskets.",
-      keywords: ["Pooja Flowers", "Subscriptions", "Flowerbox", "Baskets"],
-      heroImage: "/images/occasion-pooja.jpg",
+        "Fresh pooja flowers, jasmine, torans, pooja flower boxes and baskets for rituals and daily worship.",
+      heroNote:
+        "Morning pooja flower availability and delivery slots are confirmed on WhatsApp.",
+      fallbackProductSlugs: [
+        "daily-pooja-flowers",
+        "jasmine-malli",
+        "pooja-flower-box",
+        "pooja-flowerbox",
+        "pooja-basket",
+        "fresh-flower-toran",
+        "temple-bulk-flowers",
+      ],
     },
     {
-      name: "Housewarming Flowers",
+      name: "Housewarming",
       slug: "housewarming",
-      eyebrow: "Shop By Occasion",
+      eyebrow: "Housewarming Flowers",
       description:
-        "Fresh flowers, pooja flowers, baskets and gifting add-ons for housewarming ceremonies.",
-      keywords: ["Pooja Flowers", "Baskets", "Bouquets", "Add-ons"],
-      heroImage: "/images/cat-wedding.jpg",
+        "Flower hampers, baskets, plants, decor flowers and torans for housewarming gifting and pooja.",
+      heroNote:
+        "Ideal for Gruhapravesam, new home gifting, pooja decor and premium flower hampers.",
+      fallbackProductSlugs: [
+        "housewarming-flower-hamper",
+        "plant-and-flower-hamper",
+        "fresh-flower-toran",
+        "flower-basket",
+        "premium-decor-vase",
+        "room-mist-flower-gift-addon",
+      ],
     },
     {
-      name: "Thank You Flowers",
+      name: "Thank You",
       slug: "thank-you",
-      eyebrow: "Shop By Occasion",
+      eyebrow: "Thank You Flowers",
       description:
-        "Simple, thoughtful bouquets, cards and flower gifts to say thank you beautifully.",
-      keywords: ["Bouquets", "Add-ons", "Offers"],
-      heroImage: "/images/bouquet-1.jpg",
+        "Simple flower gifts, bouquets, baskets and hampers to say thank you with fresh flowers.",
+      heroNote:
+        "Add a message card and confirm the final gift combination on WhatsApp.",
+      fallbackProductSlugs: [
+        "mixed-flower-bouquet",
+        "gift-flower-box",
+        "flower-chocolate-hamper",
+        "premium-card-addon",
+        "mini-succulent-gift",
+        "dried-flower-bunch",
+      ],
     },
     {
-      name: "Get Well Soon Flowers",
+      name: "Get Well Soon",
       slug: "get-well-soon",
-      eyebrow: "Shop By Occasion",
+      eyebrow: "Get Well Soon Flowers",
       description:
-        "Soft, fresh and thoughtful flower gifts for care, comfort and recovery wishes.",
-      keywords: ["Bouquets", "Baskets", "Add-ons"],
-      heroImage: "/images/bouquet-2.jpg",
+        "Soft flower arrangements, plants and simple fresh flower gifts for get well soon messages.",
+      heroNote:
+        "Choose gentle flowers or a simple plant gift and confirm delivery availability.",
+      fallbackProductSlugs: [
+        "mixed-flower-bouquet",
+        "mini-succulent-gift",
+        "gift-flower-box",
+        "premium-card-addon",
+        "dried-flower-bunch",
+      ],
     },
     {
-      name: "I Am Sorry Flowers",
+      name: "I Am Sorry",
       slug: "i-am-sorry",
-      eyebrow: "Shop By Occasion",
+      eyebrow: "Sorry Flowers",
       description:
-        "Fresh bouquets and thoughtful flower gifts to express apology with warmth.",
-      keywords: ["Bouquets", "Add-ons"],
-      heroImage: "/images/rose-bouquet.jpg",
+        "Rose bouquets, soft flower boxes and premium cards for apology gifting.",
+      heroNote:
+        "Add a message note and confirm the flower style before order.",
+      fallbackProductSlugs: [
+        "rose-bouquet",
+        "premium-gift-bouquet",
+        "gift-flower-box",
+        "premium-card-addon",
+        "flower-chocolate-hamper",
+      ],
+    },
+    {
+      name: "Mom To Be",
+      slug: "mom-to-be",
+      eyebrow: "Mom To Be Flowers",
+      description:
+        "Soft premium bouquets, hampers, baskets and gentle flower gifts for mom-to-be celebrations.",
+      heroNote:
+        "Best for baby shower gifting, soft pastel flowers, hampers and thoughtful message cards.",
+      fallbackProductSlugs: [
+        "premium-gift-bouquet",
+        "mixed-flower-bouquet",
+        "flower-chocolate-hamper",
+        "housewarming-flower-hamper",
+        "premium-card-addon",
+        "mini-succulent-gift",
+      ],
+    },
+    {
+      name: "New Mom",
+      slug: "new-mom",
+      eyebrow: "New Mom Flowers",
+      description:
+        "Thoughtful flower gifts, plants, hampers and soft bouquets for new mom gifting.",
+      heroNote:
+        "Keep it gentle, fresh and gift-ready with a message card confirmed on WhatsApp.",
+      fallbackProductSlugs: [
+        "mixed-flower-bouquet",
+        "premium-gift-bouquet",
+        "mini-succulent-gift",
+        "flower-chocolate-hamper",
+        "premium-card-addon",
+        "dried-flower-bunch",
+      ],
+    },
+    {
+      name: "Sympathy",
+      slug: "sympathy",
+      eyebrow: "Sympathy Flowers",
+      description:
+        "Simple, respectful flower arrangements for sympathy, remembrance and support messages.",
+      heroNote:
+        "Choose soft flowers and a simple note. Final availability and delivery timing are confirmed on WhatsApp.",
+      fallbackProductSlugs: [
+        "mixed-flower-bouquet",
+        "premium-gift-bouquet",
+        "premium-card-addon",
+        "dried-flower-bunch",
+      ],
+    },
+    {
+      name: "Just Because",
+      slug: "just-because",
+      eyebrow: "Just Because Flowers",
+      description:
+        "Fresh everyday flowers, flowerboxes, stems and small gifts for no-reason surprises.",
+      heroNote:
+        "A simple flower surprise for someone special, confirmed quickly on WhatsApp.",
+      fallbackProductSlugs: [
+        "mixed-flower-bouquet",
+        "rose-bouquet",
+        "loose-flower-box",
+        "diy-flowerbox",
+        "dried-flower-bunch",
+        "mini-succulent-gift",
+      ],
+    },
+    {
+      name: "Congratulations",
+      slug: "congratulations",
+      eyebrow: "Congratulations Flowers",
+      description:
+        "Premium bouquets, hampers, baskets and flower gifts for achievements, milestones and celebrations.",
+      heroNote:
+        "Send a premium fresh flower gift with a message card and optional add-ons.",
+      fallbackProductSlugs: [
+        "premium-gift-bouquet",
+        "flower-chocolate-hamper",
+        "gift-basket",
+        "premium-flower-basket",
+        "premium-card-addon",
+        "plant-and-flower-hamper",
+      ],
+    },
+    {
+      name: "Romantic",
+      slug: "romantic",
+      eyebrow: "Romantic Flowers",
+      description:
+        "Rose bouquets, romantic hampers, candles, cards and premium arrangements for love-filled gifting.",
+      heroNote:
+        "Best for anniversaries, proposals, apology gifting and special romantic surprises.",
+      fallbackProductSlugs: [
+        "rose-bouquet",
+        "premium-gift-bouquet",
+        "flower-chocolate-hamper",
+        "candle-diffuser-addon",
+        "premium-card-addon",
+        "room-mist-flower-gift-addon",
+      ],
     },
   ];
 
   return occasions.map((occasion) => {
-    const products = productCatalog.filter((product) =>
-      occasion.keywords.includes(product.category)
+    const taggedProducts = productCatalog.filter((product) =>
+      product.occasionTags?.includes(occasion.slug)
+    );
+
+    const fallbackProducts = occasion.fallbackProductSlugs
+      .map((slug) => productCatalog.find((product) => product.slug === slug))
+      .filter(Boolean);
+
+    const products = [...taggedProducts, ...fallbackProducts].filter(
+      (product, index, array) =>
+        product && array.findIndex((item) => item?.slug === product.slug) === index
     );
 
     return {
@@ -97,83 +278,47 @@ export function getStaticPaths() {
 }
 
 const { occasion, products } = Astro.props;
-
-const whatsappNumber = "919652012274";
-
-const whatsappMessage = encodeURIComponent(
-  `Hi Fresh Petals, I want flower suggestions for ${occasion.name}. Please share available options and prices.`
-);
-
-const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
 ---
 
 <BaseLayout
-  title={`${occasion.name} | Fresh Petals Hyderabad`}
+  title={`${occasion.name} Flowers | Fresh Petals Hyderabad`}
   description={occasion.description}
 >
   <main class="bg-white">
-    <section class="px-5 py-10 md:px-8 md:py-14">
-      <div class="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[1fr_0.85fr] lg:items-center">
-        <div>
+    <section class="px-5 py-12 md:px-8 md:py-16">
+      <div class="mx-auto max-w-7xl">
+        <div class="mb-10 text-center">
           <p class="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#9B6B78]">
             {occasion.eyebrow}
           </p>
 
-          <h1 class="fp-serif mt-4 text-4xl uppercase tracking-[0.16em] text-[#171717] md:text-6xl">
+          <h1 class="fp-serif mt-3 text-3xl uppercase tracking-[0.20em] text-[#171717] md:text-5xl">
             {occasion.name}
           </h1>
 
-          <p class="mt-5 max-w-2xl text-sm leading-7 text-[#66565D] md:text-base md:leading-8">
+          <p class="mx-auto mt-5 max-w-2xl text-sm leading-7 text-[#66565D] md:text-base">
             {occasion.description}
           </p>
 
-          <div class="mt-7 flex flex-col gap-3 sm:flex-row">
-            <a
-              href="#occasion-products"
-              class="inline-flex items-center justify-center rounded-full bg-[#111111] px-7 py-4 text-[11px] font-bold uppercase tracking-[0.22em] text-white transition hover:bg-[#7C243E]"
-            >
-              View Products
-            </a>
-
-            <a
-              href={whatsappUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              class="inline-flex items-center justify-center rounded-full border border-[#075838] px-7 py-4 text-[11px] font-bold uppercase tracking-[0.22em] text-[#075838] transition hover:bg-[#075838] hover:text-white"
-            >
-              Ask on WhatsApp
-            </a>
+          <div class="mx-auto mt-6 max-w-2xl rounded-[24px] border border-[#EEE5E8] bg-[#FFF8FA] px-5 py-4">
+            <p class="text-sm leading-7 text-[#66565D]">
+              {occasion.heroNote}
+            </p>
           </div>
-        </div>
 
-        <div class="overflow-hidden rounded-[32px] bg-[#F8F1F3]">
-          <img
-            src={occasion.heroImage}
-            alt={occasion.name}
-            class="h-full min-h-[320px] w-full object-cover"
-            loading="eager"
-          />
-        </div>
-      </div>
-    </section>
+          <div class="mx-auto mt-6 flex max-w-2xl flex-wrap items-center justify-center gap-2">
+            <span class="rounded-full border border-[#EEE5E8] bg-white px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#7C243E]">
+              {products.length} option{products.length === 1 ? "" : "s"}
+            </span>
 
-    <section
-      id="occasion-products"
-      class="border-t border-[#EEE5E8] px-5 py-12 md:px-8 md:py-16"
-    >
-      <div class="mx-auto max-w-7xl">
-        <div class="mb-9 text-center">
-          <p class="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#9B6B78]">
-            Recommended For This Occasion
-          </p>
+            <span class="rounded-full border border-[#E5EFE9] bg-[#F6FBF8] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#075838]">
+              WhatsApp confirmed
+            </span>
 
-          <h2 class="fp-serif mt-3 text-2xl uppercase tracking-[0.24em] text-[#171717] md:text-3xl">
-            Fresh Picks
-          </h2>
-
-          <p class="mx-auto mt-4 max-w-2xl text-sm leading-7 text-[#66565D]">
-            These products are suggested based on occasion fit. Final availability and flower combinations will be confirmed on WhatsApp.
-          </p>
+            <span class="rounded-full border border-[#EEE5E8] bg-white px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#66565D]">
+              Hyderabad delivery
+            </span>
+          </div>
         </div>
 
         {
@@ -181,7 +326,6 @@ const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
             <div class="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
               {products.map((product) => (
                 <ProductCard
-                  id={product.id}
                   name={product.name}
                   image={product.image}
                   priceLabel={product.priceLabel}
@@ -200,32 +344,11 @@ const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
               </h2>
 
               <p class="mt-3 text-sm leading-7 text-[#66565D]">
-                Please message us on WhatsApp for custom flower suggestions.
+                This occasion does not have active products yet.
               </p>
             </div>
           )
         }
-      </div>
-    </section>
-
-    <section class="px-5 pb-14 md:px-8 md:pb-20">
-      <div class="mx-auto max-w-7xl rounded-[32px] border border-[#E8D8DE] bg-[#FFF8FA] p-6 text-center md:p-8">
-        <h2 class="text-[12px] font-bold uppercase tracking-[0.24em] text-[#171717]">
-          Need a custom arrangement?
-        </h2>
-
-        <p class="mx-auto mt-3 max-w-2xl text-sm leading-7 text-[#66565D]">
-          Share the occasion, date, delivery area, preferred colours, flowers and budget. We will suggest options based on fresh flower availability.
-        </p>
-
-        <a
-          href={whatsappUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          class="mt-6 inline-flex rounded-full bg-[#075838] px-7 py-4 text-[11px] font-bold uppercase tracking-[0.22em] text-white transition hover:bg-[#7C243E]"
-        >
-          Customize on WhatsApp
-        </a>
       </div>
     </section>
   </main>
