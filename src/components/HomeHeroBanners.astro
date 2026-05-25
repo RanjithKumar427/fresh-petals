@@ -1,10 +1,4 @@
----
-const whatsappNumber = "919652012274";
-
-const whatsappMessage = encodeURIComponent(
-  "Hi Fresh Petals, I want to check today's fresh flower collections."
-);
-
+ ---
 const slides = [
   {
     image: "/images/hero-main-banner.jpg",
@@ -13,6 +7,7 @@ const slides = [
     subtitle:
       "Fresh pooja flowers, jasmine, bouquets and garlands delivered across Hyderabad.",
     button: "Shop Now",
+    href: "/categories/offers",
   },
   {
     image: "/images/hero-bouquets.jpg",
@@ -21,6 +16,7 @@ const slides = [
     subtitle:
       "Fresh hand-tied bouquets for birthdays, anniversaries and gifting.",
     button: "Shop Here",
+    href: "/categories/bouquets",
   },
   {
     image: "/images/hero-pooja.jpg",
@@ -29,6 +25,7 @@ const slides = [
     subtitle:
       "Fresh flowers, jasmine, garlands and pooja essentials for daily rituals.",
     button: "Order Now",
+    href: "/categories/pooja-flowers",
   },
 ];
 ---
@@ -71,11 +68,9 @@ const slides = [
 
               <div class="mt-6 md:mt-8">
                 <a
-                  href={`https://wa.me/${whatsappNumber}?text=${whatsappMessage}`}
+                  href={slide.href}
                   class="inline-flex items-center justify-center bg-[#E8A7B8] px-7 py-3 text-[11px] font-bold uppercase tracking-[0.24em] text-[#171717] transition hover:bg-white"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={`${slide.button} on WhatsApp`}
+                  aria-label={`${slide.button} - ${slide.title}`}
                 >
                   {slide.button}
                 </a>
@@ -107,19 +102,24 @@ const slides = [
   const slider = document.querySelector("#fresh-petals-hero-slider");
 
   if (slider) {
-    const slides = Array.from(slider.querySelectorAll(".hero-slide"));
-    const dots = Array.from(slider.querySelectorAll(".hero-dot"));
+    const slides = Array.from(
+      slider.querySelectorAll(".hero-slide")
+    ) as HTMLElement[];
+
+    const dots = Array.from(
+      slider.querySelectorAll(".hero-dot")
+    ) as HTMLButtonElement[];
 
     let currentSlide = 0;
     const totalSlides = slides.length;
 
-    const showSlide = (index) => {
-      slides.forEach((slide, slideIndex) => {
+    const showSlide = (index: number) => {
+      slides.forEach((slide: HTMLElement, slideIndex: number) => {
         slide.classList.toggle("opacity-100", slideIndex === index);
         slide.classList.toggle("opacity-0", slideIndex !== index);
       });
 
-      dots.forEach((dot, dotIndex) => {
+      dots.forEach((dot: HTMLButtonElement, dotIndex: number) => {
         dot.classList.toggle("w-12", dotIndex === index);
         dot.classList.toggle("bg-white", dotIndex === index);
 
@@ -137,7 +137,7 @@ const slides = [
 
     let interval = window.setInterval(nextSlide, 4500);
 
-    dots.forEach((dot, index) => {
+    dots.forEach((dot: HTMLButtonElement, index: number) => {
       dot.addEventListener("click", () => {
         window.clearInterval(interval);
         showSlide(index);

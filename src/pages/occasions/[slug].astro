@@ -1,7 +1,7 @@
- ---
+---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import ProductCard from "../../components/ProductCard.astro";
-import { productCatalog } from "../../data/productCatalog";
+import { productCatalog, type Product } from "../../data/productCatalog";
 
 type OccasionMeta = {
   name: string;
@@ -258,11 +258,11 @@ export function getStaticPaths() {
 
     const fallbackProducts = occasion.fallbackProductSlugs
       .map((slug) => productCatalog.find((product) => product.slug === slug))
-      .filter(Boolean);
+      .filter((product): product is Product => Boolean(product));
 
-    const products = [...taggedProducts, ...fallbackProducts].filter(
+    const products: Product[] = [...taggedProducts, ...fallbackProducts].filter(
       (product, index, array) =>
-        product && array.findIndex((item) => item?.slug === product.slug) === index
+        array.findIndex((item) => item.slug === product.slug) === index
     );
 
     return {
@@ -277,7 +277,10 @@ export function getStaticPaths() {
   });
 }
 
-const { occasion, products } = Astro.props;
+const { occasion, products } = Astro.props as {
+  occasion: OccasionMeta;
+  products: Product[];
+};
 ---
 
 <BaseLayout
