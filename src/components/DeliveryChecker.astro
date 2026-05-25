@@ -35,131 +35,142 @@ const timeSlots = [
 ---
 
 <section
-  class="mt-8 rounded-[24px] border border-[#E8D8DE] bg-[#FFF8FA] p-5"
+  class="mt-5 rounded-[20px] border border-[#E8D8DE] bg-white p-5"
   data-delivery-checker
   data-product-name={productName}
   data-price-label={priceLabel}
   data-whatsapp-number={whatsappNumber}
 >
-  <h2 class="text-[12px] font-bold uppercase tracking-[0.24em] text-[#171717]">
-    Check Delivery Availability
-  </h2>
+  <details>
+    <summary class="cursor-pointer list-none">
+      <div class="flex items-center justify-between gap-4">
+        <div>
+          <h2 class="text-[12px] font-bold uppercase tracking-[0.24em] text-[#171717]">
+            Check Delivery Availability
+          </h2>
 
-  <p class="mt-3 text-sm leading-7 text-[#66565D]">
-    Enter your pincode, delivery date and preferred time slot to continue with the order.
-  </p>
+          <p class="mt-2 text-sm leading-6 text-[#66565D]">
+            Quick pincode and slot check only. For actual order details, use the main configurator above.
+          </p>
+        </div>
 
-  <div class="mt-5 grid gap-3 md:grid-cols-2">
-    <div>
-      <label class="mb-2 block text-[10px] font-bold uppercase tracking-[0.22em] text-[#7C243E]">
-        Delivery Pincode
-      </label>
+        <span class="shrink-0 rounded-full border border-[#E8D8DE] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[#7C243E]">
+          Open
+        </span>
+      </div>
+    </summary>
 
-      <input
-        type="text"
-        inputmode="numeric"
-        maxlength="6"
-        placeholder="Enter pincode"
-        aria-label="Enter delivery pincode"
-        data-pincode-input
-        class="w-full rounded-full border border-[#E5D6DC] bg-white px-5 py-3 text-sm text-[#171717] outline-none transition placeholder:text-[#A99DA3] focus:border-[#7C243E]"
-      />
-    </div>
+    <div class="mt-5 border-t border-[#EEE5E8] pt-5">
+      <div class="grid gap-3 md:grid-cols-2">
+        <div>
+          <label class="mb-2 block text-[10px] font-bold uppercase tracking-[0.22em] text-[#7C243E]">
+            Delivery Pincode
+          </label>
 
-    <div>
-      <label class="mb-2 block text-[10px] font-bold uppercase tracking-[0.22em] text-[#7C243E]">
-        Delivery Date
-      </label>
+          <input
+            type="text"
+            inputmode="numeric"
+            maxlength="6"
+            placeholder="Enter pincode"
+            aria-label="Enter delivery pincode"
+            data-pincode-input
+            class="w-full rounded-full border border-[#E5D6DC] bg-white px-5 py-3 text-sm text-[#171717] outline-none transition placeholder:text-[#A99DA3] focus:border-[#7C243E]"
+          />
+        </div>
 
-      <input
-        type="date"
-        aria-label="Select delivery date"
-        data-date-input
-        class="w-full rounded-full border border-[#E5D6DC] bg-white px-5 py-3 text-sm text-[#171717] outline-none transition focus:border-[#7C243E]"
-      />
-    </div>
+        <div>
+          <label class="mb-2 block text-[10px] font-bold uppercase tracking-[0.22em] text-[#7C243E]">
+            Delivery Date
+          </label>
 
-    <div>
-      <label class="mb-2 block text-[10px] font-bold uppercase tracking-[0.22em] text-[#7C243E]">
-        Time Slot
-      </label>
+          <input
+            type="date"
+            aria-label="Select delivery date"
+            data-date-input
+            class="w-full rounded-full border border-[#E5D6DC] bg-white px-5 py-3 text-sm text-[#171717] outline-none transition focus:border-[#7C243E]"
+          />
+        </div>
 
-      <select
-        aria-label="Select delivery time slot"
-        data-slot-input
-        class="w-full rounded-full border border-[#E5D6DC] bg-white px-5 py-3 text-sm text-[#171717] outline-none transition focus:border-[#7C243E]"
+        <div>
+          <label class="mb-2 block text-[10px] font-bold uppercase tracking-[0.22em] text-[#7C243E]">
+            Time Slot
+          </label>
+
+          <select
+            aria-label="Select delivery time slot"
+            data-slot-input
+            class="w-full rounded-full border border-[#E5D6DC] bg-white px-5 py-3 text-sm text-[#171717] outline-none transition focus:border-[#7C243E]"
+          >
+            <option value="">Select time slot</option>
+            {
+              timeSlots.map((slot) => (
+                <option value={slot.value} data-slot-type={slot.type}>
+                  {slot.label}
+                </option>
+              ))
+            }
+          </select>
+        </div>
+
+        <div>
+          <label class="mb-2 block text-[10px] font-bold uppercase tracking-[0.22em] text-[#7C243E]">
+            Quantity
+          </label>
+
+          <input
+            type="number"
+            min="1"
+            value="1"
+            aria-label="Enter quantity"
+            data-quantity-input
+            class="w-full rounded-full border border-[#E5D6DC] bg-white px-5 py-3 text-sm text-[#171717] outline-none transition focus:border-[#7C243E]"
+          />
+        </div>
+      </div>
+
+      <div class="mt-4">
+        <label class="mb-2 block text-[10px] font-bold uppercase tracking-[0.22em] text-[#7C243E]">
+          Quick Note
+        </label>
+
+        <textarea
+          rows="3"
+          placeholder="Example: Need it for birthday / pooja / gift note / preferred flowers"
+          aria-label="Enter order note"
+          data-note-input
+          class="w-full rounded-[20px] border border-[#E5D6DC] bg-white px-5 py-3 text-sm text-[#171717] outline-none transition placeholder:text-[#A99DA3] focus:border-[#7C243E]"
+        ></textarea>
+      </div>
+
+      <button
+        type="button"
+        data-check-button
+        class="mt-5 rounded-full bg-[#111111] px-6 py-3 text-[11px] font-bold uppercase tracking-[0.22em] text-white transition hover:bg-[#7C243E]"
       >
-        <option value="">Select time slot</option>
-        {
-          timeSlots.map((slot) => (
-            <option value={slot.value} data-slot-type={slot.type}>
-              {slot.label}
-            </option>
-          ))
-        }
-      </select>
+        Check Delivery
+      </button>
+
+      <div
+        data-result-box
+        class="mt-5 hidden rounded-2xl border p-4 text-sm leading-7"
+      ></div>
+
+      <div
+        data-summary-box
+        class="mt-5 hidden rounded-[20px] border border-[#EEE5E8] bg-[#FFF8FA] p-5"
+      ></div>
+
+      <a
+        href="https://wa.me/919652012274?text=Hi%20Fresh%20Petals%2C%20I%20want%20to%20confirm%20delivery%20availability%20for%20my%20pincode."
+        target="_blank"
+        rel="noopener noreferrer"
+        data-whatsapp-order-button
+        class="mt-5 hidden w-full items-center justify-center rounded-full bg-[#075838] px-6 py-4 text-[11px] font-bold uppercase tracking-[0.22em] text-white transition hover:bg-[#7C243E] sm:w-auto"
+      >
+        Continue on WhatsApp
+      </a>
     </div>
-
-    <div>
-      <label class="mb-2 block text-[10px] font-bold uppercase tracking-[0.22em] text-[#7C243E]">
-        Quantity
-      </label>
-
-      <input
-        type="number"
-        min="1"
-        value="1"
-        aria-label="Enter quantity"
-        data-quantity-input
-        class="w-full rounded-full border border-[#E5D6DC] bg-white px-5 py-3 text-sm text-[#171717] outline-none transition focus:border-[#7C243E]"
-      />
-    </div>
-  </div>
-
-  <div class="mt-4">
-    <label class="mb-2 block text-[10px] font-bold uppercase tracking-[0.22em] text-[#7C243E]">
-      Order Note
-    </label>
-
-    <textarea
-      rows="3"
-      placeholder="Example: Need it for birthday / pooja / gift note / preferred flowers"
-      aria-label="Enter order note"
-      data-note-input
-      class="w-full rounded-[20px] border border-[#E5D6DC] bg-white px-5 py-3 text-sm text-[#171717] outline-none transition placeholder:text-[#A99DA3] focus:border-[#7C243E]"
-    ></textarea>
-  </div>
-
-  <button
-    type="button"
-    data-check-button
-    class="mt-5 rounded-full bg-[#111111] px-6 py-3 text-[11px] font-bold uppercase tracking-[0.22em] text-white transition hover:bg-[#7C243E]"
-  >
-    Check Delivery
-  </button>
-
-  <div
-    data-result-box
-    class="mt-5 hidden rounded-2xl border p-4 text-sm leading-7"
-  ></div>
-
-  <div
-    data-summary-box
-    class="mt-5 hidden rounded-[24px] border border-[#EEE5E8] bg-white p-5"
-  ></div>
-
-  <a
-    href="https://wa.me/919652012274?text=Hi%20Fresh%20Petals%2C%20I%20want%20to%20confirm%20delivery%20availability%20for%20my%20pincode."
-  target="_blank"
-  rel="noopener noreferrer"
-  class="font-semibold text-[#075838] underline underline-offset-4 transition hover:text-[#7C243E]"
-    target="_blank"
-    rel="noopener noreferrer"
-    data-whatsapp-order-button
-    class="mt-5 hidden w-full items-center justify-center rounded-full bg-[#075838] px-6 py-4 text-[11px] font-bold uppercase tracking-[0.22em] text-white transition hover:bg-[#7C243E] sm:w-auto"
-  >
-    Continue on WhatsApp
-  </a>
+  </details>
 
   <script define:vars={{ serviceAreas }}>
     const checker = document.querySelector("[data-delivery-checker]");
@@ -175,130 +186,150 @@ const timeSlots = [
       const summaryBox = checker.querySelector("[data-summary-box]");
       const whatsappButton = checker.querySelector("[data-whatsapp-order-button]");
 
-      const productName = checker.dataset.productName;
-      const priceLabel = checker.dataset.priceLabel;
-      const whatsappNumber = checker.dataset.whatsappNumber;
+      const productName = checker.dataset.productName || "";
+      const priceLabel = checker.dataset.priceLabel || "";
+      const whatsappNumber = checker.dataset.whatsappNumber || "";
 
-      const today = new Date();
-      const todayIso = today.toISOString().split("T")[0];
-      dateInput.min = todayIso;
+      if (
+        pincodeInput &&
+        dateInput &&
+        slotInput &&
+        quantityInput &&
+        noteInput &&
+        checkButton &&
+        resultBox &&
+        summaryBox &&
+        whatsappButton
+      ) {
+        const today = new Date();
+        const todayIso = today.toISOString().split("T")[0];
+        dateInput.min = todayIso;
 
-      function showResult({ type, html }) {
-        resultBox.classList.remove("hidden");
-        resultBox.innerHTML = html;
-
-        if (type === "success") {
-          resultBox.className =
-            "mt-5 rounded-2xl border border-[#B9D8C6] bg-[#F3FFF7] p-4 text-sm leading-7 text-[#075838]";
-        } else {
-          resultBox.className =
-            "mt-5 rounded-2xl border border-[#E7B7C0] bg-[#FFF3F5] p-4 text-sm leading-7 text-[#7C243E]";
+        function escapeHtml(value) {
+          return String(value || "")
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll('"', "&quot;")
+            .replaceAll("'", "&#039;");
         }
-      }
 
-      function hideWhatsappButton() {
-        whatsappButton.classList.add("hidden");
-        whatsappButton.classList.remove("inline-flex");
-      }
+        function showResult({ type, html }) {
+          resultBox.classList.remove("hidden");
+          resultBox.innerHTML = html;
 
-      function showWhatsappButton(url) {
-        whatsappButton.href = url;
-        whatsappButton.classList.remove("hidden");
-        whatsappButton.classList.add("inline-flex");
-      }
+          if (type === "success") {
+            resultBox.className =
+              "mt-5 rounded-2xl border border-[#B9D8C6] bg-[#F3FFF7] p-4 text-sm leading-7 text-[#075838]";
+          } else {
+            resultBox.className =
+              "mt-5 rounded-2xl border border-[#E7B7C0] bg-[#FFF3F5] p-4 text-sm leading-7 text-[#7C243E]";
+          }
+        }
 
-      function hideSummary() {
-        summaryBox.classList.add("hidden");
-        summaryBox.innerHTML = "";
-      }
+        function hideWhatsappButton() {
+          whatsappButton.classList.add("hidden");
+          whatsappButton.classList.remove("inline-flex");
+        }
 
-      function showSummary({
-        productName,
-        priceLabel,
-        quantity,
-        pincode,
-        area,
-        deliveryFee,
-        deliveryDate,
-        timeSlot,
-        note,
-        statusLabel,
-      }) {
-        summaryBox.classList.remove("hidden");
+        function showWhatsappButton(url) {
+          whatsappButton.href = url;
+          whatsappButton.classList.remove("hidden");
+          whatsappButton.classList.add("inline-flex");
+        }
 
-        summaryBox.innerHTML = `
-          <h3 class="text-[12px] font-bold uppercase tracking-[0.24em] text-[#171717]">
-            Order Summary
-          </h3>
+        function hideSummary() {
+          summaryBox.classList.add("hidden");
+          summaryBox.innerHTML = "";
+        }
 
-          <div class="mt-4 space-y-3 text-sm leading-6 text-[#5E5358]">
-            <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
-              <span>Product</span>
-              <strong class="text-right text-[#171717]">${productName}</strong>
+        function showSummary({
+          productName,
+          priceLabel,
+          quantity,
+          pincode,
+          area,
+          deliveryFee,
+          deliveryDate,
+          timeSlot,
+          note,
+          statusLabel,
+        }) {
+          summaryBox.classList.remove("hidden");
+
+          summaryBox.innerHTML = `
+            <h3 class="text-[12px] font-bold uppercase tracking-[0.24em] text-[#171717]">
+              Quick Delivery Summary
+            </h3>
+
+            <div class="mt-4 space-y-3 text-sm leading-6 text-[#5E5358]">
+              <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
+                <span>Product</span>
+                <strong class="text-right text-[#171717]">${escapeHtml(productName)}</strong>
+              </div>
+
+              <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
+                <span>Price</span>
+                <strong class="text-right text-[#7C243E]">${escapeHtml(priceLabel)}</strong>
+              </div>
+
+              <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
+                <span>Quantity</span>
+                <strong class="text-right text-[#171717]">${escapeHtml(quantity)}</strong>
+              </div>
+
+              <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
+                <span>Pincode</span>
+                <strong class="text-right text-[#171717]">${escapeHtml(pincode)}</strong>
+              </div>
+
+              <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
+                <span>Area</span>
+                <strong class="text-right text-[#171717]">${escapeHtml(area)}</strong>
+              </div>
+
+              <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
+                <span>Delivery Fee</span>
+                <strong class="text-right text-[#171717]">${escapeHtml(deliveryFee)}</strong>
+              </div>
+
+              <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
+                <span>Delivery Date</span>
+                <strong class="text-right text-[#171717]">${escapeHtml(deliveryDate)}</strong>
+              </div>
+
+              <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
+                <span>Time Slot</span>
+                <strong class="text-right text-[#171717]">${escapeHtml(timeSlot)}</strong>
+              </div>
+
+              <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
+                <span>Status</span>
+                <strong class="text-right text-[#075838]">${escapeHtml(statusLabel)}</strong>
+              </div>
+
+              <div>
+                <span class="block text-[#66565D]">Note</span>
+                <strong class="mt-1 block text-[#171717]">${escapeHtml(note || "None")}</strong>
+              </div>
             </div>
 
-            <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
-              <span>Price</span>
-              <strong class="text-right text-[#7C243E]">${priceLabel}</strong>
-            </div>
+            <p class="mt-4 rounded-2xl bg-white p-4 text-xs leading-6 text-[#7C243E]">
+              This check is optional. Use the main configurator above to add full order details to cart.
+            </p>
+          `;
+        }
 
-            <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
-              <span>Quantity</span>
-              <strong class="text-right text-[#171717]">${quantity}</strong>
-            </div>
-
-            <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
-              <span>Pincode</span>
-              <strong class="text-right text-[#171717]">${pincode}</strong>
-            </div>
-
-            <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
-              <span>Area</span>
-              <strong class="text-right text-[#171717]">${area}</strong>
-            </div>
-
-            <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
-              <span>Delivery Fee</span>
-              <strong class="text-right text-[#171717]">${deliveryFee}</strong>
-            </div>
-
-            <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
-              <span>Delivery Date</span>
-              <strong class="text-right text-[#171717]">${deliveryDate}</strong>
-            </div>
-
-            <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
-              <span>Time Slot</span>
-              <strong class="text-right text-[#171717]">${timeSlot}</strong>
-            </div>
-
-            <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
-              <span>Status</span>
-              <strong class="text-right text-[#075838]">${statusLabel}</strong>
-            </div>
-
-            <div>
-              <span class="block text-[#66565D]">Note</span>
-              <strong class="mt-1 block text-[#171717]">${note || "None"}</strong>
-            </div>
-          </div>
-
-          <p class="mt-4 rounded-2xl bg-[#FFF8FA] p-4 text-xs leading-6 text-[#7C243E]">
-            This is an estimated order summary. Final price, flower availability and payment confirmation will happen on WhatsApp.
-          </p>
-        `;
-      }
-
-      function buildWhatsAppUrl({
-        areaData,
-        pincode,
-        deliveryDate,
-        timeSlot,
-        quantity,
-        note,
-      }) {
-        const message = `
-Hi Fresh Petals, I want to order:
+        function buildWhatsAppUrl({
+          areaData,
+          pincode,
+          deliveryDate,
+          timeSlot,
+          quantity,
+          note,
+        }) {
+          const message = `
+Hi Fresh Petals, I want to check delivery before ordering:
 
 Product: ${productName}
 Price: ${priceLabel}
@@ -310,23 +341,23 @@ Delivery Date: ${deliveryDate}
 Time Slot: ${timeSlot}
 Same-day Delivery: ${areaData.sameDayAvailable ? "Available" : "Not available"}
 Morning Delivery: ${areaData.morningDeliveryAvailable ? "Available" : "Not available"}
-Order Note: ${note || "None"}
+Quick Note: ${note || "None"}
 
-Please confirm today's availability and final price.
-        `.trim();
+Please confirm delivery possibility and today's flower availability.
+          `.trim();
 
-        return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
-      }
+          return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+        }
 
-      function buildFallbackWhatsAppUrl({
-        pincode,
-        deliveryDate,
-        timeSlot,
-        quantity,
-        note,
-      }) {
-        const message = `
-Hi Fresh Petals, I want to order:
+        function buildFallbackWhatsAppUrl({
+          pincode,
+          deliveryDate,
+          timeSlot,
+          quantity,
+          note,
+        }) {
+          const message = `
+Hi Fresh Petals, I want to check delivery before ordering:
 
 Product: ${productName}
 Price: ${priceLabel}
@@ -334,101 +365,172 @@ Quantity: ${quantity}
 Pincode: ${pincode}
 Delivery Date: ${deliveryDate}
 Time Slot: ${timeSlot}
-Order Note: ${note || "None"}
+Quick Note: ${note || "None"}
 
 Please confirm if delivery is available for this pincode.
-        `.trim();
+          `.trim();
 
-        return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
-      }
-
-      function checkDelivery() {
-        const pincode = pincodeInput.value.trim();
-        const deliveryDate = dateInput.value;
-        const timeSlot = slotInput.value;
-        const quantity = quantityInput.value;
-        const note = noteInput.value.trim();
-
-        hideWhatsappButton();
-        hideSummary();
-
-        if (!/^[0-9]{6}$/.test(pincode)) {
-          showResult({
-            type: "error",
-            html: "Please enter a valid 6-digit pincode.",
-          });
-          return;
+          return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
         }
 
-        if (!deliveryDate) {
-          showResult({
-            type: "error",
-            html: "Please select a delivery date.",
-          });
-          return;
-        }
+        function checkDelivery() {
+          const pincode = pincodeInput.value.trim();
+          const deliveryDate = dateInput.value;
+          const timeSlot = slotInput.value;
+          const quantity = quantityInput.value;
+          const note = noteInput.value.trim();
 
-        if (!timeSlot) {
-          showResult({
-            type: "error",
-            html: "Please select a delivery time slot.",
-          });
-          return;
-        }
+          hideWhatsappButton();
+          hideSummary();
 
-        if (!quantity || Number(quantity) < 1) {
-          showResult({
-            type: "error",
-            html: "Please enter a valid quantity.",
-          });
-          return;
-        }
+          if (!/^[0-9]{6}$/.test(pincode)) {
+            showResult({
+              type: "error",
+              html: "Please enter a valid 6-digit pincode.",
+            });
+            return;
+          }
 
-        const areaData = serviceAreas.find((area) => area.pincode === pincode);
+          if (!deliveryDate) {
+            showResult({
+              type: "error",
+              html: "Please select a delivery date.",
+            });
+            return;
+          }
 
-        const selectedOption = slotInput.options[slotInput.selectedIndex];
-        const slotType = selectedOption?.dataset?.slotType || "standard";
+          if (!timeSlot) {
+            showResult({
+              type: "error",
+              html: "Please select a delivery time slot.",
+            });
+            return;
+          }
 
-        if (!areaData) {
-          showResult({
-            type: "error",
-            html: `
-              <strong>Delivery not confirmed for this pincode yet.</strong><br />
-              You can still continue on WhatsApp and we will manually confirm availability.
-            `,
-          });
+          if (!quantity || Number(quantity) < 1) {
+            showResult({
+              type: "error",
+              html: "Please enter a valid quantity.",
+            });
+            return;
+          }
 
-          showSummary({
-            productName,
-            priceLabel,
-            quantity,
-            pincode,
-            area: "Manual confirmation needed",
-            deliveryFee: "To be confirmed",
-            deliveryDate,
-            timeSlot,
-            note,
-            statusLabel: "Manual confirmation needed",
-          });
+          const areaData = serviceAreas.find((area) => area.pincode === pincode);
 
-          showWhatsappButton(
-            buildFallbackWhatsAppUrl({
+          const selectedOption = slotInput.options[slotInput.selectedIndex];
+          const slotType = selectedOption?.dataset?.slotType || "standard";
+
+          if (!areaData) {
+            showResult({
+              type: "error",
+              html: `
+                <strong>Delivery not confirmed for this pincode yet.</strong><br />
+                You can still continue on WhatsApp and we will manually confirm availability.
+              `,
+            });
+
+            showSummary({
+              productName,
+              priceLabel,
+              quantity,
               pincode,
+              area: "Manual confirmation needed",
+              deliveryFee: "To be confirmed",
               deliveryDate,
               timeSlot,
-              quantity,
               note,
-            })
-          );
-          return;
-        }
+              statusLabel: "Manual confirmation needed",
+            });
 
-        if (slotType === "morning" && !areaData.morningDeliveryAvailable) {
+            showWhatsappButton(
+              buildFallbackWhatsAppUrl({
+                pincode,
+                deliveryDate,
+                timeSlot,
+                quantity,
+                note,
+              })
+            );
+            return;
+          }
+
+          if (slotType === "morning" && !areaData.morningDeliveryAvailable) {
+            showResult({
+              type: "error",
+              html: `
+                <strong>Morning delivery is not currently available in ${escapeHtml(areaData.area)}.</strong><br />
+                Please select Afternoon, Evening, or continue on WhatsApp for manual confirmation.
+              `,
+            });
+
+            showSummary({
+              productName,
+              priceLabel,
+              quantity,
+              pincode,
+              area: areaData.area,
+              deliveryFee: `₹${areaData.deliveryFee}`,
+              deliveryDate,
+              timeSlot,
+              note,
+              statusLabel: "Slot needs manual confirmation",
+            });
+
+            showWhatsappButton(
+              buildWhatsAppUrl({
+                areaData,
+                pincode,
+                deliveryDate,
+                timeSlot,
+                quantity,
+                note,
+              })
+            );
+            return;
+          }
+
+          if (slotType === "express" && !areaData.sameDayAvailable) {
+            showResult({
+              type: "error",
+              html: `
+                <strong>Express delivery is not currently available in ${escapeHtml(areaData.area)}.</strong><br />
+                Please choose a regular slot or continue on WhatsApp for manual confirmation.
+              `,
+            });
+
+            showSummary({
+              productName,
+              priceLabel,
+              quantity,
+              pincode,
+              area: areaData.area,
+              deliveryFee: `₹${areaData.deliveryFee}`,
+              deliveryDate,
+              timeSlot,
+              note,
+              statusLabel: "Express needs manual confirmation",
+            });
+
+            showWhatsappButton(
+              buildWhatsAppUrl({
+                areaData,
+                pincode,
+                deliveryDate,
+                timeSlot,
+                quantity,
+                note,
+              })
+            );
+            return;
+          }
+
           showResult({
-            type: "error",
+            type: "success",
             html: `
-              <strong>Morning delivery is not currently available in ${areaData.area}.</strong><br />
-              Please select Afternoon, Evening, or continue on WhatsApp for manual confirmation.
+              <strong>Delivery available in ${escapeHtml(areaData.area)}.</strong><br />
+              Delivery fee: ₹${escapeHtml(areaData.deliveryFee)}<br />
+              Delivery date: ${escapeHtml(deliveryDate)}<br />
+              Time slot: ${escapeHtml(timeSlot)}
             `,
           });
 
@@ -442,7 +544,7 @@ Please confirm if delivery is available for this pincode.
             deliveryDate,
             timeSlot,
             note,
-            statusLabel: "Slot needs manual confirmation",
+            statusLabel: "Delivery available",
           });
 
           showWhatsappButton(
@@ -455,86 +557,16 @@ Please confirm if delivery is available for this pincode.
               note,
             })
           );
-          return;
         }
 
-        if (slotType === "express" && !areaData.sameDayAvailable) {
-          showResult({
-            type: "error",
-            html: `
-              <strong>Express delivery is not currently available in ${areaData.area}.</strong><br />
-              Please choose a regular slot or continue on WhatsApp for manual confirmation.
-            `,
-          });
+        checkButton.addEventListener("click", checkDelivery);
 
-          showSummary({
-            productName,
-            priceLabel,
-            quantity,
-            pincode,
-            area: areaData.area,
-            deliveryFee: `₹${areaData.deliveryFee}`,
-            deliveryDate,
-            timeSlot,
-            note,
-            statusLabel: "Express needs manual confirmation",
-          });
-
-          showWhatsappButton(
-            buildWhatsAppUrl({
-              areaData,
-              pincode,
-              deliveryDate,
-              timeSlot,
-              quantity,
-              note,
-            })
-          );
-          return;
-        }
-
-        showResult({
-          type: "success",
-          html: `
-            <strong>Delivery available in ${areaData.area}.</strong><br />
-            Delivery fee: ₹${areaData.deliveryFee}<br />
-            Delivery date: ${deliveryDate}<br />
-            Time slot: ${timeSlot}
-          `,
+        pincodeInput.addEventListener("keydown", (event) => {
+          if (event.key === "Enter") {
+            checkDelivery();
+          }
         });
-
-        showSummary({
-          productName,
-          priceLabel,
-          quantity,
-          pincode,
-          area: areaData.area,
-          deliveryFee: `₹${areaData.deliveryFee}`,
-          deliveryDate,
-          timeSlot,
-          note,
-          statusLabel: "Delivery available",
-        });
-
-        showWhatsappButton(
-          buildWhatsAppUrl({
-            areaData,
-            pincode,
-            deliveryDate,
-            timeSlot,
-            quantity,
-            note,
-          })
-        );
       }
-
-      checkButton.addEventListener("click", checkDelivery);
-
-      pincodeInput.addEventListener("keydown", (event) => {
-        if (event.key === "Enter") {
-          checkDelivery();
-        }
-      });
     }
   </script>
 </section>

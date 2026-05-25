@@ -89,10 +89,28 @@ const fallbackWhatsappUrl = `https://wa.me/${whatsappNumber}?text=${fallbackWhat
 
           <ProductOptions product={product} />
 
-          <DeliveryChecker
-            productName={product.name}
-            priceLabel={product.priceLabel}
-          />
+          <div class="mt-6 rounded-[24px] border border-[#EEE5E8] bg-[#FAFAFA] p-5">
+            <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p class="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#9B6B78]">
+                  Optional Check
+                </p>
+
+                <h2 class="mt-2 text-base font-semibold text-[#171717]">
+                  Only want to check delivery first?
+                </h2>
+
+                <p class="mt-2 text-sm leading-6 text-[#66565D]">
+                  Use this only if you want to check pincode, date and slot before configuring the full order above.
+                </p>
+              </div>
+            </div>
+
+            <DeliveryChecker
+              productName={product.name}
+              priceLabel={product.priceLabel}
+            />
+          </div>
 
           <p class="mt-4 text-sm leading-7 text-[#66565D]">
             Not sure about delivery area or custom requirement?
