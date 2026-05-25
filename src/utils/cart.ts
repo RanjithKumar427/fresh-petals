@@ -1,4 +1,4 @@
- export type CartAddOn = {
+export type CartAddOn = {
   id: string;
   name: string;
   priceLabel: string;
@@ -6,9 +6,13 @@
 };
 
 export type CartSubscription = {
-  frequency?: "weekly" | "biweekly" | "monthly";
+  frequency?: "daily" | "weekly" | "biweekly" | "monthly";
   duration?: "1-month" | "3-months" | "6-months";
+  preferredDays?: string[];
   startDate?: string;
+  pincode?: string;
+  deliverySlot?: string;
+  message?: string;
 };
 
 export type CartItem = {

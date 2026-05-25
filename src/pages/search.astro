@@ -168,23 +168,41 @@ const categories = Array.from(
     </section>
   </main>
 
-  <script>
-    const searchInput = document.querySelector("[data-search-input]");
-    const categoryFilter = document.querySelector("[data-category-filter]");
-    const productCards = Array.from(
-      document.querySelectorAll("[data-product-result]")
+  <script lang="ts">
+    const searchInput = document.querySelector<HTMLInputElement>(
+      "[data-search-input]"
     );
-    const resultCount = document.querySelector("[data-result-count]");
-    const emptySearch = document.querySelector("[data-empty-search]");
-    const quickSearchButtons = document.querySelectorAll("[data-quick-search]");
-    const clearButton = document.querySelector("[data-clear-search]");
 
-    function normalize(value) {
+    const categoryFilter = document.querySelector<HTMLSelectElement>(
+      "[data-category-filter]"
+    );
+
+    const productCards = Array.from(
+      document.querySelectorAll<HTMLElement>("[data-product-result]")
+    );
+
+    const resultCount = document.querySelector<HTMLElement>(
+      "[data-result-count]"
+    );
+
+    const emptySearch = document.querySelector<HTMLElement>(
+      "[data-empty-search]"
+    );
+
+    const quickSearchButtons = document.querySelectorAll<HTMLButtonElement>(
+      "[data-quick-search]"
+    );
+
+    const clearButton = document.querySelector<HTMLButtonElement>(
+      "[data-clear-search]"
+    );
+
+    function normalize(value: string) {
       return String(value || "").trim().toLowerCase();
     }
 
     function applySearch() {
-      const query = normalize(searchInput?.value);
+      const query = normalize(searchInput?.value || "");
       const selectedCategory = categoryFilter?.value || "all";
 
       let visibleCount = 0;
@@ -238,7 +256,7 @@ const categories = Array.from(
       button.addEventListener("click", () => {
         if (!searchInput) return;
 
-        searchInput.value = button.getAttribute("data-quick-search") || "";
+        searchInput.value = button.dataset.quickSearch || "";
         applySearch();
       });
     });
@@ -246,6 +264,7 @@ const categories = Array.from(
     clearButton?.addEventListener("click", () => {
       if (searchInput) searchInput.value = "";
       if (categoryFilter) categoryFilter.value = "all";
+
       applySearch();
     });
 

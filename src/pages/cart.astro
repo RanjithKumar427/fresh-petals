@@ -377,25 +377,33 @@ const timeSlots = [
     }
 
     function renderSubscriptionHtml(subscription) {
-      if (!subscription) return "";
+  if (!subscription) return "";
 
-      const rows = [
-        subscription.frequency ? `Frequency: ${subscription.frequency}` : "",
-        subscription.duration ? `Duration: ${subscription.duration}` : "",
-        subscription.startDate ? `Start Date: ${subscription.startDate}` : "",
-      ].filter(Boolean);
+  const rows = [
+    subscription.frequency ? `Frequency: ${subscription.frequency}` : "",
+    subscription.duration ? `Duration: ${subscription.duration}` : "",
+    subscription.preferredDays && subscription.preferredDays.length > 0
+      ? `Preferred Days: ${subscription.preferredDays.join(", ")}`
+      : "",
+    subscription.startDate ? `Start Date: ${subscription.startDate}` : "",
+    subscription.pincode ? `Subscription Pincode: ${subscription.pincode}` : "",
+    subscription.deliverySlot
+      ? `Subscription Delivery Slot: ${subscription.deliverySlot}`
+      : "",
+    subscription.message ? `Subscription Message: ${subscription.message}` : "",
+  ].filter(Boolean);
 
-      if (rows.length === 0) return "";
+  if (rows.length === 0) return "";
 
-      return `
-        <div>
-          <p class="font-semibold text-[#171717]">Subscription</p>
-          <ul class="mt-1 list-disc space-y-1 pl-5">
-            ${rows.map((row) => `<li>${escapeHtml(row)}</li>`).join("")}
-          </ul>
-        </div>
-      `;
-    }
+  return `
+    <div>
+      <p class="font-semibold text-[#171717]">Subscription</p>
+      <ul class="mt-1 list-disc space-y-1 pl-5">
+        ${rows.map((row) => `<li>${escapeHtml(row)}</li>`).join("")}
+      </ul>
+    </div>
+  `;
+}
 
     function renderConfiguredDetailsHtml(item) {
       if (!hasConfiguredDetails(item)) return "";
@@ -450,20 +458,39 @@ const timeSlots = [
       }
 
       if (item.subscription) {
-        lines.push("Subscription:");
-        if (item.subscription.frequency) {
-          lines.push(`- Frequency: ${item.subscription.frequency}`);
-        }
-        if (item.subscription.duration) {
-          lines.push(`- Duration: ${item.subscription.duration}`);
-        }
-        if (item.subscription.startDate) {
-          lines.push(`- Start Date: ${item.subscription.startDate}`);
-        }
-      }
+  lines.push("Subscription:");
 
-      return lines.length > 0 ? lines.join("\n") : "No item-level configuration";
-    }
+  if (item.subscription.frequency) {
+    lines.push(`- Frequency: ${item.subscription.frequency}`);
+  }
+
+  if (item.subscription.duration) {
+    lines.push(`- Duration: ${item.subscription.duration}`);
+  }
+
+  if (
+    item.subscription.preferredDays &&
+    item.subscription.preferredDays.length > 0
+  ) {
+    lines.push(`- Preferred Days: ${item.subscription.preferredDays.join(", ")}`);
+  }
+
+  if (item.subscription.startDate) {
+    lines.push(`- Start Date: ${item.subscription.startDate}`);
+  }
+
+  if (item.subscription.pincode) {
+    lines.push(`- Subscription Pincode: ${item.subscription.pincode}`);
+  }
+
+  if (item.subscription.deliverySlot) {
+    lines.push(`- Subscription Delivery Slot: ${item.subscription.deliverySlot}`);
+  }
+
+  if (item.subscription.message) {
+    lines.push(`- Subscription Message: ${item.subscription.message}`);
+  }
+}
 
     function renderCart() {
       const items = getCartItems();

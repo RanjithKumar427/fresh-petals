@@ -1,0 +1,512 @@
+---
+import type { Product } from "../data/productCatalog";
+
+type Props = {
+  product: Product;
+};
+
+const { product } = Astro.props;
+
+const whatsappNumber = "919652012274";
+
+const frequencies = [
+  {
+    value: "daily",
+    label: "Daily",
+    description: "Best for daily pooja flowers, jasmine or home rituals.",
+  },
+  {
+    value: "weekly",
+    label: "Weekly",
+    description: "Best for flowerbox, decor flowers or weekly fresh flowers.",
+  },
+  {
+    value: "biweekly",
+    label: "Biweekly",
+    description: "Two deliveries per month, suitable for light home use.",
+  },
+  {
+    value: "monthly",
+    label: "Monthly",
+    description: "Best for trial plans or occasional fresh flower needs.",
+  },
+];
+
+const durations = [
+  {
+    value: "1-month",
+    label: "1 Month",
+  },
+  {
+    value: "3-months",
+    label: "3 Months",
+  },
+  {
+    value: "6-months",
+    label: "6 Months",
+  },
+];
+
+const preferredDays = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday",
+];
+
+const deliverySlots = [
+  "Morning slot",
+  "Afternoon slot",
+  "Evening slot",
+  "Confirm manually on WhatsApp",
+];
+
+const addOns = [
+  {
+    id: "flower-food-sachets",
+    name: "Flower Food Sachets",
+    priceLabel: "Add-on item",
+  },
+  {
+    id: "clear-glass-vase",
+    name: "Clear Glass Vase",
+    priceLabel: "From ₹399",
+  },
+  {
+    id: "premium-card-addon",
+    name: "Premium Card",
+    priceLabel: "Add-on item",
+  },
+  {
+    id: "room-mist-flower-gift-addon",
+    name: "Room Mist Gift Add-on",
+    priceLabel: "Add-on item",
+  },
+];
+---
+
+<section
+  class="mt-6 rounded-[28px] border border-[#D8E7DD] bg-[#F6FBF8] p-5 shadow-[0_12px_34px_rgba(7,88,56,0.06)] md:p-6"
+  data-subscription-configurator
+  data-product-id={product.id}
+  data-product-slug={product.slug}
+  data-product-name={product.name}
+  data-product-image={product.image}
+  data-product-price-label={product.priceLabel}
+  data-product-category={product.category}
+  data-whatsapp-number={whatsappNumber}
+>
+  <div class="flex items-start justify-between gap-4">
+    <div>
+      <p class="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#075838]">
+        Subscription Plan
+      </p>
+
+      <h2 class="mt-2 text-xl font-semibold text-[#171717]">
+        Configure your recurring flower plan
+      </h2>
+    </div>
+
+    <span class="rounded-full bg-white px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#075838]">
+      WhatsApp confirmed
+    </span>
+  </div>
+
+  <p class="mt-4 text-sm leading-7 text-[#66565D]">
+    Choose frequency, duration, preferred days, start date and delivery details.
+    Final subscription price will be confirmed on WhatsApp based on flower mix, quantity,
+    pincode and market availability.
+  </p>
+
+  <div class="mt-6">
+    <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#171717]">
+      Frequency
+    </p>
+
+    <div class="mt-3 grid gap-3 md:grid-cols-2">
+      {
+        frequencies.map((frequency) => (
+          <label class="cursor-pointer rounded-2xl border border-[#D8E7DD] bg-white p-4 transition hover:border-[#075838]">
+            <div class="flex items-start gap-3">
+              <input
+                type="radio"
+                name="subscription-frequency"
+                value={frequency.value}
+                data-subscription-frequency
+                class="mt-1"
+                checked={frequency.value === "weekly"}
+              />
+
+              <span>
+                <span class="block text-sm font-semibold text-[#171717]">
+                  {frequency.label}
+                </span>
+
+                <span class="mt-1 block text-xs leading-5 text-[#66565D]">
+                  {frequency.description}
+                </span>
+              </span>
+            </div>
+          </label>
+        ))
+      }
+    </div>
+  </div>
+
+  <div class="mt-6">
+    <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#171717]">
+      Duration
+    </p>
+
+    <div class="mt-3 grid gap-3 sm:grid-cols-3">
+      {
+        durations.map((duration) => (
+          <label class="cursor-pointer rounded-2xl border border-[#D8E7DD] bg-white p-4 text-sm font-semibold text-[#171717] transition hover:border-[#075838]">
+            <input
+              type="radio"
+              name="subscription-duration"
+              value={duration.value}
+              data-subscription-duration
+              class="mr-2"
+              checked={duration.value === "1-month"}
+            />
+            {duration.label}
+          </label>
+        ))
+      }
+    </div>
+  </div>
+
+  <div class="mt-6">
+    <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#171717]">
+      Preferred Delivery Days
+    </p>
+
+    <div class="mt-3 grid gap-3 sm:grid-cols-2 md:grid-cols-4">
+      {
+        preferredDays.map((day) => (
+          <label class="cursor-pointer rounded-2xl border border-[#D8E7DD] bg-white px-4 py-3 text-sm font-medium text-[#171717] transition hover:border-[#075838]">
+            <input
+              type="checkbox"
+              value={day}
+              data-subscription-day
+              class="mr-2"
+            />
+            {day}
+          </label>
+        ))
+      }
+    </div>
+  </div>
+
+  <div class="mt-6 grid gap-4 md:grid-cols-2">
+    <label class="block">
+      <span class="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#171717]">
+        Start Date
+      </span>
+      <input
+        type="date"
+        data-subscription-start-date
+        class="mt-2 w-full rounded-2xl border border-[#D8E7DD] bg-white px-4 py-3 text-sm text-[#171717] outline-none transition focus:border-[#075838]"
+      />
+    </label>
+
+    <label class="block">
+      <span class="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#171717]">
+        Delivery Pincode
+      </span>
+      <input
+        type="text"
+        inputmode="numeric"
+        maxlength="6"
+        placeholder="Example: 500081"
+        data-subscription-pincode
+        class="mt-2 w-full rounded-2xl border border-[#D8E7DD] bg-white px-4 py-3 text-sm text-[#171717] outline-none transition focus:border-[#075838]"
+      />
+    </label>
+
+    <label class="block">
+      <span class="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#171717]">
+        Delivery Slot
+      </span>
+      <select
+        data-subscription-delivery-slot
+        class="mt-2 w-full rounded-2xl border border-[#D8E7DD] bg-white px-4 py-3 text-sm text-[#171717] outline-none transition focus:border-[#075838]"
+      >
+        <option value="">Select slot</option>
+        {deliverySlots.map((slot) => <option value={slot}>{slot}</option>)}
+      </select>
+    </label>
+
+    <label class="block">
+      <span class="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#171717]">
+        Quantity / Requirement
+      </span>
+      <input
+        type="number"
+        min="1"
+        value="1"
+        data-subscription-quantity
+        class="mt-2 w-full rounded-2xl border border-[#D8E7DD] bg-white px-4 py-3 text-sm text-[#171717] outline-none transition focus:border-[#075838]"
+      />
+    </label>
+  </div>
+
+  <div class="mt-6">
+    <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#171717]">
+      Subscription Add-ons
+    </p>
+
+    <div class="mt-3 grid gap-3 md:grid-cols-2">
+      {
+        addOns.map((addOn) => (
+          <label class="flex cursor-pointer items-start gap-3 rounded-2xl border border-[#D8E7DD] bg-white p-4 transition hover:border-[#075838]">
+            <input
+              type="checkbox"
+              class="mt-1"
+              data-subscription-addon
+              data-addon-id={addOn.id}
+              data-addon-name={addOn.name}
+              data-addon-price-label={addOn.priceLabel}
+            />
+            <span>
+              <span class="block text-sm font-semibold text-[#171717]">
+                {addOn.name}
+              </span>
+              <span class="mt-1 block text-xs text-[#66565D]">
+                {addOn.priceLabel}
+              </span>
+            </span>
+          </label>
+        ))
+      }
+    </div>
+  </div>
+
+  <label class="mt-6 block">
+    <span class="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#171717]">
+      Subscription Message / Notes
+    </span>
+    <textarea
+      rows="4"
+      placeholder="Example: Need jasmine every morning / weekly vase flowers / budget ₹800 per week..."
+      data-subscription-message
+      class="mt-2 w-full rounded-2xl border border-[#D8E7DD] bg-white px-4 py-3 text-sm leading-6 text-[#171717] outline-none transition focus:border-[#075838]"
+    ></textarea>
+  </label>
+
+  <div class="mt-6 rounded-2xl border border-[#D8E7DD] bg-white p-4">
+    <h3 class="text-sm font-semibold text-[#171717]">
+      Estimated plan note
+    </h3>
+
+    <p class="mt-2 text-sm leading-7 text-[#66565D]">
+      This plan starts from {product.priceLabel}. Final recurring price will be confirmed on WhatsApp
+      based on flower type, delivery area, frequency, quantity and market rate.
+    </p>
+  </div>
+
+  <div class="mt-6 flex flex-col gap-3 sm:flex-row">
+    <button
+      type="button"
+      data-subscription-add-to-cart
+      class:list={[
+        "inline-flex items-center justify-center rounded-full px-7 py-4 text-[11px] font-bold uppercase tracking-[0.22em] transition",
+        product.isAvailable
+          ? "bg-[#075838] text-white hover:bg-[#111111]"
+          : "pointer-events-none bg-[#D8D1D4] text-[#7A6E73]",
+      ]}
+    >
+      {product.isAvailable ? "Add Subscription To Cart" : "Unavailable"}
+    </button>
+
+    <button
+      type="button"
+      data-subscription-whatsapp
+      class="inline-flex items-center justify-center rounded-full border border-[#075838] px-7 py-4 text-[11px] font-bold uppercase tracking-[0.22em] text-[#075838] transition hover:bg-[#075838] hover:text-white"
+    >
+      Confirm Subscription On WhatsApp
+    </button>
+
+    <a
+      href="/cart"
+      class="inline-flex items-center justify-center rounded-full border border-[#111111] px-7 py-4 text-[11px] font-bold uppercase tracking-[0.22em] text-[#111111] transition hover:bg-[#111111] hover:text-white"
+    >
+      View Cart
+    </a>
+  </div>
+
+  <p
+    data-subscription-feedback
+    class="mt-4 hidden rounded-full bg-white px-4 py-3 text-center text-sm font-semibold text-[#075838]"
+  >
+    Subscription plan added to cart.
+  </p>
+</section>
+
+<script>
+  import { addToCart } from "../utils/cart";
+
+  const subscriptionSection = document.querySelector("[data-subscription-configurator]");
+
+  function getInputValue(selector) {
+    const input = subscriptionSection?.querySelector(selector);
+    return input?.value?.trim() || "";
+  }
+
+  function getCheckedValue(selector) {
+    const selected = subscriptionSection?.querySelector(`${selector}:checked`);
+    return selected?.value || "";
+  }
+
+  function getPreferredDays() {
+    const selectedDays = Array.from(
+      subscriptionSection?.querySelectorAll("[data-subscription-day]:checked") || []
+    );
+
+    return selectedDays.map((input) => input.value);
+  }
+
+  function getSelectedAddOns() {
+    const selectedAddOns = Array.from(
+      subscriptionSection?.querySelectorAll("[data-subscription-addon]:checked") || []
+    );
+
+    return selectedAddOns.map((input) => ({
+      id: input.dataset.addonId || "",
+      name: input.dataset.addonName || "",
+      priceLabel: input.dataset.addonPriceLabel || "",
+      quantity: 1,
+    }));
+  }
+
+  function getConfiguredSubscriptionItem() {
+    if (!subscriptionSection) return null;
+
+    const quantityValue = Number(getInputValue("[data-subscription-quantity]"));
+    const quantity =
+      Number.isFinite(quantityValue) && quantityValue > 0 ? quantityValue : 1;
+
+    const frequency =
+      getCheckedValue("[data-subscription-frequency]") || "weekly";
+
+    const duration =
+      getCheckedValue("[data-subscription-duration]") || "1-month";
+
+    const preferredDays = getPreferredDays();
+    const startDate = getInputValue("[data-subscription-start-date]");
+    const pincode = getInputValue("[data-subscription-pincode]");
+    const deliverySlot = getInputValue("[data-subscription-delivery-slot]");
+    const message = getInputValue("[data-subscription-message]");
+    const addOns = getSelectedAddOns();
+
+    return {
+      quantity,
+      item: {
+        id: subscriptionSection.dataset.productId || "",
+        productId: subscriptionSection.dataset.productId || "",
+        slug: subscriptionSection.dataset.productSlug || "",
+        name: subscriptionSection.dataset.productName || "",
+        image: subscriptionSection.dataset.productImage || "",
+        priceLabel: subscriptionSection.dataset.productPriceLabel || "",
+        category: subscriptionSection.dataset.productCategory || "",
+        deliveryDate: startDate,
+        deliverySlot,
+        pincode,
+        addOns,
+        message,
+        note: "Subscription order",
+        subscription: {
+          frequency,
+          duration,
+          preferredDays,
+          startDate,
+          pincode,
+          deliverySlot,
+          message,
+        },
+      },
+    };
+  }
+
+  function buildWhatsAppMessage() {
+    const configured = getConfiguredSubscriptionItem();
+
+    if (!configured) return "";
+
+    const item = configured.item;
+
+    const addOnsText =
+      item.addOns && item.addOns.length > 0
+        ? item.addOns
+            .map((addOn) => `- ${addOn.name} (${addOn.priceLabel})`)
+            .join("\n")
+        : "No add-ons selected";
+
+    const preferredDaysText =
+      item.subscription?.preferredDays &&
+      item.subscription.preferredDays.length > 0
+        ? item.subscription.preferredDays.join(", ")
+        : "Not selected";
+
+    return [
+      "Hi Fresh Petals, I want to confirm this subscription plan:",
+      "",
+      `Product: ${item.name}`,
+      `Price: ${item.priceLabel}`,
+      `Category: ${item.category}`,
+      `Quantity / Requirement: ${configured.quantity}`,
+      "",
+      "Subscription Details:",
+      `Frequency: ${item.subscription?.frequency || "Not selected"}`,
+      `Duration: ${item.subscription?.duration || "Not selected"}`,
+      `Preferred Days: ${preferredDaysText}`,
+      `Start Date: ${item.subscription?.startDate || "Not selected"}`,
+      `Pincode: ${item.subscription?.pincode || "Not added"}`,
+      `Delivery Slot: ${item.subscription?.deliverySlot || "Not selected"}`,
+      "",
+      "Add-ons:",
+      addOnsText,
+      "",
+      `Message: ${item.subscription?.message || "No message added"}`,
+      "",
+      "Please confirm subscription availability, final recurring price and delivery possibility.",
+    ].join("\n");
+  }
+
+  const addSubscriptionButton = document.querySelector(
+    "[data-subscription-add-to-cart]"
+  );
+
+  const whatsappButton = document.querySelector(
+    "[data-subscription-whatsapp]"
+  );
+
+  const feedback = document.querySelector("[data-subscription-feedback]");
+
+  addSubscriptionButton?.addEventListener("click", () => {
+    const configured = getConfiguredSubscriptionItem();
+
+    if (!configured) return;
+
+    addToCart(configured.item, configured.quantity);
+
+    feedback?.classList.remove("hidden");
+
+    setTimeout(() => {
+      feedback?.classList.add("hidden");
+    }, 1800);
+  });
+
+  whatsappButton?.addEventListener("click", () => {
+    if (!subscriptionSection) return;
+
+    const whatsappNumber = subscriptionSection.dataset.whatsappNumber || "";
+    const message = encodeURIComponent(buildWhatsAppMessage());
+
+    window.open(`https://wa.me/${whatsappNumber}?text=${message}`, "_blank");
+  });
+</script>

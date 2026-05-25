@@ -2,6 +2,7 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import DeliveryChecker from "../../components/DeliveryChecker.astro";
 import ProductOptions from "../../components/ProductOptions.astro";
+import SubscriptionConfigurator from "../../components/SubscriptionConfigurator.astro";
 import { productCatalog } from "../../data/productCatalog";
 
 export function getStaticPaths() {
@@ -87,7 +88,13 @@ const fallbackWhatsappUrl = `https://wa.me/${whatsappNumber}?text=${fallbackWhat
             )
           }
 
-          <ProductOptions product={product} />
+          {
+            product.isSubscription ? (
+              <SubscriptionConfigurator product={product} />
+            ) : (
+              <ProductOptions product={product} />
+            )
+          }
 
           <div class="mt-6 rounded-[24px] border border-[#EEE5E8] bg-[#FAFAFA] p-5">
             <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
