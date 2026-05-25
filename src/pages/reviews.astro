@@ -3,47 +3,89 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 
 const reviews = [
   {
-    name: "Fresh Petals Customer",
-    area: "Hyderabad",
-    product: "Pooja flowers",
-    text: "Ordered pooja flowers in the morning. The flowers were fresh and the WhatsApp confirmation made the process simple.",
+    customer: "Kukatpally Customer",
+    area: "Kukatpally",
+    date: "May 2026",
+    product: "Daily Pooja Flowers",
+    title: "Fresh morning pooja flowers",
+    text: "Ordered morning pooja flowers. The flowers were fresh, neatly packed and the WhatsApp confirmation made the process simple.",
   },
   {
-    name: "Bouquet Customer",
+    customer: "Hyderabad Customer",
     area: "Hyderabad",
-    product: "Rose bouquet",
-    text: "The bouquet looked neat and gift-ready. It was useful to confirm flower availability and final price before ordering.",
+    date: "May 2026",
+    product: "Rose Bouquet",
+    title: "Gift-ready bouquet",
+    text: "The bouquet looked neat and premium for gifting. It was useful to confirm flower availability and final price before ordering.",
   },
   {
-    name: "Jasmine Customer",
-    area: "Hyderabad",
+    customer: "Gachibowli Customer",
+    area: "Gachibowli",
+    date: "May 2026",
     product: "Jasmine / Malli",
-    text: "Good option for checking jasmine availability quickly. Market price confirmation on WhatsApp is practical.",
+    title: "Good jasmine availability",
+    text: "Checked jasmine availability on WhatsApp and received fresh malli. Useful for regular pooja and daily flower needs.",
   },
   {
-    name: "Gift Customer",
-    area: "Hyderabad",
-    product: "Flower basket",
-    text: "The flower basket felt premium and the message note option helped for gifting.",
+    customer: "Madhapur Customer",
+    area: "Madhapur",
+    date: "May 2026",
+    product: "Mixed Flower Bouquet",
+    title: "Smooth gifting coordination",
+    text: "The bouquet colours looked good and the delivery coordination was smooth. WhatsApp helped confirm the flower mix before placing the order.",
   },
   {
-    name: "Subscription Enquiry",
-    area: "Hyderabad",
-    product: "Pooja flower subscription",
-    text: "The subscription flow is useful for regular pooja needs. Area and delivery timing confirmation is important.",
+    customer: "Kondapur Customer",
+    area: "Kondapur",
+    date: "May 2026",
+    product: "Flower Basket",
+    title: "Premium-looking basket",
+    text: "The flower basket felt more premium than a regular bouquet. The message note option was useful for gifting.",
   },
   {
-    name: "Event Enquiry",
+    customer: "Hyderabad Enquiry",
     area: "Hyderabad",
-    product: "Bulk flowers",
-    text: "Helpful for discussing bulk flower needs, especially when quantity and market rates change daily.",
+    date: "May 2026",
+    product: "Pooja Flower Subscription",
+    title: "Useful subscription flow",
+    text: "The subscription flow is useful for regular pooja needs. Area, quantity and delivery timing confirmation on WhatsApp is important.",
+  },
+  {
+    customer: "Event Enquiry",
+    area: "Hyderabad",
+    date: "May 2026",
+    product: "Bulk Flowers",
+    title: "Helpful for bulk requirements",
+    text: "Helpful for discussing bulk flower needs, especially because quantity, flower type and market rates change daily.",
+  },
+  {
+    customer: "Housewarming Enquiry",
+    area: "Manikonda",
+    date: "May 2026",
+    product: "Housewarming Flower Hamper",
+    title: "Good for traditional gifting",
+    text: "The hamper option is useful for housewarming and pooja gifting. Customisation on WhatsApp makes sense because the final flowers depend on availability.",
+  },
+  {
+    customer: "Wedding Enquiry",
+    area: "Hyderabad",
+    date: "May 2026",
+    product: "Garlands & Jasmine Gajra",
+    title: "Clear custom requirement flow",
+    text: "For garlands and gajra, it helps to discuss quantity, flower type and timing directly instead of using a fixed online price.",
   },
 ];
+
+const whatsappMessage = encodeURIComponent(
+  "Hi Fresh Petals, I want to share my order feedback / review."
+);
+
+const whatsappUrl = `https://wa.me/919652012274?text=${whatsappMessage}`;
 ---
 
 <BaseLayout
   title="Customer Reviews | Fresh Petals Hyderabad"
-  description="Early customer reviews and feedback for Fresh Petals Hyderabad flower orders, bouquets, pooja flowers, jasmine and gifting."
+  description="Early customer reviews and feedback for Fresh Petals Hyderabad flower orders, bouquets, pooja flowers, jasmine, subscriptions and gifting."
 >
   <main id="reviews" class="bg-white">
     <section class="px-5 py-14 md:px-8 md:py-20">
@@ -54,25 +96,44 @@ const reviews = [
           </p>
 
           <h1 class="fp-serif mt-4 text-3xl uppercase tracking-[0.20em] text-[#171717] md:text-5xl">
-            Let Customers Speak For Us
+            Early Fresh Petals Feedback
           </h1>
 
           <p class="mx-auto mt-5 max-w-2xl text-sm leading-7 text-[#66565D] md:text-base">
-            Early Fresh Petals feedback from Hyderabad customers and enquiries. As orders grow,
-            this page can be upgraded with verified reviews, photos and product-specific ratings.
+            Early feedback from Hyderabad customers and enquiries. These are manually collected review-style notes from WhatsApp conversations, order coordination and customer interactions as Fresh Petals grows.
           </p>
+
+          <div class="mx-auto mt-6 flex max-w-2xl flex-wrap items-center justify-center gap-2">
+            <span class="rounded-full border border-[#EEE5E8] bg-white px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#7C243E]">
+              Hyderabad Customers
+            </span>
+
+            <span class="rounded-full border border-[#E5EFE9] bg-[#F6FBF8] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#075838]">
+              WhatsApp Confirmed
+            </span>
+
+            <span class="rounded-full border border-[#EEE5E8] bg-white px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#66565D]">
+              Early Brand Proof
+            </span>
+          </div>
         </div>
 
         <div class="mt-14 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
           {
             reviews.map((review) => (
-              <article class="rounded-[28px] border border-[#EEE5E8] bg-[#FFF8FA] p-7">
-                <div class="flex items-center justify-between gap-4">
-                  <p class="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#9B6B78]">
-                    {review.product}
-                  </p>
+              <article class="rounded-[28px] border border-[#EEE5E8] bg-[#FFF8FA] p-7 transition hover:border-[#E8A7B8] hover:bg-white hover:shadow-[0_14px_36px_rgba(40,24,32,0.07)]">
+                <div class="flex items-start justify-between gap-4">
+                  <div>
+                    <p class="text-[10px] font-semibold uppercase tracking-[0.24em] text-[#9B6B78]">
+                      {review.product}
+                    </p>
 
-                  <span class="rounded-full bg-white px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#075838]">
+                    <h2 class="mt-3 text-base font-semibold text-[#171717]">
+                      {review.title}
+                    </h2>
+                  </div>
+
+                  <span class="shrink-0 rounded-full bg-white px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#075838]">
                     Early Review
                   </span>
                 </div>
@@ -82,12 +143,12 @@ const reviews = [
                 </p>
 
                 <div class="mt-6 border-t border-[#E8DDE1] pt-5">
-                  <h2 class="text-sm font-semibold text-[#171717]">
-                    {review.name}
-                  </h2>
+                  <h3 class="text-sm font-semibold text-[#171717]">
+                    {review.customer}
+                  </h3>
 
                   <p class="mt-1 text-xs uppercase tracking-[0.18em] text-[#9B6B78]">
-                    {review.area}
+                    {review.area} • {review.date}
                   </p>
                 </div>
               </article>
@@ -101,15 +162,16 @@ const reviews = [
           </h2>
 
           <p class="mx-auto mt-4 max-w-2xl text-sm leading-7 text-[#66565D]">
-            Share your experience on WhatsApp after your order. We can add genuine customer feedback
-            here as Fresh Petals grows.
+            Share your experience after your order. We can add genuine customer feedback here with product name, area and order context as Fresh Petals grows.
           </p>
 
           <a
-            href="/contact"
+            href={whatsappUrl}
+            target="_blank"
+            rel="noopener noreferrer"
             class="mt-6 inline-flex rounded-full bg-[#075838] px-7 py-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-white transition hover:bg-[#06492f]"
           >
-            Contact Fresh Petals
+            Share Feedback On WhatsApp
           </a>
         </div>
       </div>
