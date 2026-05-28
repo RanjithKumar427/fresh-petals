@@ -55,10 +55,102 @@ export function getStaticPaths() {
       "Fresh wedding flowers, bridal accessories, garlands and event flower requirements made on request.",
     "By Stems":
       "Fresh flowers by stem for DIY arrangements, vases, gifting and custom flower styling.",
+
+    "Eid Al-Adha":
+      "Elegant white bouquets, soft floral gifts and custom Bakrid flower arrangements available on request.",
+    "Fragrant Lilies":
+      "Premium lily bouquets and fragrant flower arrangements based on fresh market availability.",
+    "Tuberose / Rajnigandha":
+      "Fresh tuberose and rajnigandha flowers for pooja, fragrance styling, events and traditional decor.",
+    Hydrangeas:
+      "Premium hydrangea bouquets and soft pastel arrangements available on request.",
+    Sunflower:
+      "Bright sunflower bouquets and cheerful gifting arrangements based on today’s availability.",
+    Orchid:
+      "Elegant orchid bouquets and premium floral arrangements for birthdays, anniversaries and gifting.",
+    "Pastel Flowers":
+      "Soft pastel flower arrangements for premium gifting, birthdays, anniversaries and aesthetic decor.",
+    "Pink Flowers":
+      "Pink flower bouquets and feminine floral arrangements for gifting and special occasions.",
+    "White Flowers":
+      "White bouquets and elegant floral arrangements for peaceful, premium and festive gifting.",
+    "Red Flowers":
+      "Red flower bouquets for romantic gifting, anniversaries and premium celebrations.",
+    "Yellow Flowers":
+      "Yellow flower bouquets for cheerful gifting, friendship, celebrations and festive moments.",
+    "Blue Flowers":
+      "Blue-toned and cool pastel flower arrangements available as custom premium orders.",
+    "Bestselling Bouquets":
+      "Fresh Petals’ most requested bouquet styles for gifting, celebrations and quick WhatsApp orders.",
+    "Mini Bouquets":
+      "Small, cute and affordable mini bouquets for simple gifting and daily flower moments.",
+    "Bouquets With Vases":
+      "Ready-to-display flower bouquets paired with glass vases for home styling and gifting.",
+
+    "Floral Torans & Strings":
+      "Fresh floral torans, strings and traditional decor flowers for pooja, functions and festivals.",
+    "Handcrafted Torans & Streamers":
+      "Decorative handcrafted torans and streamers for festive styling, pooja rooms and home entrances.",
+    "Pooja Urli Boxes":
+      "Pooja urli boxes and floral decor arrangements for festivals, rituals and gifting.",
+    "Fairy Lights / Tim Tim Lights":
+      "Fairy lights and tim tim lights to pair with flowers, hampers and festive decor setups.",
+    "Diyas & Tea Light Holders":
+      "Diyas and tea light holder add-ons for pooja, festive decor, hampers and gifting.",
+    "All Decor":
+      "Explore flower decor, torans, lights, diyas and festive home styling add-ons.",
+
+    "All Gifts":
+      "Explore gifting add-ons, hampers, stationery, DIY kits and premium flower-paired gifts.",
+    "Flowers & Jewellery":
+      "Floral jewellery and flower accessories for haldi, mehendi, bridal events and festive styling.",
+    Stationery:
+      "Premium stationery add-ons to pair with bouquets, hampers and thoughtful gifting orders.",
+    "Planners & Journal":
+      "Planner and journal add-ons for premium gifting, birthdays and curated hamper orders.",
+    "DIY Kits":
+      "DIY floral kits and creative gifting options available on request.",
+    Skincare:
+      "Skincare gifting add-ons for curated hampers and premium flower gift boxes.",
+    Tea:
+      "Tea gifting add-ons for premium hampers, wellness gifts and thoughtful floral pairings.",
   };
 
+  const extraCategoryNames = [
+    "Eid Al-Adha",
+    "Fragrant Lilies",
+    "Tuberose / Rajnigandha",
+    "Hydrangeas",
+    "Sunflower",
+    "Orchid",
+    "Pastel Flowers",
+    "Pink Flowers",
+    "White Flowers",
+    "Red Flowers",
+    "Yellow Flowers",
+    "Blue Flowers",
+    "Bestselling Bouquets",
+    "Mini Bouquets",
+    "Bouquets With Vases",
+    "Floral Torans & Strings",
+    "Handcrafted Torans & Streamers",
+    "Pooja Urli Boxes",
+    "Fairy Lights / Tim Tim Lights",
+    "Diyas & Tea Light Holders",
+    "All Decor",
+    "All Gifts",
+    "Flowers & Jewellery",
+    "Stationery",
+    "Planners & Journal",
+    "DIY Kits",
+    "Skincare",
+    "Tea",
+  ];
+
+  const productCategoryNames = productCatalog.map((product) => product.category);
+
   const uniqueCategoryNames = Array.from(
-    new Set(productCatalog.map((product) => product.category))
+    new Set([...productCategoryNames, ...extraCategoryNames])
   );
 
   return uniqueCategoryNames.map((categoryName) => {
@@ -141,14 +233,27 @@ const { category, products } = Astro.props;
               ))}
             </div>
           ) : (
-            <div class="rounded-[24px] border border-[#EEE5E8] bg-[#FFF8FA] p-8 text-center">
-              <h2 class="text-lg font-semibold text-[#171717]">
-                No products found
+            <div class="rounded-[28px] border border-[#EEE5E8] bg-[#FFF8FA] p-8 text-center md:p-12">
+              <p class="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#9B6B78]">
+                Available on request
+              </p>
+
+              <h2 class="fp-serif mt-3 text-2xl uppercase tracking-[0.16em] text-[#171717]">
+                Custom {category.name} Orders
               </h2>
 
-              <p class="mt-3 text-sm leading-7 text-[#66565D]">
-                This category does not have active products yet.
+              <p class="mx-auto mt-4 max-w-xl text-sm leading-7 text-[#66565D]">
+                This category is available as a WhatsApp-confirmed custom order.
+                Share your preferred quantity, occasion and delivery date. We’ll
+                confirm today’s availability and price before payment.
               </p>
+
+              <a
+                href={`https://wa.me/919652012274?text=Hi%20Fresh%20Petals%2C%20I%20want%20to%20check%20availability%20for%20${encodeURIComponent(category.name)}`}
+                class="mt-7 inline-flex rounded-full bg-[#7C243E] px-7 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-[#5F1B2F]"
+              >
+                Check on WhatsApp
+              </a>
             </div>
           )
         }
