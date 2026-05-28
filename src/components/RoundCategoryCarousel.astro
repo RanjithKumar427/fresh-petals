@@ -1,6 +1,11 @@
 ---
 const categories = [
   {
+    label: "Eid Al-Adha",
+    image: "/images/cat-under-1499.jpg",
+    href: "/categories/bouquets",
+  },
+  {
     label: "Bouquets",
     image: "/images/cat-bouquets.jpg",
     href: "/categories/bouquets",
@@ -21,44 +26,44 @@ const categories = [
     href: "/categories/subscriptions",
   },
   {
-    label: "Flowerbox",
+    label: "Flowerbox & Stems",
     image: "/images/cat-flowerbox.jpg",
     href: "/categories/flowerbox",
   },
   {
-    label: "Baskets",
+    label: "Basket",
     image: "/images/cat-basket.jpg",
     href: "/categories/baskets",
   },
   {
-    label: "Plants",
+    label: "Plant",
     image: "/images/cat-plant.jpg",
-    href: "/categories/add-ons",
+    href: "/categories/plants-and-succulents",
   },
   {
     label: "Hampers",
     image: "/images/cat-hampers.jpg",
-    href: "/categories/add-ons",
+    href: "/categories/hampers",
   },
   {
-    label: "Candles",
+    label: "Candles & Diffuser",
     image: "/images/cat-candle.jpg",
-    href: "/categories/add-ons",
+    href: "/products/candle-diffuser-addon",
   },
   {
     label: "Pooja",
     image: "/images/cat-pooja.jpg",
-    href: "/occasions/pooja",
+    href: "/categories/pooja-flowers",
   },
   {
-    label: "Under ₹1499",
+    label: "Under 1499",
     image: "/images/cat-under-1499.jpg",
-    href: "/categories/offers",
+    href: "/products/flower-gifts-under-1499",
   },
   {
     label: "Vases",
     image: "/images/cat-vases.jpg",
-    href: "/categories/add-ons",
+    href: "/categories/vases",
   },
   {
     label: "Wedding",
@@ -70,7 +75,7 @@ const categories = [
 
 <section class="border-b border-[#EEE5E8] bg-white px-4 py-4 md:px-8 md:py-5">
   <div class="mx-auto max-w-7xl overflow-hidden">
-    <div class="fp-scrollbar-hide flex gap-6 overflow-x-auto px-1 py-2 md:justify-center md:gap-7">
+    <div class="fp-scrollbar-hide flex gap-6 overflow-x-auto px-4 py-2 md:justify-start md:gap-7">
       {
         categories.map((category) => (
           <a
@@ -87,7 +92,7 @@ const categories = [
               />
             </div>
 
-            <p class="mt-3 min-h-[30px] text-[10px] font-medium uppercase leading-[1.4] tracking-[0.12em] text-[#171717] transition group-hover:text-[#D98B9A] md:text-[10px]">
+            <p class="mt-3 min-h-[34px] text-[10px] font-medium uppercase leading-[1.35] tracking-[0.12em] text-[#171717] transition group-hover:text-[#D98B9A] md:text-[10px]">
               {category.label}
             </p>
           </a>
