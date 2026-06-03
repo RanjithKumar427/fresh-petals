@@ -1,0 +1,5 @@
+C:\Users\ranji\Downloads\fresh-petals\src\components\EcommerceHeader.astro
+C:\Users\ranji\Downloads\fresh-petals\src\components\Header.astro
+C:\Users\ranji\Downloads\fresh-petals\src\components\MegaNav.astro
+C:\Users\ranji\Downloads\fresh-petals\src\layouts\BaseLayout.astro
+C:\Users\ranji\Downloads\fresh-petals\src\layouts\Layout.astro

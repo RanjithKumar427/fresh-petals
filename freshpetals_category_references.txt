@@ -1,0 +1,843 @@
+src\components\AnnouncementBar.astro:2:  Fresh Flowers In Hyderabad • Bouquets • Pooja Flowers • Use Code FRESH10
+src\components\BasketsSection.astro:6:  (product) => product.category === "Baskets"
+src\components\BasketsSection.astro:10:<section id="baskets" class="bg-white px-5 py-14 md:px-8 md:py-16">
+src\components\BasketsSection.astro:18:        Baskets
+src\components\BasketsSection.astro:22:        Fresh flower baskets for gifting, pooja, celebrations and premium custom arrangements.
+src\components\BasketsSection.astro:45:        href="/categories/baskets"
+src\components\BasketsSection.astro:48:        View All Baskets
+src\components\CategoryGrid.astro:4:import OccasionSection from "../components/OccasionSection.astro";
+src\components\CategoryGrid.astro:6:import PopularWithFlowers from "../components/PopularWithFlowers.astro";
+src\components\CategoryGrid.astro:15:    <OccasionSection />
+src\components\CategoryGrid.astro:17:    <PopularWithFlowers />
+src\components\CityBar.astro:31:        Delivering fresh flowers in <span class="font-semibold text-[#171717]">Hyderabad</span>
+src\components\CustomerReviews.astro:4:    title: "Fresh pooja flowers",
+src\components\CustomerReviews.astro:5:    text: "Ordered morning pooja flowers. The flowers were fresh, neatly packed and confirmation on WhatsApp made it simple.",
+src\components\CustomerReviews.astro:6:    customer: "Kukatpally Customer",
+src\components\CustomerReviews.astro:7:    area: "Kukatpally",
+src\components\CustomerReviews.astro:9:    product: "Daily Pooja Flowers",
+src\components\CustomerReviews.astro:21:    text: "Checked jasmine availability on WhatsApp and received fresh malli. Useful for regular pooja and daily flower needs.",
+src\components\CustomerReviews.astro:25:    product: "Jasmine / Malli",
+src\components\CustomerReviews.astro:42:        Early Fresh Petals feedback from Hyderabad customers. Reviews are manually collected from real WhatsApp order and enquiry conversations as the brand grows.
+src\components\DeliveryChecker.astro:138:          placeholder="Example: Need it for birthday / pooja / gift note / preferred flowers"
+src\components\DeliveryChecker.astro:210:            .replaceAll("&", "&amp;")
+src\components\DeliveryChecker.astro:211:            .replaceAll("<", "&lt;")
+src\components\DeliveryChecker.astro:212:            .replaceAll(">", "&gt;")
+src\components\DeliveryChecker.astro:213:            .replaceAll('"', "&quot;")
+src\components\DeliveryChecker.astro:214:            .replaceAll("'", "&#039;");
+src\components\DeliveryChecker.astro:352:        function buildFallbackWhatsAppUrl({
+src\components\DeliveryChecker.astro:428:                You can still continue on WhatsApp and we will manually confirm availability.
+src\components\DeliveryChecker.astro:446:              buildFallbackWhatsAppUrl({
+src\components\EcommerceHeader.astro:16:        aria-label="Search Fresh Petals flowers"
+src\components\FlowerboxSection.astro:6:  (product) => product.category === "Flowerbox"
+src\components\FlowerboxSection.astro:10:<section id="flowerbox" class="bg-white px-5 py-14 md:px-8 md:py-16">
+src\components\FlowerboxSection.astro:18:        Flowerbox
+src\components\FlowerboxSection.astro:22:        Fresh flower boxes for DIY arrangements, gifting, pooja use and custom flower requirements.
+src\components\FlowerboxSection.astro:45:        href="/categories/flowerbox"
+src\components\FlowerboxSection.astro:48:        View All Flowerboxes
+src\components\Footer.astro:13:  { label: "All Flowers", href: "/categories/bouquets" },
+src\components\Footer.astro:14:  { label: "Bouquets", href: "/categories/bouquets" },
+src\components\Footer.astro:15:  { label: "Pooja Flowers", href: "/categories/pooja-flowers" },
+src\components\Footer.astro:16:  { label: "Flowerbox", href: "/categories/flowerbox" },
+src\components\Footer.astro:17:  { label: "Baskets", href: "/categories/baskets" },
+src\components\Footer.astro:18:  { label: "Flower Subscription", href: "/categories/subscriptions" },
+src\components\Footer.astro:19:  { label: "Add-ons & Hampers", href: "/categories/add-ons" },
+src\components\Footer.astro:21:  { label: "Wedding Flowers", href: "/occasions/wedding" },
+src\components\Footer.astro:49:          Fresh flowers for pooja, bouquets, jasmine, garlands, wedding flowers,
+src\components\Footer.astro:50:          subscriptions and gifting across Hyderabad.
+src\components\Footer.astro:151:          Get updates on fresh flower availability, festive pooja flowers,
+src\components\Footer.astro:152:          bouquet offers and subscription plans.
+src\components\Footer.astro:183:      <p>© 2026 Fresh Petals Hyderabad. All rights reserved.</p>
+src\components\Header.astro:4:  { label: "Pooja Flowers", href: "#pooja-flowers" },
+src\components\Header.astro:6:  { label: "Bouquets", href: "#bouquets" },
+src\components\HeroSection.astro:16:        Fresh flowers for pooja, gifting, events and daily rituals.
+src\components\HeroSection.astro:20:        Order pooja flowers, jasmine, bouquets, garlands, poola jada and bulk flowers directly on WhatsApp.
+src\components\HeroSection.astro:46:          src="/images/hero-flowers.jpg"
+src\components\HeroSection.astro:47:          alt="Fresh flowers from Fresh Petals Hyderabad"
+src\components\HeroSection.astro:56:            Pooja flowers, jasmine, bouquets and garlands
+src\components\HomeDecorGiftingSection.astro:30:          Add dried flowers, vases, plants and room mist to make flower gifting feel more complete and premium.
+src\components\HomeDecorGiftingSection.astro:35:        href="/categories/dried-flowers"
+src\components\HomeDecorGiftingSection.astro:68:            We are updating dried flowers, vases, plants and decor add-ons.
+src\components\HomeHeroBanners.astro:5:    label: "Fresh Flowers Delivered In Hyderabad",
+src\components\HomeHeroBanners.astro:8:      "Fresh pooja flowers, jasmine, bouquets and garlands delivered across Hyderabad.",
+src\components\HomeHeroBanners.astro:13:    image: "/images/hero-bouquets.jpg",
+src\components\HomeHeroBanners.astro:15:    title: "Bouquets",
+src\components\HomeHeroBanners.astro:17:      "Fresh hand-tied bouquets for birthdays, anniversaries and gifting.",
+src\components\HomeHeroBanners.astro:19:    href: "/categories/bouquets",
+src\components\HomeHeroBanners.astro:22:    image: "/images/hero-pooja.jpg",
+src\components\HomeHeroBanners.astro:23:    label: "Daily Fresh Flowers For Rituals",
+src\components\HomeHeroBanners.astro:24:    title: "Pooja Flowers",
+src\components\HomeHeroBanners.astro:26:      "Fresh flowers, jasmine, garlands and pooja essentials for daily rituals.",
+src\components\HomeHeroBanners.astro:28:    href: "/categories/pooja-flowers",
+src\components\HomeHeroBanners.astro:89:            class={`hero-dot h-[3px] rounded-full transition-all duration-300 ${
+src\components\HomeHeroBanners.astro:106:      slider.querySelectorAll(".hero-slide")
+src\components\HomeHeroBanners.astro:110:      slider.querySelectorAll(".hero-dot")
+src\components\MegaNav.astro:4:    label: "All Flowers",
+src\components\MegaNav.astro:5:    href: "/categories/bouquets",
+src\components\MegaNav.astro:8:        title: "All Flowers",
+src\components\MegaNav.astro:10:          { label: "All Flowers", href: "/categories/bouquets" },
+src\components\MegaNav.astro:11:          { label: "Hand-Tied Bouquets", href: "/categories/bouquets" },
+src\components\MegaNav.astro:12:          { label: "Subscription", href: "/categories/subscriptions" },
+src\components\MegaNav.astro:13:          { label: "Do-It-Yourself Flowerbox", href: "/categories/flowerbox" },
+src\components\MegaNav.astro:15:          { label: "Dried Flowers", href: "/categories/dried-flowers" },
+src\components\MegaNav.astro:17:          { label: "Floral Basket", href: "/categories/baskets" },
+src\components\MegaNav.astro:31:          { label: "Jasmine / Malli", href: "/products/jasmine-malli" },
+src\components\MegaNav.astro:39:          { label: "Pastel Flowers", href: "/categories/bouquets" },
+src\components\MegaNav.astro:40:          { label: "Pink Flowers", href: "/categories/bouquets" },
+src\components\MegaNav.astro:41:          { label: "White Flowers", href: "/categories/pooja-flowers" },
+src\components\MegaNav.astro:42:          { label: "Red Flowers", href: "/products/rose-bouquet" },
+src\components\MegaNav.astro:43:          { label: "Yellow Flowers", href: "/categories/pooja-flowers" },
+src\components\MegaNav.astro:55:          { label: "Wedding Occasion Page", href: "/occasions/wedding" },
+src\components\MegaNav.astro:61:    label: "Subscription",
+src\components\MegaNav.astro:62:    href: "/categories/subscriptions",
+src\components\MegaNav.astro:65:        title: "Subscriptions",
+src\components\MegaNav.astro:67:          { label: "Daily Pooja Flowers", href: "/products/daily-pooja-flower-subscription" },
+src\components\MegaNav.astro:68:          { label: "Weekly Flower Subscription", href: "/products/weekly-flowerbox-subscription" },
+src\components\MegaNav.astro:69:          { label: "Jasmine / Malli Subscription", href: "/products/jasmine-malli-subscription" },
+src\components\MegaNav.astro:70:          { label: "Custom Flower Subscription", href: "/products/custom-flower-subscription" },
+src\components\MegaNav.astro:71:          { label: "All Subscriptions", href: "/categories/subscriptions" },
+src\components\MegaNav.astro:77:    label: "Bouquets",
+src\components\MegaNav.astro:78:    href: "/categories/bouquets",
+src\components\MegaNav.astro:81:        title: "Bouquets",
+src\components\MegaNav.astro:86:          { label: "Bouquets Under ₹999", href: "/products/bouquets-under-999" },
+src\components\MegaNav.astro:87:          { label: "All Bouquets", href: "/categories/bouquets" },
+src\components\MegaNav.astro:93:    label: "Flowerbox",
+src\components\MegaNav.astro:94:    href: "/categories/flowerbox",
+src\components\MegaNav.astro:97:        title: "Flowerbox",
+src\components\MegaNav.astro:99:          { label: "DIY Flowerbox", href: "/products/diy-flowerbox" },
+src\components\MegaNav.astro:101:          { label: "Pooja Flower Box", href: "/products/pooja-flowerbox" },
+src\components\MegaNav.astro:103:          { label: "Pet Friendly Flowerbox", href: "/products/pet-friendly-flowerbox" },
+src\components\MegaNav.astro:104:          { label: "All Flowerboxes", href: "/categories/flowerbox" },
+src\components\MegaNav.astro:110:    label: "Baskets",
+src\components\MegaNav.astro:111:    href: "/categories/baskets",
+src\components\MegaNav.astro:114:        title: "Baskets",
+src\components\MegaNav.astro:116:          { label: "Flower Baskets", href: "/products/flower-basket" },
+src\components\MegaNav.astro:117:          { label: "Gift Baskets", href: "/products/gift-basket" },
+src\components\MegaNav.astro:118:          { label: "Pooja Baskets", href: "/products/pooja-basket" },
+src\components\MegaNav.astro:119:          { label: "Premium Baskets", href: "/products/premium-flower-basket" },
+src\components\MegaNav.astro:120:          { label: "All Baskets", href: "/categories/baskets" },
+src\components\MegaNav.astro:126:    label: "Pooja",
+src\components\MegaNav.astro:127:    href: "/occasions/pooja",
+src\components\MegaNav.astro:130:        title: "Pooja Decor",
+src\components\MegaNav.astro:132:          { label: "Daily Pooja Flowers", href: "/products/daily-pooja-flowers" },
+src\components\MegaNav.astro:133:          { label: "Jasmine / Malli", href: "/products/jasmine-malli" },
+src\components\MegaNav.astro:136:          { label: "Pooja Flower Box", href: "/products/pooja-flower-box" },
+src\components\MegaNav.astro:137:          { label: "Temple Bulk Flowers", href: "/products/temple-bulk-flowers" },
+src\components\MegaNav.astro:138:          { label: "Pooja Basket", href: "/products/pooja-basket" },
+src\components\MegaNav.astro:139:          { label: "All Pooja Flowers", href: "/categories/pooja-flowers" },
+src\components\MegaNav.astro:140:          { label: "Pooja Occasion Page", href: "/occasions/pooja" },
+src\components\MegaNav.astro:146:  label: "Occasions",
+src\components\MegaNav.astro:147:  href: "/occasions/birthday",
+src\components\MegaNav.astro:152:        { label: "Birthday", href: "/occasions/birthday" },
+src\components\MegaNav.astro:153:        { label: "Anniversary", href: "/occasions/anniversary" },
+src\components\MegaNav.astro:154:        { label: "Romantic", href: "/occasions/romantic" },
+src\components\MegaNav.astro:155:        { label: "Mom To Be", href: "/occasions/mom-to-be" },
+src\components\MegaNav.astro:156:        { label: "New Mom", href: "/occasions/new-mom" },
+src\components\MegaNav.astro:157:        { label: "Sympathy", href: "/occasions/sympathy" },
+src\components\MegaNav.astro:158:        { label: "Just Because", href: "/occasions/just-because" },
+src\components\MegaNav.astro:159:        { label: "Congratulations", href: "/occasions/congratulations" },
+src\components\MegaNav.astro:160:        { label: "House Warming", href: "/occasions/housewarming" },
+src\components\MegaNav.astro:161:        { label: "Pooja", href: "/occasions/pooja" },
+src\components\MegaNav.astro:162:        { label: "Thank You", href: "/occasions/thank-you" },
+src\components\MegaNav.astro:163:        { label: "Get Well Soon", href: "/occasions/get-well-soon" },
+src\components\MegaNav.astro:164:        { label: "I Am Sorry", href: "/occasions/i-am-sorry" },
+src\components\MegaNav.astro:165:        { label: "Wedding Collection", href: "/occasions/wedding" },
+src\components\MegaNav.astro:171:    label: "Hampers",
+src\components\MegaNav.astro:172:    href: "/categories/hampers",
+src\components\MegaNav.astro:177:          { label: "All Hampers", href: "/categories/hampers" },
+src\components\MegaNav.astro:180:          { label: "Flowers & Chocolates", href: "/products/chocolates-addon" },
+src\components\MegaNav.astro:197:          { label: "Under ₹499", href: "/products/flowers-under-499" },
+src\components\MegaNav.astro:198:          { label: "Under ₹999", href: "/products/bouquets-under-999" },
+src\components\MegaNav.astro:201:          { label: "All Offers", href: "/categories/offers" },
+src\components\MegaNav.astro:207:    label: "Rewards",
+src\components\MegaNav.astro:208:    href: "/rewards",
+src\components\MegaNav.astro:211:        title: "Rewards",
+src\components\MegaNav.astro:235:            <span class="absolute bottom-0 left-0 h-px w-0 bg-[#111111] transition-all duration-500 ease-out group-hover:w-full" />
+src\components\MegaNav.astro:238:          <div class="pointer-events-none absolute left-0 top-full z-50 w-full translate-y-3 border-b border-[#EEE5E8] bg-white/95 opacity-0 shadow-[0_18px_45px_rgba(0,0,0,0.04)] backdrop-blur-sm transition-all duration-500 ease-out group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100">
+src\components\MegaNav.astro:247:                    class="translate-y-2 opacity-0 transition-all duration-500 ease-out group-hover:translate-y-0 group-hover:opacity-100"
+src\components\MegaNav.astro:258:                            class="translate-y-1 opacity-0 transition-all duration-500 ease-out group-hover:translate-y-0 group-hover:opacity-100"
+src\components\MobileBottomBar.astro:18:    href: "/categories/bouquets",
+src\components\MobileBottomBar.astro:22:    label: "Pooja",
+src\components\MobileBottomBar.astro:23:    href: "/categories/pooja-flowers",
+src\components\MobileBottomBar.astro:156:      aria-label="Order Fresh Petals flowers on WhatsApp"
+src\components\OccasionSection.astro:2:const occasions = [
+src\components\OccasionSection.astro:6:    image: "/images/occasion-pooja.jpg",
+src\components\OccasionSection.astro:11:    subtitle: "Fresh bouquets",
+src\components\OccasionSection.astro:13:    href: "/occasions/birthday",
+src\components\OccasionSection.astro:22:    title: "Subscription Starting At ₹299",
+src\components\OccasionSection.astro:23:    subtitle: "Daily pooja flowers",
+src\components\OccasionSection.astro:25:    href: "/categories/subscriptions",
+src\components\OccasionSection.astro:30:<section id="occasions" class="bg-white px-5 py-14 md:px-8 md:py-16">
+src\components\OccasionSection.astro:34:        occasions.map((item) => (
+src\components\OffersSection.astro:48:        View All Offers
+src\components\PoojaProductsSection.astro:6:  (product) => product.category === "Pooja Flowers"
+src\components\PoojaProductsSection.astro:10:<section id="pooja" class="bg-white px-5 py-14 md:px-8 md:py-16">
+src\components\PoojaProductsSection.astro:18:        Pooja Flowers
+src\components\PoojaProductsSection.astro:22:        Fresh pooja flowers, jasmine, flower boxes and temple bulk flowers prepared based on daily market availability.
+src\components\PoojaProductsSection.astro:45:        href="/categories/pooja-flowers"
+src\components\PoojaProductsSection.astro:48:        View All Pooja Flowers
+src\components\PopularWithFlowers.astro:10:<section id="popular-with-flowers" class="bg-white px-5 py-14 md:px-8 md:py-16">
+src\components\PopularWithFlowers.astro:18:        Popular With Flowers
+src\components\PopularWithFlowers.astro:48:        View All Add-ons
+src\components\ProductCard.astro:22:  category = "Fresh Flowers",
+src\components\ProductCard.astro:23:  description = "Fresh flowers made on order based on availability.",
+src\components\ProductCard.astro:34:const cartId = id || slug || name.toLowerCase().replaceAll(" ", "-");
+src\components\ProductCard.astro:153:  const buttons = document.querySelectorAll("[data-add-to-cart]");
+src\components\ProductOptions.astro:55:  "Confirm manually on WhatsApp",
+src\components\ProductOptions.astro:261:      optionsSection?.querySelectorAll("[data-option-addon]:checked") || []
+src\components\ProductSection.astro:5:const products = productCatalog.filter((product) => product.category === "Bouquets");
+src\components\ProductSection.astro:8:<section id="bouquets" class="bg-white px-5 py-14 md:px-8 md:py-16">
+src\components\ProductSection.astro:16:        Bouquets
+src\components\ProductSection.astro:20:        Fresh hand-arranged bouquets for gifting, celebrations and custom flower orders.
+src\components\ProductSection.astro:43:        href="/categories/bouquets"
+src\components\ProductSection.astro:46:        View All Bouquets
+src\components\ReferEarnSection.astro:9:<section id="rewards" class="border-t border-[#EEE5E8] bg-[#FFFDF7] px-5 py-14 md:px-8 md:py-16">
+src\components\ReferEarnSection.astro:12:      Fresh Petals Rewards
+src\components\ReferEarnSection.astro:21:      Perfect for pooja flowers, bouquets, subscriptions and event orders.
+src\components\RoundCategoryCarousel.astro:4:    label: "Bouquets",
+src\components\RoundCategoryCarousel.astro:5:    image: "/images/cat-bouquets.jpg",
+src\components\RoundCategoryCarousel.astro:6:    href: "/categories/bouquets",
+src\components\RoundCategoryCarousel.astro:11:    href: "/occasions/anniversary",
+src\components\RoundCategoryCarousel.astro:16:    href: "/occasions/birthday",
+src\components\RoundCategoryCarousel.astro:19:    label: "Subscription",
+src\components\RoundCategoryCarousel.astro:20:    image: "/images/cat-subscription.jpg",
+src\components\RoundCategoryCarousel.astro:21:    href: "/categories/subscriptions",
+src\components\RoundCategoryCarousel.astro:24:    label: "Flowerbox",
+src\components\RoundCategoryCarousel.astro:25:    image: "/images/cat-flowerbox.jpg",
+src\components\RoundCategoryCarousel.astro:26:    href: "/categories/flowerbox",
+src\components\RoundCategoryCarousel.astro:29:    label: "Baskets",
+src\components\RoundCategoryCarousel.astro:31:    href: "/categories/baskets",
+src\components\RoundCategoryCarousel.astro:39:    label: "Hampers",
+src\components\RoundCategoryCarousel.astro:40:    image: "/images/cat-hampers.jpg",
+src\components\RoundCategoryCarousel.astro:49:    label: "Pooja",
+src\components\RoundCategoryCarousel.astro:50:    image: "/images/cat-pooja.jpg",
+src\components\RoundCategoryCarousel.astro:51:    href: "/occasions/pooja",
+src\components\RoundCategoryCarousel.astro:66:    href: "/occasions/wedding",
+src\components\SubscriptionConfigurator.astro:16:    description: "Best for daily pooja flowers, jasmine or home rituals.",
+src\components\SubscriptionConfigurator.astro:21:    description: "Best for flowerbox, decor flowers or weekly fresh flowers.",
+src\components\SubscriptionConfigurator.astro:64:  "Confirm manually on WhatsApp",
+src\components\SubscriptionConfigurator.astro:93:  data-subscription-configurator
+src\components\SubscriptionConfigurator.astro:105:        Subscription Plan
+src\components\SubscriptionConfigurator.astro:120:    Final subscription price will be confirmed on WhatsApp based on flower mix, quantity,
+src\components\SubscriptionConfigurator.astro:136:                name="subscription-frequency"
+src\components\SubscriptionConfigurator.astro:138:                data-subscription-frequency
+src\components\SubscriptionConfigurator.astro:170:              name="subscription-duration"
+src\components\SubscriptionConfigurator.astro:172:              data-subscription-duration
+src\components\SubscriptionConfigurator.astro:195:              data-subscription-day
+src\components\SubscriptionConfigurator.astro:212:        data-subscription-start-date
+src\components\SubscriptionConfigurator.astro:226:        data-subscription-pincode
+src\components\SubscriptionConfigurator.astro:236:        data-subscription-delivery-slot
+src\components\SubscriptionConfigurator.astro:252:        data-subscription-quantity
+src\components\SubscriptionConfigurator.astro:260:      Subscription Add-ons
+src\components\SubscriptionConfigurator.astro:270:              data-subscription-addon
+src\components\SubscriptionConfigurator.astro:291:      Subscription Message / Notes
+src\components\SubscriptionConfigurator.astro:295:      placeholder="Example: Need jasmine every morning / weekly vase flowers / budget ₹800 per week..."
+src\components\SubscriptionConfigurator.astro:296:      data-subscription-message
+src\components\SubscriptionConfigurator.astro:315:      data-subscription-add-to-cart
+src\components\SubscriptionConfigurator.astro:323:      {product.isAvailable ? "Add Subscription To Cart" : "Unavailable"}
+src\components\SubscriptionConfigurator.astro:328:      data-subscription-whatsapp
+src\components\SubscriptionConfigurator.astro:331:      Confirm Subscription On WhatsApp
+src\components\SubscriptionConfigurator.astro:343:    data-subscription-feedback
+src\components\SubscriptionConfigurator.astro:346:    Subscription plan added to cart.
+src\components\SubscriptionConfigurator.astro:353:  const subscriptionSection = document.querySelector("[data-subscription-configurator]");
+src\components\SubscriptionConfigurator.astro:356:    const input = subscriptionSection?.querySelector(selector);
+src\components\SubscriptionConfigurator.astro:361:    const selected = subscriptionSection?.querySelector(`${selector}:checked`);
+src\components\SubscriptionConfigurator.astro:367:      subscriptionSection?.querySelectorAll("[data-subscription-day]:checked") || []
+src\components\SubscriptionConfigurator.astro:375:      subscriptionSection?.querySelectorAll("[data-subscription-addon]:checked") || []
+src\components\SubscriptionConfigurator.astro:386:  function getConfiguredSubscriptionItem() {
+src\components\SubscriptionConfigurator.astro:387:    if (!subscriptionSection) return null;
+src\components\SubscriptionConfigurator.astro:389:    const quantityValue = Number(getInputValue("[data-subscription-quantity]"));
+src\components\SubscriptionConfigurator.astro:394:      getCheckedValue("[data-subscription-frequency]") || "weekly";
+src\components\SubscriptionConfigurator.astro:397:      getCheckedValue("[data-subscription-duration]") || "1-month";
+src\components\SubscriptionConfigurator.astro:400:    const startDate = getInputValue("[data-subscription-start-date]");
+src\components\SubscriptionConfigurator.astro:401:    const pincode = getInputValue("[data-subscription-pincode]");
+src\components\SubscriptionConfigurator.astro:402:    const deliverySlot = getInputValue("[data-subscription-delivery-slot]");
+src\components\SubscriptionConfigurator.astro:403:    const message = getInputValue("[data-subscription-message]");
+src\components\SubscriptionConfigurator.astro:409:        id: subscriptionSection.dataset.productId || "",
+src\components\SubscriptionConfigurator.astro:410:        productId: subscriptionSection.dataset.productId || "",
+src\components\SubscriptionConfigurator.astro:411:        slug: subscriptionSection.dataset.productSlug || "",
+src\components\SubscriptionConfigurator.astro:412:        name: subscriptionSection.dataset.productName || "",
+src\components\SubscriptionConfigurator.astro:413:        image: subscriptionSection.dataset.productImage || "",
+src\components\SubscriptionConfigurator.astro:414:        priceLabel: subscriptionSection.dataset.productPriceLabel || "",
+src\components\SubscriptionConfigurator.astro:415:        category: subscriptionSection.dataset.productCategory || "",
+src\components\SubscriptionConfigurator.astro:421:        note: "Subscription order",
+src\components\SubscriptionConfigurator.astro:422:        subscription: {
+src\components\SubscriptionConfigurator.astro:436:    const configured = getConfiguredSubscriptionItem();
+src\components\SubscriptionConfigurator.astro:450:      item.subscription?.preferredDays &&
+src\components\SubscriptionConfigurator.astro:451:      item.subscription.preferredDays.length > 0
+src\components\SubscriptionConfigurator.astro:452:        ? item.subscription.preferredDays.join(", ")
+src\components\SubscriptionConfigurator.astro:456:      "Hi Fresh Petals, I want to confirm this subscription plan:",
+src\components\SubscriptionConfigurator.astro:463:      "Subscription Details:",
+src\components\SubscriptionConfigurator.astro:464:      `Frequency: ${item.subscription?.frequency || "Not selected"}`,
+src\components\SubscriptionConfigurator.astro:465:      `Duration: ${item.subscription?.duration || "Not selected"}`,
+src\components\SubscriptionConfigurator.astro:467:      `Start Date: ${item.subscription?.startDate || "Not selected"}`,
+src\components\SubscriptionConfigurator.astro:468:      `Pincode: ${item.subscription?.pincode || "Not added"}`,
+src\components\SubscriptionConfigurator.astro:469:      `Delivery Slot: ${item.subscription?.deliverySlot || "Not selected"}`,
+src\components\SubscriptionConfigurator.astro:474:      `Message: ${item.subscription?.message || "No message added"}`,
+src\components\SubscriptionConfigurator.astro:476:      "Please confirm subscription availability, final recurring price and delivery possibility.",
+src\components\SubscriptionConfigurator.astro:480:  const addSubscriptionButton = document.querySelector(
+src\components\SubscriptionConfigurator.astro:481:    "[data-subscription-add-to-cart]"
+src\components\SubscriptionConfigurator.astro:485:    "[data-subscription-whatsapp]"
+src\components\SubscriptionConfigurator.astro:488:  const feedback = document.querySelector("[data-subscription-feedback]");
+src\components\SubscriptionConfigurator.astro:490:  addSubscriptionButton?.addEventListener("click", () => {
+src\components\SubscriptionConfigurator.astro:491:    const configured = getConfiguredSubscriptionItem();
+src\components\SubscriptionConfigurator.astro:505:    if (!subscriptionSection) return;
+src\components\SubscriptionConfigurator.astro:507:    const whatsappNumber = subscriptionSection.dataset.whatsappNumber || "";
+src\components\SubscriptionProducts.astro:5:const subscriptions = productCatalog.filter(
+src\components\SubscriptionProducts.astro:6:  (product) => product.category === "Subscriptions"
+src\components\SubscriptionProducts.astro:10:<section id="subscription-products" class="bg-white px-5 py-14 md:px-8 md:py-16">
+src\components\SubscriptionProducts.astro:18:        Flower Subscriptions
+src\components\SubscriptionProducts.astro:22:        Recurring flower plans for pooja, jasmine, home styling and custom flower needs.
+src\components\SubscriptionProducts.astro:28:        subscriptions.map((product) => (
+src\components\SubscriptionProducts.astro:45:        href="/categories/subscriptions"
+src\components\SubscriptionProducts.astro:48:        View All Subscriptions
+src\components\TrustSection.astro:10:    description: "Flowers sourced fresh based on daily market availability.",
+src\components\TrustSection.astro:15:    description: "Simple, neat packing for pooja, gifting and events.",
+src\components\TrustSection.astro:20:    description: "Built for local pooja, bouquet, jasmine and event needs.",
+src\components\UnboxingReels.astro:10:  { label: "All Flowers", href: "#bouquets" },
+src\components\UnboxingReels.astro:11:  { label: "Bouquets", href: "#bouquets" },
+src\components\UnboxingReels.astro:12:  { label: "Pooja Flowers", href: "#pooja" },
+src\components\UnboxingReels.astro:13:  { label: "Flower Subscription", href: "#subscriptions" },
+src\components\UnboxingReels.astro:14:  { label: "Wedding Flowers", href: "/occasions/wedding" },
+src\components\UnboxingReels.astro:15:  { label: "Hampers", href: "#popular-with-flowers" },
+src\components\UnboxingReels.astro:44:          Fresh flowers for pooja, bouquets, jasmine, garlands, wedding flowers,
+src\components\UnboxingReels.astro:45:          subscriptions and gifting across Hyderabad.
+src\components\UnboxingReels.astro:141:          Get updates on fresh flower availability, festive pooja flowers,
+src\components\UnboxingReels.astro:142:          bouquet offers and subscription plans.
+src\components\UnboxingReels.astro:172:      <p>© 2026 Fresh Petals Hyderabad. All rights reserved.</p>
+src\components\WeddingTraditionalSection.astro:26:          Wedding & Traditional Flowers
+src\components\WeddingTraditionalSection.astro:30:          Fresh garlands, jasmine gajra, torans and bridal flower accessories for pooja, functions and wedding needs.
+src\components\WeddingTraditionalSection.astro:38:        View Wedding Flowers
+src\components\WeddingTraditionalSection.astro:64:            Traditional flowers coming soon
+src\components\WeddingTraditionalSection.astro:68:            We are updating wedding flowers, garlands, gajra and toran products.
+src\components\WhatsAppOrderSection.astro:5:  "Hi Fresh Petals, I want to know about daily pooja flower subscription in Hyderabad."
+src\components\WhatsAppOrderSection.astro:9:<section id="subscriptions" class="bg-white px-5 py-14 md:px-8 md:py-16">
+src\components\WhatsAppOrderSection.astro:13:        src="/images/subscription-banner.jpg"
+src\components\WhatsAppOrderSection.astro:14:        alt="Fresh Petals flower subscription"
+src\components\WhatsAppOrderSection.astro:28:            Daily Pooja Flower Subscription
+src\components\WhatsAppOrderSection.astro:32:            Fresh flowers for your morning pooja, delivered regularly across Hyderabad.
+src\components\WhatsAppOrderSection.astro:46:              aria-label="Order flower subscription on WhatsApp"
+src\data\productCatalog.ts:25:  isSubscription?: boolean;
+src\data\productCatalog.ts:34:    category: "Bouquets",
+src\data\productCatalog.ts:38:    description: "Fresh hand-arranged bouquet for gifting and occasions.",
+src\data\productCatalog.ts:40:      "A fresh mixed flower bouquet made on order using available seasonal flowers. Suitable for birthdays, small celebrations, casual gifting and surprise deliveries.",
+src\data\productCatalog.ts:45:    collectionTags: ["bouquets", "all-flowers", "same-day"],
+src\data\productCatalog.ts:48:      "Fresh seasonal flowers",
+src\data\productCatalog.ts:63:    category: "Bouquets",
+src\data\productCatalog.ts:69:      "A classic fresh rose bouquet for gifting, anniversaries, birthdays and romantic occasions. Final flower count and price depend on daily market availability.",
+src\data\productCatalog.ts:74:    collectionTags: ["bouquets", "roses", "romantic"],
+src\data\productCatalog.ts:92:    category: "Bouquets",
+src\data\productCatalog.ts:103:    collectionTags: ["bouquets", "premium-gifting", "custom"],
+src\data\productCatalog.ts:118:    id: "pooja-001",
+src\data\productCatalog.ts:119:    slug: "daily-pooja-flowers",
+src\data\productCatalog.ts:120:    name: "Daily Pooja Flowers",
+src\data\productCatalog.ts:121:    category: "Pooja Flowers",
+src\data\productCatalog.ts:122:    image: "/images/cat-pooja.jpg",
+src\data\productCatalog.ts:125:    description: "Fresh daily pooja flowers packed based on morning availability.",
+src\data\productCatalog.ts:127:      "Fresh pooja flowers prepared for daily home worship, temple use and small rituals. Final flower mix depends on daily market freshness and seasonal availability.",
+src\data\productCatalog.ts:130:    badge: "Morning pooja",
+src\data\productCatalog.ts:131:    ratingLabel: "Daily-use flowers",
+src\data\productCatalog.ts:132:    collectionTags: ["pooja-flowers", "daily-use", "all-flowers"],
+src\data\productCatalog.ts:133:    occasionTags: ["pooja", "housewarming"],
+src\data\productCatalog.ts:135:      "Fresh seasonal pooja flowers",
+src\data\productCatalog.ts:141:      "Use flowers preferably on the same day.",
+src\data\productCatalog.ts:143:      "Store in a cool place until pooja time.",
+src\data\productCatalog.ts:147:    id: "pooja-002",
+src\data\productCatalog.ts:148:    slug: "jasmine-malli",
+src\data\productCatalog.ts:149:    name: "Jasmine / Malli",
+src\data\productCatalog.ts:150:    category: "Pooja Flowers",
+src\data\productCatalog.ts:154:    description: "Fresh jasmine/malli based on daily market availability.",
+src\data\productCatalog.ts:156:      "Fresh jasmine or malli flowers for pooja, hair decoration, functions and daily use. Price changes based on freshness, season and market rate.",
+src\data\productCatalog.ts:161:    collectionTags: ["pooja-flowers", "jasmine", "flower-strings-torans"],
+src\data\productCatalog.ts:162:    occasionTags: ["pooja", "wedding"],
+src\data\productCatalog.ts:164:      "Fresh jasmine/malli",
+src\data\productCatalog.ts:176:    id: "pooja-003",
+src\data\productCatalog.ts:177:    slug: "pooja-flower-box",
+src\data\productCatalog.ts:178:    name: "Pooja Flower Box",
+src\data\productCatalog.ts:179:    category: "Pooja Flowers",
+src\data\productCatalog.ts:180:    image: "/images/pooja-flowers.jpg",
+src\data\productCatalog.ts:183:    description: "Assorted pooja flower box prepared fresh on order.",
+src\data\productCatalog.ts:185:      "A fresh pooja flower box with assorted seasonal flowers selected based on the day’s market availability. Suitable for home pooja, temple visits and festive rituals.",
+src\data\productCatalog.ts:190:    collectionTags: ["pooja-flowers", "flowerbox", "daily-use"],
+src\data\productCatalog.ts:191:    occasionTags: ["pooja", "housewarming"],
+src\data\productCatalog.ts:193:      "Assorted pooja flowers",
+src\data\productCatalog.ts:205:    id: "pooja-004",
+src\data\productCatalog.ts:206:    slug: "temple-bulk-flowers",
+src\data\productCatalog.ts:207:    name: "Temple Bulk Flowers",
+src\data\productCatalog.ts:208:    category: "Pooja Flowers",
+src\data\productCatalog.ts:209:    image: "/images/hero-pooja.jpg",
+src\data\productCatalog.ts:212:    description: "Bulk pooja flowers for temples, events and rituals.",
+src\data\productCatalog.ts:214:      "Bulk flowers for temple pooja, rituals, functions and event requirements. Pricing depends on flower type, quantity, date and delivery location.",
+src\data\productCatalog.ts:219:    collectionTags: ["pooja-flowers", "bulk-orders", "wedding"],
+src\data\productCatalog.ts:220:    occasionTags: ["pooja", "wedding", "housewarming"],
+src\data\productCatalog.ts:229:      "Store flowers in a cool shaded area.",
+src\data\productCatalog.ts:234:    id: "flowerbox-001",
+src\data\productCatalog.ts:235:    slug: "diy-flowerbox",
+src\data\productCatalog.ts:236:    name: "DIY Flowerbox",
+src\data\productCatalog.ts:237:    category: "Flowerbox",
+src\data\productCatalog.ts:238:    image: "/images/cat-flowerbox.jpg",
+src\data\productCatalog.ts:241:    description: "Fresh loose flowers packed for DIY home flower arranging.",
+src\data\productCatalog.ts:243:      "A DIY flowerbox with fresh flowers selected for home styling, vase arrangement, gifting or personal use. Flower mix depends on daily availability and freshness.",
+src\data\productCatalog.ts:246:    badge: "DIY flowers",
+src\data\productCatalog.ts:248:    collectionTags: ["flowerbox", "diy", "vases"],
+src\data\productCatalog.ts:251:      "Fresh loose flowers",
+src\data\productCatalog.ts:252:      "Flowerbox packing",
+src\data\productCatalog.ts:258:      "Keep flowers in a clean vase.",
+src\data\productCatalog.ts:263:    id: "flowerbox-002",
+src\data\productCatalog.ts:266:    category: "Flowerbox",
+src\data\productCatalog.ts:267:    image: "/images/subscription-2.jpg",
+src\data\productCatalog.ts:272:      "A loose flower box prepared with fresh seasonal flowers. Suitable for home decoration, small events, pooja use or DIY floral styling.",
+src\data\productCatalog.ts:277:    collectionTags: ["flowerbox", "all-flowers", "by-stems"],
+src\data\productCatalog.ts:278:    occasionTags: ["housewarming", "just-because", "pooja"],
+src\data\productCatalog.ts:280:      "Fresh loose flowers",
+src\data\productCatalog.ts:286:      "Keep the flowers cool after delivery.",
+src\data\productCatalog.ts:292:    id: "flowerbox-003",
+src\data\productCatalog.ts:295:    category: "Flowerbox",
+src\data\productCatalog.ts:296:    image: "/images/subscription-4.jpg",
+src\data\productCatalog.ts:299:    description: "Premium flower box for gifting and special occasions.",
+src\data\productCatalog.ts:301:      "A curated gift flower box arranged with fresh flowers for birthdays, anniversaries, celebrations and premium gifting. Final design depends on flower choice and availability.",
+src\data\productCatalog.ts:306:    collectionTags: ["flowerbox", "gifting", "premium-gifting"],
+src\data\productCatalog.ts:309:      "Fresh curated flowers",
+src\data\productCatalog.ts:310:      "Gift-style flowerbox packing",
+src\data\productCatalog.ts:321:    id: "flowerbox-004",
+src\data\productCatalog.ts:322:    slug: "pooja-flowerbox",
+src\data\productCatalog.ts:323:    name: "Pooja Flower Box",
+src\data\productCatalog.ts:324:    category: "Flowerbox",
+src\data\productCatalog.ts:325:    image: "/images/subscription-1.jpg",
+src\data\productCatalog.ts:328:    description: "Fresh pooja flower box packed for home and temple use.",
+src\data\productCatalog.ts:330:      "A fresh pooja flower box prepared for daily worship, temple visits and festive rituals. Flower selection depends on season and market availability.",
+src\data\productCatalog.ts:333:    badge: "Pooja ready",
+src\data\productCatalog.ts:335:    collectionTags: ["flowerbox", "pooja-flowers", "daily-use"],
+src\data\productCatalog.ts:336:    occasionTags: ["pooja", "housewarming"],
+src\data\productCatalog.ts:338:      "Fresh pooja flowers",
+src\data\productCatalog.ts:339:      "Flowerbox packing",
+src\data\productCatalog.ts:353:    category: "Baskets",
+src\data\productCatalog.ts:357:    description: "Fresh flower basket arranged for gifting and occasions.",
+src\data\productCatalog.ts:359:      "A fresh flower basket prepared with seasonal flowers for birthdays, anniversaries, housewarming, gifting and small celebrations. Final flower selection depends on daily availability.",
+src\data\productCatalog.ts:364:    collectionTags: ["baskets", "gifting", "all-flowers"],
+src\data\productCatalog.ts:367:      "Fresh seasonal flowers",
+src\data\productCatalog.ts:382:    category: "Baskets",
+src\data\productCatalog.ts:383:    image: "/images/cat-hampers.jpg",
+src\data\productCatalog.ts:386:    description: "Gift basket with flowers and optional add-ons.",
+src\data\productCatalog.ts:388:      "A gifting basket prepared with fresh flowers and optional add-ons like chocolates, cards, candles or decor items. Best for birthdays, anniversaries and premium surprise gifting.",
+src\data\productCatalog.ts:393:    collectionTags: ["baskets", "hampers", "add-ons"],
+src\data\productCatalog.ts:396:      "Fresh flowers",
+src\data\productCatalog.ts:409:    slug: "pooja-basket",
+src\data\productCatalog.ts:410:    name: "Pooja Basket",
+src\data\productCatalog.ts:411:    category: "Baskets",
+src\data\productCatalog.ts:412:    image: "/images/cat-pooja.jpg",
+src\data\productCatalog.ts:415:    description: "Fresh pooja flower basket based on daily market availability.",
+src\data\productCatalog.ts:417:      "A pooja flower basket prepared with fresh seasonal flowers for home pooja, temple visits and festive rituals. Price depends on flower type, quantity and market availability.",
+src\data\productCatalog.ts:421:    ratingLabel: "Pooja basket",
+src\data\productCatalog.ts:422:    collectionTags: ["baskets", "pooja-flowers", "daily-use"],
+src\data\productCatalog.ts:423:    occasionTags: ["pooja", "housewarming"],
+src\data\productCatalog.ts:425:      "Fresh pooja flowers",
+src\data\productCatalog.ts:433:      "Avoid crushing the flowers during handling.",
+src\data\productCatalog.ts:440:    category: "Baskets",
+src\data\productCatalog.ts:451:    collectionTags: ["baskets", "premium-gifting", "events"],
+src\data\productCatalog.ts:467:    slug: "flowers-under-499",
+src\data\productCatalog.ts:468:    name: "Under ₹499 Flowers",
+src\data\productCatalog.ts:475:      "Budget-friendly fresh flower options under ₹499, depending on the day’s market availability. Suitable for small gifting, pooja use, simple decor and quick flower needs.",
+src\data\productCatalog.ts:480:    collectionTags: ["offers", "all-flowers", "budget"],
+src\data\productCatalog.ts:481:    occasionTags: ["pooja", "just-because", "thank-you"],
+src\data\productCatalog.ts:483:      "Fresh flowers based on availability",
+src\data\productCatalog.ts:490:      "Keep flowers away from direct sunlight.",
+src\data\productCatalog.ts:496:    slug: "bouquets-under-999",
+src\data\productCatalog.ts:497:    name: "Under ₹999 Bouquets",
+src\data\productCatalog.ts:504:      "Fresh bouquet options under ₹999 for simple gifting and small celebrations. Flower type, size and wrapping depend on current availability and final confirmation.",
+src\data\productCatalog.ts:509:    collectionTags: ["offers", "bouquets", "budget"],
+src\data\productCatalog.ts:533:      "Fresh flower gifting options under ₹1499 for birthdays, anniversaries, thank-you gifts and small surprises. Final flower selection depends on daily market freshness.",
+src\data\productCatalog.ts:538:    collectionTags: ["offers", "gifting", "bouquets"],
+src\data\productCatalog.ts:568:    occasionTags: ["birthday", "pooja", "just-because"],
+src\data\productCatalog.ts:591:      "Chocolates can be added along with bouquets, flower boxes, baskets or gifting orders. Final options and price will be confirmed on WhatsApp based on availability.",
+src\data\productCatalog.ts:595:    ratingLabel: "Pairs with bouquets",
+src\data\productCatalog.ts:596:    collectionTags: ["add-ons", "hampers", "gifting"],
+src\data\productCatalog.ts:621:      "Candles and diffusers can be paired with flowers for premium gifting, anniversaries, birthdays, housewarming and special occasions. Availability and final price will be confirmed before order.",
+src\data\productCatalog.ts:626:    collectionTags: ["add-ons", "room-mist-diffuser", "hampers"],
+src\data\productCatalog.ts:631:      "Can be paired with bouquets or baskets",
+src\data\productCatalog.ts:651:      "Premium greeting cards can be added to bouquets, flower boxes, baskets and other gifting orders. You can share your message on WhatsApp while confirming the order.",
+src\data\productCatalog.ts:656:    collectionTags: ["add-ons", "gifting", "hampers"],
+src\data\productCatalog.ts:679:    description: "Table decor add-ons for flowers, events and gifting setups.",
+src\data\productCatalog.ts:681:      "Table decor add-ons can be used with flowers for small events, home celebrations, pooja setups, gifting presentations and premium decor arrangements.",
+src\data\productCatalog.ts:687:    occasionTags: ["housewarming", "wedding", "pooja"],
+src\data\productCatalog.ts:691:      "Can be paired with flowers",
+src\data\productCatalog.ts:702:    id: "subscription-001",
+src\data\productCatalog.ts:703:    slug: "daily-pooja-flower-subscription",
+src\data\productCatalog.ts:704:    name: "Daily Pooja Flower Subscription",
+src\data\productCatalog.ts:705:    category: "Subscriptions",
+src\data\productCatalog.ts:706:    image: "/images/subscription-1.jpg",
+src\data\productCatalog.ts:709:    description: "Fresh pooja flowers delivered on a recurring schedule.",
+src\data\productCatalog.ts:711:      "A recurring pooja flower subscription for homes that need fresh flowers regularly. Delivery frequency, quantity and final price will be confirmed on WhatsApp based on your area and requirement.",
+src\data\productCatalog.ts:714:    badge: "Subscription",
+src\data\productCatalog.ts:715:    ratingLabel: "Daily pooja plan",
+src\data\productCatalog.ts:716:    collectionTags: ["subscriptions", "pooja-flowers", "daily-use"],
+src\data\productCatalog.ts:717:    occasionTags: ["pooja"],
+src\data\productCatalog.ts:718:    isSubscription: true,
+src\data\productCatalog.ts:720:      "Fresh pooja flowers",
+src\data\productCatalog.ts:726:      "Use flowers preferably on the same day.",
+src\data\productCatalog.ts:727:      "Keep flowers in a cool shaded area.",
+src\data\productCatalog.ts:732:    id: "subscription-002",
+src\data\productCatalog.ts:733:    slug: "weekly-flowerbox-subscription",
+src\data\productCatalog.ts:734:    name: "Weekly Flowerbox Subscription",
+src\data\productCatalog.ts:735:    category: "Subscriptions",
+src\data\productCatalog.ts:736:    image: "/images/subscription-2.jpg",
+src\data\productCatalog.ts:739:    description: "Weekly fresh flowerbox for home styling and vase arrangements.",
+src\data\productCatalog.ts:741:      "A weekly flowerbox subscription for customers who want fresh flowers at home for decor, vase styling or personal use. Flower selection changes based on seasonal availability.",
+src\data\productCatalog.ts:744:    badge: "Weekly flowers",
+src\data\productCatalog.ts:746:    collectionTags: ["subscriptions", "flowerbox", "vases"],
+src\data\productCatalog.ts:748:    isSubscription: true,
+src\data\productCatalog.ts:750:      "Fresh seasonal flowers",
+src\data\productCatalog.ts:751:      "Weekly flowerbox delivery",
+src\data\productCatalog.ts:762:    id: "subscription-003",
+src\data\productCatalog.ts:763:    slug: "jasmine-malli-subscription",
+src\data\productCatalog.ts:764:    name: "Jasmine / Malli Subscription",
+src\data\productCatalog.ts:765:    category: "Subscriptions",
+src\data\productCatalog.ts:766:    image: "/images/subscription-3.jpg",
+src\data\productCatalog.ts:769:    description: "Recurring jasmine or malli delivery based on market availability.",
+src\data\productCatalog.ts:771:      "A jasmine or malli subscription for regular pooja, daily use, functions or personal requirements. Pricing depends on daily market rate, quantity and delivery frequency.",
+src\data\productCatalog.ts:776:    collectionTags: ["subscriptions", "jasmine", "pooja-flowers"],
+src\data\productCatalog.ts:777:    occasionTags: ["pooja", "wedding"],
+src\data\productCatalog.ts:778:    isSubscription: true,
+src\data\productCatalog.ts:780:      "Fresh jasmine/malli",
+src\data\productCatalog.ts:792:    id: "subscription-004",
+src\data\productCatalog.ts:793:    slug: "custom-flower-subscription",
+src\data\productCatalog.ts:794:    name: "Custom Flower Subscription",
+src\data\productCatalog.ts:795:    category: "Subscriptions",
+src\data\productCatalog.ts:796:    image: "/images/subscription-4.jpg",
+src\data\productCatalog.ts:799:    description: "Custom recurring flower plan for homes, pooja and events.",
+src\data\productCatalog.ts:801:      "A custom flower subscription created based on your requirement, delivery area, frequency, budget and flower preference. Suitable for homes, apartments, pooja use and small recurring setups.",
+src\data\productCatalog.ts:806:    collectionTags: ["subscriptions", "custom", "daily-use"],
+src\data\productCatalog.ts:807:    occasionTags: ["pooja", "housewarming"],
+src\data\productCatalog.ts:808:    isSubscription: true,
+src\data\productCatalog.ts:817:      "Mention preferred flowers clearly.",
+src\data\productCatalog.ts:827:    category: "Dried Flowers",
+src\data\productCatalog.ts:828:    image: "/images/subscription-4.jpg",
+src\data\productCatalog.ts:838:    collectionTags: ["dried-flowers", "home-decor", "gifting"],
+src\data\productCatalog.ts:856:    category: "Dried Flowers",
+src\data\productCatalog.ts:867:    collectionTags: ["dried-flowers", "vases", "premium-decor"],
+src\data\productCatalog.ts:886:    image: "/images/cat-hampers.jpg",
+src\data\productCatalog.ts:891:      "A mini succulent gift option for birthdays, desk decor, return gifts and small surprises. Plant variety and pot option depend on availability.",
+src\data\productCatalog.ts:915:    image: "/images/cat-hampers.jpg",
+src\data\productCatalog.ts:918:    description: "Fresh flowers paired with a small plant for gifting.",
+src\data\productCatalog.ts:920:      "A plant and flower hamper curated for housewarming, birthdays, thank-you gifts and premium surprises. Final plant, flowers and add-ons are confirmed on WhatsApp.",
+src\data\productCatalog.ts:925:    collectionTags: ["plants-succulents", "hampers", "housewarming"],
+src\data\productCatalog.ts:928:      "Small plant or succulent",
+src\data\productCatalog.ts:929:      "Fresh flowers",
+src\data\productCatalog.ts:934:      "Keep flowers away from heat.",
+src\data\productCatalog.ts:947:    description: "Simple clear glass vase for flowerbox and loose flowers.",
+src\data\productCatalog.ts:949:      "A clear glass vase add-on for customers ordering loose flowers, flowerboxes, subscriptions or table decor flowers. Final vase size and availability are confirmed on WhatsApp.",
+src\data\productCatalog.ts:953:    ratingLabel: "Best with flowerbox",
+src\data\productCatalog.ts:954:    collectionTags: ["vases", "add-ons", "flowerbox"],
+src\data\productCatalog.ts:960:      "Can be paired with fresh flowers",
+src\data\productCatalog.ts:965:      "Wash before refilling flowers.",
+src\data\productCatalog.ts:979:      "A premium vase option for customers who want curated flowers for home decor, gifting or event styling. Vase material, size and availability are confirmed before order.",
+src\data\productCatalog.ts:1007:    description: "Florist cutter add-on for flowerbox and subscription customers.",
+src\data\productCatalog.ts:1009:      "A florist cutter add-on for customers who regularly arrange fresh flowers at home. Useful for trimming stems before placing flowers in a vase.",
+src\data\productCatalog.ts:1013:    ratingLabel: "Best for subscriptions",
+src\data\productCatalog.ts:1014:    collectionTags: ["floral-tools", "add-ons", "subscriptions"],
+src\data\productCatalog.ts:1019:      "Can be paired with flowerbox orders",
+src\data\productCatalog.ts:1037:    description: "Flower food sachets for vase flowers and loose flowerboxes.",
+src\data\productCatalog.ts:1039:      "Flower food sachets can be added with loose flowers, flowerboxes and subscription orders to help vase flowers stay fresh for longer.",
+src\data\productCatalog.ts:1043:    ratingLabel: "For vase flowers",
+src\data\productCatalog.ts:1044:    collectionTags: ["floral-tools", "flowerbox", "subscriptions"],
+src\data\productCatalog.ts:1061:    slug: "pet-friendly-flowerbox",
+src\data\productCatalog.ts:1062:    name: "Pet Friendly Flowerbox",
+src\data\productCatalog.ts:1064:    image: "/images/subscription-2.jpg",
+src\data\productCatalog.ts:1067:    description: "Flowerbox curated with pet-conscious flower choices.",
+src\data\productCatalog.ts:1069:      "A pet-conscious flowerbox option for homes with cats or dogs. Final flower selection is confirmed based on availability and customer preference.",
+src\data\productCatalog.ts:1074:    collectionTags: ["pet-friendly", "flowerbox", "home-decor"],
+src\data\productCatalog.ts:1077:      "Fresh flowers selected with pet-conscious preference",
+src\data\productCatalog.ts:1078:      "Flowerbox packing",
+src\data\productCatalog.ts:1083:      "Always keep flowers out of reach of pets.",
+src\data\productCatalog.ts:1096:    description: "Fresh flower toran for doors, pooja and festive decor.",
+src\data\productCatalog.ts:1098:      "Fresh flower torans prepared for pooja, housewarming, festivals, temple use and door decoration. Pricing depends on flower type, length, quantity and market rate.",
+src\data\productCatalog.ts:1103:    collectionTags: ["flower-strings-torans", "pooja-flowers", "wedding"],
+src\data\productCatalog.ts:1104:    occasionTags: ["pooja", "housewarming", "wedding"],
+src\data\productCatalog.ts:1127:      "Fresh jasmine gajra for hair decoration, pooja, functions and traditional occasions. Price changes based on daily jasmine market rate.",
+src\data\productCatalog.ts:1132:    collectionTags: ["flower-strings-torans", "jasmine", "pooja-flowers"],
+src\data\productCatalog.ts:1133:    occasionTags: ["wedding", "pooja"],
+src\data\productCatalog.ts:1156:      "A room mist or diffuser add-on that can be paired with bouquets, hampers and premium flower gifts for birthdays, anniversaries and housewarming.",
+src\data\productCatalog.ts:1160:    ratingLabel: "Pairs with hampers",
+src\data\productCatalog.ts:1161:    collectionTags: ["room-mist-diffuser", "hampers", "add-ons"],
+src\data\productCatalog.ts:1180:    category: "Hampers",
+src\data\productCatalog.ts:1181:    image: "/images/cat-hampers.jpg",
+src\data\productCatalog.ts:1184:    description: "Fresh flowers paired with chocolates for premium gifting.",
+src\data\productCatalog.ts:1186:      "A premium flower and chocolate hamper for birthdays, anniversaries, thank-you gifts and celebration surprises. Final flowers, chocolate options and packing are confirmed on WhatsApp.",
+src\data\productCatalog.ts:1191:    collectionTags: ["hampers", "add-ons", "bouquets"],
+src\data\productCatalog.ts:1194:      "Fresh flowers",
+src\data\productCatalog.ts:1201:      "Keep flowers cool.",
+src\data\productCatalog.ts:1209:    category: "Hampers",
+src\data\productCatalog.ts:1210:    image: "/images/cat-hampers.jpg",
+src\data\productCatalog.ts:1213:    description: "Housewarming hamper with flowers and optional decor add-ons.",
+src\data\productCatalog.ts:1215:      "A housewarming flower hamper with fresh flowers and optional add-ons like candles, diffuser, plant, card or decor item. Final hamper is customized based on budget and availability.",
+src\data\productCatalog.ts:1220:    collectionTags: ["hampers", "room-mist-diffuser", "plants-succulents"],
+src\data\productCatalog.ts:1230:      "Keep flowers away from heat.",
+src\data\productCatalog.ts:1244:      "Custom bridal flower accessories including floral hair styling elements, poola jada support, gajra and traditional flower requirements. Final design depends on flowers, event date and quantity.",
+src\data\productCatalog.ts:1260:      "Keep flowers cool before use.",
+src\data\productCatalog.ts:1271:    description: "Fresh garlands for weddings, pooja and events.",
+src\data\productCatalog.ts:1273:      "Fresh garlands for weddings, pooja, temple functions, housewarming and event requirements. Price depends on flower type, size, count and daily market rate.",
+src\data\productCatalog.ts:1276:    badge: "Event flowers",
+src\data\productCatalog.ts:1278:    collectionTags: ["wedding", "garlands", "pooja-flowers"],
+src\data\productCatalog.ts:1279:    occasionTags: ["wedding", "pooja", "housewarming"],
+src\data\productCatalog.ts:1307:    collectionTags: ["by-stems", "roses", "bouquets"],
+src\data\productCatalog.ts:1331:      "Fresh lily stems for bouquets, vase styling, premium gifting and custom arrangements. Availability depends on market stock, color and freshness.",
+src\data\productCatalog.ts:1336:    collectionTags: ["by-stems", "lilies", "premium-flowers"],
+src\data\serviceAreas.ts:53:    area: "Kukatpally",
+src\layouts\BaseLayout.astro:15:  description = "Fresh flowers, pooja flowers, jasmine, bouquets, garlands and event flowers delivered in Hyderabad.",
+src\pages\cart.astro:46:            Review your selected flowers and continue on WhatsApp for availability, final price and payment confirmation.
+src\pages\cart.astro:59:            Add bouquets, pooja flowers, flower boxes, baskets or add-ons to prepare your order.
+src\pages\cart.astro:63:            href="/categories/bouquets"
+src\pages\cart.astro:160:                  placeholder="Address, landmark, occasion, preferred flowers, gift message, etc."
+src\pages\cart.astro:315:        .replaceAll("&", "&amp;")
+src\pages\cart.astro:316:        .replaceAll("<", "&lt;")
+src\pages\cart.astro:317:        .replaceAll(">", "&gt;")
+src\pages\cart.astro:318:        .replaceAll('"', "&quot;")
+src\pages\cart.astro:319:        .replaceAll("'", "&#039;");
+src\pages\cart.astro:383:          item.subscription
+src\pages\cart.astro:410:    function renderSubscriptionHtml(subscription) {
+src\pages\cart.astro:411:  if (!subscription) return "";
+src\pages\cart.astro:414:    subscription.frequency ? `Frequency: ${subscription.frequency}` : "",
+src\pages\cart.astro:415:    subscription.duration ? `Duration: ${subscription.duration}` : "",
+src\pages\cart.astro:416:    subscription.preferredDays && subscription.preferredDays.length > 0
+src\pages\cart.astro:417:      ? `Preferred Days: ${subscription.preferredDays.join(", ")}`
+src\pages\cart.astro:419:    subscription.startDate ? `Start Date: ${subscription.startDate}` : "",
+src\pages\cart.astro:420:    subscription.pincode ? `Subscription Pincode: ${subscription.pincode}` : "",
+src\pages\cart.astro:421:    subscription.deliverySlot
+src\pages\cart.astro:422:      ? `Subscription Delivery Slot: ${subscription.deliverySlot}`
+src\pages\cart.astro:424:    subscription.message ? `Subscription Message: ${subscription.message}` : "",
+src\pages\cart.astro:431:      <p class="font-semibold text-[#171717]">Subscription</p>
+src\pages\cart.astro:467:          ${renderSubscriptionHtml(item.subscription)}
+src\pages\cart.astro:491:      if (item.subscription) {
+src\pages\cart.astro:492:  lines.push("Subscription:");
+src\pages\cart.astro:494:  if (item.subscription.frequency) {
+src\pages\cart.astro:495:    lines.push(`- Frequency: ${item.subscription.frequency}`);
+src\pages\cart.astro:498:  if (item.subscription.duration) {
+src\pages\cart.astro:499:    lines.push(`- Duration: ${item.subscription.duration}`);
+src\pages\cart.astro:503:    item.subscription.preferredDays &&
+src\pages\cart.astro:504:    item.subscription.preferredDays.length > 0
+src\pages\cart.astro:506:    lines.push(`- Preferred Days: ${item.subscription.preferredDays.join(", ")}`);
+src\pages\cart.astro:509:  if (item.subscription.startDate) {
+src\pages\cart.astro:510:    lines.push(`- Start Date: ${item.subscription.startDate}`);
+src\pages\cart.astro:513:  if (item.subscription.pincode) {
+src\pages\cart.astro:514:    lines.push(`- Subscription Pincode: ${item.subscription.pincode}`);
+src\pages\cart.astro:517:  if (item.subscription.deliverySlot) {
+src\pages\cart.astro:518:    lines.push(`- Subscription Delivery Slot: ${item.subscription.deliverySlot}`);
+src\pages\cart.astro:521:  if (item.subscription.message) {
+src\pages\cart.astro:522:    lines.push(`- Subscription Message: ${item.subscription.message}`);
+src\pages\cart.astro:615:      document.querySelectorAll("[data-increase]").forEach((button) => {
+src\pages\cart.astro:628:      document.querySelectorAll("[data-decrease]").forEach((button) => {
+src\pages\cart.astro:641:      document.querySelectorAll("[data-remove]").forEach((button) => {
+src\pages\cart.astro:850:              Please continue on WhatsApp. We will manually confirm morning delivery possibility.
+src\pages\cart.astro:861:              Please continue on WhatsApp. We will manually confirm express delivery possibility.
+src\pages\cart.astro:881:            You can still continue on WhatsApp. We will manually confirm delivery possibility, fee and timing.
+src\pages\categories\[slug].astro:24:    Bouquets:
+src\pages\categories\[slug].astro:25:      "Fresh hand-arranged bouquets for gifting, celebrations and custom flower orders.",
+src\pages\categories\[slug].astro:26:    "Pooja Flowers":
+src\pages\categories\[slug].astro:27:      "Fresh pooja flowers, jasmine, flower boxes and temple bulk flowers based on daily market availability.",
+src\pages\categories\[slug].astro:28:    Flowerbox:
+src\pages\categories\[slug].astro:29:      "Fresh flower boxes for DIY arrangements, gifting, pooja use and custom flower requirements.",
+src\pages\categories\[slug].astro:30:    Baskets:
+src\pages\categories\[slug].astro:31:      "Fresh flower baskets for gifting, pooja, celebrations and premium custom arrangements.",
+src\pages\categories\[slug].astro:36:    Subscriptions:
+src\pages\categories\[slug].astro:37:      "Recurring flower plans for pooja, jasmine, home styling and custom flower needs.",
+src\pages\categories\[slug].astro:38:    "Dried Flowers":
+src\pages\categories\[slug].astro:39:      "Long-lasting dried flowers for home styling, desk decor, gifting and premium aesthetic corners.",
+src\pages\categories\[slug].astro:41:      "Low-maintenance plants and succulent gifts paired with flowers for desk decor, housewarming and simple gifting.",
+src\pages\categories\[slug].astro:43:      "Glass vases and premium decor vase options to pair with flowerboxes, loose flowers and subscriptions.",
+src\pages\categories\[slug].astro:45:      "Florist cutters, flower food and care essentials for customers who arrange flowers at home.",
+src\pages\categories\[slug].astro:47:      "Pet-conscious flowerbox options for homes with cats or dogs, confirmed carefully before order.",
+src\pages\categories\[slug].astro:49:      "Fresh torans, jasmine gajra and traditional flower strings for pooja, functions and festive decor.",
+src\pages\categories\[slug].astro:51:      "Room mist and diffuser add-ons for premium flower gifting, hampers, anniversaries and housewarming.",
+src\pages\categories\[slug].astro:52:    Hampers:
+src\pages\categories\[slug].astro:53:      "Premium flower hampers paired with chocolates, plants, candles, cards and decor add-ons.",
+src\pages\categories\[slug].astro:55:      "Fresh wedding flowers, bridal accessories, garlands and event flower requirements made on request.",
+src\pages\categories\[slug].astro:57:      "Fresh flowers by stem for DIY arrangements, vases, gifting and custom flower styling.",
+src\pages\contact.astro:5:  "Hi Fresh Petals, I want to enquire about fresh flowers in Hyderabad."
+src\pages\contact.astro:12:    title: "Order Flowers",
+src\pages\contact.astro:14:      "Ask about bouquets, pooja flowers, jasmine, flowerboxes, baskets and hampers available today.",
+src\pages\contact.astro:30:      "Browse Fresh Petals products, categories, subscriptions, add-ons and occasion pages.",
+src\pages\contact.astro:39:  "Pooja flowers",
+src\pages\contact.astro:40:  "Jasmine / Malli",
+src\pages\contact.astro:41:  "Flowerbox",
+src\pages\contact.astro:43:  "Subscription",
+src\pages\contact.astro:44:  "Bulk flowers",
+src\pages\contact.astro:45:  "Event flowers",
+src\pages\contact.astro:51:  description="Contact Fresh Petals Hyderabad for WhatsApp-first flower orders, delivery enquiries, subscriptions, pooja flowers, bouquets and bulk orders."
+src\pages\faqs.astro:13:      "Some products have starting prices, while pooja flowers, jasmine, garlands, bulk flowers, and event flowers may depend on the daily flower market price. Final price is confirmed on WhatsApp before payment.",
+src\pages\faqs.astro:21:    question: "Can I order pooja flowers daily?",
+src\pages\faqs.astro:23:      "Yes. We support daily pooja flowers, jasmine/malli, flower boxes, and custom subscription-style requirements based on availability and delivery area.",
+src\pages\faqs.astro:28:      "Yes. We take orders for jasmine/malli, gajra, poola jada, garlands, pooja flowers, and temple or event bulk flowers depending on market availability.",
+src\pages\faqs.astro:33:      "Yes. For events, temple orders, garlands, wedding flowers, decor flowers, and bulk pooja flowers, please share your requirement on WhatsApp. We will confirm quantity, price, sourcing, and delivery feasibility.",
+src\pages\faqs.astro:43:      "For now, payment details are confirmed manually on WhatsApp after order confirmation. We may support online payment links or UPI checkout later.",
+src\pages\faqs.astro:48:      "Yes. You can mention preferred flowers, colors, occasion, note card, or budget in the order note. Customization depends on daily flower availability.",
+src\pages\faqs.astro:51:    question: "What if flowers are unavailable after I place an order?",
+src\pages\faqs.astro:53:      "Fresh flowers depend on market supply. If a specific flower is unavailable, we will suggest alternatives before confirming payment.",
+src\pages\faqs.astro:60:  description="Frequently asked questions about Fresh Petals Hyderabad flower delivery, pooja flowers, bouquets, jasmine, garlands, bulk orders and WhatsApp ordering."
+src\pages\index.astro:5:import OccasionSection from "../components/OccasionSection.astro";
+src\pages\index.astro:7:import PoojaProductsSection from "../components/PoojaProductsSection.astro";
+src\pages\index.astro:8:import FlowerboxSection from "../components/FlowerboxSection.astro";
+src\pages\index.astro:9:import BasketsSection from "../components/BasketsSection.astro";
+src\pages\index.astro:11:import PopularWithFlowers from "../components/PopularWithFlowers.astro";
+src\pages\index.astro:16:import SubscriptionProducts from "../components/SubscriptionProducts.astro";
+src\pages\index.astro:25:    <OccasionSection />
+src\pages\index.astro:27:    <PoojaProductsSection />
+src\pages\index.astro:28:    <FlowerboxSection />
+src\pages\index.astro:29:    <BasketsSection />
+src\pages\index.astro:31:    <PopularWithFlowers />
+src\pages\index.astro:36:    <SubscriptionProducts />
+src\pages\loyalty.astro:14:      "For customers who order bouquets, pooja flowers, jasmine or hampers more than once.",
+src\pages\loyalty.astro:17:    title: "Subscription Customer",
+src\pages\loyalty.astro:19:      "For customers who take recurring pooja flowers, jasmine/malli or weekly flowerbox plans.",
+src\pages\loyalty.astro:29:  "Loyalty is manually tracked for now.",
+src\pages\loyalty.astro:31:  "Rewards are confirmed on WhatsApp before final payment.",
+src\pages\loyalty.astro:32:  "No automatic points wallet is active yet.",
+src\pages\loyalty.astro:38:  description="Fresh Petals Hyderabad loyalty page for repeat flower orders, subscriptions, pooja flowers and bulk customers."
+src\pages\loyalty.astro:54:            manually for repeat customers, subscriptions and bulk/event flower orders.
+src\pages\occasions\[slug].astro:12:  fallbackProductSlugs: string[];
+src\pages\occasions\[slug].astro:16:  const occasions: OccasionMeta[] = [
+src\pages\occasions\[slug].astro:20:      eyebrow: "Birthday Flowers",
+src\pages\occasions\[slug].astro:22:        "Fresh bouquets, baskets, flower boxes and hampers for birthday gifting in Hyderabad.",
+src\pages\occasions\[slug].astro:25:      fallbackProductSlugs: [
+src\pages\occasions\[slug].astro:37:      eyebrow: "Anniversary Flowers",
+src\pages\occasions\[slug].astro:39:        "Romantic rose bouquets, premium gift bouquets, hampers and flower baskets for anniversaries.",
+src\pages\occasions\[slug].astro:42:      fallbackProductSlugs: [
+src\pages\occasions\[slug].astro:54:      eyebrow: "Wedding Flowers",
+src\pages\occasions\[slug].astro:56:        "Fresh wedding flowers, bridal accessories, garlands, jasmine gajra and event flower requirements.",
+src\pages\occasions\[slug].astro:59:      fallbackProductSlugs: [
+src\pages\occasions\[slug].astro:64:        "temple-bulk-flowers",
+src\pages\occasions\[slug].astro:65:        "jasmine-malli",
+src\pages\occasions\[slug].astro:69:      name: "Pooja",
+src\pages\occasions\[slug].astro:70:      slug: "pooja",
+src\pages\occasions\[slug].astro:71:      eyebrow: "Pooja Flowers",
+src\pages\occasions\[slug].astro:73:        "Fresh pooja flowers, jasmine, torans, pooja flower boxes and baskets for rituals and daily worship.",
+src\pages\occasions\[slug].astro:75:        "Morning pooja flower availability and delivery slots are confirmed on WhatsApp.",
+src\pages\occasions\[slug].astro:76:      fallbackProductSlugs: [
+src\pages\occasions\[slug].astro:77:        "daily-pooja-flowers",
+src\pages\occasions\[slug].astro:78:        "jasmine-malli",
+src\pages\occasions\[slug].astro:79:        "pooja-flower-box",
+src\pages\occasions\[slug].astro:80:        "pooja-flowerbox",
+src\pages\occasions\[slug].astro:81:        "pooja-basket",
+src\pages\occasions\[slug].astro:83:        "temple-bulk-flowers",
+src\pages\occasions\[slug].astro:89:      eyebrow: "Housewarming Flowers",
+src\pages\occasions\[slug].astro:91:        "Flower hampers, baskets, plants, decor flowers and torans for housewarming gifting and pooja.",
+src\pages\occasions\[slug].astro:93:        "Ideal for Gruhapravesam, new home gifting, pooja decor and premium flower hampers.",
+src\pages\occasions\[slug].astro:94:      fallbackProductSlugs: [
+src\pages\occasions\[slug].astro:106:      eyebrow: "Thank You Flowers",
+src\pages\occasions\[slug].astro:108:        "Simple flower gifts, bouquets, baskets and hampers to say thank you with fresh flowers.",
+src\pages\occasions\[slug].astro:111:      fallbackProductSlugs: [
+src\pages\occasions\[slug].astro:123:      eyebrow: "Get Well Soon Flowers",
+src\pages\occasions\[slug].astro:127:        "Choose gentle flowers or a simple plant gift and confirm delivery availability.",
+src\pages\occasions\[slug].astro:128:      fallbackProductSlugs: [
+src\pages\occasions\[slug].astro:139:      eyebrow: "Sorry Flowers",
+src\pages\occasions\[slug].astro:141:        "Rose bouquets, soft flower boxes and premium cards for apology gifting.",
+src\pages\occasions\[slug].astro:144:      fallbackProductSlugs: [
+src\pages\occasions\[slug].astro:155:      eyebrow: "Mom To Be Flowers",
+src\pages\occasions\[slug].astro:157:        "Soft premium bouquets, hampers, baskets and gentle flower gifts for mom-to-be celebrations.",
+src\pages\occasions\[slug].astro:159:        "Best for baby shower gifting, soft pastel flowers, hampers and thoughtful message cards.",
+src\pages\occasions\[slug].astro:160:      fallbackProductSlugs: [
+src\pages\occasions\[slug].astro:172:      eyebrow: "New Mom Flowers",
+src\pages\occasions\[slug].astro:174:        "Thoughtful flower gifts, plants, hampers and soft bouquets for new mom gifting.",
+src\pages\occasions\[slug].astro:177:      fallbackProductSlugs: [
+src\pages\occasions\[slug].astro:189:      eyebrow: "Sympathy Flowers",
+src\pages\occasions\[slug].astro:193:        "Choose soft flowers and a simple note. Final availability and delivery timing are confirmed on WhatsApp.",
+src\pages\occasions\[slug].astro:194:      fallbackProductSlugs: [
+src\pages\occasions\[slug].astro:204:      eyebrow: "Just Because Flowers",
+src\pages\occasions\[slug].astro:206:        "Fresh everyday flowers, flowerboxes, stems and small gifts for no-reason surprises.",
+src\pages\occasions\[slug].astro:209:      fallbackProductSlugs: [
+src\pages\occasions\[slug].astro:213:        "diy-flowerbox",
+src\pages\occasions\[slug].astro:221:      eyebrow: "Congratulations Flowers",
+src\pages\occasions\[slug].astro:223:        "Premium bouquets, hampers, baskets and flower gifts for achievements, milestones and celebrations.",
+src\pages\occasions\[slug].astro:226:      fallbackProductSlugs: [
+src\pages\occasions\[slug].astro:238:      eyebrow: "Romantic Flowers",
+src\pages\occasions\[slug].astro:240:        "Rose bouquets, romantic hampers, candles, cards and premium arrangements for love-filled gifting.",
+src\pages\occasions\[slug].astro:243:      fallbackProductSlugs: [
+src\pages\occasions\[slug].astro:254:  return occasions.map((occasion) => {
+src\pages\occasions\[slug].astro:259:    const fallbackProducts = occasion.fallbackProductSlugs
+src\pages\occasions\[slug].astro:263:    const products: Product[] = [...taggedProducts, ...fallbackProducts].filter(
+src\pages\occasions\[slug].astro:287:  title={`${occasion.name} Flowers | Fresh Petals Hyderabad`}
+src\pages\products\[slug].astro:5:import SubscriptionConfigurator from "../../components/SubscriptionConfigurator.astro";
+src\pages\products\[slug].astro:23:const fallbackWhatsappMessage = encodeURIComponent(
+src\pages\products\[slug].astro:27:const fallbackWhatsappUrl = `https://wa.me/${whatsappNumber}?text=${fallbackWhatsappMessage}`;
+src\pages\products\[slug].astro:92:            product.isSubscription ? (
+src\pages\products\[slug].astro:93:              <SubscriptionConfigurator product={product} />
+src\pages\products\[slug].astro:125:              href={fallbackWhatsappUrl}
+src\pages\refer-a-friend.astro:14:      "Send Fresh Petals to a friend who may need pooja flowers, jasmine, bouquets, hampers or subscription flowers in Hyderabad.",
+src\pages\refer-a-friend.astro:22:    title: "Reward is confirmed manually",
+src\pages\refer-a-friend.astro:29:  "Bouquets",
+src\pages\refer-a-friend.astro:30:  "Pooja flowers",
+src\pages\refer-a-friend.astro:31:  "Jasmine / Malli",
+src\pages\refer-a-friend.astro:33:  "Flower baskets",
+src\pages\refer-a-friend.astro:34:  "Hampers",
+src\pages\refer-a-friend.astro:35:  "Subscriptions",
+src\pages\refer-a-friend.astro:41:  description="Refer a friend to Fresh Petals Hyderabad and claim manual WhatsApp-confirmed rewards on eligible flower orders."
+src\pages\refer-a-friend.astro:56:            Refer someone who needs fresh flowers in Hyderabad. When their first order is confirmed
+src\pages\refer-a-friend.astro:102:              applied manually after final order confirmation.
+src\pages\refunds.astro:7:  description="Fresh Petals Hyderabad refund and replacement policy for fresh flowers, bouquets, pooja flowers, jasmine, garlands, flower boxes and custom orders."
+src\pages\refunds.astro:33:              Fresh flowers are perishable and depend on daily market availability, weather, handling and delivery timing. Because of this, refunds and replacements are handled case by case after reviewing the order details and issue shared by the customer.
+src\pages\refunds.astro:89:              If there is a genuine quality or delivery issue, Fresh Petals may offer a replacement, partial replacement, store credit or refund depending on the situation, product type and availability of flowers.
+src\pages\refunds.astro:99:              Any issue must be reported on WhatsApp as soon as possible after delivery, preferably with clear photos or videos of the product and packaging. Since flowers are perishable, delayed complaints may be difficult to verify.
+src\pages\refunds.astro:109:              Pooja flowers, jasmine/malli, garlands, poola jada, loose flowers, temple flowers and bulk flowers often depend on daily wholesale market rates. Once the customer confirms the final price and sourcing begins, cancellation or refund may not be possible.
+src\pages\refunds.astro:119:              If cancellation is requested before sourcing or preparation begins, we may allow cancellation depending on order type and timing. For urgent, same-day, customized or bulk orders, cancellation may not be possible once work has started.
+src\pages\reviews.astro:6:    customer: "Kukatpally Customer",
+src\pages\reviews.astro:7:    area: "Kukatpally",
+src\pages\reviews.astro:9:    product: "Daily Pooja Flowers",
+src\pages\reviews.astro:10:    title: "Fresh morning pooja flowers",
+src\pages\reviews.astro:11:    text: "Ordered morning pooja flowers. The flowers were fresh, neatly packed and the WhatsApp confirmation made the process simple.",
+src\pages\reviews.astro:25:    product: "Jasmine / Malli",
+src\pages\reviews.astro:27:    text: "Checked jasmine availability on WhatsApp and received fresh malli. Useful for regular pooja and daily flower needs.",
+src\pages\reviews.astro:49:    product: "Pooja Flower Subscription",
+src\pages\reviews.astro:50:    title: "Useful subscription flow",
+src\pages\reviews.astro:51:    text: "The subscription flow is useful for regular pooja needs. Area, quantity and delivery timing confirmation on WhatsApp is important.",
+src\pages\reviews.astro:57:    product: "Bulk Flowers",
+src\pages\reviews.astro:59:    text: "Helpful for discussing bulk flower needs, especially because quantity, flower type and market rates change daily.",
+src\pages\reviews.astro:67:    text: "The hamper option is useful for housewarming and pooja gifting. Customisation on WhatsApp makes sense because the final flowers depend on availability.",
+src\pages\reviews.astro:88:  description="Early customer reviews and feedback for Fresh Petals Hyderabad flower orders, bouquets, pooja flowers, jasmine, subscriptions and gifting."
+src\pages\reviews.astro:103:            Early feedback from Hyderabad customers and enquiries. These are manually collected review-style notes from WhatsApp conversations, order coordination and customer interactions as Fresh Petals grows.
+src\pages\rewards.astro:5:  "Hi Fresh Petals, I want to know about your rewards, referral and fresh flower offers."
+src\pages\rewards.astro:21:      "A simple manual loyalty flow for repeat customers ordering pooja flowers, jasmine, bouquets, baskets or subscriptions.",
+src\pages\rewards.astro:28:      "See early Fresh Petals customer feedback for bouquets, pooja flowers, jasmine, flowerboxes and WhatsApp ordering.",
+src\pages\rewards.astro:36:  title="Rewards | Fresh Petals Hyderabad"
+src\pages\rewards.astro:37:  description="Fresh Petals Hyderabad rewards, referral benefits, loyalty flow and customer review links."
+src\pages\rewards.astro:44:            Fresh Petals Rewards
+src\pages\rewards.astro:52:            Fresh Petals is WhatsApp-first, so rewards are currently confirmed manually. Refer friends,
+src\pages\rewards.astro:53:            order regularly, and claim rewards when your order is confirmed on WhatsApp.
+src\pages\rewards.astro:108:            Since flower prices and availability change daily, rewards are applied only after order
+src\pages\search.astro:12:  title="Search Flowers | Fresh Petals Hyderabad"
+src\pages\search.astro:13:  description="Search Fresh Petals Hyderabad products including bouquets, pooja flowers, jasmine, flower boxes, baskets, add-ons and subscriptions."
+src\pages\search.astro:24:            Search Flowers
+src\pages\search.astro:28:            Search bouquets, pooja flowers, jasmine, flower boxes, baskets, add-ons and subscriptions.
+src\pages\search.astro:42:                placeholder="Search jasmine, bouquet, pooja, basket..."
+src\pages\search.astro:56:                <option value="all">All Categories</option>
+src\pages\search.astro:69:              data-quick-search="pooja"
+src\pages\search.astro:72:              Pooja
+src\pages\search.astro:93:              data-quick-search="subscription"
+src\pages\search.astro:96:              Subscription
+src\pages\search.astro:115:            Showing all products
+src\pages\search.astro:157:            Try searching for bouquet, pooja, jasmine, flowerbox, basket, add-on or subscription.
+src\pages\search.astro:161:            href="/categories/bouquets"
+src\pages\search.astro:164:            Browse Bouquets
+src\pages\search.astro:181:      document.querySelectorAll<HTMLElement>("[data-product-result]")
+src\pages\search.astro:192:    const quickSearchButtons = document.querySelectorAll<HTMLButtonElement>(
+src\pages\search.astro:206:      const selectedCategory = categoryFilter?.value || "all";
+src\pages\search.astro:224:          selectedCategory === "all" || category === selectedCategory;
+src\pages\search.astro:239:            ? "Showing all products"
+src\pages\search.astro:266:      if (categoryFilter) categoryFilter.value = "all";
+src\pages\shipping.astro:7:  description="Fresh Petals Hyderabad shipping and delivery policy for bouquets, pooja flowers, jasmine, garlands, flower boxes, subscriptions and bulk orders."
+src\pages\shipping.astro:22:            Delivery information for fresh flowers, pooja flowers, jasmine, bouquets, garlands, flower boxes and bulk orders across selected Hyderabad areas.
+src\pages\shipping.astro:33:              Fresh Petals currently delivers to selected areas in Hyderabad based on pincode, distance, product type, order value and delivery timing. If your pincode is not listed as confirmed during checkout, you can still continue on WhatsApp and we will manually check delivery feasibility.
+src\pages\shipping.astro:63:                Morning and express delivery may not be available in all areas. Final slot confirmation will happen on WhatsApp.
+src\pages\shipping.astro:74:              Same-day delivery depends on flower availability, order time, delivery area and order complexity. Bouquets and simple flower orders may be easier to fulfill on the same day, while garlands, poola jada, bulk flowers and event orders may require advance notice.
+src\pages\shipping.astro:80:              Pooja Flowers, Jasmine and Garlands
+src\pages\shipping.astro:84:              Pooja flowers, jasmine/malli, gajra, garlands and poola jada are highly dependent on morning market availability. For these products, we recommend placing orders early or confirming in advance on WhatsApp.
+src\pages\shipping.astro:94:              Bulk flower orders, temple orders, event flowers, garlands and wedding-related orders require manual confirmation. Delivery cost, handling charges and timing will be shared after understanding the quantity, location and requirement.
+src\pages\shipping.astro:104:              Since flowers are perishable, customers are requested to be available at the delivery address during the selected time slot. If the customer is unavailable or the address is incorrect, redelivery may be chargeable or may not be possible depending on flower condition and delivery route.
+src\pages\shipping.astro:114:              All orders are confirmed only after WhatsApp confirmation of flower availability, delivery area, delivery fee, time slot and payment details.
+src\pages\terms.astro:33:              Adding a product to cart or sending an enquiry on WhatsApp does not automatically confirm the order. Orders are confirmed only after Fresh Petals confirms product availability, final price, delivery fee, delivery time slot and payment details on WhatsApp.
+src\pages\terms.astro:53:              Fresh flowers are natural products. Colour, size, bloom stage, arrangement style and filler flowers may vary depending on availability. We try to match the product look and feel as closely as possible, but exact replication may not always be possible.
+src\pages\terms.astro:80:                <li>• Occasion notes, preferred flowers or gift message</li>
+src\pages\terms.astro:95:              Cancellation requests may be accepted only before sourcing or preparation begins. For same-day orders, custom bouquets, pooja flowers, jasmine, garlands, poola jada, bulk flowers and event orders, cancellation may not be possible once sourcing or preparation has started.
+src\pages\terms.astro:105:              Refunds and replacements are handled as per the Fresh Petals Refund Policy. Since flowers are perishable, every issue is reviewed based on order type, delivery status, photos/videos shared by the customer and timing of the complaint.
+src\pages\terms.astro:125:              Bulk orders, temple flowers, garlands, wedding flowers, event flowers, poola jada and custom floral work require manual discussion. Prices, sourcing time, delivery charges, labour charges and payment terms may differ from regular product listings.
+src\utils\cart.ts:8:export type CartSubscription = {
+src\utils\cart.ts:37:  subscription?: CartSubscription;
+src\utils\cart.ts:71:    Boolean(item.subscription) ||
+src\utils\cart.ts:100:    Boolean(cartItemToAdd.subscription) ||

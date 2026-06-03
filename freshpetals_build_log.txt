@@ -1,0 +1,110 @@
+
+> fresh-petals@0.0.1 build
+> astro build
+
+[2m12:03:20[22m [34m[types][39m Generated [2m79ms[22m
+[2m12:03:20[22m [34m[build][39m output: [34m"static"[39m
+[2m12:03:20[22m [34m[build][39m mode: [34m"static"[39m
+[2m12:03:20[22m [34m[build][39m directory: [34mC:\Users\ranji\Downloads\fresh-petals\dist\[39m
+[2m12:03:20[22m [34m[build][39m Collecting build info...
+[2m12:03:20[22m [34m[build][39m [32m✓ Completed in 116ms.[39m
+[2m12:03:20[22m [34m[build][39m Building static entrypoints...
+[2m12:03:23[22m [34m[vite][39m [32m✓ built in 2.58s[39m
+[2m12:03:23[22m [34m[vite][39m [32m✓ built in 292ms[39m
+[2m12:03:23[22m [34m[build][39m Rearranging server assets...
+
+[42m[30m generating static routes [39m[49m
+[2m12:03:23[22m   [34m├─[39m [2m/cart/index.html[22m [2m(+29ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/categories/bouquets/index.html[22m [2m(+11ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/categories/pooja-flowers/index.html[22m [2m(+10ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/categories/flowerbox/index.html[22m [2m(+7ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/categories/baskets/index.html[22m [2m(+11ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/categories/offers/index.html[22m [2m(+6ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/categories/add-ons/index.html[22m [2m(+25ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/categories/subscriptions/index.html[22m [2m(+27ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/categories/dried-flowers/index.html[22m [2m(+7ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/categories/plants-and-succulents/index.html[22m [2m(+5ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/categories/vases/index.html[22m [2m(+4ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/categories/floral-tools/index.html[22m [2m(+4ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/categories/pet-friendly/index.html[22m [2m(+9ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/categories/flower-strings-and-torans/index.html[22m [2m(+5ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/categories/room-mist-and-diffuser/index.html[22m [2m(+5ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/categories/hampers/index.html[22m [2m(+4ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/categories/wedding/index.html[22m [2m(+5ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/categories/by-stems/index.html[22m [2m(+9ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/contact/index.html[22m [2m(+7ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/faqs/index.html[22m [2m(+8ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/loyalty/index.html[22m [2m(+7ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/occasions/birthday/index.html[22m [2m(+7ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/occasions/anniversary/index.html[22m [2m(+7ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/occasions/wedding/index.html[22m [2m(+4ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/occasions/pooja/index.html[22m [2m(+6ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/occasions/housewarming/index.html[22m [2m(+7ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/occasions/thank-you/index.html[22m [2m(+6ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/occasions/get-well-soon/index.html[22m [2m(+5ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/occasions/i-am-sorry/index.html[22m [2m(+6ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/occasions/mom-to-be/index.html[22m [2m(+4ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/occasions/new-mom/index.html[22m [2m(+5ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/occasions/sympathy/index.html[22m [2m(+6ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/occasions/just-because/index.html[22m [2m(+6ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/occasions/congratulations/index.html[22m [2m(+6ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/occasions/romantic/index.html[22m [2m(+9ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/privacy/index.html[22m [2m(+12ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/products/mixed-flower-bouquet/index.html[22m [2m(+9ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/products/rose-bouquet/index.html[22m [2m(+7ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/products/premium-gift-bouquet/index.html[22m [2m(+9ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/products/daily-pooja-flowers/index.html[22m [2m(+6ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/products/jasmine-malli/index.html[22m [2m(+6ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/products/pooja-flower-box/index.html[22m [2m(+6ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/products/temple-bulk-flowers/index.html[22m [2m(+6ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/products/diy-flowerbox/index.html[22m [2m(+6ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/products/loose-flower-box/index.html[22m [2m(+6ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/products/gift-flower-box/index.html[22m [2m(+6ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/products/pooja-flowerbox/index.html[22m [2m(+6ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/products/flower-basket/index.html[22m [2m(+6ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/products/gift-basket/index.html[22m [2m(+5ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/products/pooja-basket/index.html[22m [2m(+4ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/products/premium-flower-basket/index.html[22m [2m(+4ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/products/flowers-under-499/index.html[22m [2m(+4ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/products/bouquets-under-999/index.html[22m [2m(+4ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/products/flower-gifts-under-1499/index.html[22m [2m(+5ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/products/todays-flower-offers/index.html[22m [2m(+6ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/products/chocolates-addon/index.html[22m [2m(+6ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/products/candle-diffuser-addon/index.html[22m [2m(+6ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/products/premium-card-addon/index.html[22m [2m(+6ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/products/table-decor-addon/index.html[22m [2m(+6ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/products/daily-pooja-flower-subscription/index.html[22m [2m(+8ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/products/weekly-flowerbox-subscription/index.html[22m [2m(+7ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/products/jasmine-malli-subscription/index.html[22m [2m(+11ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/products/custom-flower-subscription/index.html[22m [2m(+6ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/products/dried-flower-bunch/index.html[22m [2m(+6ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/products/dried-flower-vase-set/index.html[22m [2m(+6ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/products/mini-succulent-gift/index.html[22m [2m(+6ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/products/plant-and-flower-hamper/index.html[22m [2m(+7ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/products/clear-glass-vase/index.html[22m [2m(+6ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/products/premium-decor-vase/index.html[22m [2m(+6ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/products/florist-cutter/index.html[22m [2m(+7ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/products/flower-food-sachets/index.html[22m [2m(+7ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/products/pet-friendly-flowerbox/index.html[22m [2m(+6ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/products/fresh-flower-toran/index.html[22m [2m(+6ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/products/jasmine-gajra/index.html[22m [2m(+6ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/products/room-mist-flower-gift-addon/index.html[22m [2m(+7ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/products/flower-chocolate-hamper/index.html[22m [2m(+6ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/products/housewarming-flower-hamper/index.html[22m [2m(+8ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/products/bridal-flower-accessories/index.html[22m [2m(+5ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/products/event-garlands/index.html[22m [2m(+6ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/products/roses-by-stem/index.html[22m [2m(+6ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/products/lilies-by-stem/index.html[22m [2m(+8ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/refer-a-friend/index.html[22m [2m(+9ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/refunds/index.html[22m [2m(+11ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/reviews/index.html[22m [2m(+10ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/rewards/index.html[22m [2m(+9ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/search/index.html[22m [2m(+10ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/shipping/index.html[22m [2m(+13ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/terms/index.html[22m [2m(+7ms)[22m 
+[2m12:03:24[22m   [34m├─[39m [2m/index.html[22m [2m(+12ms)[22m 
+[2m12:03:24[22m [32m✓ Completed in 745ms.
+[39m
+[2m12:03:24[22m [34m[build][39m [32m✓ Completed in 3.75s.[39m
+[2m12:03:24[22m [34m[build][39m 89 page(s) built in [1m3.98s[22m
+[2m12:03:24[22m [34m[build][39m [1mComplete![22m
