@@ -33,6 +33,13 @@ const idealFor = product.idealFor?.length
 const stemCount = product.stemCount || "As shown";
 const careLevel = product.careLevel || "Occasional";
 
+const trustIndicators = [
+  "Fresh Flowers",
+  "Same-Day Delivery",
+  "WhatsApp Ordering",
+  "Hand-Arranged",
+];
+
 const relatedProducts = productCatalog
   .filter((item) => item.slug !== product.slug)
   .filter((item) => {
@@ -68,12 +75,13 @@ const recentlyViewedProducts = productCatalog
     <div class="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[1.12fr_0.88fr] lg:items-start">
       <!-- Left sticky image -->
       <aside class="lg:sticky lg:top-28 lg:self-start">
-        <div class="overflow-hidden rounded-[22px] bg-[#F8F1F3]">
+        <div class="overflow-hidden rounded-[22px] bg-[#F8F1F3] shadow-[0_20px_50px_rgba(40,24,32,0.10)]">
           <img
             src={product.image}
             alt={product.name}
-            class="h-auto w-full object-cover lg:max-h-[calc(100vh-8rem)]"
+            class="aspect-[4/5] w-full object-cover lg:max-h-[calc(100vh-8rem)]"
             loading="eager"
+            decoding="async"
           />
         </div>
       </aside>
@@ -110,9 +118,21 @@ const recentlyViewedProducts = productCatalog
           “{product.longDescription}”
         </p>
 
+        <div class="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2.5">
+          {trustIndicators.map((label) => (
+            <div class="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#66565D]">
+              <svg class="h-3.5 w-3.5 shrink-0 text-[#075838]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="9"></circle>
+                <path d="M8.5 12.5l2.5 2.5 5-5"></path>
+              </svg>
+              {label}
+            </div>
+          ))}
+        </div>
+
         <!-- Product info cards -->
         <div class="mt-8 grid gap-3 sm:grid-cols-2">
-          <div class="rounded-2xl border border-[#EEE5E8] bg-[#FFF8FA] p-5">
+          <div class="rounded-[22px] border border-[#EEE5E8] bg-[#FFF8FA] p-5">
             <div class="flex gap-4">
               <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#EEE5E8] bg-white text-[#7C243E]">
                 <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -133,7 +153,7 @@ const recentlyViewedProducts = productCatalog
             </div>
           </div>
 
-          <div class="rounded-2xl border border-[#EEE5E8] bg-[#FFF8FA] p-5">
+          <div class="rounded-[22px] border border-[#EEE5E8] bg-[#FFF8FA] p-5">
             <div class="flex gap-4">
               <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#EEE5E8] bg-white text-[#7C243E]">
                 <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -151,7 +171,7 @@ const recentlyViewedProducts = productCatalog
             </div>
           </div>
 
-          <div class="rounded-2xl border border-[#EEE5E8] bg-[#FFF8FA] p-5">
+          <div class="rounded-[22px] border border-[#EEE5E8] bg-[#FFF8FA] p-5">
             <div class="flex gap-4">
               <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#EEE5E8] bg-white text-[#7C243E]">
                 <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -171,7 +191,7 @@ const recentlyViewedProducts = productCatalog
             </div>
           </div>
 
-          <div class="rounded-2xl border border-[#EEE5E8] bg-[#FFF8FA] p-5">
+          <div class="rounded-[22px] border border-[#EEE5E8] bg-[#FFF8FA] p-5">
             <div class="flex gap-4">
               <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#EEE5E8] bg-white text-[#7C243E]">
                 <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -190,7 +210,7 @@ const recentlyViewedProducts = productCatalog
           </div>
         </div>
 
-        <p class="mt-7 rounded-md border border-[#F1D4DC] bg-[#FFF8FA] px-5 py-4 text-sm font-semibold text-[#7C243E]">
+        <p class="mt-7 rounded-2xl border border-[#F1D4DC] bg-[#FFF8FA] px-5 py-4 text-sm font-semibold text-[#7C243E]">
           Final price and availability will be confirmed on WhatsApp before payment.
         </p>
 
@@ -204,7 +224,10 @@ const recentlyViewedProducts = productCatalog
 
             <ul class="mt-4 space-y-3 text-sm leading-6 text-[#66565D]">
               {product.whatsIncluded.map((item) => (
-                <li>· {item}</li>
+                <li class="flex gap-2.5">
+                  <span class="mt-2.5 h-1 w-1 shrink-0 rounded-full bg-[#7C243E]"></span>
+                  {item}
+                </li>
               ))}
             </ul>
           </div>
@@ -216,7 +239,10 @@ const recentlyViewedProducts = productCatalog
 
             <ul class="mt-4 space-y-3 text-sm leading-6 text-[#66565D]">
               {product.careNotes.map((item) => (
-                <li>· {item}</li>
+                <li class="flex gap-2.5">
+                  <span class="mt-2.5 h-1 w-1 shrink-0 rounded-full bg-[#7C243E]"></span>
+                  {item}
+                </li>
               ))}
             </ul>
           </div>
