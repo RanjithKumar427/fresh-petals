@@ -2,7 +2,7 @@
 const whatsappNumber = "919652012274";
 
 const whatsappMessage = encodeURIComponent(
-  "Hi Fresh Petals, I want to know more about your flower delivery services."
+  "Hi Fresh Petals, I want to check today's pooja flowers, jasmine/malli, bouquets, festive flowers and subscription availability."
 );
 
 const instagramUrl = "https://www.instagram.com/freshpetals.hyderabad/";
@@ -15,19 +15,29 @@ const shopLinks = [
   { label: "Pooja Flowers", href: "/categories/pooja-flowers" },
   { label: "Flowerbox", href: "/categories/flowerbox" },
   { label: "Baskets", href: "/categories/baskets" },
+  { label: "Hampers", href: "/categories/hampers" },
   { label: "Flower Subscription", href: "/categories/subscriptions" },
-  { label: "Add-ons & Hampers", href: "/categories/add-ons" },
+  { label: "Add-ons", href: "/categories/add-ons" },
   { label: "Today’s Offers", href: "/categories/offers" },
-  { label: "Wedding Flowers", href: "/occasions/wedding" },
+  { label: "Wedding Flowers", href: "/categories/wedding" },
 ];
 
 const helpLinks = [
-  { label: "Contact Us", href: whatsappUrl },
+  { label: "Contact Us", href: "/contact" },
   { label: "FAQs", href: "/faqs" },
   { label: "Shipping Policy", href: "/shipping" },
   { label: "Refund Policy", href: "/refunds" },
   { label: "Privacy Policy", href: "/privacy" },
   { label: "Terms of Service", href: "/terms" },
+];
+
+const updateTopics = [
+  "Today’s pooja flowers",
+  "Jasmine / Malli availability",
+  "Bouquet options",
+  "Festive flower prices",
+  "Subscription plans",
+  "Hyderabad delivery slots",
 ];
 ---
 
@@ -131,8 +141,6 @@ const helpLinks = [
                 <a
                   href={link.href}
                   class="text-sm text-white/70 transition hover:text-white"
-                  target={link.href.startsWith("https://wa.me") ? "_blank" : undefined}
-                  rel={link.href.startsWith("https://wa.me") ? "noopener noreferrer" : undefined}
                 >
                   {link.label}
                 </a>
@@ -140,41 +148,64 @@ const helpLinks = [
             ))
           }
         </ul>
+
+        <div class="mt-6">
+          <h4 class="text-[10px] font-semibold uppercase tracking-[0.28em] text-white/80">
+            Quick Actions
+          </h4>
+
+          <div class="mt-3 space-y-3">
+            <a
+              href="/reviews"
+              class="block text-sm text-white/70 transition hover:text-white"
+            >
+              Customer Reviews
+            </a>
+
+            <a
+              href="/rewards"
+              class="block text-sm text-white/70 transition hover:text-white"
+            >
+              Rewards & Referrals
+            </a>
+
+            <a
+              href="/search"
+              class="block text-sm text-white/70 transition hover:text-white"
+            >
+              Search Products
+            </a>
+          </div>
+        </div>
       </div>
 
       <div>
         <h3 class="text-[11px] font-semibold uppercase tracking-[0.32em] text-white">
-          Sign Up And Save
+          Get Flower Updates On WhatsApp
         </h3>
 
         <p class="mt-5 text-sm leading-7 text-white/75">
-          Get updates on fresh flower availability, festive pooja flowers,
-          bouquet offers and subscription plans.
+          Check today’s pooja flowers, jasmine/malli, bouquet availability,
+          festive flowers and subscription plans directly on WhatsApp.
         </p>
 
-        <form class="mt-5 flex border border-white/40">
-          <input
-            type="email"
-            placeholder="Enter your email"
-            aria-label="Enter your email"
-            class="min-w-0 flex-1 bg-transparent px-4 py-3 text-sm text-white placeholder:text-white/55 outline-none"
-          />
-
-          <button
-            type="submit"
-            class="bg-white px-5 py-3 text-[11px] font-bold uppercase tracking-[0.22em] text-[#075838] transition hover:bg-[#E8A7B8]"
-          >
-            Join
-          </button>
-        </form>
+        <div class="mt-5 grid gap-2">
+          {
+            updateTopics.map((topic) => (
+              <div class="rounded-full border border-white/20 px-4 py-2 text-xs text-white/75">
+                {topic}
+              </div>
+            ))
+          }
+        </div>
 
         <a
           href={whatsappUrl}
           target="_blank"
           rel="noopener noreferrer"
-          class="mt-5 inline-flex border border-white/50 px-5 py-3 text-[11px] font-bold uppercase tracking-[0.22em] text-white transition hover:border-white hover:bg-white hover:text-[#075838]"
+          class="mt-6 inline-flex border border-white/50 px-5 py-3 text-[11px] font-bold uppercase tracking-[0.22em] text-white transition hover:border-white hover:bg-white hover:text-[#075838]"
         >
-          Chat On WhatsApp
+          Chat on WhatsApp
         </a>
       </div>
     </div>
