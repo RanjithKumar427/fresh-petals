@@ -1,5 +1,6 @@
 ---
 import type { Product } from "../data/productCatalog";
+import { serviceAreas } from "../data/serviceAreas";
 
 type Props = {
   product: Product;
@@ -106,6 +107,8 @@ const greetingCards = [
 
         <input
           type="text"
+          inputmode="numeric"
+          maxlength="6"
           placeholder="500072"
           data-option-pincode
           class="mt-2 w-full border-b border-[#D7D7D7] pb-2 text-sm text-[#171717] outline-none"
@@ -113,8 +116,11 @@ const greetingCards = [
       </label>
     </div>
 
-    <p class="mt-4 rounded-sm bg-[#C9F5B5] px-4 py-2 text-center text-sm text-[#171717]">
-      Delivery available
+    <p
+      data-delivery-status
+      class="mt-4 rounded-sm bg-[#F3F1F2] px-4 py-2 text-center text-sm text-[#66565D]"
+    >
+      Enter your pincode to check delivery
     </p>
   </div>
 
@@ -428,4 +434,41 @@ const greetingCards = [
 
     window.open(`https://wa.me/${whatsappNumber}?text=${message}`, "_blank");
   });
+</script>
+
+<script define:vars={{ serviceAreas }}>
+  const deliveryPincodeInput = document.querySelector("[data-option-pincode]");
+  const deliveryStatus = document.querySelector("[data-delivery-status]");
+
+  const DELIVERY_STATUS_BASE_CLASS =
+    "mt-4 rounded-sm px-4 py-2 text-center text-sm";
+
+  function findDeliveryArea(pincode) {
+    return serviceAreas.find((area) => area.pincode === pincode);
+  }
+
+  function updateDeliveryStatus() {
+    if (!deliveryStatus) return;
+
+    const pincode = deliveryPincodeInput?.value.trim() || "";
+
+    if (!/^[0-9]{6}$/.test(pincode)) {
+      deliveryStatus.textContent = "Enter your pincode to check delivery";
+      deliveryStatus.className = `${DELIVERY_STATUS_BASE_CLASS} bg-[#F3F1F2] text-[#66565D]`;
+      return;
+    }
+
+    const area = findDeliveryArea(pincode);
+
+    if (area) {
+      deliveryStatus.textContent = `Delivery available in ${area.area} • ₹${area.deliveryFee} delivery fee`;
+      deliveryStatus.className = `${DELIVERY_STATUS_BASE_CLASS} bg-[#C9F5B5] text-[#171717]`;
+    } else {
+      deliveryStatus.textContent =
+        "We'll confirm delivery for this pincode on WhatsApp";
+      deliveryStatus.className = `${DELIVERY_STATUS_BASE_CLASS} bg-[#FFE9D6] text-[#7C243E]`;
+    }
+  }
+
+  deliveryPincodeInput?.addEventListener("input", updateDeliveryStatus);
 </script>

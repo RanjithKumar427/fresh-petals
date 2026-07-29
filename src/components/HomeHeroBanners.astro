@@ -38,7 +38,7 @@ const slides = [
     {
       slides.map((slide, index) => (
         <div
-          class={`hero-slide absolute inset-0 transition-opacity duration-700 ease-out ${
+          class={`hero-slide absolute inset-0 transition-opacity duration-[900ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${
             index === 0 ? "opacity-100" : "opacity-0"
           }`}
           data-slide={index}
@@ -48,9 +48,10 @@ const slides = [
             alt={slide.title}
             class="absolute inset-0 h-full w-full object-cover"
             loading={index === 0 ? "eager" : "lazy"}
+            decoding="async"
           />
 
-          <div class="absolute inset-0 bg-black/25"></div>
+          <div class="absolute inset-0 bg-gradient-to-r from-black/55 via-black/20 to-black/5"></div>
 
           <div class="relative z-10 mx-auto flex h-full max-w-7xl items-center px-5 md:px-8">
             <div class="max-w-xl text-white md:max-w-2xl">
@@ -86,7 +87,7 @@ const slides = [
         slides.map((_, index) => (
           <button
             type="button"
-            class={`hero-dot h-[3px] rounded-full transition-all duration-300 ${
+            class={`hero-dot h-[3px] rounded-full transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
               index === 0 ? "w-12 bg-white" : "w-6 bg-white/45"
             }`}
             data-dot={index}

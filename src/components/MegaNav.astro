@@ -30,7 +30,7 @@ const menuItems = [
           { label: "Hydrangeas", href: "/categories/hydrangeas" },
           { label: "Sunflower", href: "/categories/sunflower" },
           { label: "Orchid", href: "/categories/orchid" },
-          { label: "Rose", href: "/products/rose-bouquet" },
+          { label: "Rose", href: "/categories/rose" },
         ],
       },
       {
@@ -102,11 +102,11 @@ const menuItems = [
       {
         title: "Pooja",
         links: [
-          { label: "Floral Torans & Strings", href: "/categories/floral-torans-strings" },
-          { label: "Handcrafted Torans & Streamers", href: "/categories/handcrafted-torans-streamers" },
+          { label: "Floral Torans & Strings", href: "/categories/floral-torans-and-strings" },
+          { label: "Handcrafted Torans & Streamers", href: "/categories/handcrafted-torans-and-streamers" },
           { label: "Pooja & Urli Boxes", href: "/categories/pooja-urli-boxes" },
           { label: "Fairy Lights & Tim Tim Lights", href: "/categories/fairy-lights-tim-tim-lights" },
-          { label: "Diyas & Tea Light Holders", href: "/categories/diyas-tea-light-holders" },
+          { label: "Diyas & Tea Light Holders", href: "/categories/diyas-and-tea-light-holders" },
           { label: "All Decor", href: "/categories/all-decor" },
         ],
       },
@@ -142,10 +142,10 @@ const menuItems = [
         links: [
           { label: "All Gifts", href: "/categories/all-gifts" },
           { label: "Flowers & Chocolates", href: "/products/flower-chocolate-hamper" },
-          { label: "Flowers & Jewellery", href: "/categories/flowers-jewellery" },
+          { label: "Flowers & Jewellery", href: "/categories/flowers-and-jewellery" },
           { label: "Candles & Diffuser", href: "/products/candle-diffuser-addon" },
           { label: "Stationery", href: "/categories/stationery" },
-          { label: "Planners & Journal", href: "/categories/planners-journal" },
+          { label: "Planners & Journal", href: "/categories/planners-and-journal" },
           { label: "DIY Kits", href: "/categories/diy-kits" },
           { label: "Skincare", href: "/categories/skincare" },
           { label: "Tea", href: "/categories/tea" },
@@ -186,11 +186,11 @@ const menuItems = [
           >
             {item.label}
 
-            <span class="absolute bottom-0 left-0 h-px w-0 bg-[#111111] transition-all duration-500 ease-out group-hover:w-full" />
+            <span class="absolute bottom-0 left-0 h-px w-0 bg-[#111111] transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:w-full" />
           </a>
 
           {item.columns && (
-            <div class="pointer-events-none absolute left-0 top-full z-50 w-full translate-y-3 border-b border-[#EEE5E8] bg-white/95 opacity-0 shadow-[0_18px_45px_rgba(0,0,0,0.04)] backdrop-blur-sm transition-all duration-500 ease-out group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100">
+            <div class="pointer-events-none absolute left-0 top-full z-50 w-full translate-y-3 border-b border-[#EEE5E8] bg-white/95 opacity-0 shadow-[0_20px_50px_rgba(40,24,32,0.08)] backdrop-blur-sm transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100">
               <div
                 class={`mx-auto grid max-w-7xl gap-20 px-12 py-14 ${
                   item.columns.length === 1 ? "md:grid-cols-1" : "md:grid-cols-4"
