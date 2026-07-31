@@ -24,9 +24,9 @@ const navItems = [
     icon: "flower",
   },
   {
-    label: "Offers",
-    href: "/categories/offers",
-    icon: "tag",
+    label: "Studio",
+    href: "/studio",
+    icon: "studio",
   },
   {
     label: "Cart",
@@ -100,7 +100,7 @@ const navItems = [
           }
 
           {
-            item.icon === "tag" && (
+            item.icon === "studio" && (
               <svg
                 class="h-5 w-5"
                 viewBox="0 0 24 24"
@@ -110,8 +110,8 @@ const navItems = [
                 stroke-linecap="round"
                 stroke-linejoin="round"
               >
-                <path d="M20 13 11 22l-9-9V4h9l9 9Z"></path>
-                <path d="M7.5 7.5h.01"></path>
+                <path d="M12 3v3.5M12 17.5V21M3 12h3.5M17.5 12H21"></path>
+                <path d="M12 8.5 13.4 11l2.5 1.4-2.5 1.4-1.4 2.5-1.4-2.5-2.5-1.4 2.5-1.4 1.4-2.5Z"></path>
               </svg>
             )
           }

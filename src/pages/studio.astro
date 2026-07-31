@@ -1,0 +1,12 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import StudioRoot from "../features/studio/components/StudioRoot";
+---
+
+<BaseLayout
+  title="FreshPetals Studio — Design Your Own Bouquet"
+  description="Start with a feeling, not a catalogue. FreshPetals Studio is where you design a bouquet stem by stem, guided by an AI florist."
+  showCategoryCarousel={false}
+>
+  <StudioRoot client:load />
+</BaseLayout>

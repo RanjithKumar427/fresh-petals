@@ -13,6 +13,7 @@ import Footer from "../components/Footer.astro";
 const {
   title = "Fresh Petals Hyderabad",
   description = "Fresh flowers, pooja flowers, jasmine, bouquets, garlands and event flowers delivered in Hyderabad.",
+  showCategoryCarousel = true,
 } = Astro.props;
 ---
 
@@ -41,7 +42,7 @@ const {
     <CityBar />
     <EcommerceHeader />
     <MegaNav />
-    <RoundCategoryCarousel />
+    {showCategoryCarousel && <RoundCategoryCarousel />}
 
     <slot />
     <Footer />

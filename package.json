@@ -12,11 +12,19 @@
     "astro": "astro"
   },
   "dependencies": {
+    "@astrojs/react": "^6.0.2",
     "@tailwindcss/vite": "^4.3.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
     "astro": "^6.3.3",
-    "tailwindcss": "^4.3.0"
+    "framer-motion": "^12.43.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "tailwindcss": "^4.3.0",
+    "zustand": "^5.0.14"
   },
   "devDependencies": {
+    "@astrojs/check": "^0.9.10",
     "sharp": "^0.34.5"
   }
 }
