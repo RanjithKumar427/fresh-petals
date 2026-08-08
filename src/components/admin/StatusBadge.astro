@@ -1,0 +1,28 @@
+---
+interface Props {
+  status: "draft" | "published" | "archived";
+}
+
+const { status } = Astro.props;
+
+const styles: Record<Props["status"], string> = {
+  draft: "bg-[#F3F0EE] text-[#77706F]",
+  published: "bg-[#F3FFF7] text-[#075838]",
+  archived: "bg-[#FBEAEE] text-[#7C243E]",
+};
+
+const labels: Record<Props["status"], string> = {
+  draft: "Draft",
+  published: "Published",
+  archived: "Archived",
+};
+---
+
+<span
+  class:list={[
+    "inline-flex items-center rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em]",
+    styles[status],
+  ]}
+>
+  {labels[status]}
+</span>

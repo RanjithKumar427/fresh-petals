@@ -1,0 +1,62 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+
+export const prerender = false;
+
+if (Astro.locals.admin) {
+  return Astro.redirect("/admin/dashboard");
+}
+
+const error = Astro.url.searchParams.get("error");
+const next = Astro.url.searchParams.get("next") || "/admin/dashboard";
+---
+
+<AdminLayout title="Sign in">
+  <div class="flex min-h-screen items-center justify-center px-4">
+    <div class="fp-card w-full max-w-sm p-8">
+      <p class="fp-serif text-xl tracking-[0.12em] text-[#171717]">FreshPetals</p>
+      <p class="fp-label mt-1 text-[#9B6B78]">Admin sign in</p>
+
+      {
+        error && (
+          <p class="mt-4 rounded-lg bg-[#FBEAEE] px-3 py-2 text-[12px] text-[#7C243E]">{error}</p>
+        )
+      }
+
+      <form method="post" action="/api/admin/auth/login" class="mt-6 space-y-4">
+        <input type="hidden" name="next" value={next} />
+
+        <div>
+          <label class="fp-label block text-[10px] text-[#66565D]" for="email">Email</label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            required
+            autocomplete="username"
+            class="mt-1 w-full rounded-lg border border-[#D8D1D4] px-3 py-2.5 text-[14px] text-[#171717] outline-none focus:border-[#7C243E]"
+          />
+        </div>
+
+        <div>
+          <label class="fp-label block text-[10px] text-[#66565D]" for="password">Password</label>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            required
+            autocomplete="current-password"
+            class="mt-1 w-full rounded-lg border border-[#D8D1D4] px-3 py-2.5 text-[14px] text-[#171717] outline-none focus:border-[#7C243E]"
+          />
+        </div>
+
+        <button
+          type="submit"
+          class="w-full rounded-full bg-[#111111] py-3 text-[11px] font-bold uppercase tracking-[0.22em] text-white transition hover:bg-[#7C243E]"
+        >
+          Sign in
+        </button>
+      </form>
+    </div>
+  </div>
+</AdminLayout>

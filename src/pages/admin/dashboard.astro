@@ -1,0 +1,54 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import AdminShell from "../../components/admin/AdminShell.astro";
+import AdminCard from "../../components/admin/AdminCard.astro";
+import { DashboardService } from "../../server/services/DashboardService";
+
+export const prerender = false;
+
+const admin = Astro.locals.admin!;
+const stats = DashboardService.getStats();
+
+const lastUpdatedLabel = stats.lastUpdated
+  ? new Date(stats.lastUpdated).toLocaleString("en-IN", {
+      day: "numeric",
+      month: "short",
+      hour: "numeric",
+      minute: "2-digit",
+    })
+  : "No products yet";
+---
+
+<AdminLayout title="Dashboard">
+  <AdminShell active="dashboard" adminEmail={admin.email} pageTitle="Dashboard">
+    <div class="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
+      <AdminCard label="Total Products" value={stats.totalProducts} />
+      <AdminCard label="Published" value={stats.publishedProducts} />
+      <AdminCard label="Drafts" value={stats.draftProducts} />
+      <AdminCard label="Categories" value={stats.categories} />
+      <AdminCard label="Images" value={stats.images} />
+      <AdminCard label="Last Updated" value={lastUpdatedLabel} />
+    </div>
+
+    <div class="mt-8 flex flex-wrap gap-3">
+      <a
+        href="/admin/products/new"
+        class="rounded-full bg-[#111111] px-5 py-2.5 text-[11px] font-bold uppercase tracking-[0.18em] text-white transition hover:bg-[#7C243E]"
+      >
+        + Add Product
+      </a>
+      <a
+        href="/admin/products"
+        class="rounded-full border border-[#D8D1D4] px-5 py-2.5 text-[11px] font-bold uppercase tracking-[0.18em] text-[#171717] transition hover:border-[#7C243E] hover:text-[#7C243E]"
+      >
+        Manage Products
+      </a>
+      <a
+        href="/admin/categories"
+        class="rounded-full border border-[#D8D1D4] px-5 py-2.5 text-[11px] font-bold uppercase tracking-[0.18em] text-[#171717] transition hover:border-[#7C243E] hover:text-[#7C243E]"
+      >
+        Manage Categories
+      </a>
+    </div>
+  </AdminShell>
+</AdminLayout>

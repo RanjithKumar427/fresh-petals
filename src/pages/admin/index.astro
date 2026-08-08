@@ -1,0 +1,7 @@
+---
+// Bare /admin — middleware has already guaranteed Astro.locals.admin exists
+// here (unauthenticated requests get redirected to /admin/login before this
+// page ever runs), so this is just a landing redirect into the dashboard.
+export const prerender = false;
+return Astro.redirect("/admin/dashboard");
+---

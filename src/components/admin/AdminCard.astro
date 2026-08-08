@@ -1,0 +1,15 @@
+---
+interface Props {
+  label: string;
+  value: string | number;
+  hint?: string;
+}
+
+const { label, value, hint } = Astro.props;
+---
+
+<div class="fp-card p-5">
+  <p class="fp-eyebrow">{label}</p>
+  <p class="fp-serif mt-2 text-3xl text-[#171717]">{value}</p>
+  {hint && <p class="mt-1 text-[12px] text-[#77706F]">{hint}</p>}
+</div>

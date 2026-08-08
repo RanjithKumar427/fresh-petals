@@ -1,0 +1,96 @@
+---
+// Shared chrome for every authenticated /admin/* page: a left sidebar nav
+// and a slim topbar. Reuses the storefront's palette/type tokens (maroon
+// accent, Jost body, Georgia serif for page titles) instead of inventing a
+// separate admin visual language.
+interface Props {
+  active: "dashboard" | "products" | "categories" | "media";
+  adminEmail: string;
+  pageTitle: string;
+}
+
+const { active, adminEmail, pageTitle } = Astro.props;
+
+const navItems = [
+  { key: "dashboard", label: "Dashboard", href: "/admin/dashboard" },
+  { key: "products", label: "Products", href: "/admin/products" },
+  { key: "categories", label: "Categories", href: "/admin/categories" },
+  { key: "media", label: "Media", href: "/admin/media" },
+] as const;
+---
+
+<div class="flex min-h-screen">
+  <aside class="hidden w-64 shrink-0 border-r border-[#EEE5E8] bg-white md:flex md:flex-col">
+    <div class="px-6 py-6">
+      <p class="fp-serif text-lg tracking-[0.14em] text-[#171717]">FreshPetals</p>
+      <p class="fp-label mt-1 text-[#9B6B78]">Admin</p>
+    </div>
+
+    <nav class="flex-1 px-3">
+      {
+        navItems.map((item) => (
+          <a
+            href={item.href}
+            class:list={[
+              "mb-1 flex items-center rounded-lg px-3 py-2.5 text-[13px] font-medium transition",
+              active === item.key
+                ? "bg-[#F8DCE5] text-[#7C243E]"
+                : "text-[#66565D] hover:bg-[#F8F1F3] hover:text-[#171717]",
+            ]}
+          >
+            {item.label}
+          </a>
+        ))
+      }
+    </nav>
+
+    <div class="border-t border-[#EEE5E8] px-4 py-4">
+      <a
+        href="/"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="block rounded-lg px-3 py-2 text-[12px] font-semibold uppercase tracking-[0.14em] text-[#66565D] hover:bg-[#F8F1F3]"
+      >
+        View storefront ↗
+      </a>
+    </div>
+  </aside>
+
+  <div class="flex min-w-0 flex-1 flex-col">
+    <header class="flex items-center justify-between border-b border-[#EEE5E8] bg-white px-4 py-4 md:px-8">
+      <h1 class="fp-serif text-xl tracking-[0.1em] text-[#171717] md:text-2xl">{pageTitle}</h1>
+
+      <div class="flex items-center gap-4">
+        <span class="hidden text-[12px] text-[#77706F] sm:inline">{adminEmail}</span>
+        <form method="post" action="/api/admin/auth/logout">
+          <button
+            type="submit"
+            class="rounded-full border border-[#D8D1D4] px-4 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[#171717] transition hover:border-[#7C243E] hover:text-[#7C243E]"
+          >
+            Log out
+          </button>
+        </form>
+      </div>
+    </header>
+
+    <nav class="flex gap-1 overflow-x-auto border-b border-[#EEE5E8] bg-white px-4 py-2 md:hidden">
+      {
+        navItems.map((item) => (
+          <a
+            href={item.href}
+            class:list={[
+              "whitespace-nowrap rounded-full px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.1em]",
+              active === item.key ? "bg-[#F8DCE5] text-[#7C243E]" : "text-[#66565D]",
+            ]}
+          >
+            {item.label}
+          </a>
+        ))
+      }
+    </nav>
+
+    <main class="flex-1 px-4 py-6 md:px-8 md:py-8">
+      <slot />
+    </main>
+  </div>
+</div>

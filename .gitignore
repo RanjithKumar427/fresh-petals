@@ -22,3 +22,8 @@ pnpm-debug.log*
 
 # jetbrains setting folder
 .idea/
+
+# admin backend — local SQLite database and uploaded media, both generated
+# at runtime (see src/server/db/paths.mjs)
+/data/
+/uploads/
