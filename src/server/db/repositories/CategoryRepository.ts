@@ -1,5 +1,13 @@
-import { getDb, nowIso } from "../client";
-
+// Stable public entry point every service imports from — see
+// ProductRepository.ts (Phase 2B.1) for the fuller explanation of this
+// pattern. As of Phase 2B.2 this re-exports SupabaseCategoryRepository (a
+// Drizzle/Postgres implementation) instead of a node:sqlite one. Rollback
+// is a `git revert` of that phase's commit; every consumer's import
+// statement is untouched either way.
+//
+// Every method now returns a Promise where its SQLite predecessor returned
+// a value directly — the one unavoidable interface change a synchronous-
+// to-asynchronous datastore swap forces, same as Product's migration.
 export type Category = {
   id: number;
   name: string;
@@ -11,75 +19,20 @@ export type Category = {
   updatedAt: string;
 };
 
-function mapRow(row: any): Category {
-  return {
-    id: row.id,
-    name: row.name,
-    slug: row.slug,
-    description: row.description,
-    imageId: row.image_id,
-    sortOrder: row.sort_order,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-  };
-}
-
-export const CategoryRepository = {
-  list(): Category[] {
-    const rows = getDb()
-      .prepare("SELECT * FROM categories ORDER BY sort_order ASC, name ASC")
-      .all();
-    return rows.map(mapRow);
-  },
-
-  findById(id: number): Category | null {
-    const row = getDb().prepare("SELECT * FROM categories WHERE id = ?").get(id);
-    return row ? mapRow(row) : null;
-  },
-
-  findBySlug(slug: string): Category | null {
-    const row = getDb().prepare("SELECT * FROM categories WHERE slug = ?").get(slug);
-    return row ? mapRow(row) : null;
-  },
-
-  findByName(name: string): Category | null {
-    const row = getDb()
-      .prepare("SELECT * FROM categories WHERE lower(name) = lower(?)")
-      .get(name);
-    return row ? mapRow(row) : null;
-  },
-
-  count(): number {
-    const row = getDb().prepare("SELECT COUNT(*) AS n FROM categories").get() as any;
-    return row.n;
-  },
-
+/** The contract every CategoryRepository implementation (SQLite, Supabase, or a future one) must satisfy. */
+export interface CategoryRepositoryContract {
+  list(): Promise<Category[]>;
+  findById(id: number): Promise<Category | null>;
+  findBySlug(slug: string): Promise<Category | null>;
+  findByName(name: string): Promise<Category | null>;
+  count(): Promise<number>;
   create(input: {
     name: string;
     slug: string;
     description?: string | null;
     imageId?: number | null;
     sortOrder?: number;
-  }): Category {
-    const timestamp = nowIso();
-    const result = getDb()
-      .prepare(
-        `INSERT INTO categories (name, slug, description, image_id, sort_order, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`
-      )
-      .run(
-        input.name,
-        input.slug,
-        input.description ?? null,
-        input.imageId ?? null,
-        input.sortOrder ?? 0,
-        timestamp,
-        timestamp
-      );
-
-    return this.findById(Number(result.lastInsertRowid))!;
-  },
-
+  }): Promise<Category>;
   update(
     id: number,
     input: Partial<{
@@ -89,38 +42,9 @@ export const CategoryRepository = {
       imageId: number | null;
       sortOrder: number;
     }>
-  ): Category | null {
-    const existing = this.findById(id);
-    if (!existing) return null;
+  ): Promise<Category | null>;
+  delete(id: number): Promise<void>;
+  countProducts(categoryId: number): Promise<number>;
+}
 
-    getDb()
-      .prepare(
-        `UPDATE categories
-         SET name = ?, slug = ?, description = ?, image_id = ?, sort_order = ?, updated_at = ?
-         WHERE id = ?`
-      )
-      .run(
-        input.name ?? existing.name,
-        input.slug ?? existing.slug,
-        input.description === undefined ? existing.description : input.description,
-        input.imageId === undefined ? existing.imageId : input.imageId,
-        input.sortOrder ?? existing.sortOrder,
-        nowIso(),
-        id
-      );
-
-    return this.findById(id);
-  },
-
-  delete(id: number): void {
-    getDb().prepare("DELETE FROM categories WHERE id = ?").run(id);
-  },
-
-  /** Used to block deletion in the UI with a friendly message instead of a raw FK error. */
-  countProducts(categoryId: number): number {
-    const row = getDb()
-      .prepare("SELECT COUNT(*) AS n FROM products WHERE category_id = ?")
-      .get(categoryId) as any;
-    return row.n;
-  },
-};
+export { SupabaseCategoryRepository as CategoryRepository } from "./SupabaseCategoryRepository";

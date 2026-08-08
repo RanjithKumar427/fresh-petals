@@ -12,26 +12,20 @@ export type DashboardStats = {
 };
 
 export const DashboardService = {
-  // ProductRepository is Postgres-backed (async) as of Phase 2B.1;
-  // CategoryRepository/MediaRepository stay SQLite-backed (sync) until
-  // their own migration phases. The three Postgres reads run concurrently
-  // via Promise.all — they're independent queries, no reason to serialize
-  // them — while the two SQLite reads resolve synchronously in between.
+  // All five reads are Postgres-backed as of Phase 2B.2 (Product since
+  // 2B.1; Category and Media joined this phase) — independent queries,
+  // run concurrently via Promise.all rather than serialized, same
+  // reasoning as Phase 2B.1's original version of this method.
   async getStats(): Promise<DashboardStats> {
-    const [totalProducts, publishedProducts, draftProducts, lastUpdated] = await Promise.all([
+    const [totalProducts, publishedProducts, draftProducts, lastUpdated, categories, images] = await Promise.all([
       ProductRepository.countAll(),
       ProductRepository.countByStatus("published"),
       ProductRepository.countByStatus("draft"),
       ProductRepository.lastUpdatedAt(),
+      CategoryRepository.count(),
+      MediaRepository.count(),
     ]);
 
-    return {
-      totalProducts,
-      publishedProducts,
-      draftProducts,
-      categories: CategoryRepository.count(),
-      images: MediaRepository.count(),
-      lastUpdated,
-    };
+    return { totalProducts, publishedProducts, draftProducts, categories, images, lastUpdated };
   },
 };

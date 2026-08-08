@@ -96,16 +96,23 @@ export const media = pgTable(
 // ---------------------------------------------------------------------
 // Independent taxonomies
 // ---------------------------------------------------------------------
-export const categories = pgTable("categories", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  slug: text("slug").notNull().unique(),
-  description: text("description"),
-  imageId: integer("image_id").references(() => media.id, { onDelete: "set null" }),
-  sortOrder: integer("sort_order").notNull().default(0),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-});
+export const categories = pgTable(
+  "categories",
+  {
+    id: serial("id").primaryKey(),
+    name: text("name").notNull(),
+    slug: text("slug").notNull().unique(),
+    description: text("description"),
+    imageId: integer("image_id").references(() => media.id, { onDelete: "set null" }),
+    sortOrder: integer("sort_order").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  // Added in Phase 2B.2: SupabaseMediaRepository's isInUse()/getUsage()/
+  // list() usage-count subquery all filter categories by image_id — a real
+  // query pattern this phase introduced, not a speculative index.
+  (table) => [index("idx_categories_image_id").on(table.imageId)]
+);
 
 export const occasions = pgTable("occasions", {
   id: serial("id").primaryKey(),
@@ -207,7 +214,13 @@ export const productImages = pgTable(
     sortOrder: integer("sort_order").notNull().default(0),
     isPrimary: boolean("is_primary").notNull().default(false),
   },
-  (table) => [index("idx_product_images_product_id").on(table.productId)]
+  (table) => [
+    index("idx_product_images_product_id").on(table.productId),
+    // Added in Phase 2B.2: SupabaseMediaRepository's isInUse()/getUsage()/
+    // list() usage-count subquery all filter product_images by media_id —
+    // every media list render and every delete-guard check hits this.
+    index("idx_product_images_media_id").on(table.mediaId),
+  ]
 );
 
 export const productOccasions = pgTable(

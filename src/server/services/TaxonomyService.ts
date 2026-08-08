@@ -10,13 +10,13 @@ import type { Tag } from "../db/repositories/TagRepository";
  * these in this milestone; the product editor just needs to list them.
  */
 export const TaxonomyService = {
-  listOccasions(): Tag[] {
+  async listOccasions(): Promise<Tag[]> {
     return OccasionRepository.list();
   },
-  listMoods(): Tag[] {
+  async listMoods(): Promise<Tag[]> {
     return MoodRepository.list();
   },
-  listFlowerTypes(): Tag[] {
+  async listFlowerTypes(): Promise<Tag[]> {
     return FlowerTypeRepository.list();
   },
 };

@@ -15,6 +15,13 @@
       "when": 1786188143766,
       "tag": "0001_enable_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1786200921808,
+      "tag": "0002_media_usage_indexes",
+      "breakpoints": true
     }
   ]
 }

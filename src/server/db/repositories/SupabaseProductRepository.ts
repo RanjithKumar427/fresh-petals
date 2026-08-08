@@ -43,25 +43,12 @@ import {
 } from "../postgres/schema";
 
 type Tx = NodePgDatabase<typeof schema>;
-import { translatePgError } from "../postgres/pgErrors";
-
-// Every method below goes through this — including reads. Writes had this
-// from the start (constraint violations are the obvious case), but a live
-// run during this phase's own browser verification hit a transient DNS
-// failure resolving the pooler host (getaddrinfo ENOTFOUND) on a plain
-// read (`countByStatus`, via the dashboard) — proof "Postgres is
-// unavailable" isn't just a hypothetical to wrap the write paths against.
-// Centralizing here (rather than a try/catch duplicated in every method)
-// also means every repository this pattern gets copied to in later phases
-// starts consistent instead of write-only by accident.
-async function withErrorTranslation<T>(context: string, fn: () => Promise<T>): Promise<T> {
-  try {
-    return await fn();
-  } catch (error) {
-    console.error(`[${context}]`, error);
-    throw translatePgError(error);
-  }
-}
+// withErrorTranslation lived here, inline, as this repository's own helper
+// during Phase 2B.1 — it's `withRepositoryCall` now, in postgres/repository.ts,
+// extracted in Phase 2B.2 once three more repositories were about to need
+// the exact same logic. Kept the local name as an alias below so nothing
+// else in this file needed to change.
+import { withRepositoryCall as withErrorTranslation } from "../postgres/repository";
 import type {
   Product,
   ProductCoreInput,
@@ -296,6 +283,16 @@ export const SupabaseProductRepository = {
         LIMIT 1
       )`.as("primary_image_url");
 
+      // Verified via toSQL() during Phase 2B.2's investigation of a real bug
+      // in the analogous Media query (see SupabaseMediaRepository.list()):
+      // this subquery's column references (${media.id}, ${products.id},
+      // etc.) only render fully table-qualified because this outer query
+      // already joins `categories` below — Drizzle fully qualifies every
+      // column throughout a query once its outer FROM has two or more
+      // tables, which happens to be true here for an unrelated reason
+      // (categoryName needs the join). Confirmed correct by inspecting the
+      // actual generated SQL, not assumed safe by resemblance to a query
+      // that turned out broken elsewhere.
       const rows = await getDb()
         .select({
           id: products.id,

@@ -18,4 +18,6 @@ export type StoredFile = {
 export interface StorageService {
   put(input: { buffer: Buffer; filename: string; mimeType: string; folder: MediaFolder }): Promise<StoredFile>;
   delete(path: string): Promise<void>;
+  /** Relocates an already-stored file to a different folder — powers the Media Library's "Move" action. */
+  move(path: string, toFolder: MediaFolder): Promise<StoredFile>;
 }

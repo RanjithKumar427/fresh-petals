@@ -18,15 +18,19 @@ if (!product) {
   return Astro.redirect("/admin/products");
 }
 
-const categories = CategoryService.list().map((category) => ({
+const [categoryList, occasions, moods, flowerTypes, uncategorized] = await Promise.all([
+  CategoryService.list(),
+  TaxonomyService.listOccasions(),
+  TaxonomyService.listMoods(),
+  TaxonomyService.listFlowerTypes(),
+  CategoryService.getOrCreateUncategorized(),
+]);
+const categories = categoryList.map((category) => ({
   id: category.id,
   name: category.name,
   slug: category.slug,
 }));
-const occasions = TaxonomyService.listOccasions();
-const moods = TaxonomyService.listMoods();
-const flowerTypes = TaxonomyService.listFlowerTypes();
-const uncategorizedCategoryId = CategoryService.getOrCreateUncategorized().id;
+const uncategorizedCategoryId = uncategorized.id;
 
 // Explicit mapping (rather than passing `product` straight through) keeps
 // the server Product type's optional (`?:`) fields from leaking `undefined`

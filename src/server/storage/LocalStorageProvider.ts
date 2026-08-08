@@ -30,4 +30,22 @@ export const LocalStorageProvider: StorageService = {
     const fullPath = path.join(UPLOADS_ROOT, relativePath);
     await fs.rm(fullPath, { force: true });
   },
+
+  async move(relativePath, toFolder): Promise<StoredFile> {
+    const fromFullPath = path.join(UPLOADS_ROOT, relativePath);
+    const toDir = path.join(UPLOADS_ROOT, toFolder);
+    await fs.mkdir(toDir, { recursive: true });
+
+    const filename = path.basename(relativePath);
+    const toFullPath = path.join(toDir, filename);
+    await fs.rename(fromFullPath, toFullPath);
+
+    const newRelativePath = `${toFolder}/${filename}`;
+    const stats = await fs.stat(toFullPath);
+    return {
+      path: newRelativePath,
+      url: `/media/${newRelativePath}`,
+      sizeBytes: stats.size,
+    };
+  },
 };

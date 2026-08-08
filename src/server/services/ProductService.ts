@@ -27,9 +27,11 @@ async function uniqueSlug(base: string, excludeId?: number): Promise<string> {
  * Friendly, specific reasons a product isn't ready to publish — mirrored
  * (for instant feedback) by the editor's own checklist in PublishingSection,
  * but this copy is the one that actually gates the transition server-side.
- * Pure/synchronous: only inspects an already-loaded Product, no DB access.
+ * Async only because of the CategoryService lookup below (Postgres-backed
+ * as of Phase 2B.2) — otherwise this only inspects an already-loaded
+ * Product, no other DB access.
  */
-export function getPublishBlockers(product: Product): string[] {
+export async function getPublishBlockers(product: Product): Promise<string[]> {
   const blockers: string[] = [];
 
   if (!product.name.trim() || product.name === "Untitled Product") {
@@ -38,7 +40,8 @@ export function getPublishBlockers(product: Product): string[] {
   if (product.images.length === 0) {
     blockers.push("Add at least one image.");
   }
-  if (product.categoryId === CategoryService.getOrCreateUncategorized().id) {
+  const uncategorized = await CategoryService.getOrCreateUncategorized();
+  if (product.categoryId === uncategorized.id) {
     blockers.push("Select where this product belongs.");
   }
   if ((product.priceType === "fixed" || product.priceType === "from") && !product.sellingPrice) {
@@ -115,7 +118,7 @@ export const ProductService = {
     if (await ProductRepository.findBySlug(slug)) {
       return fail("A product with this slug already exists.", { slug: "Slug already in use." });
     }
-    if (!CategoryRepository.findById(data.categoryId)) {
+    if (!(await CategoryRepository.findById(data.categoryId))) {
       return fail("Selected category does not exist.", { categoryId: "Choose a valid category." });
     }
 
@@ -141,7 +144,7 @@ export const ProductService = {
     if (clashing && clashing.id !== id) {
       return fail("A product with this slug already exists.", { slug: "Slug already in use." });
     }
-    if (!CategoryRepository.findById(data.categoryId)) {
+    if (!(await CategoryRepository.findById(data.categoryId))) {
       return fail("Selected category does not exist.", { categoryId: "Choose a valid category." });
     }
 
@@ -173,7 +176,7 @@ export const ProductService = {
     // feedback, but this is the authoritative gate — a direct API call
     // (or a future non-editor caller) can't skip it.
     if (status === "published") {
-      const blockers = getPublishBlockers(existing);
+      const blockers = await getPublishBlockers(existing);
       if (blockers.length > 0) {
         return fail(blockers.join(" "));
       }
@@ -254,7 +257,7 @@ export const ProductService = {
    * SupabaseProductRepository — there are no images or tags to reference yet.
    */
   async createDraft(): Promise<Product> {
-    const uncategorized = CategoryService.getOrCreateUncategorized();
+    const uncategorized = await CategoryService.getOrCreateUncategorized();
     const slug = await uniqueSlug("untitled-product");
 
     return ProductRepository.create(
