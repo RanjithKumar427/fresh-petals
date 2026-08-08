@@ -1,0 +1,15 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import AdminShell from "../../../components/admin/AdminShell.astro";
+import StandaloneUploadPage from "../../../features/admin/mediaLibrary/StandaloneUploadPage";
+
+export const prerender = false;
+
+const admin = Astro.locals.admin!;
+---
+
+<AdminLayout title="Upload Images">
+  <AdminShell active="media" adminEmail={admin.email} pageTitle="Upload Images">
+    <StandaloneUploadPage client:load />
+  </AdminShell>
+</AdminLayout>

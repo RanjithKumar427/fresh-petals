@@ -1,0 +1,71 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import AdminShell from "../../../components/admin/AdminShell.astro";
+import { MediaService } from "../../../server/services/MediaService";
+import { MEDIA_FOLDERS } from "../../../server/db/repositories/MediaRepository";
+
+export const prerender = false;
+
+const admin = Astro.locals.admin!;
+
+const FOLDER_LABELS: Record<string, string> = {
+  products: "Products",
+  categories: "Categories",
+  homepage: "Homepage",
+  hero: "Hero",
+  occasions: "Occasions",
+  neighbourhoods: "Neighbourhoods",
+  studio: "Studio",
+  temporary: "Temporary",
+};
+
+const [counts, previews] = await Promise.all([
+  MediaService.countByFolder(),
+  Promise.all(MEDIA_FOLDERS.map((folder) => MediaService.list({ folder }))),
+]);
+
+const folders = MEDIA_FOLDERS.map((folder, index) => ({
+  folder,
+  label: FOLDER_LABELS[folder],
+  count: counts[folder] ?? 0,
+  preview: previews[index][0] ?? null,
+}));
+---
+
+<AdminLayout title="Media Folders">
+  <AdminShell active="media" adminEmail={admin.email} pageTitle="Folders">
+    <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+      {
+        folders.map((folder) => (
+          <a
+            href={`/admin/media?folder=${folder.folder}`}
+            class="group overflow-hidden rounded-xl border border-[#EEE5E8] bg-white transition hover:shadow-md"
+          >
+            <div class="relative aspect-video bg-[#F8F1F3]">
+              {folder.preview ? (
+                <img
+                  src={folder.preview.url}
+                  alt=""
+                  class="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                />
+              ) : (
+                <div class="flex h-full w-full items-center justify-center text-[12px] text-[#B8AEB3]">Empty</div>
+              )}
+            </div>
+            <div class="p-3">
+              <p class="text-[13px] font-medium text-[#171717]">{folder.label}</p>
+              <p class="text-[11px] text-[#9B948F]">
+                {folder.count} image{folder.count === 1 ? "" : "s"}
+              </p>
+            </div>
+          </a>
+        ))
+      }
+    </div>
+
+    <p class="mt-6 text-[12px] text-[#9B948F]">
+      Need a folder that isn't listed here? These map directly to where each area of the site looks for its
+      images — <a href="/admin/media" class="underline hover:text-[#7C243E]">browse everything</a> from the main library.
+    </p>
+  </AdminShell>
+</AdminLayout>

@@ -26,7 +26,10 @@ CREATE TABLE IF NOT EXISTS media (
   filename TEXT NOT NULL,
   path TEXT UNIQUE,              -- relative path under /uploads (NULL for seeded rows served from /images/**)
   url TEXT NOT NULL,             -- URL the storefront/admin actually renders
-  folder TEXT NOT NULL CHECK (folder IN ('products', 'categories', 'hero', 'occasions')),
+  folder TEXT NOT NULL CHECK (folder IN (
+    'products', 'categories', 'homepage', 'hero', 'occasions',
+    'neighbourhoods', 'studio', 'temporary'
+  )),
   mime_type TEXT NOT NULL,
   size_bytes INTEGER NOT NULL DEFAULT 0,
   width INTEGER,

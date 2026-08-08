@@ -1,11 +1,9 @@
 import type { APIRoute } from "astro";
 import { MediaService } from "../../../../server/services/MediaService";
-import type { MediaFolder } from "../../../../server/db/repositories/MediaRepository";
+import { MEDIA_FOLDERS, type MediaFolder } from "../../../../server/db/repositories/MediaRepository";
 import { json } from "../../../../server/http/json";
 
 export const prerender = false;
-
-const VALID_FOLDERS: MediaFolder[] = ["products", "categories", "hero", "occasions"];
 
 export const POST: APIRoute = async ({ request }) => {
   const form = await request.formData();
@@ -15,7 +13,7 @@ export const POST: APIRoute = async ({ request }) => {
   if (!(file instanceof File)) {
     return json({ ok: false, error: "No file provided." }, 400);
   }
-  if (!VALID_FOLDERS.includes(folderRaw as MediaFolder)) {
+  if (!MEDIA_FOLDERS.includes(folderRaw as MediaFolder)) {
     return json({ ok: false, error: "Invalid folder." }, 400);
   }
 
@@ -36,6 +34,7 @@ export const POST: APIRoute = async ({ request }) => {
 export const GET: APIRoute = async ({ url }) => {
   const folder = url.searchParams.get("folder") as MediaFolder | null;
   const search = url.searchParams.get("search") ?? undefined;
-  const media = MediaService.list({ folder: folder ?? undefined, search });
+  const unused = url.searchParams.get("unused") === "true";
+  const media = await MediaService.list({ folder: folder ?? undefined, search, unused: unused || undefined });
   return json({ ok: true, data: media });
 };

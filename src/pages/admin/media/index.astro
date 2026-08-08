@@ -1,0 +1,19 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import AdminShell from "../../../components/admin/AdminShell.astro";
+import MediaLibrary from "../../../features/admin/mediaLibrary/MediaLibrary";
+
+export const prerender = false;
+
+const admin = Astro.locals.admin!;
+---
+
+<AdminLayout title="Media Library">
+  <AdminShell active="media" adminEmail={admin.email} pageTitle="Media Library">
+    <div class="mb-4 flex justify-end gap-4 text-[12px]">
+      <a href="/admin/media/folders" class="text-[#66565D] hover:text-[#7C243E]">Browse Folders</a>
+      <a href="/admin/media/upload" class="text-[#66565D] hover:text-[#7C243E]">Full-page Upload</a>
+    </div>
+    <MediaLibrary client:load />
+  </AdminShell>
+</AdminLayout>

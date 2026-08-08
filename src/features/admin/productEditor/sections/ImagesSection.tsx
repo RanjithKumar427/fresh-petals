@@ -1,5 +1,7 @@
 import { useRef, useState } from "react";
 import { uploadFile } from "../../shared/uploadFile";
+import MediaPickerModal from "../../mediaLibrary/MediaPickerModal";
+import type { MediaListItem } from "../../mediaLibrary/types";
 import type { ProductDraft, ProductImageDraft } from "../types";
 
 interface Props {
@@ -25,6 +27,7 @@ function withRecalculatedOrder(images: ProductImageDraft[]): ProductImageDraft[]
 export default function ImagesSection({ draft, onChange }: Props) {
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [pendingUploads, setPendingUploads] = useState<PendingUpload[]>([]);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const dragImageIndex = useRef<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -97,13 +100,44 @@ export default function ImagesSection({ draft, onChange }: Props) {
     onChange({ images: withRecalculatedOrder(next) });
   };
 
+  /** "Choose from Library" — same Media Library used everywhere else, no separate upload path or duplicated picker. */
+  const handleChooseFromLibrary = (selected: MediaListItem[]) => {
+    const alreadyAttached = new Set(draft.images.map((image) => image.mediaId));
+    const room = MAX_IMAGES - draft.images.length;
+    const toAdd = selected.filter((media) => !alreadyAttached.has(media.id)).slice(0, Math.max(0, room));
+    if (toAdd.length === 0) return;
+
+    onChange({
+      images: withRecalculatedOrder([
+        ...draft.images,
+        ...toAdd.map((media) => ({
+          mediaId: media.id,
+          url: media.url,
+          altText: media.altText ?? (draft.name === "Untitled Product" ? null : draft.name),
+          sortOrder: 0,
+          isPrimary: false,
+          sizeBytes: media.sizeBytes,
+        })),
+      ]).map((image, index, all) => ({ ...image, isPrimary: all.some((i) => i.isPrimary) ? image.isPrimary : index === 0 })),
+    });
+  };
+
   return (
     <section id="section-images" className="fp-card scroll-mt-6 p-6">
       <div className="flex items-baseline justify-between">
         <h2 className="fp-serif text-lg tracking-[0.08em] text-[#171717]">Images</h2>
-        <span className="text-[12px] text-[#9B948F]">
-          {draft.images.length} of {MAX_IMAGES}
-        </span>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setPickerOpen(true)}
+            className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#7C243E] hover:underline"
+          >
+            Choose from Library
+          </button>
+          <span className="text-[12px] text-[#9B948F]">
+            {draft.images.length} of {MAX_IMAGES}
+          </span>
+        </div>
       </div>
 
       <div
@@ -214,6 +248,8 @@ export default function ImagesSection({ draft, onChange }: Props) {
           ))}
         </div>
       )}
+
+      <MediaPickerModal open={pickerOpen} onClose={() => setPickerOpen(false)} onChoose={handleChooseFromLibrary} />
     </section>
   );
 }
