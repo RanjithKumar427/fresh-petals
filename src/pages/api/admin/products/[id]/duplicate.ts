@@ -8,6 +8,6 @@ export const POST: APIRoute = async ({ params }) => {
   const id = Number(params.id);
   if (!Number.isInteger(id)) return json({ ok: false, error: "Invalid id." }, 400);
 
-  const result = ProductService.duplicate(id);
+  const result = await ProductService.duplicate(id);
   return json(result, result.ok ? 201 : 400);
 };

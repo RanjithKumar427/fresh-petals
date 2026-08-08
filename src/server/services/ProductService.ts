@@ -12,11 +12,11 @@ import { slugify } from "../utils/slugify";
 import { ok, fail, zodFieldErrors, type ServiceResult } from "./result";
 
 /** Appends -2, -3, ... until a slug that isn't already taken is found (optionally ignoring one product's own row). */
-function uniqueSlug(base: string, excludeId?: number): string {
+async function uniqueSlug(base: string, excludeId?: number): Promise<string> {
   let candidate = base;
   let suffix = 2;
   while (true) {
-    const clash = ProductRepository.findBySlug(candidate);
+    const clash = await ProductRepository.findBySlug(candidate);
     if (!clash || clash.id === excludeId) return candidate;
     candidate = `${base}-${suffix}`;
     suffix += 1;
@@ -27,6 +27,7 @@ function uniqueSlug(base: string, excludeId?: number): string {
  * Friendly, specific reasons a product isn't ready to publish — mirrored
  * (for instant feedback) by the editor's own checklist in PublishingSection,
  * but this copy is the one that actually gates the transition server-side.
+ * Pure/synchronous: only inspects an already-loaded Product, no DB access.
  */
 export function getPublishBlockers(product: Product): string[] {
   const blockers: string[] = [];
@@ -84,20 +85,25 @@ function splitInput(data: ReturnType<typeof productInputSchema.parse>) {
   return { core, relations };
 }
 
+/** Every ProductRepository call in this service can now throw a RepositoryError (see pgErrors.ts) instead of a raw pg error — this turns that into the same friendly ServiceResult shape every other validation failure already uses, so API routes don't need to know anything changed. */
+function friendlyMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "Something went wrong saving this product. Please try again.";
+}
+
 export const ProductService = {
-  list(filter?: ProductListFilter): ProductListItem[] {
+  async list(filter?: ProductListFilter): Promise<ProductListItem[]> {
     return ProductRepository.list(filter);
   },
 
-  get(id: number): Product | null {
+  async get(id: number): Promise<Product | null> {
     return ProductRepository.findById(id);
   },
 
-  getBySlug(slug: string): Product | null {
+  async getBySlug(slug: string): Promise<Product | null> {
     return ProductRepository.findBySlug(slug);
   },
 
-  create(input: unknown): ServiceResult<Product> {
+  async create(input: unknown): Promise<ServiceResult<Product>> {
     const parsed = productInputSchema.safeParse(input);
     if (!parsed.success) {
       return fail("Please fix the highlighted fields.", zodFieldErrors(parsed.error.issues));
@@ -106,7 +112,7 @@ export const ProductService = {
     const data = parsed.data;
     const slug = data.slug || slugify(data.name);
 
-    if (ProductRepository.findBySlug(slug)) {
+    if (await ProductRepository.findBySlug(slug)) {
       return fail("A product with this slug already exists.", { slug: "Slug already in use." });
     }
     if (!CategoryRepository.findById(data.categoryId)) {
@@ -114,11 +120,15 @@ export const ProductService = {
     }
 
     const { core, relations } = splitInput({ ...data, slug });
-    const product = ProductRepository.create(core, relations);
-    return ok(product);
+    try {
+      const product = await ProductRepository.create(core, relations);
+      return ok(product);
+    } catch (error) {
+      return fail(friendlyMessage(error));
+    }
   },
 
-  update(id: number, input: unknown): ServiceResult<Product> {
+  async update(id: number, input: unknown): Promise<ServiceResult<Product>> {
     const parsed = productInputSchema.safeParse(input);
     if (!parsed.success) {
       return fail("Please fix the highlighted fields.", zodFieldErrors(parsed.error.issues));
@@ -127,7 +137,7 @@ export const ProductService = {
     const data = parsed.data;
     const slug = data.slug || slugify(data.name);
 
-    const clashing = ProductRepository.findBySlug(slug);
+    const clashing = await ProductRepository.findBySlug(slug);
     if (clashing && clashing.id !== id) {
       return fail("A product with this slug already exists.", { slug: "Slug already in use." });
     }
@@ -136,19 +146,27 @@ export const ProductService = {
     }
 
     const { core, relations } = splitInput({ ...data, slug });
-    const product = ProductRepository.update(id, core, relations);
-    if (!product) return fail("Product not found.");
-    return ok(product);
+    try {
+      const product = await ProductRepository.update(id, core, relations);
+      if (!product) return fail("Product not found.");
+      return ok(product);
+    } catch (error) {
+      return fail(friendlyMessage(error));
+    }
   },
 
-  remove(id: number): ServiceResult<null> {
-    if (!ProductRepository.findById(id)) return fail("Product not found.");
-    ProductRepository.delete(id);
-    return ok(null);
+  async remove(id: number): Promise<ServiceResult<null>> {
+    if (!(await ProductRepository.findById(id))) return fail("Product not found.");
+    try {
+      await ProductRepository.delete(id);
+      return ok(null);
+    } catch (error) {
+      return fail(friendlyMessage(error));
+    }
   },
 
-  setStatus(id: number, status: ProductStatus): ServiceResult<Product> {
-    const existing = ProductRepository.findById(id);
+  async setStatus(id: number, status: ProductStatus): Promise<ServiceResult<Product>> {
+    const existing = await ProductRepository.findById(id);
     if (!existing) return fail("Product not found.");
 
     // The editor's checklist does this same check client-side for instant
@@ -161,17 +179,21 @@ export const ProductService = {
       }
     }
 
-    const product = ProductRepository.setStatus(id, status);
-    if (!product) return fail("Product not found.");
-    return ok(product);
+    try {
+      const product = await ProductRepository.setStatus(id, status);
+      if (!product) return fail("Product not found.");
+      return ok(product);
+    } catch (error) {
+      return fail(friendlyMessage(error));
+    }
   },
 
   /** Clones a product as a new draft — images/tags/bullets copied, slug de-duplicated. */
-  duplicate(id: number): ServiceResult<Product> {
-    const source = ProductRepository.findById(id);
+  async duplicate(id: number): Promise<ServiceResult<Product>> {
+    const source = await ProductRepository.findById(id);
     if (!source) return fail("Product not found.");
 
-    const candidateSlug = uniqueSlug(`${source.slug}-copy`);
+    const candidateSlug = await uniqueSlug(`${source.slug}-copy`);
 
     const core = {
       slug: candidateSlug,
@@ -211,7 +233,12 @@ export const ProductService = {
       careInstructions: source.careInstructions,
     };
 
-    return ok(ProductRepository.create(core, relations));
+    try {
+      const product = await ProductRepository.create(core, relations);
+      return ok(product);
+    } catch (error) {
+      return fail(friendlyMessage(error));
+    }
   },
 
   /**
@@ -221,11 +248,14 @@ export const ProductService = {
    * to), and it's why the schema's category_id stays NOT NULL rather than
    * nullable: every product, even a blank one, points at a real category
    * row (a standing "Uncategorized" placeholder) instead of carving out a
-   * null-FK special case that every join would then have to handle.
+   * null-FK special case that every join would then have to handle. That
+   * placeholder category is already migrated into Postgres (Phase 2A), so
+   * this specific insert never touches the media-FK gap noted in
+   * SupabaseProductRepository — there are no images or tags to reference yet.
    */
-  createDraft(): Product {
+  async createDraft(): Promise<Product> {
     const uncategorized = CategoryService.getOrCreateUncategorized();
-    const slug = uniqueSlug("untitled-product");
+    const slug = await uniqueSlug("untitled-product");
 
     return ProductRepository.create(
       {
@@ -263,8 +293,8 @@ export const ProductService = {
   },
 
   /** Powers the slug field's live "already taken" check + alternative suggestions in Basic Information. */
-  checkSlug(slug: string, excludeId?: number): { available: boolean; suggestions: string[] } {
-    const clash = ProductRepository.findBySlug(slug);
+  async checkSlug(slug: string, excludeId?: number): Promise<{ available: boolean; suggestions: string[] }> {
+    const clash = await ProductRepository.findBySlug(slug);
     const available = !clash || clash.id === excludeId;
 
     if (available) return { available: true, suggestions: [] };
@@ -272,7 +302,7 @@ export const ProductService = {
     const suggestions: string[] = [];
     for (let suffix = 2; suggestions.length < 3 && suffix <= 8; suffix += 1) {
       const candidate = `${slug}-${suffix}`;
-      if (!ProductRepository.findBySlug(candidate)) suggestions.push(candidate);
+      if (!(await ProductRepository.findBySlug(candidate))) suggestions.push(candidate);
     }
     return { available: false, suggestions };
   },

@@ -11,6 +11,6 @@ export const GET: APIRoute = async ({ url }) => {
 
   if (!slug) return json({ ok: true, data: { available: true, suggestions: [] } });
 
-  const result = ProductService.checkSlug(slug, excludeId ? Number(excludeId) : undefined);
+  const result = await ProductService.checkSlug(slug, excludeId ? Number(excludeId) : undefined);
   return json({ ok: true, data: result });
 };

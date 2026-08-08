@@ -13,7 +13,7 @@ if (!Number.isInteger(id)) {
   return Astro.redirect("/admin/products");
 }
 
-const product = ProductService.get(id);
+const product = await ProductService.get(id);
 if (!product) {
   return Astro.redirect("/admin/products");
 }

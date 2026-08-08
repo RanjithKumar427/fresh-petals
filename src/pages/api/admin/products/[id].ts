@@ -8,7 +8,7 @@ export const GET: APIRoute = async ({ params }) => {
   const id = Number(params.id);
   if (!Number.isInteger(id)) return json({ ok: false, error: "Invalid id." }, 400);
 
-  const product = ProductService.get(id);
+  const product = await ProductService.get(id);
   if (!product) return json({ ok: false, error: "Product not found." }, 404);
   return json({ ok: true, data: product });
 };
@@ -19,7 +19,7 @@ export const PATCH: APIRoute = async ({ params, request }) => {
   if (!Number.isInteger(id)) return json({ ok: false, error: "Invalid id." }, 400);
 
   const body = await request.json();
-  const result = ProductService.update(id, body);
+  const result = await ProductService.update(id, body);
   return json(result, result.ok ? 200 : 400);
 };
 
@@ -27,6 +27,6 @@ export const DELETE: APIRoute = async ({ params }) => {
   const id = Number(params.id);
   if (!Number.isInteger(id)) return json({ ok: false, error: "Invalid id." }, 400);
 
-  const result = ProductService.remove(id);
+  const result = await ProductService.remove(id);
   return json(result, result.ok ? 200 : 400);
 };

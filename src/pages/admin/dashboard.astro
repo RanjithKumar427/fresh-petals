@@ -7,7 +7,7 @@ import { DashboardService } from "../../server/services/DashboardService";
 export const prerender = false;
 
 const admin = Astro.locals.admin!;
-const stats = DashboardService.getStats();
+const stats = await DashboardService.getStats();
 
 const lastUpdatedLabel = stats.lastUpdated
   ? new Date(stats.lastUpdated).toLocaleString("en-IN", {

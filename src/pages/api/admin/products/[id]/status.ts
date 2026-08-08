@@ -15,6 +15,6 @@ export const POST: APIRoute = async ({ params, request }) => {
     return json({ ok: false, error: "Invalid status." }, 400);
   }
 
-  const result = ProductService.setStatus(id, body.status);
+  const result = await ProductService.setStatus(id, body.status);
   return json(result, result.ok ? 200 : 400);
 };

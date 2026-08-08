@@ -7,6 +7,6 @@ import { ProductService } from "../../../server/services/ProductService";
 
 export const prerender = false;
 
-const product = ProductService.createDraft();
+const product = await ProductService.createDraft();
 return Astro.redirect(`/admin/products/edit/${product.id}`);
 ---

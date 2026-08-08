@@ -12,7 +12,7 @@ export const GET: APIRoute = async ({ url }) => {
   const status = url.searchParams.get("status") as ProductStatus | null;
   const featured = url.searchParams.get("featured") === "true";
 
-  const products = ProductService.list({
+  const products = await ProductService.list({
     search,
     categoryId: categoryId ? Number(categoryId) : undefined,
     status: status ?? undefined,
