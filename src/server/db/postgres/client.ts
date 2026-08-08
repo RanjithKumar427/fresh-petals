@@ -19,7 +19,7 @@
 import { Pool } from "pg";
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import * as schema from "./schema";
-import { supabasePoolSsl } from "./ssl";
+import { supabasePoolSsl } from "./supabaseCa";
 
 type Globals = typeof globalThis & { __fpPgPool?: Pool; __fpDrizzleDb?: NodePgDatabase<typeof schema> };
 const globals = globalThis as Globals;

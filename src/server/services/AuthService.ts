@@ -1,57 +1,71 @@
+import type { AstroCookies } from "astro";
 import { AdminUserRepository, type AdminUser } from "../db/repositories/AdminUserRepository";
-import { SessionRepository } from "../db/repositories/SessionRepository";
-import { hashPassword, verifyPassword } from "../auth/password";
-import { generateSessionToken, sessionExpiryIso, isExpired } from "../auth/session";
+import { createSupabaseServerClient } from "../auth/supabaseServerClient";
 
-export type AuthResult =
-  | { ok: true; token: string; expiresAt: string }
-  | { ok: false; error: string };
+export type AuthResult = { ok: true } | { ok: false; error: string };
 
 /**
  * Everything auth-related that pages/API routes are allowed to call.
- * Pages never touch AdminUserRepository/SessionRepository/password hashing
- * directly — only this service.
+ * Pages never construct a Supabase client, never touch cookies for auth
+ * purposes directly, and never touch AdminUserRepository directly — only
+ * this service. Supabase Auth itself is an implementation detail behind
+ * this file, same as Postgres is behind ProductRepository: every method
+ * here takes the same `request`/`cookies` Astro already hands every page
+ * and API route, and nothing above this file needs to know a JWT or a
+ * `sb-*` cookie exists.
  */
 export const AuthService = {
-  /** Used once, at first boot, by scripts/create-admin.mjs. */
-  hasAdminAccount(): boolean {
-    return AdminUserRepository.count() > 0;
-  },
+  async login(email: string, password: string, request: Request, cookies: AstroCookies): Promise<AuthResult> {
+    const supabase = createSupabaseServerClient(request, cookies);
+    const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
 
-  createAdminAccount(email: string, password: string): AdminUser {
-    return AdminUserRepository.create({ email, passwordHash: hashPassword(password) });
-  },
-
-  login(email: string, password: string): AuthResult {
-    const user = AdminUserRepository.findByEmail(email);
-    if (!user || !verifyPassword(password, user.passwordHash)) {
-      return { ok: false, error: "Invalid email or password." };
+    if (error || !data.user) {
+      // Supabase's own error message ("Invalid login credentials") is
+      // already safe to show as-is — it doesn't distinguish "no such
+      // user" from "wrong password" (neither did the scrypt-based version
+      // this replaces), so nothing project-specific to translate here.
+      return { ok: false, error: error?.message ?? "Invalid email or password." };
     }
 
-    const token = generateSessionToken();
-    const expiresAt = sessionExpiryIso();
-    SessionRepository.create({ token, adminUserId: user.id, expiresAt });
-    AdminUserRepository.touchLastLogin(user.id);
-
-    return { ok: true, token, expiresAt };
-  },
-
-  logout(token: string): void {
-    SessionRepository.deleteByToken(token);
-  },
-
-  /** Returns the signed-in admin user for a session token, or null if absent/expired. */
-  verifySession(token: string | undefined | null): AdminUser | null {
-    if (!token) return null;
-
-    const session = SessionRepository.findByToken(token);
-    if (!session) return null;
-
-    if (isExpired(session.expiresAt)) {
-      SessionRepository.deleteByToken(token);
-      return null;
+    // Self-healing: create the profile row on first successful login if
+    // scripts/link-admin-identity.mjs hasn't run yet for this user (e.g.
+    // an admin invited straight from the Supabase dashboard). Every
+    // subsequent login just updates last_login_at on the row that already
+    // exists.
+    const existing = await AdminUserRepository.findById(data.user.id);
+    if (!existing) {
+      await AdminUserRepository.create({ id: data.user.id, email: data.user.email! });
     }
+    await AdminUserRepository.touchLastLogin(data.user.id);
 
-    return AdminUserRepository.findById(session.adminUserId);
+    return { ok: true };
+  },
+
+  async logout(request: Request, cookies: AstroCookies): Promise<void> {
+    const supabase = createSupabaseServerClient(request, cookies);
+    await supabase.auth.signOut();
+  },
+
+  /**
+   * Returns the signed-in admin for the current request's session, or
+   * null if absent/expired/invalid. Uses getUser() (which re-validates
+   * the JWT against Supabase's own auth server), not getSession() (which
+   * only decodes the locally-held token) — the same "don't trust a token
+   * just because it's well-formed" discipline this project has applied to
+   * every other trust boundary.
+   */
+  async verifySession(request: Request, cookies: AstroCookies): Promise<AdminUser | null> {
+    const supabase = createSupabaseServerClient(request, cookies);
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data.user) return null;
+
+    const existing = await AdminUserRepository.findById(data.user.id);
+    if (existing) return existing;
+    // Same self-healing path as login() — a valid Supabase session can
+    // exist without a profile row yet (e.g. this is the first request
+    // after signInWithPassword() already ran and set the cookie, before
+    // login()'s own create-if-missing had a chance to run in a different
+    // request). Belt-and-braces, not load-bearing on the happy path.
+    return AdminUserRepository.create({ id: data.user.id, email: data.user.email! });
   },
 };

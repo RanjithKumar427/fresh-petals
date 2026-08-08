@@ -1,14 +1,13 @@
 import { defineMiddleware } from "astro:middleware";
 import { AuthService } from "./server/services/AuthService";
-import { SESSION_COOKIE_NAME } from "./server/auth/session";
 
 // Every /admin/* page and /api/admin/* endpoint requires a valid session
 // except the login page/endpoint themselves. Everything else on the site
 // (the storefront) skips this entirely and stays untouched.
 const PUBLIC_PATHS = new Set(["/admin/login", "/api/admin/auth/login"]);
 
-export const onRequest = defineMiddleware((context, next) => {
-  const { url, cookies, redirect } = context;
+export const onRequest = defineMiddleware(async (context, next) => {
+  const { url, cookies, request, redirect } = context;
 
   const isAdminPage = url.pathname.startsWith("/admin");
   const isAdminApi = url.pathname.startsWith("/api/admin");
@@ -16,8 +15,7 @@ export const onRequest = defineMiddleware((context, next) => {
   if (!isAdminPage && !isAdminApi) return next();
   if (PUBLIC_PATHS.has(url.pathname)) return next();
 
-  const token = cookies.get(SESSION_COOKIE_NAME)?.value;
-  const admin = AuthService.verifySession(token);
+  const admin = await AuthService.verifySession(request, cookies);
 
   if (!admin) {
     if (isAdminApi) {

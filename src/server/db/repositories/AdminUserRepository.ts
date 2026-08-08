@@ -1,62 +1,25 @@
-import { getDb, nowIso } from "../client";
-
+// Stable public entry point every service imports from — see
+// ProductRepository.ts (Phase 2B.1) for the fuller explanation of this
+// pattern. As of Phase 2B.3 this re-exports SupabaseAdminUserRepository
+// instead of a node:sqlite one, and its shape changed with its meaning:
+// this is a profile/role record now, not a credential store — Supabase
+// Auth (its own `auth.users` table) is the sole source of truth for
+// passwords. `id` is that auth user's UUID, not an app-generated one.
 export type AdminUser = {
-  id: number;
+  id: string;
   email: string;
-  passwordHash: string;
+  role: string;
   createdAt: string;
   lastLoginAt: string | null;
 };
 
-function mapRow(row: any): AdminUser {
-  return {
-    id: row.id,
-    email: row.email,
-    passwordHash: row.password_hash,
-    createdAt: row.created_at,
-    lastLoginAt: row.last_login_at,
-  };
+/** The contract every AdminUserRepository implementation must satisfy. */
+export interface AdminUserRepositoryContract {
+  findByEmail(email: string): Promise<AdminUser | null>;
+  findById(id: string): Promise<AdminUser | null>;
+  count(): Promise<number>;
+  create(input: { id: string; email: string; role?: string }): Promise<AdminUser>;
+  touchLastLogin(id: string): Promise<void>;
 }
 
-/** All SQL for admin_users lives here — services never touch node:sqlite directly. */
-export const AdminUserRepository = {
-  findByEmail(email: string): AdminUser | null {
-    const row = getDb()
-      .prepare("SELECT * FROM admin_users WHERE email = ?")
-      .get(email.trim().toLowerCase());
-    return row ? mapRow(row) : null;
-  },
-
-  findById(id: number): AdminUser | null {
-    const row = getDb().prepare("SELECT * FROM admin_users WHERE id = ?").get(id);
-    return row ? mapRow(row) : null;
-  },
-
-  count(): number {
-    const row = getDb().prepare("SELECT COUNT(*) AS n FROM admin_users").get() as any;
-    return row.n;
-  },
-
-  create(input: { email: string; passwordHash: string }): AdminUser {
-    const createdAt = nowIso();
-    const result = getDb()
-      .prepare(
-        "INSERT INTO admin_users (email, password_hash, created_at) VALUES (?, ?, ?)"
-      )
-      .run(input.email.trim().toLowerCase(), input.passwordHash, createdAt);
-
-    return {
-      id: Number(result.lastInsertRowid),
-      email: input.email.trim().toLowerCase(),
-      passwordHash: input.passwordHash,
-      createdAt,
-      lastLoginAt: null,
-    };
-  },
-
-  touchLastLogin(id: number): void {
-    getDb()
-      .prepare("UPDATE admin_users SET last_login_at = ? WHERE id = ?")
-      .run(nowIso(), id);
-  },
-};
+export { SupabaseAdminUserRepository as AdminUserRepository } from "./SupabaseAdminUserRepository";

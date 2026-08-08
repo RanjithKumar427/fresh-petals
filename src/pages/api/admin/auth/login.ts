@@ -1,6 +1,5 @@
 import type { APIRoute } from "astro";
 import { AuthService } from "../../../../server/services/AuthService";
-import { SESSION_COOKIE_NAME } from "../../../../server/auth/session";
 
 export const prerender = false;
 
@@ -11,7 +10,7 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
   const next = String(form.get("next") || "/admin/dashboard");
   const safeNext = next.startsWith("/admin") ? next : "/admin/dashboard";
 
-  const result = AuthService.login(email, password);
+  const result = await AuthService.login(email, password, request, cookies);
 
   if (!result.ok) {
     return redirect(
@@ -19,13 +18,8 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
     );
   }
 
-  cookies.set(SESSION_COOKIE_NAME, result.token, {
-    httpOnly: true,
-    secure: import.meta.env.PROD,
-    sameSite: "lax",
-    path: "/",
-    expires: new Date(result.expiresAt),
-  });
-
+  // No manual cookies.set() here, unlike the pre-2B.3 version — AuthService.login()
+  // already wrote the session cookie(s) via createSupabaseServerClient's
+  // setAll adapter as a side effect of signInWithPassword() succeeding.
   return redirect(safeNext);
 };

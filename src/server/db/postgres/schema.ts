@@ -17,7 +17,7 @@
 // `media` table below — but media's *shape* (a platform resource that
 // products/categories reference, never the other way around) was already
 // correct in the SQLite design and is preserved exactly, not redesigned.
-import { pgTable, pgEnum, serial, integer, text, boolean, timestamp, primaryKey, index } from "drizzle-orm/pg-core";
+import { pgTable, pgEnum, serial, integer, text, boolean, timestamp, primaryKey, index, uuid } from "drizzle-orm/pg-core";
 
 export const productStatusEnum = pgEnum("product_status", ["draft", "published", "archived"]);
 export const priceTypeEnum = pgEnum("price_type", ["fixed", "from", "market", "quote"]);
@@ -34,30 +34,35 @@ export const mediaFolderEnum = pgEnum("media_folder", [
 export const mediaSourceEnum = pgEnum("media_source", ["upload", "seed"]);
 
 // ---------------------------------------------------------------------
-// Auth — single admin today; the shape already supports more without a
-// redesign. Phase 5 (Supabase Auth) will reconcile identity against this
-// table rather than replace it outright — see the phase report.
+// Auth — as of Phase 2B.3, Supabase Auth (its own managed `auth.users`
+// table, not modeled here) is the sole source of truth for credentials.
+// `admin_users` is now a profile/role record keyed 1:1 by `auth.users.id`
+// — the standard Supabase pattern (a "profile" table whose PK IS the auth
+// user's UUID, rather than a separate FK'd id) — not a second identity
+// store. No password hash lives in this codebase anymore.
+//
+// `role` is a plain, unconstrained `text` column (not a pgEnum) on
+// purpose: the roadmap names several future identities (Customer,
+// Florist, Marketplace Seller, Corporate User) that don't exist as real
+// systems yet. An enum would need an `ALTER TYPE ... ADD VALUE` migration
+// every time one of those gets built; a text column accepts a new role
+// string with zero schema change. Every current query filters/assumes
+// role = 'admin' explicitly rather than assuming this table only ever
+// holds admins — the seam is here, not the redesign.
+//
+// `sessions` (the old opaque-token table) is retired, not migrated —
+// Supabase Auth's own JWT/refresh-token pair, held in an httpOnly cookie
+// via @supabase/ssr, replaces its exact function. Two session mechanisms
+// coexisting was never the goal; see the Phase 2B.3 report for why this
+// table is dropped outright rather than deprecated-and-ignored.
 // ---------------------------------------------------------------------
 export const adminUsers = pgTable("admin_users", {
-  id: serial("id").primaryKey(),
+  id: uuid("id").primaryKey(), // matches auth.users.id exactly — not an independent identity
   email: text("email").notNull().unique(),
-  passwordHash: text("password_hash").notNull(),
+  role: text("role").notNull().default("admin"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
 });
-
-export const sessions = pgTable(
-  "sessions",
-  {
-    token: text("token").primaryKey(),
-    adminUserId: integer("admin_user_id")
-      .notNull()
-      .references(() => adminUsers.id, { onDelete: "cascade" }),
-    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  },
-  (table) => [index("idx_sessions_admin_user_id").on(table.adminUserId)]
-);
 
 // ---------------------------------------------------------------------
 // Media — a platform resource. Products/categories reference it via FK;
@@ -86,7 +91,7 @@ export const media = pgTable(
     dominantColor: text("dominant_color"), // e.g. "#7C243E"
     blurHash: text("blur_hash"),
     altText: text("alt_text"),
-    uploadedBy: integer("uploaded_by").references(() => adminUsers.id, { onDelete: "set null" }),
+    uploadedBy: uuid("uploaded_by").references(() => adminUsers.id, { onDelete: "set null" }),
     source: mediaSourceEnum("source").notNull().default("upload"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },

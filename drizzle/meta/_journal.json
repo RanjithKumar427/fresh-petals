@@ -22,6 +22,20 @@
       "when": 1786200921808,
       "tag": "0002_media_usage_indexes",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1786207921580,
+      "tag": "0003_supabase_auth_identity",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1786209048824,
+      "tag": "0004_admin_users_rls",
+      "breakpoints": true
     }
   ]
 }
