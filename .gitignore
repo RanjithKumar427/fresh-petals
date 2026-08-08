@@ -13,9 +13,11 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# environment variables
-.env
-.env.production
+# environment variables — ignore every real .env file (.env, .env.local,
+# .env.development, .env.production, etc.) but keep the valueless template
+# tracked so the required variable names stay documented in the repo.
+.env*
+!.env.example
 
 # macOS-specific files
 .DS_Store
@@ -27,3 +29,4 @@ pnpm-debug.log*
 # at runtime (see src/server/db/paths.mjs)
 /data/
 /uploads/
+scripts/_tmp-*

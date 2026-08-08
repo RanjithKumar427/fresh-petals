@@ -19,6 +19,7 @@
 import { Pool } from "pg";
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import * as schema from "./schema";
+import { supabasePoolSsl } from "./ssl";
 
 type Globals = typeof globalThis & { __fpPgPool?: Pool; __fpDrizzleDb?: NodePgDatabase<typeof schema> };
 const globals = globalThis as Globals;
@@ -59,11 +60,11 @@ export function getDb(): NodePgDatabase<typeof schema> {
   const pool = new Pool({
     connectionString,
     max: 3,
-    // Supabase's pooler always requires TLS. Stated explicitly here rather
-    // than left implicit in the connection string alone — a connection
-    // string a human retypes by hand is exactly the kind of place an
-    // `sslmode=require` query param quietly goes missing.
-    ssl: { rejectUnauthorized: true },
+    // Supabase's pooler always requires TLS, and its chain is rooted at
+    // Supabase's own self-issued CA rather than a publicly trusted one —
+    // `rejectUnauthorized: true` alone isn't enough, the CA itself has to
+    // be supplied. See ssl.ts for the full explanation.
+    ssl: supabasePoolSsl,
   });
   const db = drizzle(pool, { schema });
 

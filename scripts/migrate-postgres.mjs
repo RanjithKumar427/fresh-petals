@@ -10,6 +10,7 @@
 import { Pool } from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
+import { supabasePoolSsl } from "../src/server/db/postgres/ssl.mjs";
 
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) {
@@ -17,7 +18,10 @@ if (!connectionString) {
   process.exit(1);
 }
 
-const pool = new Pool({ connectionString, max: 1 });
+// Supabase's pooler chain is rooted at Supabase's own self-issued CA, not a
+// publicly trusted one — see src/server/db/postgres/ssl.mjs for why `ca`
+// has to be supplied explicitly, not just `rejectUnauthorized: true`.
+const pool = new Pool({ connectionString, max: 1, ssl: supabasePoolSsl });
 const db = drizzle(pool);
 
 console.log("Applying migrations from ./drizzle ...");
