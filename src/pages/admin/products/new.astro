@@ -1,0 +1,12 @@
+---
+// Creating a draft is a redirect, not a page — see docs/architecture and
+// ProductService.createDraft() for why the row is created before any
+// input exists. The URL rewrites to /admin/products/edit/{id} immediately
+// so a refresh never creates a second draft.
+import { ProductService } from "../../../server/services/ProductService";
+
+export const prerender = false;
+
+const product = ProductService.createDraft();
+return Astro.redirect(`/admin/products/edit/${product.id}`);
+---

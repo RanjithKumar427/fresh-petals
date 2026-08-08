@@ -1,0 +1,46 @@
+---
+import AdminLayout from "../../../../layouts/AdminLayout.astro";
+import ProductEditor from "../../../../features/admin/productEditor/ProductEditor";
+import { ProductService } from "../../../../server/services/ProductService";
+import { CategoryService } from "../../../../server/services/CategoryService";
+
+export const prerender = false;
+
+const id = Number(Astro.params.id);
+
+if (!Number.isInteger(id)) {
+  return Astro.redirect("/admin/products");
+}
+
+const product = ProductService.get(id);
+if (!product) {
+  return Astro.redirect("/admin/products");
+}
+
+const categories = CategoryService.list().map((category) => ({
+  id: category.id,
+  name: category.name,
+  slug: category.slug,
+}));
+
+// Explicit mapping (rather than passing `product` straight through) keeps
+// the server Product type's optional (`?:`) fields from leaking `undefined`
+// into the client's ProductDraft, which declares them required-but-nullable.
+const productDraft = {
+  ...product,
+  shortDescription: product.shortDescription ?? null,
+  description: product.description ?? null,
+  sellingPrice: product.sellingPrice ?? null,
+  discountPrice: product.discountPrice ?? null,
+  costPrice: product.costPrice ?? null,
+  stemCount: product.stemCount ?? null,
+  colourTheme: product.colourTheme ?? null,
+  seoTitle: product.seoTitle ?? null,
+  seoDescription: product.seoDescription ?? null,
+  images: product.images.map((image) => ({ ...image, altText: image.altText ?? null })),
+};
+---
+
+<AdminLayout title={product.name}>
+  <ProductEditor client:load product={productDraft} categories={categories} />
+</AdminLayout>

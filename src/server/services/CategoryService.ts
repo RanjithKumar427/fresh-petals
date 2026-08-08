@@ -52,6 +52,23 @@ export const CategoryService = {
     return ok(category);
   },
 
+  /**
+   * Every product needs a real category_id (schema keeps that FK required —
+   * see docs/architecture/admin-dashboard.md). A brand-new draft is created
+   * before the florist has chosen anything, so it's pinned to this
+   * always-present placeholder until Classification is filled in.
+   */
+  getOrCreateUncategorized(): Category {
+    const existing = CategoryRepository.findBySlug("uncategorized");
+    if (existing) return existing;
+    return CategoryRepository.create({
+      name: "Uncategorized",
+      slug: "uncategorized",
+      description: "Default category for new drafts until a real one is chosen.",
+      sortOrder: -1,
+    });
+  },
+
   remove(id: number): ServiceResult<null> {
     const productCount = CategoryRepository.countProducts(id);
     if (productCount > 0) {

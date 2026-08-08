@@ -66,6 +66,8 @@ export type ProductListItem = {
   sellingPrice: number | null;
   discountPrice: number | null;
   status: ProductStatus;
+  featured: boolean;
+  bestseller: boolean;
   updatedAt: string;
 };
 
@@ -73,6 +75,7 @@ export type ProductListFilter = {
   search?: string;
   categoryId?: number;
   status?: ProductStatus;
+  featured?: boolean;
 };
 
 function mapCoreRow(row: any): ProductCoreInput & { id: number; createdAt: string; updatedAt: string; publishedAt: string | null } {
@@ -228,6 +231,9 @@ export const ProductRepository = {
       clauses.push("p.status = ?");
       params.push(filter.status);
     }
+    if (filter?.featured) {
+      clauses.push("p.featured = 1");
+    }
 
     const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
 
@@ -235,7 +241,8 @@ export const ProductRepository = {
       .prepare(
         `SELECT
            p.id, p.slug, p.name, p.category_id, c.name AS category_name,
-           p.price_type, p.selling_price, p.discount_price, p.status, p.updated_at,
+           p.price_type, p.selling_price, p.discount_price, p.status,
+           p.featured, p.bestseller, p.updated_at,
            (SELECT m.url FROM product_images pi JOIN media m ON m.id = pi.media_id
               WHERE pi.product_id = p.id ORDER BY pi.is_primary DESC, pi.sort_order ASC LIMIT 1) AS primary_image_url
          FROM products p
@@ -255,6 +262,8 @@ export const ProductRepository = {
       priceType: row.price_type,
       sellingPrice: row.selling_price,
       discountPrice: row.discount_price,
+      featured: Boolean(row.featured),
+      bestseller: Boolean(row.bestseller),
       status: row.status,
       updatedAt: row.updated_at,
     }));

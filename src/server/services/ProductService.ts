@@ -6,9 +6,22 @@ import {
   type ProductStatus,
 } from "../db/repositories/ProductRepository";
 import { CategoryRepository } from "../db/repositories/CategoryRepository";
+import { CategoryService } from "./CategoryService";
 import { productInputSchema } from "../validation/productSchema";
 import { slugify } from "../utils/slugify";
 import { ok, fail, zodFieldErrors, type ServiceResult } from "./result";
+
+/** Appends -2, -3, ... until a slug that isn't already taken is found (optionally ignoring one product's own row). */
+function uniqueSlug(base: string, excludeId?: number): string {
+  let candidate = base;
+  let suffix = 2;
+  while (true) {
+    const clash = ProductRepository.findBySlug(candidate);
+    if (!clash || clash.id === excludeId) return candidate;
+    candidate = `${base}-${suffix}`;
+    suffix += 1;
+  }
+}
 
 function splitInput(data: ReturnType<typeof productInputSchema.parse>) {
   const core = {
@@ -118,12 +131,7 @@ export const ProductService = {
     const source = ProductRepository.findById(id);
     if (!source) return fail("Product not found.");
 
-    let candidateSlug = `${source.slug}-copy`;
-    let suffix = 2;
-    while (ProductRepository.findBySlug(candidateSlug)) {
-      candidateSlug = `${source.slug}-copy-${suffix}`;
-      suffix += 1;
-    }
+    const candidateSlug = uniqueSlug(`${source.slug}-copy`);
 
     const core = {
       slug: candidateSlug,
@@ -161,5 +169,65 @@ export const ProductService = {
     };
 
     return ok(ProductRepository.create(core, relations));
+  },
+
+  /**
+   * Creates the empty draft row the instant "Add Product" is clicked —
+   * before the florist has typed anything. This is what makes autosave and
+   * image upload possible at all (uploads need a real product id to attach
+   * to), and it's why the schema's category_id stays NOT NULL rather than
+   * nullable: every product, even a blank one, points at a real category
+   * row (a standing "Uncategorized" placeholder) instead of carving out a
+   * null-FK special case that every join would then have to handle.
+   */
+  createDraft(): Product {
+    const uncategorized = CategoryService.getOrCreateUncategorized();
+    const slug = uniqueSlug("untitled-product");
+
+    return ProductRepository.create(
+      {
+        slug,
+        name: "Untitled Product",
+        shortDescription: null,
+        description: null,
+        categoryId: uncategorized.id,
+        status: "draft",
+        featured: false,
+        bestseller: false,
+        newArrival: false,
+        priceType: "market", // no sellingPrice required yet — Pricing section fills this in later
+        sellingPrice: null,
+        discountPrice: null,
+        costPrice: null,
+        stemCount: null,
+        colourTheme: null,
+        requiresWhatsappConfirmation: true,
+        seoTitle: null,
+        seoDescription: null,
+      },
+      {
+        images: [],
+        occasionIds: [],
+        moodIds: [],
+        flowerTypeIds: [],
+        whatsIncluded: [],
+        careInstructions: [],
+      }
+    );
+  },
+
+  /** Powers the slug field's live "already taken" check + alternative suggestions in Basic Information. */
+  checkSlug(slug: string, excludeId?: number): { available: boolean; suggestions: string[] } {
+    const clash = ProductRepository.findBySlug(slug);
+    const available = !clash || clash.id === excludeId;
+
+    if (available) return { available: true, suggestions: [] };
+
+    const suggestions: string[] = [];
+    for (let suffix = 2; suggestions.length < 3 && suffix <= 8; suffix += 1) {
+      const candidate = `${slug}-${suffix}`;
+      if (!ProductRepository.findBySlug(candidate)) suggestions.push(candidate);
+    }
+    return { available: false, suggestions };
   },
 };

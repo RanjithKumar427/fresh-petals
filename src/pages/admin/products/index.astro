@@ -1,0 +1,21 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import AdminShell from "../../../components/admin/AdminShell.astro";
+import ProductList from "../../../features/admin/productList/ProductList";
+import { CategoryService } from "../../../server/services/CategoryService";
+
+export const prerender = false;
+
+const admin = Astro.locals.admin!;
+const categories = CategoryService.list().map((category) => ({
+  id: category.id,
+  name: category.name,
+  slug: category.slug,
+}));
+---
+
+<AdminLayout title="Products">
+  <AdminShell active="products" adminEmail={admin.email} pageTitle="Products">
+    <ProductList client:load categories={categories} />
+  </AdminShell>
+</AdminLayout>
