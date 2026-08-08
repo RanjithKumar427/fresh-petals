@@ -24,10 +24,13 @@ export type ProductCoreInput = {
   newArrival: boolean;
   priceType: PriceType;
   sellingPrice?: number | null;
-  discountPrice?: number | null;
+  compareAtPrice?: number | null;
   costPrice?: number | null;
+  deliveryChargeOverride?: number | null;
   stemCount?: string | null;
   colourTheme?: string | null;
+  arrangementStyle?: string | null;
+  size?: string | null;
   requiresWhatsappConfirmation: boolean;
   seoTitle?: string | null;
   seoDescription?: string | null;
@@ -64,7 +67,7 @@ export type ProductListItem = {
   primaryImageUrl: string | null;
   priceType: PriceType;
   sellingPrice: number | null;
-  discountPrice: number | null;
+  compareAtPrice: number | null;
   status: ProductStatus;
   featured: boolean;
   bestseller: boolean;
@@ -92,10 +95,13 @@ function mapCoreRow(row: any): ProductCoreInput & { id: number; createdAt: strin
     newArrival: Boolean(row.new_arrival),
     priceType: row.price_type,
     sellingPrice: row.selling_price,
-    discountPrice: row.discount_price,
+    compareAtPrice: row.compare_at_price,
     costPrice: row.cost_price,
+    deliveryChargeOverride: row.delivery_charge_override,
     stemCount: row.stem_count,
     colourTheme: row.colour_theme,
+    arrangementStyle: row.arrangement_style,
+    size: row.size,
     requiresWhatsappConfirmation: Boolean(row.requires_whatsapp_confirmation),
     seoTitle: row.seo_title,
     seoDescription: row.seo_description,
@@ -202,6 +208,40 @@ function writeRelations(productId: number, relations: ProductRelations) {
   relations.careInstructions.forEach((value, index) => insertCare.run(productId, value, index));
 }
 
+const CORE_COLUMNS = `
+  slug, name, short_description, description, category_id, status,
+  featured, bestseller, new_arrival, price_type, selling_price,
+  compare_at_price, cost_price, delivery_charge_override, stem_count,
+  colour_theme, arrangement_style, size, requires_whatsapp_confirmation,
+  seo_title, seo_description
+`;
+
+function bindCore(core: ProductCoreInput) {
+  return [
+    core.slug,
+    core.name,
+    core.shortDescription ?? null,
+    core.description ?? null,
+    core.categoryId,
+    core.status,
+    core.featured ? 1 : 0,
+    core.bestseller ? 1 : 0,
+    core.newArrival ? 1 : 0,
+    core.priceType,
+    core.sellingPrice ?? null,
+    core.compareAtPrice ?? null,
+    core.costPrice ?? null,
+    core.deliveryChargeOverride ?? null,
+    core.stemCount ?? null,
+    core.colourTheme ?? null,
+    core.arrangementStyle ?? null,
+    core.size ?? null,
+    core.requiresWhatsappConfirmation ? 1 : 0,
+    core.seoTitle ?? null,
+    core.seoDescription ?? null,
+  ];
+}
+
 export const ProductRepository = {
   findById(id: number): Product | null {
     const row = getDb().prepare("SELECT * FROM products WHERE id = ?").get(id);
@@ -241,7 +281,7 @@ export const ProductRepository = {
       .prepare(
         `SELECT
            p.id, p.slug, p.name, p.category_id, c.name AS category_name,
-           p.price_type, p.selling_price, p.discount_price, p.status,
+           p.price_type, p.selling_price, p.compare_at_price, p.status,
            p.featured, p.bestseller, p.updated_at,
            (SELECT m.url FROM product_images pi JOIN media m ON m.id = pi.media_id
               WHERE pi.product_id = p.id ORDER BY pi.is_primary DESC, pi.sort_order ASC LIMIT 1) AS primary_image_url
@@ -261,7 +301,7 @@ export const ProductRepository = {
       primaryImageUrl: row.primary_image_url,
       priceType: row.price_type,
       sellingPrice: row.selling_price,
-      discountPrice: row.discount_price,
+      compareAtPrice: row.compare_at_price,
       featured: Boolean(row.featured),
       bestseller: Boolean(row.bestseller),
       status: row.status,
@@ -291,44 +331,19 @@ export const ProductRepository = {
       const timestamp = nowIso();
       const publishedAt = core.status === "published" ? timestamp : null;
 
+      const placeholders = CORE_COLUMNS.split(",").map(() => "?").join(", ");
       const result = db
         .prepare(
-          `INSERT INTO products (
-             slug, name, short_description, description, category_id, status,
-             featured, bestseller, new_arrival, price_type, selling_price,
-             discount_price, cost_price, stem_count, colour_theme,
-             requires_whatsapp_confirmation, seo_title, seo_description,
-             created_at, updated_at, published_at
-           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+          `INSERT INTO products (${CORE_COLUMNS}, created_at, updated_at, published_at)
+           VALUES (${placeholders}, ?, ?, ?)`
         )
-        .run(
-          core.slug,
-          core.name,
-          core.shortDescription ?? null,
-          core.description ?? null,
-          core.categoryId,
-          core.status,
-          core.featured ? 1 : 0,
-          core.bestseller ? 1 : 0,
-          core.newArrival ? 1 : 0,
-          core.priceType,
-          core.sellingPrice ?? null,
-          core.discountPrice ?? null,
-          core.costPrice ?? null,
-          core.stemCount ?? null,
-          core.colourTheme ?? null,
-          core.requiresWhatsappConfirmation ? 1 : 0,
-          core.seoTitle ?? null,
-          core.seoDescription ?? null,
-          timestamp,
-          timestamp,
-          publishedAt
-        );
+        .run(...bindCore(core), timestamp, timestamp, publishedAt);
 
       const id = Number(result.lastInsertRowid);
       writeRelations(id, relations);
 
-      return { ...mapCoreRow({ ...core, id, created_at: timestamp, updated_at: timestamp, published_at: publishedAt }), ...loadRelations(id) };
+      const row = db.prepare("SELECT * FROM products WHERE id = ?").get(id);
+      return { ...mapCoreRow(row), ...loadRelations(id) };
     });
   },
 
@@ -343,33 +358,14 @@ export const ProductRepository = {
       const publishedAt =
         core.status === "published" && !existingRow.published_at ? timestamp : existingRow.published_at;
 
-      db.prepare(
-        `UPDATE products SET
-           slug = ?, name = ?, short_description = ?, description = ?, category_id = ?, status = ?,
-           featured = ?, bestseller = ?, new_arrival = ?, price_type = ?, selling_price = ?,
-           discount_price = ?, cost_price = ?, stem_count = ?, colour_theme = ?,
-           requires_whatsapp_confirmation = ?, seo_title = ?, seo_description = ?,
-           updated_at = ?, published_at = ?
-         WHERE id = ?`
-      ).run(
-        core.slug,
-        core.name,
-        core.shortDescription ?? null,
-        core.description ?? null,
-        core.categoryId,
-        core.status,
-        core.featured ? 1 : 0,
-        core.bestseller ? 1 : 0,
-        core.newArrival ? 1 : 0,
-        core.priceType,
-        core.sellingPrice ?? null,
-        core.discountPrice ?? null,
-        core.costPrice ?? null,
-        core.stemCount ?? null,
-        core.colourTheme ?? null,
-        core.requiresWhatsappConfirmation ? 1 : 0,
-        core.seoTitle ?? null,
-        core.seoDescription ?? null,
+      const assignments = CORE_COLUMNS.split(",")
+        .map((column) => column.trim())
+        .filter(Boolean)
+        .map((column) => `${column} = ?`)
+        .join(", ");
+
+      db.prepare(`UPDATE products SET ${assignments}, updated_at = ?, published_at = ? WHERE id = ?`).run(
+        ...bindCore(core),
         timestamp,
         publishedAt,
         id

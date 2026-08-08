@@ -26,8 +26,9 @@ export const productInputSchema = z
     // Section 3 — Pricing
     priceType: z.enum(["fixed", "from", "market", "quote"]),
     sellingPrice: z.number().int().positive().optional().nullable(),
-    discountPrice: z.number().int().positive().optional().nullable(),
+    compareAtPrice: z.number().int().positive().optional().nullable(),
     costPrice: z.number().int().positive().optional().nullable(),
+    deliveryChargeOverride: z.number().int().min(0).optional().nullable(),
 
     // Section 4 — Category
     categoryId: z.number().int().positive("Choose a category."),
@@ -42,6 +43,8 @@ export const productInputSchema = z
     flowerTypeIds: z.array(z.number().int().positive()).default([]),
     stemCount: z.string().trim().max(40).optional().nullable(),
     colourTheme: z.string().trim().max(80).optional().nullable(),
+    arrangementStyle: z.string().trim().max(80).optional().nullable(),
+    size: z.string().trim().max(40).optional().nullable(),
 
     // Section 8 — What's Included
     whatsIncluded: z.array(z.string().trim().min(1).max(160)).default([]),
@@ -68,11 +71,11 @@ export const productInputSchema = z
         message: "Selling price is required for fixed or starting-from pricing.",
       });
     }
-    if (data.discountPrice && data.sellingPrice && data.discountPrice >= data.sellingPrice) {
+    if (data.compareAtPrice && data.sellingPrice && data.compareAtPrice <= data.sellingPrice) {
       ctx.addIssue({
         code: "custom",
-        path: ["discountPrice"],
-        message: "Discount price must be lower than the selling price.",
+        path: ["compareAtPrice"],
+        message: "Compare-at price must be higher than the selling price — it's the original price shown struck through.",
       });
     }
   });

@@ -4,6 +4,7 @@ import type { ProductDraft } from "./types";
 interface Props {
   draft: ProductDraft;
   activeSectionId: string;
+  uncategorizedCategoryId: number;
 }
 
 function StatusMark({ status }: { status: SectionStatus }) {
@@ -25,15 +26,23 @@ function StatusMark({ status }: { status: SectionStatus }) {
 }
 
 /** Section nav for the single-scroll editor — click scrolls smoothly to the section, it never changes route or hides content. */
-export default function Sidebar({ draft, activeSectionId }: Props) {
+export default function Sidebar({ draft, activeSectionId, uncategorizedCategoryId }: Props) {
   const scrollToSection = (id: string) => {
-    document.getElementById(`section-${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    const section = document.getElementById(`section-${id}`);
+    section?.scrollIntoView({ behavior: "smooth", block: "start" });
+
+    // Focus the first field once the scroll settles, so keyboard users
+    // land ready to type instead of having to tab through from the top.
+    window.setTimeout(() => {
+      const field = section?.querySelector<HTMLElement>("input, textarea, select, button[data-focusable]");
+      field?.focus({ preventScroll: true });
+    }, 400);
   };
 
   return (
     <nav className="space-y-0.5">
       {SECTIONS.map((section) => {
-        const status = getSectionStatus(section.id, draft);
+        const status = getSectionStatus(section.id, draft, uncategorizedCategoryId);
         const isActive = section.id === activeSectionId;
 
         return (
@@ -43,7 +52,7 @@ export default function Sidebar({ draft, activeSectionId }: Props) {
             onClick={() => scrollToSection(section.id)}
             className={`flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-[13px] transition ${
               isActive ? "bg-[#F8DCE5] text-[#7C243E] font-medium" : "text-[#66565D] hover:bg-[#F8F1F3]"
-            } ${!section.available ? "opacity-60" : ""}`}
+            }`}
           >
             <span>{section.label}</span>
             <StatusMark status={status} />

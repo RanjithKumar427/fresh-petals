@@ -2,6 +2,7 @@ import type { APIRoute } from "astro";
 import { experimental_AstroContainer as AstroContainer } from "astro/container";
 import ProductCard from "../../../../components/ProductCard.astro";
 import { json } from "../../../../server/http/json";
+import { formatPriceLabel } from "../../../../shared/pricing";
 
 export const prerender = false;
 
@@ -17,6 +18,9 @@ export const prerender = false;
 export const POST: APIRoute = async ({ request }) => {
   const body = await request.json().catch(() => ({}));
 
+  const priceType = body.priceType || "market";
+  const priceLabel = formatPriceLabel({ priceType, sellingPrice: body.sellingPrice ?? null });
+
   const container = await AstroContainer.create();
   const html = await container.renderToString(ProductCard, {
     props: {
@@ -25,7 +29,8 @@ export const POST: APIRoute = async ({ request }) => {
       category: body.category || "Uncategorized",
       description: body.description || "Fresh flowers made on order based on availability.",
       slug: body.slug || undefined,
-      priceType: body.priceType || "market",
+      priceType,
+      priceLabel,
       isAvailable: true,
     },
   });

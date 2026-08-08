@@ -1,5 +1,7 @@
+import { formatPriceLabel, type PriceType } from "../../../shared/pricing";
+
+export type { PriceType };
 export type ProductStatus = "draft" | "published" | "archived";
-export type PriceType = "fixed" | "from" | "market" | "quote";
 
 export type ProductListItem = {
   id: number;
@@ -10,7 +12,7 @@ export type ProductListItem = {
   primaryImageUrl: string | null;
   priceType: PriceType;
   sellingPrice: number | null;
-  discountPrice: number | null;
+  compareAtPrice: number | null;
   status: ProductStatus;
   featured: boolean;
   bestseller: boolean;
@@ -19,12 +21,6 @@ export type ProductListItem = {
 
 export type CategoryOption = { id: number; name: string; slug: string };
 
-export function formatPrice(item: Pick<ProductListItem, "priceType" | "sellingPrice" | "discountPrice">): string {
-  if (item.priceType === "market") return "Market price";
-  if (item.priceType === "quote") return "Custom quote";
-  if (!item.sellingPrice) return "—";
-
-  const price = item.discountPrice ?? item.sellingPrice;
-  const formatted = `₹${price.toLocaleString("en-IN")}`;
-  return item.priceType === "from" ? `From ${formatted}` : formatted;
+export function formatPrice(item: Pick<ProductListItem, "priceType" | "sellingPrice">): string {
+  return formatPriceLabel(item);
 }

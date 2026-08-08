@@ -32,10 +32,13 @@ export type ProductDraft = {
   newArrival: boolean;
   priceType: PriceType;
   sellingPrice: number | null;
-  discountPrice: number | null;
+  compareAtPrice: number | null;
   costPrice: number | null;
+  deliveryChargeOverride: number | null;
   stemCount: string | null;
   colourTheme: string | null;
+  arrangementStyle: string | null;
+  size: string | null;
   requiresWhatsappConfirmation: boolean;
   seoTitle: string | null;
   seoDescription: string | null;
@@ -51,6 +54,7 @@ export type ProductDraft = {
 };
 
 export type CategoryOption = { id: number; name: string; slug: string };
+export type TagOption = { id: number; name: string; slug: string };
 
 /** Strips server-managed fields down to exactly what PATCH /api/admin/products/[id] accepts. */
 export function toProductInput(draft: ProductDraft) {
@@ -67,14 +71,17 @@ export function toProductInput(draft: ProductDraft) {
     })),
     priceType: draft.priceType,
     sellingPrice: draft.sellingPrice,
-    discountPrice: draft.discountPrice,
+    compareAtPrice: draft.compareAtPrice,
     costPrice: draft.costPrice,
+    deliveryChargeOverride: draft.deliveryChargeOverride,
     categoryId: draft.categoryId,
     occasionIds: draft.occasionIds,
     moodIds: draft.moodIds,
     flowerTypeIds: draft.flowerTypeIds,
     stemCount: draft.stemCount,
     colourTheme: draft.colourTheme,
+    arrangementStyle: draft.arrangementStyle,
+    size: draft.size,
     whatsIncluded: draft.whatsIncluded,
     careInstructions: draft.careInstructions,
     seoTitle: draft.seoTitle,

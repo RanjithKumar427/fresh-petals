@@ -92,16 +92,23 @@ CREATE TABLE IF NOT EXISTS products (
   bestseller INTEGER NOT NULL DEFAULT 0,
   new_arrival INTEGER NOT NULL DEFAULT 0,
 
-  -- Pricing. sellingPrice/discountPrice are nullable because priceType
+  -- Pricing. sellingPrice/compareAtPrice are nullable because priceType
   -- 'market'/'quote' products (e.g. daily pooja flowers) have no fixed
   -- number today — that's real behaviour on the live site, not a gap.
+  -- selling_price is what the customer actually pays; compare_at_price is
+  -- the higher reference price shown struck through when the product is
+  -- on sale (Shopify's naming convention — chosen deliberately so the
+  -- direction of the discount is unambiguous from the column name alone).
   price_type TEXT NOT NULL DEFAULT 'fixed' CHECK (price_type IN ('fixed', 'from', 'market', 'quote')),
   selling_price INTEGER,
-  discount_price INTEGER,
-  cost_price INTEGER,          -- internal only, never rendered storefront-side
+  compare_at_price INTEGER,
+  cost_price INTEGER,              -- internal only, never rendered storefront-side
+  delivery_charge_override INTEGER,
 
   stem_count TEXT,
   colour_theme TEXT,
+  arrangement_style TEXT,
+  size TEXT,
   requires_whatsapp_confirmation INTEGER NOT NULL DEFAULT 1,
 
   seo_title TEXT,

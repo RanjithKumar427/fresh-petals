@@ -4,6 +4,8 @@ import type { CategoryOption, ProductDraft } from "./types";
 interface Props {
   draft: ProductDraft;
   categories: CategoryOption[];
+  /** Changes exactly when an autosave completes — see ProductEditor (lastSavedAt.getTime()). */
+  refreshKey: number | null;
 }
 
 type Device = "desktop" | "tablet" | "mobile";
@@ -17,10 +19,11 @@ const DEVICE_WIDTH: Record<Device, string> = {
 /**
  * Renders the *real* ProductCard.astro via a server round-trip (see
  * src/pages/api/admin/products/preview.ts for why that's the cleanest
- * option here, over duplicating the card's markup or an iframe). Debounced
- * so typing doesn't fire a request per keystroke.
+ * option here, over duplicating the card's markup or an iframe).
+ * Refreshes when autosave completes, not on every keystroke — matches
+ * what the save-status indicator already tells the florist just happened.
  */
-export default function PreviewPanel({ draft, categories }: Props) {
+export default function PreviewPanel({ draft, categories, refreshKey }: Props) {
   const [device, setDevice] = useState<Device>("desktop");
   const [html, setHtml] = useState<string>("");
   const [loading, setLoading] = useState(true);
@@ -32,32 +35,35 @@ export default function PreviewPanel({ draft, categories }: Props) {
     let cancelled = false;
     setLoading(true);
 
-    const timer = setTimeout(async () => {
-      try {
-        const response = await fetch("/api/admin/products/preview", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({
-            name: draft.name,
-            image: primaryImage?.url,
-            category: categoryName,
-            description: draft.shortDescription,
-            slug: draft.slug,
-            priceType: draft.priceType,
-          }),
-        });
-        const result = await response.json();
+    fetch("/api/admin/products/preview", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        name: draft.name,
+        image: primaryImage?.url,
+        category: categoryName,
+        description: draft.shortDescription,
+        slug: draft.slug,
+        priceType: draft.priceType,
+        sellingPrice: draft.sellingPrice,
+      }),
+    })
+      .then((response) => response.json())
+      .then((result) => {
         if (!cancelled && result.ok) setHtml(result.data.html);
-      } finally {
+      })
+      .finally(() => {
         if (!cancelled) setLoading(false);
-      }
-    }, 400);
+      });
 
     return () => {
       cancelled = true;
-      clearTimeout(timer);
     };
-  }, [draft.name, primaryImage?.url, categoryName, draft.shortDescription, draft.slug, draft.priceType]);
+    // Deliberately keyed on refreshKey (autosave completion), not on the
+    // individual draft fields below — they're only read once refreshKey
+    // fires, not watched independently.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshKey]);
 
   return (
     <div className="flex h-full flex-col">
@@ -80,14 +86,23 @@ export default function PreviewPanel({ draft, categories }: Props) {
       </div>
 
       <div className="flex flex-1 items-start justify-center overflow-auto bg-[#FBF7F5] p-6">
-        <div
-          style={{ width: DEVICE_WIDTH[device], maxWidth: "100%" }}
-          className={`transition-opacity ${loading ? "opacity-60" : "opacity-100"}`}
-          // Server-rendered by our own /api/admin/products/preview endpoint
-          // from the real ProductCard.astro component — see that file for
-          // why this is safe to inject directly.
-          dangerouslySetInnerHTML={{ __html: html }}
-        />
+        {loading && html === "" ? (
+          <div style={{ width: DEVICE_WIDTH[device], maxWidth: "100%" }} className="animate-pulse">
+            <div className="aspect-square rounded-2xl bg-[#EEE5E8]" />
+            <div className="mt-4 h-3 w-1/3 rounded bg-[#EEE5E8]" />
+            <div className="mt-2 h-4 w-2/3 rounded bg-[#EEE5E8]" />
+            <div className="mt-2 h-3 w-full rounded bg-[#EEE5E8]" />
+          </div>
+        ) : (
+          <div
+            style={{ width: DEVICE_WIDTH[device], maxWidth: "100%" }}
+            className={`transition-opacity ${loading ? "opacity-60" : "opacity-100"}`}
+            // Server-rendered by our own /api/admin/products/preview endpoint
+            // from the real ProductCard.astro component — see that file for
+            // why this is safe to inject directly.
+            dangerouslySetInnerHTML={{ __html: html }}
+          />
+        )}
       </div>
     </div>
   );

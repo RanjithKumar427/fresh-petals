@@ -1,18 +1,29 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import EditorShell from "./EditorShell";
 import Sidebar from "./Sidebar";
 import PreviewPanel from "./PreviewPanel";
 import { useAutosave } from "./useAutosave";
 import { SECTIONS } from "./completion";
-import { toProductInput, type CategoryOption, type ProductDraft } from "./types";
+import { getPublishBlockers } from "./publishReadiness";
+import { toProductInput, type CategoryOption, type ProductDraft, type ProductStatus, type TagOption } from "./types";
 import BasicInfoSection from "./sections/BasicInfoSection";
 import ImagesSection from "./sections/ImagesSection";
-import PlaceholderSection from "./sections/PlaceholderSection";
+import PricingSection from "./sections/PricingSection";
+import ClassificationSection from "./sections/ClassificationSection";
+import FlowerDetailsSection from "./sections/FlowerDetailsSection";
+import IncludedSection from "./sections/IncludedSection";
+import CareSection from "./sections/CareSection";
+import SEOSection from "./sections/SEOSection";
+import PublishingSection from "./sections/PublishingSection";
 import ConfirmDialog from "../shared/ConfirmDialog";
 
 interface Props {
   product: ProductDraft;
   categories: CategoryOption[];
+  occasions: TagOption[];
+  moods: TagOption[];
+  flowerTypes: TagOption[];
+  uncategorizedCategoryId: number;
 }
 
 async function saveProduct(draft: ProductDraft): Promise<{ ok: boolean; error?: string }> {
@@ -25,11 +36,18 @@ async function saveProduct(draft: ProductDraft): Promise<{ ok: boolean; error?: 
   return result.ok ? { ok: true } : { ok: false, error: result.error };
 }
 
-export default function ProductEditor({ product, categories }: Props) {
+export default function ProductEditor({
+  product,
+  categories,
+  occasions,
+  moods,
+  flowerTypes,
+  uncategorizedCategoryId,
+}: Props) {
   const [draft, setDraft] = useState<ProductDraft>(product);
   const [activeSectionId, setActiveSectionId] = useState(SECTIONS[0].id);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
-  const contentRef = useRef<HTMLDivElement>(null);
+  const [statusError, setStatusError] = useState<string | null>(null);
 
   const { status, error, lastSavedAt, saveNow } = useAutosave(
     draft,
@@ -64,6 +82,50 @@ export default function ProductEditor({ product, categories }: Props) {
     return () => observer.disconnect();
   }, []);
 
+  // Ctrl+S / Cmd+S saves immediately instead of waiting for the debounce —
+  // and stops the browser's own "Save Page" dialog from popping up.
+  useEffect(() => {
+    const handler = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") {
+        event.preventDefault();
+        saveNow();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [saveNow]);
+
+  const changeStatus = async (nextStatus: ProductStatus) => {
+    setStatusError(null);
+    const response = await fetch(`/api/admin/products/${draft.id}/status`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ status: nextStatus }),
+    });
+    const result = await response.json();
+
+    if (result.ok) {
+      setDraft((prev) => ({
+        ...prev,
+        status: result.data.status,
+        publishedAt: result.data.publishedAt,
+        updatedAt: result.data.updatedAt,
+      }));
+    } else {
+      setStatusError(result.error || "Couldn't update status.");
+    }
+  };
+
+  const blockers = getPublishBlockers(draft, uncategorizedCategoryId);
+
+  const handlePublish = async () => {
+    if (blockers.length > 0) {
+      document.getElementById("section-publishing")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+    await changeStatus("published");
+  };
+
   const handleDuplicate = async () => {
     const response = await fetch(`/api/admin/products/${draft.id}/duplicate`, { method: "POST" });
     const result = await response.json();
@@ -79,23 +141,49 @@ export default function ProductEditor({ product, categories }: Props) {
     <>
       <EditorShell
         productName={draft.name}
+        productStatus={draft.status}
         saveStatus={status}
         lastSavedAt={lastSavedAt}
         saveError={error}
         onRetrySave={saveNow}
         onSaveDraft={saveNow}
+        onPublish={handlePublish}
         onDuplicate={handleDuplicate}
+        onArchive={() => changeStatus("archived")}
+        onUnarchive={() => changeStatus("draft")}
         onDelete={() => setConfirmingDelete(true)}
-        sidebar={<Sidebar draft={draft} activeSectionId={activeSectionId} />}
-        preview={<PreviewPanel draft={draft} categories={categories} />}
+        sidebar={<Sidebar draft={draft} activeSectionId={activeSectionId} uncategorizedCategoryId={uncategorizedCategoryId} />}
+        preview={
+          <PreviewPanel draft={draft} categories={categories} refreshKey={lastSavedAt ? lastSavedAt.getTime() : null} />
+        }
       >
-        <div ref={contentRef} className="space-y-6">
-          <BasicInfoSection draft={draft} onChange={updateDraft} />
-          <ImagesSection draft={draft} onChange={updateDraft} />
-          {SECTIONS.filter((section) => !section.available).map((section) => (
-            <PlaceholderSection key={section.id} id={section.id} label={section.label} />
-          ))}
-        </div>
+        {statusError && (
+          <div className="rounded-lg bg-[#FBEAEE] px-4 py-3 text-[13px] text-[#7C243E]">{statusError}</div>
+        )}
+
+        <BasicInfoSection draft={draft} onChange={updateDraft} />
+        <ImagesSection draft={draft} onChange={updateDraft} />
+        <PricingSection draft={draft} onChange={updateDraft} />
+        <ClassificationSection
+          draft={draft}
+          onChange={updateDraft}
+          categories={categories}
+          occasions={occasions}
+          moods={moods}
+          uncategorizedCategoryId={uncategorizedCategoryId}
+        />
+        <FlowerDetailsSection draft={draft} onChange={updateDraft} flowerTypes={flowerTypes} />
+        <IncludedSection draft={draft} onChange={updateDraft} />
+        <CareSection draft={draft} onChange={updateDraft} />
+        <SEOSection draft={draft} onChange={updateDraft} />
+        <PublishingSection
+          draft={draft}
+          blockers={blockers}
+          onSaveDraft={saveNow}
+          onPublish={handlePublish}
+          onArchive={() => changeStatus("archived")}
+          onUnarchive={() => changeStatus("draft")}
+        />
       </EditorShell>
 
       <ConfirmDialog

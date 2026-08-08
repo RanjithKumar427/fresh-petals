@@ -167,10 +167,11 @@ const insertProduct = db.prepare(
   `INSERT INTO products (
      slug, name, short_description, description, category_id, status,
      featured, bestseller, new_arrival, price_type, selling_price,
-     discount_price, cost_price, stem_count, colour_theme,
+     compare_at_price, cost_price, delivery_charge_override, stem_count,
+     colour_theme, arrangement_style, size,
      requires_whatsapp_confirmation, seo_title, seo_description,
      created_at, updated_at, published_at
-   ) VALUES (?, ?, ?, ?, ?, 'published', 0, ?, 0, ?, ?, NULL, NULL, ?, NULL, ?, NULL, NULL, ?, ?, ?)`
+   ) VALUES (?, ?, ?, ?, ?, 'published', 0, ?, 0, ?, ?, NULL, NULL, NULL, ?, NULL, NULL, NULL, ?, NULL, NULL, ?, ?, ?)`
 );
 const insertProductImage = db.prepare(
   "INSERT INTO product_images (product_id, media_id, alt_text, sort_order, is_primary) VALUES (?, ?, ?, 0, 1)"

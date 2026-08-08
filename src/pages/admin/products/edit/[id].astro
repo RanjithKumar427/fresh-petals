@@ -3,6 +3,7 @@ import AdminLayout from "../../../../layouts/AdminLayout.astro";
 import ProductEditor from "../../../../features/admin/productEditor/ProductEditor";
 import { ProductService } from "../../../../server/services/ProductService";
 import { CategoryService } from "../../../../server/services/CategoryService";
+import { TaxonomyService } from "../../../../server/services/TaxonomyService";
 
 export const prerender = false;
 
@@ -22,6 +23,10 @@ const categories = CategoryService.list().map((category) => ({
   name: category.name,
   slug: category.slug,
 }));
+const occasions = TaxonomyService.listOccasions();
+const moods = TaxonomyService.listMoods();
+const flowerTypes = TaxonomyService.listFlowerTypes();
+const uncategorizedCategoryId = CategoryService.getOrCreateUncategorized().id;
 
 // Explicit mapping (rather than passing `product` straight through) keeps
 // the server Product type's optional (`?:`) fields from leaking `undefined`
@@ -31,10 +36,13 @@ const productDraft = {
   shortDescription: product.shortDescription ?? null,
   description: product.description ?? null,
   sellingPrice: product.sellingPrice ?? null,
-  discountPrice: product.discountPrice ?? null,
+  compareAtPrice: product.compareAtPrice ?? null,
   costPrice: product.costPrice ?? null,
+  deliveryChargeOverride: product.deliveryChargeOverride ?? null,
   stemCount: product.stemCount ?? null,
   colourTheme: product.colourTheme ?? null,
+  arrangementStyle: product.arrangementStyle ?? null,
+  size: product.size ?? null,
   seoTitle: product.seoTitle ?? null,
   seoDescription: product.seoDescription ?? null,
   images: product.images.map((image) => ({ ...image, altText: image.altText ?? null })),
@@ -42,5 +50,13 @@ const productDraft = {
 ---
 
 <AdminLayout title={product.name}>
-  <ProductEditor client:load product={productDraft} categories={categories} />
+  <ProductEditor
+    client:load
+    product={productDraft}
+    categories={categories}
+    occasions={occasions}
+    moods={moods}
+    flowerTypes={flowerTypes}
+    uncategorizedCategoryId={uncategorizedCategoryId}
+  />
 </AdminLayout>

@@ -23,6 +23,30 @@ function uniqueSlug(base: string, excludeId?: number): string {
   }
 }
 
+/**
+ * Friendly, specific reasons a product isn't ready to publish — mirrored
+ * (for instant feedback) by the editor's own checklist in PublishingSection,
+ * but this copy is the one that actually gates the transition server-side.
+ */
+export function getPublishBlockers(product: Product): string[] {
+  const blockers: string[] = [];
+
+  if (!product.name.trim() || product.name === "Untitled Product") {
+    blockers.push("Give this product a name.");
+  }
+  if (product.images.length === 0) {
+    blockers.push("Add at least one image.");
+  }
+  if (product.categoryId === CategoryService.getOrCreateUncategorized().id) {
+    blockers.push("Select where this product belongs.");
+  }
+  if ((product.priceType === "fixed" || product.priceType === "from") && !product.sellingPrice) {
+    blockers.push("Enter a selling price.");
+  }
+
+  return blockers;
+}
+
 function splitInput(data: ReturnType<typeof productInputSchema.parse>) {
   const core = {
     slug: data.slug,
@@ -36,10 +60,13 @@ function splitInput(data: ReturnType<typeof productInputSchema.parse>) {
     newArrival: data.newArrival,
     priceType: data.priceType,
     sellingPrice: data.sellingPrice ?? null,
-    discountPrice: data.discountPrice ?? null,
+    compareAtPrice: data.compareAtPrice ?? null,
     costPrice: data.costPrice ?? null,
+    deliveryChargeOverride: data.deliveryChargeOverride ?? null,
     stemCount: data.stemCount ?? null,
     colourTheme: data.colourTheme ?? null,
+    arrangementStyle: data.arrangementStyle ?? null,
+    size: data.size ?? null,
     requiresWhatsappConfirmation: data.requiresWhatsappConfirmation,
     seoTitle: data.seoTitle ?? null,
     seoDescription: data.seoDescription ?? null,
@@ -121,6 +148,19 @@ export const ProductService = {
   },
 
   setStatus(id: number, status: ProductStatus): ServiceResult<Product> {
+    const existing = ProductRepository.findById(id);
+    if (!existing) return fail("Product not found.");
+
+    // The editor's checklist does this same check client-side for instant
+    // feedback, but this is the authoritative gate — a direct API call
+    // (or a future non-editor caller) can't skip it.
+    if (status === "published") {
+      const blockers = getPublishBlockers(existing);
+      if (blockers.length > 0) {
+        return fail(blockers.join(" "));
+      }
+    }
+
     const product = ProductRepository.setStatus(id, status);
     if (!product) return fail("Product not found.");
     return ok(product);
@@ -145,10 +185,13 @@ export const ProductService = {
       newArrival: false,
       priceType: source.priceType,
       sellingPrice: source.sellingPrice,
-      discountPrice: source.discountPrice,
+      compareAtPrice: source.compareAtPrice,
       costPrice: source.costPrice,
+      deliveryChargeOverride: source.deliveryChargeOverride,
       stemCount: source.stemCount,
       colourTheme: source.colourTheme,
+      arrangementStyle: source.arrangementStyle,
+      size: source.size,
       requiresWhatsappConfirmation: source.requiresWhatsappConfirmation,
       seoTitle: source.seoTitle,
       seoDescription: source.seoDescription,
@@ -197,10 +240,13 @@ export const ProductService = {
         newArrival: false,
         priceType: "market", // no sellingPrice required yet — Pricing section fills this in later
         sellingPrice: null,
-        discountPrice: null,
+        compareAtPrice: null,
         costPrice: null,
+        deliveryChargeOverride: null,
         stemCount: null,
         colourTheme: null,
+        arrangementStyle: null,
+        size: null,
         requiresWhatsappConfirmation: true,
         seoTitle: null,
         seoDescription: null,
