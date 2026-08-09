@@ -1,6 +1,13 @@
  ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { serviceAreas } from "../data/serviceAreas";
+import { TaxonomyService } from "../server/services/TaxonomyService";
+
+// Commerce Foundation Phase 3, Milestone 2 — Delivery Details' Occasion
+// field reuses the real, admin-managed taxonomy instead of a hardcoded
+// duplicate list, so it stays in sync automatically if an admin ever
+// renames/adds/removes an occasion via the taxonomy admin UI.
+const occasionOptions = await TaxonomyService.listOccasions();
 
 const timeSlots = [
   {
@@ -157,9 +164,93 @@ const timeSlots = [
                 <textarea
                   rows="3"
                   data-customer-note
-                  placeholder="Address, landmark, occasion, preferred flowers, gift message, etc."
+                  placeholder="Delivery address, preferred flowers, special instructions, etc."
                   class="w-full rounded-[20px] border border-[#E5D6DC] bg-white px-5 py-3 text-sm text-[#171717] outline-none transition placeholder:text-[#A99DA3] focus:border-[#7C243E]"
                 ></textarea>
+              </div>
+            </div>
+
+            <div class="mt-8 border-t border-[#EEE5E8] pt-6">
+              <h2 class="text-[12px] font-bold uppercase tracking-[0.24em] text-[#171717]">
+                Delivery Details
+              </h2>
+
+              <p class="mt-2 text-xs leading-6 text-[#66565D]">
+                Who are the flowers for, and where should they arrive?
+              </p>
+
+              <div class="mt-5 grid gap-3 md:grid-cols-2">
+                <div>
+                  <label class="mb-2 block text-[10px] font-bold uppercase tracking-[0.22em] text-[#7C243E]">
+                    Recipient Name
+                  </label>
+
+                  <input
+                    type="text"
+                    data-recipient-name
+                    placeholder="Who should receive the flowers?"
+                    class="w-full rounded-full border border-[#E5D6DC] bg-white px-5 py-3 text-sm text-[#171717] outline-none transition placeholder:text-[#A99DA3] focus:border-[#7C243E]"
+                  />
+                </div>
+
+                <div>
+                  <label class="mb-2 block text-[10px] font-bold uppercase tracking-[0.22em] text-[#7C243E]">
+                    Recipient Phone
+                  </label>
+
+                  <input
+                    type="tel"
+                    data-recipient-phone
+                    placeholder="10-digit mobile number"
+                    class="w-full rounded-full border border-[#E5D6DC] bg-white px-5 py-3 text-sm text-[#171717] outline-none transition placeholder:text-[#A99DA3] focus:border-[#7C243E]"
+                  />
+                </div>
+
+                <div>
+                  <label class="mb-2 block text-[10px] font-bold uppercase tracking-[0.22em] text-[#7C243E]">
+                    Delivery Landmark
+                  </label>
+
+                  <input
+                    type="text"
+                    data-delivery-landmark
+                    placeholder="Apartment, office, landmark, etc."
+                    class="w-full rounded-full border border-[#E5D6DC] bg-white px-5 py-3 text-sm text-[#171717] outline-none transition placeholder:text-[#A99DA3] focus:border-[#7C243E]"
+                  />
+                </div>
+
+                <div>
+                  <label class="mb-2 block text-[10px] font-bold uppercase tracking-[0.22em] text-[#7C243E]">
+                    Occasion
+                  </label>
+
+                  <select
+                    data-occasion
+                    class="w-full rounded-full border border-[#E5D6DC] bg-white px-5 py-3 text-sm text-[#171717] outline-none transition focus:border-[#7C243E]"
+                  >
+                    <option value="">Select occasion</option>
+                    {
+                      occasionOptions.map((occasion) => (
+                        <option value={occasion.name}>{occasion.name}</option>
+                      ))
+                    }
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+
+                <div class="md:col-span-2 hidden" data-occasion-other-wrapper>
+                  <label class="mb-2 block text-[10px] font-bold uppercase tracking-[0.22em] text-[#7C243E]">
+                    Tell us more (optional)
+                  </label>
+
+                  <input
+                    type="text"
+                    data-occasion-other
+                    placeholder="Short description of the occasion"
+                    maxlength="80"
+                    class="w-full rounded-full border border-[#E5D6DC] bg-white px-5 py-3 text-sm text-[#171717] outline-none transition placeholder:text-[#A99DA3] focus:border-[#7C243E]"
+                  />
+                </div>
               </div>
             </div>
 
@@ -248,11 +339,29 @@ const timeSlots = [
      * fails, the only cost is a missing row in the admin's inbox — the
      * WhatsApp message the customer sends is unaffected either way.
      */
-    function logInquiry({ customerName, phone, products, deliveryDate }) {
+    function logInquiry({
+      customerName,
+      phone,
+      products,
+      deliveryDate,
+      recipientName,
+      recipientPhone,
+      deliveryLandmark,
+      occasion,
+    }) {
       fetch("/api/inquiries", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ customerName, phone, products, deliveryDate }),
+        body: JSON.stringify({
+          customerName,
+          phone,
+          products,
+          deliveryDate,
+          recipientName,
+          recipientPhone,
+          deliveryLandmark,
+          occasion,
+        }),
       }).catch(() => {});
     }
 
@@ -318,6 +427,18 @@ const timeSlots = [
     const dateInput = document.querySelector("[data-delivery-date]");
     const slotInput = document.querySelector("[data-delivery-slot]");
     const noteInput = document.querySelector("[data-customer-note]");
+
+    const recipientNameInput = document.querySelector("[data-recipient-name]");
+    const recipientPhoneInput = document.querySelector("[data-recipient-phone]");
+    const landmarkInput = document.querySelector("[data-delivery-landmark]");
+    const occasionInput = document.querySelector("[data-occasion]");
+    const occasionOtherInput = document.querySelector("[data-occasion-other]");
+    const occasionOtherWrapper = document.querySelector("[data-occasion-other-wrapper]");
+
+    occasionInput?.addEventListener("change", () => {
+      if (!occasionOtherWrapper) return;
+      occasionOtherWrapper.classList.toggle("hidden", occasionInput.value !== "Other");
+    });
 
     const today = new Date();
     const todayIso = today.toISOString().split("T")[0];
@@ -703,6 +824,10 @@ const timeSlots = [
       slotStatusText,
       note,
       items,
+      recipientName,
+      recipientPhone,
+      landmark,
+      occasion,
     }) {
       if (!cartSummary) return;
 
@@ -724,6 +849,26 @@ const timeSlots = [
           <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
             <span>Phone</span>
             <strong class="text-right text-[#171717]">${escapeHtml(customerPhone)}</strong>
+          </div>
+
+          <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
+            <span>Recipient</span>
+            <strong class="text-right text-[#171717]">${escapeHtml(recipientName)}</strong>
+          </div>
+
+          <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
+            <span>Recipient Phone</span>
+            <strong class="text-right text-[#171717]">${escapeHtml(recipientPhone)}</strong>
+          </div>
+
+          <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
+            <span>Landmark</span>
+            <strong class="text-right text-[#171717]">${escapeHtml(landmark)}</strong>
+          </div>
+
+          <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
+            <span>Occasion</span>
+            <strong class="text-right text-[#171717]">${escapeHtml(occasion)}</strong>
           </div>
 
           <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
@@ -806,6 +951,16 @@ const timeSlots = [
       const deliverySlot = slotInput?.value || "";
       const note = noteInput?.value.trim() || "";
 
+      const recipientName = recipientNameInput?.value.trim() || "";
+      const recipientPhoneRaw = recipientPhoneInput?.value.trim() || "";
+      const landmark = landmarkInput?.value.trim() || "";
+      const occasionSelected = occasionInput?.value || "";
+      const occasionOtherText = occasionOtherInput?.value.trim() || "";
+      // Folded into one string rather than a second stored field — see
+      // inquirySchema.ts's comment on `occasion` for why.
+      const occasion =
+        occasionSelected === "Other" && occasionOtherText ? `Other: ${occasionOtherText}` : occasionSelected;
+
       hideError();
       hideServiceAreaResult();
       hideCartSummary();
@@ -837,6 +992,34 @@ const timeSlots = [
 
       if (!deliverySlot) {
         showError("Please select a delivery time slot.");
+        return "#";
+      }
+
+      if (!recipientName) {
+        showError("Please enter the recipient's name.");
+        return "#";
+      }
+
+      const recipientPhoneDigits = recipientPhoneRaw.replace(/\D/g, "");
+      const recipientPhoneLocal =
+        recipientPhoneDigits.length === 12 && recipientPhoneDigits.startsWith("91")
+          ? recipientPhoneDigits.slice(2)
+          : recipientPhoneDigits.length === 11 && recipientPhoneDigits.startsWith("0")
+            ? recipientPhoneDigits.slice(1)
+            : recipientPhoneDigits;
+
+      if (!/^[6-9]\d{9}$/.test(recipientPhoneLocal)) {
+        showError("Please enter a valid 10-digit recipient mobile number.");
+        return "#";
+      }
+
+      if (!landmark) {
+        showError("Please enter a delivery landmark.");
+        return "#";
+      }
+
+      if (!occasionSelected) {
+        showError("Please select an occasion.");
         return "#";
       }
 
@@ -914,22 +1097,37 @@ const timeSlots = [
         slotStatusText,
         note,
         items,
+        recipientName,
+        recipientPhone: recipientPhoneLocal,
+        landmark,
+        occasion,
       });
 
       const message = `
-Hi Fresh Petals, I want to place a cart order:
+FreshPetals Order Request
 
-Customer Name: ${customerName}
+This is a request, not a confirmed order — please confirm availability, final price, delivery fee and payment details.
+
+CUSTOMER
+Name: ${customerName}
 Phone: ${customerPhone}
-Main Pincode: ${pincode}
+
+RECIPIENT
+Name: ${recipientName}
+Phone: ${recipientPhoneLocal}
+
+DELIVERY
+Pincode: ${pincode}
 Area: ${areaText}
 Delivery Fee: ${deliveryFeeText}
 Service Status: ${serviceStatusText}
-Main Delivery Date: ${deliveryDate}
-Main Delivery Slot: ${deliverySlot}
+Date: ${deliveryDate}
+Slot: ${deliverySlot}
 Slot Status: ${slotStatusText}
+Landmark: ${landmark}
+Occasion: ${occasion}
 
-Items:
+PRODUCTS
 ${cartLines}
 
 Order Note / Address:
@@ -943,6 +1141,10 @@ Please confirm availability, final price, delivery fee and payment details.
         phone: customerPhone,
         products: items.map((item) => `${item.name} x${item.quantity}`).join(", "),
         deliveryDate,
+        recipientName,
+        recipientPhone: recipientPhoneLocal,
+        deliveryLandmark: landmark,
+        occasion,
       });
 
       return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
@@ -974,6 +1176,31 @@ Please confirm availability, final price, delivery fee and payment details.
     });
 
     noteInput?.addEventListener("input", () => {
+      hideCartSummary();
+      hideError();
+    });
+
+    recipientNameInput?.addEventListener("input", () => {
+      hideCartSummary();
+      hideError();
+    });
+
+    recipientPhoneInput?.addEventListener("input", () => {
+      hideCartSummary();
+      hideError();
+    });
+
+    landmarkInput?.addEventListener("input", () => {
+      hideCartSummary();
+      hideError();
+    });
+
+    occasionInput?.addEventListener("change", () => {
+      hideCartSummary();
+      hideError();
+    });
+
+    occasionOtherInput?.addEventListener("input", () => {
       hideCartSummary();
       hideError();
     });

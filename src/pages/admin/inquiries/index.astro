@@ -1,11 +1,20 @@
 ---
-// Simple Admin Inquiry Log — Commerce Foundation Phase 3, Milestone 5.
-// Deliberately a plain server-rendered table with one inline script for
-// the status dropdown, not a React island: this is a read-mostly triage
-// list (list + change one enum field), not an editor with the kind of
-// live-preview/autosave complexity that justified a React island for
-// Products. Reusing that pattern here would be complexity this page's
-// actual job doesn't need.
+// Simple Admin Inquiry Log — Commerce Foundation Phase 3, Milestone 5,
+// extended in Milestone 2 (Delivery Details) to show recipient/delivery
+// fields. Deliberately a plain server-rendered table with one inline
+// script for the status dropdown and the row-expand toggle, not a React
+// island: this is a read-mostly triage list (list + change one enum
+// field + look at details), not an editor with the kind of live-preview/
+// autosave complexity that justified a React island for Products.
+//
+// Milestone 2 added four more fields (Recipient/Recipient Phone/
+// Landmark/Occasion) to what's already a fairly dense row. Rather than
+// widen the table to 11 columns, the main row stays compact (ID/Created
+// At/Customer/Occasion/Delivery Date/Status) and an expand toggle reveals
+// a detail row with the rest — keeps the table usable on mobile and
+// avoids turning this into a wide, scroll-heavy grid. Per the charter:
+// "If the table becomes too wide, use a compact expandable/detail
+// presentation."
 import AdminLayout from "../../../layouts/AdminLayout.astro";
 import AdminShell from "../../../components/admin/AdminShell.astro";
 import { InquiryService } from "../../../server/services/InquiryService";
@@ -34,6 +43,14 @@ function formatDate(iso: string) {
     minute: "2-digit",
   });
 }
+
+// Rows created before Milestone 2 (and any future direct-repository
+// caller) have null for all four Delivery Details fields — this is the
+// one place that "Not provided" text lives, not a database default,
+// so historical rows render honestly instead of showing a fabricated value.
+function orNotProvided(value: string | null) {
+  return value && value.trim() ? value : "Not provided";
+}
 ---
 
 <AdminLayout title="Inquiries">
@@ -49,47 +66,106 @@ function formatDate(iso: string) {
           </div>
         ) : (
           <div class="overflow-x-auto">
-            <table class="w-full min-w-[860px] text-left text-sm">
+            <table class="w-full min-w-[720px] text-left text-sm">
               <thead>
                 <tr class="border-b border-[#EEE5E8] text-[11px] font-bold uppercase tracking-[0.12em] text-[#77706F]">
                   <th class="px-5 py-3">ID</th>
                   <th class="px-5 py-3">Created At</th>
                   <th class="px-5 py-3">Customer</th>
-                  <th class="px-5 py-3">Phone</th>
-                  <th class="px-5 py-3">Products</th>
+                  <th class="px-5 py-3">Occasion</th>
                   <th class="px-5 py-3">Delivery Date</th>
                   <th class="px-5 py-3">Status</th>
+                  <th class="px-5 py-3"></th>
                 </tr>
               </thead>
               <tbody>
                 {inquiries.map((inquiry) => (
-                  <tr class="border-b border-[#F3EEEF] align-top last:border-0" data-inquiry-row={inquiry.id}>
-                    <td class="px-5 py-4 font-mono text-[#77706F]">#{inquiry.id}</td>
-                    <td class="px-5 py-4 whitespace-nowrap text-[#171717]">{formatDate(inquiry.createdAt)}</td>
-                    <td class="px-5 py-4 font-semibold text-[#171717]">{inquiry.customerName}</td>
-                    <td class="px-5 py-4 text-[#171717]">
-                      <a href={`https://wa.me/${inquiry.phone.replace(/[^0-9]/g, "")}`} target="_blank" rel="noopener noreferrer" class="text-[#7C243E] underline underline-offset-2">
-                        {inquiry.phone}
-                      </a>
-                    </td>
-                    <td class="px-5 py-4 max-w-[280px] text-[#171717]">{inquiry.products}</td>
-                    <td class="px-5 py-4 whitespace-nowrap text-[#171717]">{inquiry.deliveryDate || "—"}</td>
-                    <td class="px-5 py-4">
-                      <select
-                        data-status-select={inquiry.id}
-                        class:list={[
-                          "rounded-full border-0 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.08em]",
-                          STATUS_STYLES[inquiry.status],
-                        ]}
-                      >
-                        {STATUS_OPTIONS.map((status) => (
-                          <option value={status} selected={status === inquiry.status}>
-                            {status}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                  </tr>
+                  <>
+                    <tr class="border-b border-[#F3EEEF] align-top" data-inquiry-row={inquiry.id}>
+                      <td class="px-5 py-4 font-mono text-[#77706F]">#{inquiry.id}</td>
+                      <td class="px-5 py-4 whitespace-nowrap text-[#171717]">{formatDate(inquiry.createdAt)}</td>
+                      <td class="px-5 py-4 font-semibold text-[#171717]">{inquiry.customerName}</td>
+                      <td class="px-5 py-4 text-[#171717]">{orNotProvided(inquiry.occasion)}</td>
+                      <td class="px-5 py-4 whitespace-nowrap text-[#171717]">{inquiry.deliveryDate || "—"}</td>
+                      <td class="px-5 py-4">
+                        <select
+                          data-status-select={inquiry.id}
+                          class:list={[
+                            "rounded-full border-0 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.08em]",
+                            STATUS_STYLES[inquiry.status],
+                          ]}
+                        >
+                          {STATUS_OPTIONS.map((status) => (
+                            <option value={status} selected={status === inquiry.status}>
+                              {status}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                      <td class="px-5 py-4">
+                        <button
+                          type="button"
+                          data-detail-toggle={inquiry.id}
+                          aria-expanded="false"
+                          class="rounded-full border border-[#E5D6DC] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.1em] text-[#66565D] hover:border-[#7C243E] hover:text-[#7C243E]"
+                        >
+                          Details
+                        </button>
+                      </td>
+                    </tr>
+                    <tr class="hidden border-b border-[#F3EEEF] bg-[#FBF7F5]" data-detail-row={inquiry.id}>
+                      <td colspan="7" class="px-5 py-4">
+                        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                          <div>
+                            <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-[#77706F]">
+                              Customer Phone
+                            </p>
+                            <a
+                              href={`https://wa.me/${inquiry.phone.replace(/[^0-9]/g, "")}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              class="mt-1 block text-[#7C243E] underline underline-offset-2"
+                            >
+                              {inquiry.phone}
+                            </a>
+                          </div>
+
+                          <div>
+                            <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-[#77706F]">Recipient</p>
+                            <p class="mt-1 text-[#171717]">{orNotProvided(inquiry.recipientName)}</p>
+                          </div>
+
+                          <div>
+                            <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-[#77706F]">
+                              Recipient Phone
+                            </p>
+                            {inquiry.recipientPhone ? (
+                              <a
+                                href={`https://wa.me/${inquiry.recipientPhone.replace(/[^0-9]/g, "")}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="mt-1 block text-[#7C243E] underline underline-offset-2"
+                              >
+                                {inquiry.recipientPhone}
+                              </a>
+                            ) : (
+                              <p class="mt-1 text-[#171717]">Not provided</p>
+                            )}
+                          </div>
+
+                          <div>
+                            <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-[#77706F]">Landmark</p>
+                            <p class="mt-1 text-[#171717]">{orNotProvided(inquiry.deliveryLandmark)}</p>
+                          </div>
+
+                          <div class="sm:col-span-2 lg:col-span-4">
+                            <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-[#77706F]">Products</p>
+                            <p class="mt-1 text-[#171717]">{inquiry.products}</p>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  </>
                 ))}
               </tbody>
             </table>
@@ -130,6 +206,18 @@ function formatDate(iso: string) {
       }
 
       select.className = `rounded-full border-0 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.08em] ${STATUS_STYLES[value]}`;
+    });
+  });
+
+  document.querySelectorAll("[data-detail-toggle]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const id = button.getAttribute("data-detail-toggle");
+      const detailRow = document.querySelector(`[data-detail-row="${id}"]`);
+      if (!detailRow) return;
+
+      const isHidden = detailRow.classList.toggle("hidden");
+      button.setAttribute("aria-expanded", String(!isHidden));
+      button.textContent = isHidden ? "Details" : "Hide";
     });
   });
 </script>

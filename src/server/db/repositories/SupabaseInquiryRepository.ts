@@ -21,6 +21,10 @@ function mapRow(row: InquiryRow): Inquiry {
     deliveryDate: row.deliveryDate,
     status: row.status,
     createdAt: row.createdAt.toISOString(),
+    recipientName: row.recipientName,
+    recipientPhone: row.recipientPhone,
+    deliveryLandmark: row.deliveryLandmark,
+    occasion: row.occasion,
   };
 }
 
@@ -45,6 +49,10 @@ export const SupabaseInquiryRepository = {
     phone: string;
     products: string;
     deliveryDate?: string | null;
+    recipientName: string;
+    recipientPhone: string;
+    deliveryLandmark: string;
+    occasion: string;
   }): Promise<Inquiry> {
     return withRepositoryCall("SupabaseInquiryRepository.create", async () => {
       const [row] = await getDb()
@@ -54,6 +62,10 @@ export const SupabaseInquiryRepository = {
           phone: input.phone,
           products: input.products,
           deliveryDate: input.deliveryDate ?? null,
+          recipientName: input.recipientName,
+          recipientPhone: input.recipientPhone,
+          deliveryLandmark: input.deliveryLandmark,
+          occasion: input.occasion,
         })
         .returning();
       return mapRow(row);

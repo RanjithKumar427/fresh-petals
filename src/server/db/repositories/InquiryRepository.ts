@@ -13,6 +13,14 @@ export type Inquiry = {
   deliveryDate: string | null;
   status: InquiryStatus;
   createdAt: string;
+  // Commerce Foundation Phase 3, Milestone 2 — Delivery Details. Nullable
+  // on the read side because rows created before this milestone (and any
+  // future direct-repository caller) have none of this — see schema.ts's
+  // comment on the `inquiries` table for the full reasoning.
+  recipientName: string | null;
+  recipientPhone: string | null;
+  deliveryLandmark: string | null;
+  occasion: string | null;
 };
 
 /** The contract every InquiryRepository implementation must satisfy. */
@@ -24,6 +32,10 @@ export interface InquiryRepositoryContract {
     phone: string;
     products: string;
     deliveryDate?: string | null;
+    recipientName: string;
+    recipientPhone: string;
+    deliveryLandmark: string;
+    occasion: string;
   }): Promise<Inquiry>;
   updateStatus(id: number, status: InquiryStatus): Promise<Inquiry | null>;
 }

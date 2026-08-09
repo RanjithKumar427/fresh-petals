@@ -339,6 +339,27 @@ export const inquiries = pgTable(
     deliveryDate: text("delivery_date"),
     status: inquiryStatusEnum("status").notNull().default("new"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+
+    // Commerce Foundation Phase 3, Milestone 2 — Delivery Details. All four
+    // nullable, deliberately: rows created before this migration (and any
+    // future direct-repository caller) have none of this, and the whole
+    // point of "historical inquiries must continue to render" is that a
+    // missing value here is a normal, expected state, not a data-integrity
+    // problem to backfill. The API layer (inquiryInputSchema) is what makes
+    // these *required for new submissions* — the DB stays permissive.
+    // `occasion` is plain text, not an FK to the `occasions` taxonomy table:
+    // an inquiry is a point-in-time snapshot of what the customer selected
+    // (matching `products`' existing snapshot precedent), and it also needs
+    // to hold the free-text "Other: <description>" case the UI allows,
+    // which no FK could represent.
+    recipientName: text("recipient_name"),
+    recipientPhone: text("recipient_phone"),
+    deliveryLandmark: text("delivery_landmark"),
+    occasion: text("occasion"),
   },
   (table) => [index("idx_inquiries_status").on(table.status), index("idx_inquiries_created_at").on(table.createdAt)]
+  // No new index on recipient_name/recipient_phone/delivery_landmark/occasion:
+  // none of them are filtered or sorted on anywhere (the admin page only
+  // lists everything ordered by created_at). Adding one now would be
+  // speculative — see the Milestone 2 report's Performance section.
 );
