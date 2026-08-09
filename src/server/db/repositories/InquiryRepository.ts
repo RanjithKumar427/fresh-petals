@@ -4,6 +4,7 @@
 // Product, this table never existed in the SQLite era, so there is no
 // prior implementation to have migrated away from.
 export type InquiryStatus = "new" | "contacted" | "confirmed" | "completed" | "cancelled";
+export type InquiryDeliveryMethod = "MORNING" | "AFTERNOON" | "EVENING" | "EXPRESS";
 
 export type Inquiry = {
   id: number;
@@ -21,6 +22,13 @@ export type Inquiry = {
   recipientPhone: string | null;
   deliveryLandmark: string | null;
   occasion: string | null;
+  // Delivery Capability Engine milestone — the authoritative DeliveryResult
+  // (see DeliveryService) that was server-revalidated right before this
+  // inquiry was created. Nullable for the same backward-compatibility
+  // reason as the fields above.
+  deliveryMethod: InquiryDeliveryMethod | null;
+  deliveryPromise: string | null;
+  deliveryFee: number | null;
 };
 
 /** The contract every InquiryRepository implementation must satisfy. */
@@ -36,6 +44,9 @@ export interface InquiryRepositoryContract {
     recipientPhone: string;
     deliveryLandmark: string;
     occasion: string;
+    deliveryMethod?: InquiryDeliveryMethod | null;
+    deliveryPromise?: string | null;
+    deliveryFee?: number | null;
   }): Promise<Inquiry>;
   updateStatus(id: number, status: InquiryStatus): Promise<Inquiry | null>;
 }

@@ -1,6 +1,5 @@
 ---
 import type { Product } from "../data/productCatalog";
-import { serviceAreas } from "../data/serviceAreas";
 
 type Props = {
   product: Product;
@@ -441,18 +440,24 @@ const greetingCards = [
   });
 </script>
 
-<script define:vars={{ serviceAreas }}>
+<script is:inline>
   const deliveryPincodeInput = document.querySelector("[data-option-pincode]");
   const deliveryStatus = document.querySelector("[data-delivery-status]");
 
   const DELIVERY_STATUS_BASE_CLASS =
     "mt-4 rounded-2xl border px-4 py-2 text-center text-sm";
 
-  function findDeliveryArea(pincode) {
-    return serviceAreas.find((area) => area.pincode === pincode);
-  }
+  // Delivery Capability Engine milestone — this used to look up a
+  // locally-embedded copy of service-area data (its own separate
+  // duplicate of the same logic in cart.astro and DeliveryChecker.astro).
+  // Now it asks the same authoritative DeliveryService every other
+  // delivery-aware surface in the app calls. This is a pure SERVICEABILITY
+  // question (pincode only, no date/method) — see
+  // DeliveryService.checkServiceability's own comment for why that's
+  // deliberately a separate question from "what can be promised".
+  let requestToken = 0;
 
-  function updateDeliveryStatus() {
+  async function updateDeliveryStatus() {
     if (!deliveryStatus) return;
 
     const pincode = deliveryPincodeInput?.value.trim() || "";
@@ -463,14 +468,31 @@ const greetingCards = [
       return;
     }
 
-    const area = findDeliveryArea(pincode);
+    const thisRequest = ++requestToken;
 
-    if (area) {
-      deliveryStatus.textContent = `Delivery available in ${area.area} • ₹${area.deliveryFee} delivery fee`;
-      deliveryStatus.className = `${DELIVERY_STATUS_BASE_CLASS} border-[#B9D8C6] bg-[#F3FFF7] text-[#075838]`;
-    } else {
-      deliveryStatus.textContent =
-        "We'll confirm delivery for this pincode on WhatsApp";
+    try {
+      const response = await fetch("/api/delivery/check", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ pincode }),
+      });
+      const result = await response.json();
+
+      // The customer may have kept typing (or cleared the field) while
+      // this request was in flight — only the most recent request should
+      // ever get to update the status line.
+      if (thisRequest !== requestToken) return;
+
+      if (response.ok && result?.ok && result.data?.serviceable) {
+        deliveryStatus.textContent = `Delivery available in ${result.data.area} • ₹${result.data.fee} delivery fee`;
+        deliveryStatus.className = `${DELIVERY_STATUS_BASE_CLASS} border-[#B9D8C6] bg-[#F3FFF7] text-[#075838]`;
+      } else {
+        deliveryStatus.textContent = "We'll confirm delivery for this pincode on WhatsApp";
+        deliveryStatus.className = `${DELIVERY_STATUS_BASE_CLASS} border-[#E7B7C0] bg-[#FFF3F5] text-[#7C243E]`;
+      }
+    } catch {
+      if (thisRequest !== requestToken) return;
+      deliveryStatus.textContent = "We'll confirm delivery for this pincode on WhatsApp";
       deliveryStatus.className = `${DELIVERY_STATUS_BASE_CLASS} border-[#E7B7C0] bg-[#FFF3F5] text-[#7C243E]`;
     }
   }

@@ -303,6 +303,38 @@ export const productCareInstructions = pgTable(
 );
 
 // ---------------------------------------------------------------------
+// Delivery Capability Engine — promotes src/data/serviceAreas.ts (a
+// static, compile-time array shipped into every page's public JS bundle
+// today) into a real table, per this milestone's mandated architecture
+// (Customer UI -> Delivery API -> Delivery Service -> Delivery Repository
+// -> Drizzle -> PostgreSQL). Faithful port of `ServiceArea`, not a
+// redesign — same five business fields. See drizzle/0008 for why no
+// separate index on `pincode` (the UNIQUE constraint already provides one).
+//
+// Only four delivery methods are represented, all real and already in
+// use across cart.astro/DeliveryChecker.astro/ProductOptions.astro today
+// — MORNING (7-10AM), AFTERNOON (12-3PM), EVENING (5-8PM), EXPRESS
+// ("within 4-6 hours"). No EXPRESS_2_HOUR or MIDNIGHT: no configuration
+// for either exists anywhere in the business (no fee, no operating
+// window, not even mentioned in shipping.astro's policy copy) — adding
+// them would be fabricating a promise FreshPetals has never actually
+// made. See the Delivery Capability report's Business Configuration
+// section.
+export const deliveryMethodEnum = pgEnum("delivery_method", ["MORNING", "AFTERNOON", "EVENING", "EXPRESS"]);
+
+export const deliveryZones = pgTable("delivery_zones", {
+  id: serial("id").primaryKey(),
+  pincode: text("pincode").notNull().unique(),
+  area: text("area").notNull(),
+  city: text("city").notNull(),
+  deliveryFee: integer("delivery_fee").notNull(),
+  sameDayAvailable: boolean("same_day_available").notNull().default(false),
+  morningDeliveryAvailable: boolean("morning_delivery_available").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// ---------------------------------------------------------------------
 // Inquiries — Commerce Foundation Phase 3, Milestone 5. This is
 // deliberately NOT an Order table: there is no line-item relation to
 // products, no price/payment fields, no customer identity FK. It's a
@@ -356,10 +388,24 @@ export const inquiries = pgTable(
     recipientPhone: text("recipient_phone"),
     deliveryLandmark: text("delivery_landmark"),
     occasion: text("occasion"),
+
+    // Delivery Capability Engine milestone — the authoritative result the
+    // customer was actually shown and that was server-revalidated right
+    // before this inquiry was created (see DeliveryService). Nullable for
+    // the same backward-compatibility reason as the Milestone 2 fields
+    // above: rows created before this migration have none of this.
+    // `deliveryMethod` uses the real pgEnum (not free text like `occasion`)
+    // because delivery methods are a closed, engineering-defined set —
+    // unlike occasions, there's no admin-editable taxonomy or free-text
+    // "Other" case to represent here.
+    deliveryMethod: deliveryMethodEnum("delivery_method"),
+    deliveryPromise: text("delivery_promise"),
+    deliveryFee: integer("delivery_fee"),
   },
   (table) => [index("idx_inquiries_status").on(table.status), index("idx_inquiries_created_at").on(table.createdAt)]
-  // No new index on recipient_name/recipient_phone/delivery_landmark/occasion:
-  // none of them are filtered or sorted on anywhere (the admin page only
-  // lists everything ordered by created_at). Adding one now would be
-  // speculative — see the Milestone 2 report's Performance section.
+  // No new index on recipient_name/recipient_phone/delivery_landmark/occasion/
+  // delivery_method/delivery_promise/delivery_fee: none of them are filtered
+  // or sorted on anywhere (the admin page only lists everything ordered by
+  // created_at). Adding one now would be speculative — see the Milestone 2
+  // report's Performance section, which this follows.
 );

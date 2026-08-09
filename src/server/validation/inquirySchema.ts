@@ -73,6 +73,18 @@ export const inquiryInputSchema = z.object({
   // lightweight inquiry log to the taxonomy admin feature for no real
   // benefit — see the Milestone 2 report's Architectural Decisions.
   occasion: z.string().trim().min(1, "Occasion is required.").max(160),
+
+  // Delivery Capability Engine milestone — the authoritative result the
+  // server itself computed and revalidated (see DeliveryService) right
+  // before this inquiry was created. All three are optional: unlike the
+  // Delivery Details fields above (always customer-entered form data),
+  // these depend on whether the pincode/date/method combination actually
+  // resolved to a confirmed delivery method — an unserviceable pincode is
+  // a legitimate, existing "manual confirmation on WhatsApp" outcome that
+  // must still be allowed to create an inquiry with no confirmed method.
+  deliveryMethod: z.enum(["MORNING", "AFTERNOON", "EVENING", "EXPRESS"]).optional().nullable(),
+  deliveryPromise: z.string().trim().max(200).optional().nullable(),
+  deliveryFee: z.number().int().nonnegative().optional().nullable(),
 });
 
 export type InquiryInput = z.infer<typeof inquiryInputSchema>;

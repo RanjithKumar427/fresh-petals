@@ -158,6 +158,29 @@ function orNotProvided(value: string | null) {
                             <p class="mt-1 text-[#171717]">{orNotProvided(inquiry.deliveryLandmark)}</p>
                           </div>
 
+                          <div>
+                            <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-[#77706F]">
+                              Delivery Option
+                            </p>
+                            <p class="mt-1 text-[#171717]">{orNotProvided(inquiry.deliveryMethod)}</p>
+                          </div>
+
+                          <div>
+                            <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-[#77706F]">
+                              Delivery Promise
+                            </p>
+                            <p class="mt-1 text-[#171717]">{orNotProvided(inquiry.deliveryPromise)}</p>
+                          </div>
+
+                          <div>
+                            <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-[#77706F]">
+                              Delivery Fee
+                            </p>
+                            <p class="mt-1 text-[#171717]">
+                              {inquiry.deliveryFee === null ? "Not provided" : `₹${inquiry.deliveryFee}`}
+                            </p>
+                          </div>
+
                           <div class="sm:col-span-2 lg:col-span-4">
                             <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-[#77706F]">Products</p>
                             <p class="mt-1 text-[#171717]">{inquiry.products}</p>

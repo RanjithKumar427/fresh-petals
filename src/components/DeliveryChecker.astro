@@ -1,5 +1,5 @@
 ---
-import { serviceAreas } from "../data/serviceAreas";
+import { DELIVERY_METHOD_OPTIONS } from "../server/services/delivery/DeliveryService";
 
 interface Props {
   productName: string;
@@ -10,28 +10,12 @@ const { productName, priceLabel } = Astro.props;
 
 const whatsappNumber = "919652012274";
 
-const timeSlots = [
-  {
-    value: "Morning Slot: 7 AM - 10 AM",
-    label: "Morning Slot: 7 AM - 10 AM",
-    type: "morning",
-  },
-  {
-    value: "Afternoon Slot: 12 PM - 3 PM",
-    label: "Afternoon Slot: 12 PM - 3 PM",
-    type: "standard",
-  },
-  {
-    value: "Evening Slot: 5 PM - 8 PM",
-    label: "Evening Slot: 5 PM - 8 PM",
-    type: "standard",
-  },
-  {
-    value: "Express Delivery: Within 4-6 Hours",
-    label: "Express Delivery: Within 4-6 Hours",
-    type: "express",
-  },
-];
+// Delivery Capability Engine milestone — UI copy only; `method` is what's
+// sent to POST /api/delivery/check, the same authoritative engine
+// cart.astro and ProductOptions.astro call. Imported from the engine
+// itself (not hand-written here) so there's exactly one place these four
+// options are defined — see deliveryRules.ts's DELIVERY_METHOD_OPTIONS.
+const timeSlots = DELIVERY_METHOD_OPTIONS;
 ---
 
 <section
@@ -104,7 +88,7 @@ const timeSlots = [
             <option value="">Select time slot</option>
             {
               timeSlots.map((slot) => (
-                <option value={slot.value} data-slot-type={slot.type}>
+                <option value={slot.value} data-method={slot.method}>
                   {slot.label}
                 </option>
               ))
@@ -172,7 +156,7 @@ const timeSlots = [
     </div>
   </details>
 
-  <script define:vars={{ serviceAreas }}>
+  <script is:inline>
     const checker = document.querySelector("[data-delivery-checker]");
 
     if (checker) {
@@ -320,14 +304,20 @@ const timeSlots = [
           `;
         }
 
-        function buildWhatsAppUrl({
-          areaData,
-          pincode,
-          deliveryDate,
-          timeSlot,
-          quantity,
-          note,
-        }) {
+        // One message builder, branching on the authoritative
+        // DeliveryResult instead of two near-duplicate functions (one for
+        // "area found", one for "area not found") — Delivery Capability
+        // Engine milestone.
+        function buildWhatsAppUrl(deliveryResult, { pincode, deliveryDate, timeSlot, quantity, note }) {
+          const detailLines = deliveryResult.available
+            ? [
+                `Area: ${deliveryResult.area}`,
+                `Delivery Fee: ₹${deliveryResult.fee}`,
+                `Delivery Option: ${deliveryResult.label}`,
+                `Promise: ${deliveryResult.promise}`,
+              ]
+            : [`Delivery Date: ${deliveryDate}`, `Time Slot: ${timeSlot}`];
+
           const message = `
 Hi Fresh Petals, I want to check delivery before ordering:
 
@@ -335,12 +325,7 @@ Product: ${productName}
 Price: ${priceLabel}
 Quantity: ${quantity}
 Pincode: ${pincode}
-Area: ${areaData.area}
-Delivery Fee: ₹${areaData.deliveryFee}
-Delivery Date: ${deliveryDate}
-Time Slot: ${timeSlot}
-Same-day Delivery: ${areaData.sameDayAvailable ? "Available" : "Not available"}
-Morning Delivery: ${areaData.morningDeliveryAvailable ? "Available" : "Not available"}
+${detailLines.join("\n")}
 Quick Note: ${note || "None"}
 
 Please confirm delivery possibility and today's flower availability.
@@ -349,31 +334,37 @@ Please confirm delivery possibility and today's flower availability.
           return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
         }
 
-        function buildFallbackWhatsAppUrl({
-          pincode,
-          deliveryDate,
-          timeSlot,
-          quantity,
-          note,
-        }) {
-          const message = `
-Hi Fresh Petals, I want to check delivery before ordering:
-
-Product: ${productName}
-Price: ${priceLabel}
-Quantity: ${quantity}
-Pincode: ${pincode}
-Delivery Date: ${deliveryDate}
-Time Slot: ${timeSlot}
-Quick Note: ${note || "None"}
-
-Please confirm if delivery is available for this pincode.
-          `.trim();
-
-          return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+        // Delivery Capability Engine milestone — this used to look up a
+        // locally-embedded copy of service-area data and re-derive
+        // morning/express availability inline (a third independent copy
+        // of the same logic already duplicated in cart.astro and
+        // ProductOptions.astro). Now it asks the same authoritative
+        // DeliveryService every other delivery-aware surface calls, via
+        // POST /api/delivery/check — see checkDeliveryMethod.
+        async function checkDeliveryMethod(pincode, deliveryDate, method) {
+          const fallback = {
+            available: false,
+            method,
+            label: method,
+            reason: "We couldn't confirm delivery availability right now. Please continue on WhatsApp and we'll confirm availability.",
+          };
+          try {
+            const response = await fetch("/api/delivery/check", {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({ pincode, deliveryDate, method }),
+            });
+            const result = await response.json();
+            if (!response.ok || !result?.ok || !Array.isArray(result.data) || !result.data[0]) {
+              return fallback;
+            }
+            return result.data[0];
+          } catch {
+            return fallback;
+          }
         }
 
-        function checkDelivery() {
+        async function checkDelivery() {
           const pincode = pincodeInput.value.trim();
           const deliveryDate = dateInput.value;
           const timeSlot = slotInput.value;
@@ -384,47 +375,58 @@ Please confirm if delivery is available for this pincode.
           hideSummary();
 
           if (!/^[0-9]{6}$/.test(pincode)) {
-            showResult({
-              type: "error",
-              html: "Please enter a valid 6-digit pincode.",
-            });
+            showResult({ type: "error", html: "Please enter a valid 6-digit pincode." });
             return;
           }
 
           if (!deliveryDate) {
-            showResult({
-              type: "error",
-              html: "Please select a delivery date.",
-            });
+            showResult({ type: "error", html: "Please select a delivery date." });
             return;
           }
 
           if (!timeSlot) {
-            showResult({
-              type: "error",
-              html: "Please select a delivery time slot.",
-            });
+            showResult({ type: "error", html: "Please select a delivery time slot." });
             return;
           }
 
           if (!quantity || Number(quantity) < 1) {
-            showResult({
-              type: "error",
-              html: "Please enter a valid quantity.",
-            });
+            showResult({ type: "error", html: "Please enter a valid quantity." });
             return;
           }
 
-          const areaData = serviceAreas.find((area) => area.pincode === pincode);
-
           const selectedOption = slotInput.options[slotInput.selectedIndex];
-          const slotType = selectedOption?.dataset?.slotType || "standard";
+          const method = selectedOption?.dataset?.method || "";
 
-          if (!areaData) {
+          const deliveryResult = await checkDeliveryMethod(pincode, deliveryDate, method);
+
+          if (deliveryResult.available) {
+            showResult({
+              type: "success",
+              html: `
+                <strong>Delivery available in ${escapeHtml(deliveryResult.area)}.</strong><br />
+                Delivery fee: ₹${escapeHtml(deliveryResult.fee)}<br />
+                ${escapeHtml(deliveryResult.label)}<br />
+                Promise: ${escapeHtml(deliveryResult.promise)}
+              `,
+            });
+
+            showSummary({
+              productName,
+              priceLabel,
+              quantity,
+              pincode,
+              area: deliveryResult.area,
+              deliveryFee: `₹${deliveryResult.fee}`,
+              deliveryDate,
+              timeSlot,
+              note,
+              statusLabel: "Delivery available",
+            });
+          } else {
             showResult({
               type: "error",
               html: `
-                <strong>Delivery not confirmed for this pincode yet.</strong><br />
+                <strong>${escapeHtml(deliveryResult.reason)}</strong><br />
                 You can still continue on WhatsApp and we will manually confirm availability.
               `,
             });
@@ -441,122 +443,9 @@ Please confirm if delivery is available for this pincode.
               note,
               statusLabel: "Manual confirmation needed",
             });
-
-            showWhatsappButton(
-              buildFallbackWhatsAppUrl({
-                pincode,
-                deliveryDate,
-                timeSlot,
-                quantity,
-                note,
-              })
-            );
-            return;
           }
 
-          if (slotType === "morning" && !areaData.morningDeliveryAvailable) {
-            showResult({
-              type: "error",
-              html: `
-                <strong>Morning delivery is not currently available in ${escapeHtml(areaData.area)}.</strong><br />
-                Please select Afternoon, Evening, or continue on WhatsApp for manual confirmation.
-              `,
-            });
-
-            showSummary({
-              productName,
-              priceLabel,
-              quantity,
-              pincode,
-              area: areaData.area,
-              deliveryFee: `₹${areaData.deliveryFee}`,
-              deliveryDate,
-              timeSlot,
-              note,
-              statusLabel: "Slot needs manual confirmation",
-            });
-
-            showWhatsappButton(
-              buildWhatsAppUrl({
-                areaData,
-                pincode,
-                deliveryDate,
-                timeSlot,
-                quantity,
-                note,
-              })
-            );
-            return;
-          }
-
-          if (slotType === "express" && !areaData.sameDayAvailable) {
-            showResult({
-              type: "error",
-              html: `
-                <strong>Express delivery is not currently available in ${escapeHtml(areaData.area)}.</strong><br />
-                Please choose a regular slot or continue on WhatsApp for manual confirmation.
-              `,
-            });
-
-            showSummary({
-              productName,
-              priceLabel,
-              quantity,
-              pincode,
-              area: areaData.area,
-              deliveryFee: `₹${areaData.deliveryFee}`,
-              deliveryDate,
-              timeSlot,
-              note,
-              statusLabel: "Express needs manual confirmation",
-            });
-
-            showWhatsappButton(
-              buildWhatsAppUrl({
-                areaData,
-                pincode,
-                deliveryDate,
-                timeSlot,
-                quantity,
-                note,
-              })
-            );
-            return;
-          }
-
-          showResult({
-            type: "success",
-            html: `
-              <strong>Delivery available in ${escapeHtml(areaData.area)}.</strong><br />
-              Delivery fee: ₹${escapeHtml(areaData.deliveryFee)}<br />
-              Delivery date: ${escapeHtml(deliveryDate)}<br />
-              Time slot: ${escapeHtml(timeSlot)}
-            `,
-          });
-
-          showSummary({
-            productName,
-            priceLabel,
-            quantity,
-            pincode,
-            area: areaData.area,
-            deliveryFee: `₹${areaData.deliveryFee}`,
-            deliveryDate,
-            timeSlot,
-            note,
-            statusLabel: "Delivery available",
-          });
-
-          showWhatsappButton(
-            buildWhatsAppUrl({
-              areaData,
-              pincode,
-              deliveryDate,
-              timeSlot,
-              quantity,
-              note,
-            })
-          );
+          showWhatsappButton(buildWhatsAppUrl(deliveryResult, { pincode, deliveryDate, timeSlot, quantity, note }));
         }
 
         checkButton.addEventListener("click", checkDelivery);

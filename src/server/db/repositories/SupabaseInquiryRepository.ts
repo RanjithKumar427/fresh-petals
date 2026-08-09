@@ -8,7 +8,7 @@ import { desc, eq } from "drizzle-orm";
 import { getDb } from "../postgres/client";
 import { inquiries } from "../postgres/schema";
 import { withRepositoryCall } from "../postgres/repository";
-import type { Inquiry, InquiryStatus } from "./InquiryRepository";
+import type { Inquiry, InquiryStatus, InquiryDeliveryMethod } from "./InquiryRepository";
 
 type InquiryRow = typeof inquiries.$inferSelect;
 
@@ -25,6 +25,9 @@ function mapRow(row: InquiryRow): Inquiry {
     recipientPhone: row.recipientPhone,
     deliveryLandmark: row.deliveryLandmark,
     occasion: row.occasion,
+    deliveryMethod: row.deliveryMethod,
+    deliveryPromise: row.deliveryPromise,
+    deliveryFee: row.deliveryFee,
   };
 }
 
@@ -53,6 +56,9 @@ export const SupabaseInquiryRepository = {
     recipientPhone: string;
     deliveryLandmark: string;
     occasion: string;
+    deliveryMethod?: InquiryDeliveryMethod | null;
+    deliveryPromise?: string | null;
+    deliveryFee?: number | null;
   }): Promise<Inquiry> {
     return withRepositoryCall("SupabaseInquiryRepository.create", async () => {
       const [row] = await getDb()
@@ -66,6 +72,9 @@ export const SupabaseInquiryRepository = {
           recipientPhone: input.recipientPhone,
           deliveryLandmark: input.deliveryLandmark,
           occasion: input.occasion,
+          deliveryMethod: input.deliveryMethod ?? null,
+          deliveryPromise: input.deliveryPromise ?? null,
+          deliveryFee: input.deliveryFee ?? null,
         })
         .returning();
       return mapRow(row);

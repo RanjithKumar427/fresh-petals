@@ -1,7 +1,7 @@
  ---
 import BaseLayout from "../layouts/BaseLayout.astro";
-import { serviceAreas } from "../data/serviceAreas";
 import { TaxonomyService } from "../server/services/TaxonomyService";
+import { DELIVERY_METHOD_OPTIONS } from "../server/services/delivery/DeliveryService";
 
 // Commerce Foundation Phase 3, Milestone 2 — Delivery Details' Occasion
 // field reuses the real, admin-managed taxonomy instead of a hardcoded
@@ -9,28 +9,14 @@ import { TaxonomyService } from "../server/services/TaxonomyService";
 // renames/adds/removes an occasion via the taxonomy admin UI.
 const occasionOptions = await TaxonomyService.listOccasions();
 
-const timeSlots = [
-  {
-    value: "Morning Slot: 7 AM - 10 AM",
-    label: "Morning Slot: 7 AM - 10 AM",
-    type: "morning",
-  },
-  {
-    value: "Afternoon Slot: 12 PM - 3 PM",
-    label: "Afternoon Slot: 12 PM - 3 PM",
-    type: "standard",
-  },
-  {
-    value: "Evening Slot: 5 PM - 8 PM",
-    label: "Evening Slot: 5 PM - 8 PM",
-    type: "standard",
-  },
-  {
-    value: "Express Delivery: Within 4-6 Hours",
-    label: "Express Delivery: Within 4-6 Hours",
-    type: "express",
-  },
-];
+// Delivery Capability Engine milestone — UI copy only, not a decision:
+// the actual availability/fee/promise for whichever one the customer
+// picks is always fetched fresh from POST /api/delivery/check
+// (DeliveryService), never computed here. `method` is what gets sent to
+// that endpoint. Imported from the engine itself (not hand-written here)
+// so there's exactly one place these four options are defined — see
+// deliveryRules.ts's DELIVERY_METHOD_OPTIONS.
+const timeSlots = DELIVERY_METHOD_OPTIONS;
 ---
 
 <BaseLayout
@@ -148,7 +134,7 @@ const timeSlots = [
                   <option value="">Select delivery time slot</option>
                   {
                     timeSlots.map((slot) => (
-                      <option value={slot.value} data-slot-type={slot.type}>
+                      <option value={slot.value} data-method={slot.method}>
                         {slot.label}
                       </option>
                     ))
@@ -327,7 +313,7 @@ const timeSlots = [
     </section>
   </main>
 
-  <script define:vars={{ serviceAreas }}>
+  <script is:inline>
     const whatsappNumber = "919652012274";
     const CART_KEY = "fresh_petals_cart";
 
@@ -348,6 +334,9 @@ const timeSlots = [
       recipientPhone,
       deliveryLandmark,
       occasion,
+      deliveryMethod,
+      deliveryPromise,
+      deliveryFee,
     }) {
       fetch("/api/inquiries", {
         method: "POST",
@@ -361,6 +350,9 @@ const timeSlots = [
           recipientPhone,
           deliveryLandmark,
           occasion,
+          deliveryMethod,
+          deliveryPromise,
+          deliveryFee,
         }),
       }).catch(() => {});
     }
@@ -499,13 +491,47 @@ const timeSlots = [
       cartSummary.innerHTML = "";
     }
 
-    function findServiceArea(pincode) {
-      return serviceAreas.find((area) => area.pincode === pincode);
+    function getSelectedMethod() {
+      const selectedOption = slotInput?.options?.[slotInput.selectedIndex];
+      return selectedOption?.dataset?.method || "";
     }
 
-    function getSelectedSlotType() {
-      const selectedOption = slotInput?.options?.[slotInput.selectedIndex];
-      return selectedOption?.dataset?.slotType || "standard";
+    /**
+     * The ONE place this page asks "is this deliverable?" — Delivery
+     * Capability Engine milestone. Replaces what used to be an inline
+     * lookup against a locally-embedded copy of service-area data
+     * (duplicated across this file, DeliveryChecker.astro and
+     * ProductOptions.astro); now every one of them calls this same
+     * authoritative, server-side DeliveryService. Never throws: a
+     * network failure or non-2xx response is treated as "couldn't
+     * confirm right now", the same fail-safe shape the engine itself
+     * returns for a database failure — see /api/delivery/check.
+     */
+    async function checkDeliveryMethod(pincode, deliveryDate, method) {
+      try {
+        const response = await fetch("/api/delivery/check", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ pincode, deliveryDate, method }),
+        });
+        const result = await response.json();
+        if (!response.ok || !result?.ok || !Array.isArray(result.data) || !result.data[0]) {
+          return {
+            available: false,
+            method,
+            label: method,
+            reason: "We couldn't confirm delivery availability right now. Please continue on WhatsApp and we'll confirm availability.",
+          };
+        }
+        return result.data[0];
+      } catch {
+        return {
+          available: false,
+          method,
+          label: method,
+          reason: "We couldn't confirm delivery availability right now. Please continue on WhatsApp and we'll confirm availability.",
+        };
+      }
     }
 
     function hasConfiguredDetails(item) {
@@ -902,7 +928,7 @@ const timeSlots = [
           </div>
 
           <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
-            <span>Slot Status</span>
+            <span>Delivery Promise</span>
             <strong class="text-right text-[#075838]">${escapeHtml(slotStatusText)}</strong>
           </div>
 
@@ -941,7 +967,7 @@ const timeSlots = [
       ].join("\n");
     }
 
-    function buildCartWhatsappUrl() {
+    async function buildCartWhatsappUrl() {
       const items = getCartItems();
 
       const customerName = nameInput?.value.trim() || "";
@@ -1023,64 +1049,45 @@ const timeSlots = [
         return "#";
       }
 
-      const areaData = findServiceArea(pincode);
-      const slotType = getSelectedSlotType();
+      const method = getSelectedMethod();
 
       const cartLines = items
         .map((item, index) => buildCartLineText(item, index))
         .join("\n\n");
 
+      // The one authoritative call — see checkDeliveryMethod. This is a
+      // genuine revalidation, not a reuse of whatever the customer last
+      // saw: the pincode/date/method could have been typed seconds ago
+      // or minutes ago, and a slot's cutoff (or the area's own data) may
+      // have changed in between. Nothing downstream trusts client state.
+      const deliveryResult = await checkDeliveryMethod(pincode, deliveryDate, method);
+
       let areaText = "Manual confirmation needed";
       let deliveryFeeText = "To be confirmed";
-      let serviceStatusText = "Manual confirmation needed";
-      let slotStatusText = "Manual confirmation needed";
+      let serviceStatusText = deliveryResult.reason || "Manual confirmation needed";
+      let promiseText = "To be confirmed";
 
-      if (areaData) {
-        areaText = `${areaData.area}, ${areaData.city}`;
-        deliveryFeeText = `₹${areaData.deliveryFee}`;
+      if (deliveryResult.available) {
+        areaText = `${deliveryResult.area}, ${deliveryResult.city}`;
+        deliveryFeeText = `₹${deliveryResult.fee}`;
         serviceStatusText = "Delivery available";
-        slotStatusText = "Slot available";
+        promiseText = deliveryResult.promise;
 
-        if (slotType === "morning" && !areaData.morningDeliveryAvailable) {
-          slotStatusText = "Morning slot needs manual confirmation";
-
-          showServiceAreaResult({
-            type: "error",
-            html: `
-              <strong>Delivery available in ${escapeHtml(areaData.area)}, but morning slot needs confirmation.</strong><br />
-              Delivery fee: ₹${escapeHtml(areaData.deliveryFee)}<br />
-              Please continue on WhatsApp. We will manually confirm morning delivery possibility.
-            `,
-          });
-        } else if (slotType === "express" && !areaData.sameDayAvailable) {
-          slotStatusText = "Express slot needs manual confirmation";
-
-          showServiceAreaResult({
-            type: "error",
-            html: `
-              <strong>Delivery available in ${escapeHtml(areaData.area)}, but express delivery needs confirmation.</strong><br />
-              Delivery fee: ₹${escapeHtml(areaData.deliveryFee)}<br />
-              Please continue on WhatsApp. We will manually confirm express delivery possibility.
-            `,
-          });
-        } else {
-          showServiceAreaResult({
-            type: "success",
-            html: `
-              <strong>Delivery available in ${escapeHtml(areaData.area)}.</strong><br />
-              Delivery fee: ₹${escapeHtml(areaData.deliveryFee)}<br />
-              Delivery slot: ${escapeHtml(deliverySlot)}<br />
-              Same-day delivery: ${areaData.sameDayAvailable ? "Available" : "Not available"}<br />
-              Morning delivery: ${areaData.morningDeliveryAvailable ? "Available" : "Not available"}
-            `,
-          });
-        }
+        showServiceAreaResult({
+          type: "success",
+          html: `
+            <strong>Delivery available in ${escapeHtml(deliveryResult.area)}.</strong><br />
+            Delivery fee: ₹${escapeHtml(deliveryResult.fee)}<br />
+            ${escapeHtml(deliveryResult.label)}<br />
+            Promise: ${escapeHtml(deliveryResult.promise)}
+          `,
+        });
       } else {
         showServiceAreaResult({
           type: "error",
           html: `
-            <strong>Delivery is not confirmed for this pincode yet.</strong><br />
-            You can still continue on WhatsApp. We will manually confirm delivery possibility, fee and timing.
+            <strong>${escapeHtml(deliveryResult.reason)}</strong><br />
+            You can still continue on WhatsApp — we will manually confirm delivery possibility, fee and timing.
           `,
         });
       }
@@ -1094,7 +1101,7 @@ const timeSlots = [
         serviceStatusText,
         deliveryDate,
         deliverySlot,
-        slotStatusText,
+        slotStatusText: promiseText,
         note,
         items,
         recipientName,
@@ -1119,11 +1126,11 @@ Phone: ${recipientPhoneLocal}
 DELIVERY
 Pincode: ${pincode}
 Area: ${areaText}
+Delivery Option: ${deliveryResult.label}
+Promise: ${promiseText}
 Delivery Fee: ${deliveryFeeText}
 Service Status: ${serviceStatusText}
 Date: ${deliveryDate}
-Slot: ${deliverySlot}
-Slot Status: ${slotStatusText}
 Landmark: ${landmark}
 Occasion: ${occasion}
 
@@ -1145,17 +1152,40 @@ Please confirm availability, final price, delivery fee and payment details.
         recipientPhone: recipientPhoneLocal,
         deliveryLandmark: landmark,
         occasion,
+        deliveryMethod: deliveryResult.available ? deliveryResult.method : null,
+        deliveryPromise: deliveryResult.available ? deliveryResult.promise : null,
+        deliveryFee: deliveryResult.available ? deliveryResult.fee : null,
       });
 
       return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
     }
 
-    sendWhatsappButton?.addEventListener("click", () => {
-      const url = buildCartWhatsappUrl();
+    sendWhatsappButton?.addEventListener("click", async () => {
+      // buildCartWhatsappUrl() now awaits a server revalidation
+      // (checkDeliveryMethod), which breaks the synchronous call chain
+      // most browsers require for window.open() to count as a direct
+      // user gesture — calling it only after that await would get
+      // silently popup-blocked in several browsers. Opening a blank tab
+      // right here, still inside the synchronous click handler, and
+      // only pointing it at the real URL once validation finishes avoids
+      // that — same window, no extra popup-permission prompt.
+      const whatsappTab = window.open("", "_blank", "noopener,noreferrer");
 
-      if (url === "#") return;
+      const url = await buildCartWhatsappUrl();
 
-      window.open(url, "_blank", "noopener,noreferrer");
+      if (url === "#") {
+        whatsappTab?.close();
+        return;
+      }
+
+      if (whatsappTab) {
+        whatsappTab.location.href = url;
+      } else {
+        // The blank-tab open itself was blocked (rare, but possible under
+        // strict popup settings) — fall back to a direct open with the
+        // final URL now that we have one.
+        window.open(url, "_blank", "noopener,noreferrer");
+      }
     });
 
     pincodeInput?.addEventListener("input", () => {
