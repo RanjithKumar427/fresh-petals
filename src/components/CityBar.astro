@@ -39,6 +39,15 @@ const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${deliveryMessage}`;
       >
         Check area
       </a>
+
+      <a
+        href="/"
+        data-selected-area-badge
+        class="hidden shrink-0 items-center gap-1 text-[11px] font-semibold text-[#171717] underline-offset-4 transition hover:text-[#D98B9A] hover:underline"
+        title="Change your area"
+      >
+        📍 <span data-selected-area-name></span>
+      </a>
     </div>
 
     <div class="hidden items-center gap-4 text-[#171717] md:flex">
@@ -89,3 +98,36 @@ const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${deliveryMessage}`;
     </div>
   </div>
 </section>
+
+<script>
+  // Sitewide "selected area" indicator — Simple Area Selection milestone.
+  // Purely a display of storefront context the homepage's AreaSelector
+  // already wrote to localStorage; this file never selects or writes an
+  // area itself, only reflects it. Hidden entirely (default state) until
+  // an area has actually been chosen.
+  import { getSelectedArea, AREA_UPDATED_EVENT } from "../utils/area";
+
+  const badge = document.querySelector<HTMLElement>("[data-selected-area-badge]");
+  const nameEl = document.querySelector<HTMLElement>("[data-selected-area-name]");
+
+  function render(area: string | null) {
+    if (!badge || !nameEl) return;
+    if (area) {
+      nameEl.textContent = area;
+      badge.classList.remove("hidden");
+      badge.classList.add("inline-flex");
+    } else {
+      badge.classList.add("hidden");
+      badge.classList.remove("inline-flex");
+    }
+  }
+
+  render(getSelectedArea());
+
+  // Same-page reactivity: on the homepage, AreaSelector and CityBar are
+  // both mounted at once, so selecting an area should update this badge
+  // immediately without a navigation/refresh.
+  window.addEventListener(AREA_UPDATED_EVENT, ((event: CustomEvent<{ area: string }>) => {
+    render(event.detail.area);
+  }) as EventListener);
+</script>

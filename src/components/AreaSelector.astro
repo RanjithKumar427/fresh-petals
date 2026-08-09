@@ -1,0 +1,82 @@
+---
+// Simple Area Selection milestone — homepage-only. Purely storefront
+// browsing context: selecting an area never touches delivery fee,
+// availability or promise (those stay exclusively server-side, via the
+// existing pincode-driven /api/delivery/check in Delivery Details). See
+// src/utils/area.ts's header for the full reasoning.
+//
+// `areas` is fetched once at build time (this page isn't
+// `prerender = false`) via DeliveryService.listAreas() — the same
+// server-rendered-data approach the rest of the storefront already uses
+// for catalogue content, not a new API route.
+interface Props {
+  areas: string[];
+}
+
+const { areas } = Astro.props;
+---
+
+{
+  areas.length > 0 && (
+    <section class="border-b border-[#EEE5E8] bg-[#FBF4F6] px-5 py-6 md:px-8 md:py-8" data-area-selector>
+      <div class="mx-auto max-w-7xl">
+        <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#D98B9A]">
+          Fresh flowers, delivered to your area
+        </p>
+        <h2 class="mt-1 text-lg font-semibold text-[#171717] md:text-xl">Where are you ordering from?</h2>
+
+        <div class="mt-4 flex flex-wrap gap-2.5" role="group" aria-label="Select your delivery area">
+          {
+            areas.map((area) => (
+              <button
+                type="button"
+                data-area-option={area}
+                class="rounded-full border border-[#E5D3D8] bg-white px-4 py-2.5 text-[13px] font-medium text-[#171717] transition hover:border-[#D98B9A] hover:bg-[#FDF0F3] aria-pressed:border-[#D98B9A] aria-pressed:bg-[#171717] aria-pressed:text-white"
+                aria-pressed="false"
+              >
+                {area}
+              </button>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+  )
+}
+
+<script>
+  import { getSelectedArea, setSelectedArea, AREA_UPDATED_EVENT } from "../utils/area";
+
+  const section = document.querySelector<HTMLElement>("[data-area-selector]");
+  if (section) {
+    const buttons = Array.from(section.querySelectorAll<HTMLButtonElement>("[data-area-option]"));
+
+    function applySelection(area: string | null) {
+      for (const button of buttons) {
+        const isSelected = button.dataset.areaOption === area;
+        button.setAttribute("aria-pressed", String(isSelected));
+      }
+    }
+
+    applySelection(getSelectedArea());
+
+    for (const button of buttons) {
+      button.addEventListener("click", () => {
+        const area = button.dataset.areaOption;
+        if (!area) return;
+        // Selection is the confirmation — no separate continue/confirm
+        // step. Re-tapping the already-selected area is harmless (it's
+        // idempotent), which is why there's no "deselect" affordance:
+        // changing area is just tapping a different chip.
+        setSelectedArea(area);
+        applySelection(area);
+      });
+    }
+
+    // Same-page reactivity if the area is changed elsewhere while this
+    // section is mounted (mirrors fresh-petals-cart-updated in cart.ts).
+    window.addEventListener(AREA_UPDATED_EVENT, ((event: CustomEvent<{ area: string }>) => {
+      applySelection(event.detail.area);
+    }) as EventListener);
+  }
+</script>

@@ -17,6 +17,16 @@ export type DeliveryZone = {
 /** The contract every DeliveryZoneRepository implementation must satisfy. */
 export interface DeliveryZoneRepositoryContract {
   findByPincode(pincode: string): Promise<DeliveryZone | null>;
+
+  /**
+   * Distinct, sorted area names — nothing else (no pincode, fee or
+   * availability). Storefront-context only: the Simple Area Selection
+   * milestone's homepage selector, which never touches serviceability,
+   * fee or promise. Deliberately not `findAll()` — callers here have no
+   * business reading zones, only display names, so the return shape
+   * doesn't tempt anyone into deriving delivery decisions from it.
+   */
+  listAreas(): Promise<string[]>;
 }
 
 export { SupabaseDeliveryZoneRepository as DeliveryZoneRepository } from "./SupabaseDeliveryZoneRepository";

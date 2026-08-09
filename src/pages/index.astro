@@ -1,6 +1,8 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+import { DeliveryService } from "../server/services/delivery/DeliveryService";
 
+import AreaSelector from "../components/AreaSelector.astro";
 import HomeHeroBanners from "../components/HomeHeroBanners.astro";
 import OccasionSection from "../components/OccasionSection.astro";
 import ProductSection from "../components/ProductSection.astro";
@@ -17,10 +19,13 @@ import SubscriptionProducts from "../components/SubscriptionProducts.astro";
 import UnboxingReels from "../components/UnboxingReels.astro";
 import CustomerReviews from "../components/CustomerReviews.astro";
 import ReferEarnSection from "../components/ReferEarnSection.astro";
+
+const areas = await DeliveryService.listAreas();
 ---
 
 <BaseLayout title="Fresh Petals Hyderabad">
   <main>
+    <AreaSelector areas={areas} />
     <HomeHeroBanners />
     <OccasionSection />
     <ProductSection />

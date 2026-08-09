@@ -77,4 +77,15 @@ export const DeliveryService = {
     if (!zone) return { serviceable: false };
     return { serviceable: true, area: zone.area, city: zone.city, fee: zone.deliveryFee };
   },
+
+  /**
+   * Distinct area names only — storefront browsing context for the
+   * Simple Area Selection milestone's homepage selector. Not a
+   * serviceability or capability answer; see DeliveryZoneRepository's
+   * `listAreas()` for why it deliberately returns nothing more than
+   * names.
+   */
+  async listAreas(): Promise<string[]> {
+    return DeliveryZoneRepository.listAreas();
+  },
 };
