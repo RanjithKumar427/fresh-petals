@@ -240,6 +240,22 @@ const timeSlots = [
     const whatsappNumber = "919652012274";
     const CART_KEY = "fresh_petals_cart";
 
+    /**
+     * Fire-and-forget admin inquiry log — Commerce Foundation Phase 3,
+     * Milestone 5. Deliberately never awaited by its caller and never
+     * throws: the site's one promise is "opens WhatsApp", and a slow or
+     * failed log write must never delay or block that. If this silently
+     * fails, the only cost is a missing row in the admin's inbox — the
+     * WhatsApp message the customer sends is unaffected either way.
+     */
+    function logInquiry({ customerName, phone, products, deliveryDate }) {
+      fetch("/api/inquiries", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ customerName, phone, products, deliveryDate }),
+      }).catch(() => {});
+    }
+
     function getCartItems() {
       const storedCart = window.localStorage.getItem(CART_KEY);
 
@@ -521,7 +537,10 @@ const timeSlots = [
   if (item.subscription.message) {
     lines.push(`- Subscription Message: ${item.subscription.message}`);
   }
-}
+      }
+
+      return lines.join("\n");
+    }
 
     function renderCart() {
       const items = getCartItems();
@@ -919,6 +938,13 @@ ${note || "None"}
 Please confirm availability, final price, delivery fee and payment details.
       `.trim();
 
+      logInquiry({
+        customerName,
+        phone: customerPhone,
+        products: items.map((item) => `${item.name} x${item.quantity}`).join(", "),
+        deliveryDate,
+      });
+
       return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
     }
 
@@ -959,5 +985,5 @@ Please confirm availability, final price, delivery fee and payment details.
     });
 
     renderCart();
- } </script>
+  </script>
 </BaseLayout>

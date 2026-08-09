@@ -301,3 +301,44 @@ export const productCareInstructions = pgTable(
   },
   (table) => [index("idx_product_care_instructions_product_id").on(table.productId)]
 );
+
+// ---------------------------------------------------------------------
+// Inquiries — Commerce Foundation Phase 3, Milestone 5. This is
+// deliberately NOT an Order table: there is no line-item relation to
+// products, no price/payment fields, no customer identity FK. It's a
+// lightweight admin inbox recording that a WhatsApp order request was
+// sent, so the storefront's "send it and let a human take over on
+// WhatsApp" model (see the phase's Architecture Constitution) has a
+// record an admin can triage without reading WhatsApp itself.
+//
+// `products` is a plain text snapshot (e.g. "Red Rose Bouquet x1, ...")
+// taken at submission time, not a relation to the `products` table —
+// the ordered items may include add-ons/config that live only in the
+// cart at that moment, and a later product edit or deletion must never
+// change what an already-sent inquiry says was ordered. `deliveryDate`
+// is likewise plain text, not a `date` column: it's a display-only
+// field here, and the product-page order flow doesn't always collect
+// one, so a loosely-typed nullable string avoids force-fitting a
+// sometimes-absent value into a stricter type for no behavior this
+// milestone needs.
+export const inquiryStatusEnum = pgEnum("inquiry_status", [
+  "new",
+  "contacted",
+  "confirmed",
+  "completed",
+  "cancelled",
+]);
+
+export const inquiries = pgTable(
+  "inquiries",
+  {
+    id: serial("id").primaryKey(),
+    customerName: text("customer_name").notNull(),
+    phone: text("phone").notNull(),
+    products: text("products").notNull(),
+    deliveryDate: text("delivery_date"),
+    status: inquiryStatusEnum("status").notNull().default("new"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("idx_inquiries_status").on(table.status), index("idx_inquiries_created_at").on(table.createdAt)]
+);

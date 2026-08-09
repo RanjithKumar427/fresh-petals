@@ -1,0 +1,135 @@
+---
+// Simple Admin Inquiry Log — Commerce Foundation Phase 3, Milestone 5.
+// Deliberately a plain server-rendered table with one inline script for
+// the status dropdown, not a React island: this is a read-mostly triage
+// list (list + change one enum field), not an editor with the kind of
+// live-preview/autosave complexity that justified a React island for
+// Products. Reusing that pattern here would be complexity this page's
+// actual job doesn't need.
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import AdminShell from "../../../components/admin/AdminShell.astro";
+import { InquiryService } from "../../../server/services/InquiryService";
+
+export const prerender = false;
+
+const admin = Astro.locals.admin!;
+const inquiries = await InquiryService.list();
+
+const STATUS_OPTIONS = ["new", "contacted", "confirmed", "completed", "cancelled"] as const;
+
+const STATUS_STYLES: Record<string, string> = {
+  new: "bg-[#F8DCE5] text-[#7C243E]",
+  contacted: "bg-[#FFF3D6] text-[#8A5A00]",
+  confirmed: "bg-[#DCEAFB] text-[#1D4E89]",
+  completed: "bg-[#DFF3E6] text-[#146C43]",
+  cancelled: "bg-[#F1EFEF] text-[#66565D]",
+};
+
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+---
+
+<AdminLayout title="Inquiries">
+  <AdminShell active="inquiries" adminEmail={admin.email} pageTitle="Inquiries">
+    <div class="fp-card overflow-hidden">
+      {
+        inquiries.length === 0 ? (
+          <div class="p-10 text-center">
+            <p class="fp-serif text-lg text-[#171717]">No inquiries yet</p>
+            <p class="mt-2 text-sm text-[#77706F]">
+              Inquiries appear here automatically when a customer sends a cart order on WhatsApp.
+            </p>
+          </div>
+        ) : (
+          <div class="overflow-x-auto">
+            <table class="w-full min-w-[860px] text-left text-sm">
+              <thead>
+                <tr class="border-b border-[#EEE5E8] text-[11px] font-bold uppercase tracking-[0.12em] text-[#77706F]">
+                  <th class="px-5 py-3">ID</th>
+                  <th class="px-5 py-3">Created At</th>
+                  <th class="px-5 py-3">Customer</th>
+                  <th class="px-5 py-3">Phone</th>
+                  <th class="px-5 py-3">Products</th>
+                  <th class="px-5 py-3">Delivery Date</th>
+                  <th class="px-5 py-3">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {inquiries.map((inquiry) => (
+                  <tr class="border-b border-[#F3EEEF] align-top last:border-0" data-inquiry-row={inquiry.id}>
+                    <td class="px-5 py-4 font-mono text-[#77706F]">#{inquiry.id}</td>
+                    <td class="px-5 py-4 whitespace-nowrap text-[#171717]">{formatDate(inquiry.createdAt)}</td>
+                    <td class="px-5 py-4 font-semibold text-[#171717]">{inquiry.customerName}</td>
+                    <td class="px-5 py-4 text-[#171717]">
+                      <a href={`https://wa.me/${inquiry.phone.replace(/[^0-9]/g, "")}`} target="_blank" rel="noopener noreferrer" class="text-[#7C243E] underline underline-offset-2">
+                        {inquiry.phone}
+                      </a>
+                    </td>
+                    <td class="px-5 py-4 max-w-[280px] text-[#171717]">{inquiry.products}</td>
+                    <td class="px-5 py-4 whitespace-nowrap text-[#171717]">{inquiry.deliveryDate || "—"}</td>
+                    <td class="px-5 py-4">
+                      <select
+                        data-status-select={inquiry.id}
+                        class:list={[
+                          "rounded-full border-0 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.08em]",
+                          STATUS_STYLES[inquiry.status],
+                        ]}
+                      >
+                        {STATUS_OPTIONS.map((status) => (
+                          <option value={status} selected={status === inquiry.status}>
+                            {status}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )
+      }
+    </div>
+  </AdminShell>
+</AdminLayout>
+
+<script>
+  const STATUS_STYLES: Record<string, string> = {
+    new: "bg-[#F8DCE5] text-[#7C243E]",
+    contacted: "bg-[#FFF3D6] text-[#8A5A00]",
+    confirmed: "bg-[#DCEAFB] text-[#1D4E89]",
+    completed: "bg-[#DFF3E6] text-[#146C43]",
+    cancelled: "bg-[#F1EFEF] text-[#66565D]",
+  };
+
+  document.querySelectorAll("[data-status-select]").forEach((select) => {
+    select.addEventListener("change", async () => {
+      const id = select.getAttribute("data-status-select");
+      const value = (select as HTMLSelectElement).value;
+      const previousClass = select.className;
+
+      const response = await fetch(`/api/admin/inquiries/${id}/status`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ status: value }),
+      }).catch(() => null);
+
+      const result = await response?.json().catch(() => null);
+
+      if (!response?.ok || !result?.ok) {
+        select.className = previousClass;
+        alert(result?.error || "Could not update status. Please try again.");
+        return;
+      }
+
+      select.className = `rounded-full border-0 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.08em] ${STATUS_STYLES[value]}`;
+    });
+  });
+</script>

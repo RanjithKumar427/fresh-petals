@@ -1,0 +1,18 @@
+-- Row Level Security for `inquiries` — Commerce Foundation Phase 3,
+-- Milestone 5.
+--
+-- Same posture as admin_users (0004_admin_users_rls.sql): RLS enabled,
+-- zero policies. This table holds customer PII (name, phone) submitted
+-- from the public storefront with no authentication, so it must never be
+-- readable or writable through PostgREST using the anon key — an absent
+-- policy denies every anon/authenticated command outright, same reasoning
+-- as 0001_enable_rls.sql. All real access to this table goes through this
+-- app's own service layer instead of PostgREST:
+--   - creation: POST /api/inquiries (a public endpoint, but it writes via
+--     Drizzle over the pooled `postgres` role connection, which — like
+--     `service_role` — has BYPASSRLS and is unaffected by this policy
+--     regardless of what it says)
+--   - reading / status updates: GET/PATCH /api/admin/inquiries/*, gated by
+--     this app's own admin session check in src/middleware.ts, not by
+--     Supabase Auth or RLS.
+ALTER TABLE inquiries ENABLE ROW LEVEL SECURITY;

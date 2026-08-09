@@ -4,7 +4,7 @@
 // accent, Jost body, Georgia serif for page titles) instead of inventing a
 // separate admin visual language.
 interface Props {
-  active: "dashboard" | "products" | "categories" | "media";
+  active: "dashboard" | "products" | "categories" | "media" | "inquiries";
   adminEmail: string;
   pageTitle: string;
 }
@@ -16,6 +16,7 @@ const navItems = [
   { key: "products", label: "Products", href: "/admin/products" },
   { key: "categories", label: "Categories", href: "/admin/categories" },
   { key: "media", label: "Media", href: "/admin/media" },
+  { key: "inquiries", label: "Inquiries", href: "/admin/inquiries" },
 ] as const;
 ---
 

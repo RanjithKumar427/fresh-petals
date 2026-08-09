@@ -36,6 +36,20 @@
       "when": 1786209048824,
       "tag": "0004_admin_users_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1786600000000,
+      "tag": "0005_inquiries",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1786600000001,
+      "tag": "0006_inquiries_rls",
+      "breakpoints": true
     }
   ]
 }
