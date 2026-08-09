@@ -185,8 +185,12 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
         summaryBox &&
         whatsappButton
       ) {
-        const today = new Date();
-        const todayIso = today.toISOString().split("T")[0];
+        // Business-timezone "today" (Asia/Kolkata), matching the server's
+        // authoritative businessTime.ts — see cart.astro's identical fix
+        // for why toISOString() (UTC) can disagree with the server for
+        // part of every day. Display-only affordance; the real
+        // availability decision always comes from the server.
+        const todayIso = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(new Date());
         dateInput.min = todayIso;
 
         function escapeHtml(value) {

@@ -432,8 +432,17 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
       occasionOtherWrapper.classList.toggle("hidden", occasionInput.value !== "Other");
     });
 
-    const today = new Date();
-    const todayIso = today.toISOString().split("T")[0];
+    // Business-timezone "today", not the browser's local/UTC date — the
+    // server's authoritative /api/delivery/check (see businessTime.ts)
+    // always evaluates "today" in Asia/Kolkata. Using toISOString() here
+    // instead would disagree with the server for part of every day (IST
+    // is UTC+5:30, so browsing between 00:00-05:29 IST reads one calendar
+    // day earlier in UTC), letting this min-date hint allow a date the
+    // server would then correctly reject. This is a pure display/UX
+    // affordance either way — the actual availability decision is never
+    // made client-side — but it should still agree with the server it's
+    // describing.
+    const todayIso = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(new Date());
 
     if (dateInput) {
       dateInput.min = todayIso;
