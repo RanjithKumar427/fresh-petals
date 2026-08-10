@@ -4,7 +4,23 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@astrojs/react';
 import vercel from '@astrojs/vercel';
 
+// The one place the production URL is configured — canonical tags,
+// sitemap.xml and robots.txt's Sitemap: line all derive from this single
+// value (via Astro.site) rather than each hardcoding their own guess.
+// SITE_URL is NOT set anywhere yet: no custom domain has been configured
+// on the Vercel project as of this milestone (confirmed by inspecting the
+// project's Domains settings directly — only the auto-generated
+// fresh-petals-brown.vercel.app exists). The fallback below is that real,
+// currently-live URL, used only so canonical/sitemap output is valid today
+// — it is explicitly NOT being declared the permanent business domain.
+// The moment a real domain is chosen, set SITE_URL in Vercel's project
+// environment variables; every URL in the site updates with zero code
+// changes.
+const SITE_URL = process.env.SITE_URL || 'https://fresh-petals-brown.vercel.app';
+
 export default defineConfig({
+  site: SITE_URL,
+
   // The storefront stays fully static (output defaults to 'static' and every
   // page keeps prerendering). Only admin/API/media routes opt into on-demand
   // rendering via `export const prerender = false`, which is what actually

@@ -69,7 +69,11 @@ const recentlyViewedProducts = productCatalog
   .slice(0, 10);
 ---
 
-<BaseLayout title={`${product.name} | Fresh Petals Hyderabad`}>
+<BaseLayout
+  title={`${product.name} | Fresh Petals Hyderabad`}
+  description={product.description}
+  image={product.image}
+>
   <!-- Main Product Section -->
   <section class="px-5 py-10 md:px-8 md:py-12">
     <div class="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[1.12fr_0.88fr] lg:items-start">

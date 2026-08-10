@@ -13,8 +13,20 @@ import Footer from "../components/Footer.astro";
 const {
   title = "Fresh Petals Hyderabad",
   description = "Fresh flowers, pooja flowers, jasmine, bouquets, garlands and event flowers delivered in Hyderabad.",
+  // Falls back to a real, existing site image (the homepage's own hero
+  // banner) rather than inventing per-page artwork — every page that
+  // doesn't pass its own image (e.g. a product photo) still gets a
+  // genuine, already-shipped photo for link previews, not a blank one.
+  image = "/images/hero-main-banner.jpg",
   showCategoryCarousel = true,
 } = Astro.props;
+
+// Astro.site comes from astro.config.mjs's `site` value (see that file's
+// header comment on why it's currently the Vercel URL, not a permanent
+// domain). Every canonical/OG/Twitter URL below derives from this one
+// value — change it once there and everything here updates with it.
+const canonicalUrl = new URL(Astro.url.pathname, Astro.site);
+const absoluteImageUrl = new URL(image, Astro.site);
 ---
 
 <!doctype html>
@@ -23,6 +35,8 @@ const {
     <meta charset="UTF-8" />
     <meta name="description" content={description} />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link rel="canonical" href={canonicalUrl} />
 
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" href="/favicon.ico" />
@@ -35,6 +49,25 @@ const {
     />
 
     <title>{title}</title>
+
+    <!-- Open Graph / Twitter Card — every value here is either an
+         existing page prop (title/description/image) or derived from
+         Astro.site; nothing invented (no ratings, no fabricated business
+         info — see docs/architecture/supabase-migration.md's SEO
+         findings for why LocalBusiness/Product structured data was
+         deliberately left out this milestone: the repo has no verified
+         address/hours/SKU/stock data to populate it honestly). -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Fresh Petals Hyderabad" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:image" content={absoluteImageUrl} />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={absoluteImageUrl} />
   </head>
 
   <body class="pb-20 md:pb-0">
