@@ -72,7 +72,13 @@ export const inquiryInputSchema = z.object({
   // Re-validating against the live taxonomy here would couple this
   // lightweight inquiry log to the taxonomy admin feature for no real
   // benefit — see the Milestone 2 report's Architectural Decisions.
-  occasion: z.string().trim().min(1, "Occasion is required.").max(160),
+  //
+  // Optional (Customer UX milestone) — the DB column was always nullable
+  // (see schema.ts); only this schema artificially required it. Occasion
+  // is genuinely optional information, not something the business needs
+  // to place an order — matching Gift/Simple Order's "don't demand fields
+  // the business doesn't require" principle.
+  occasion: z.string().trim().max(160).optional().nullable(),
 
   // Delivery Capability Engine milestone — the authoritative result the
   // server itself computed and revalidated (see DeliveryService) right

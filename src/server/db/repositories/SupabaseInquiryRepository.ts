@@ -55,7 +55,9 @@ export const SupabaseInquiryRepository = {
     recipientName: string;
     recipientPhone: string;
     deliveryLandmark: string;
-    occasion: string;
+    // Optional (Customer UX milestone) — see inquirySchema.ts's matching
+    // change; the column was always nullable.
+    occasion?: string | null;
     deliveryMethod?: InquiryDeliveryMethod | null;
     deliveryPromise?: string | null;
     deliveryFee?: number | null;
@@ -71,7 +73,7 @@ export const SupabaseInquiryRepository = {
           recipientName: input.recipientName,
           recipientPhone: input.recipientPhone,
           deliveryLandmark: input.deliveryLandmark,
-          occasion: input.occasion,
+          occasion: input.occasion ?? null,
           deliveryMethod: input.deliveryMethod ?? null,
           deliveryPromise: input.deliveryPromise ?? null,
           deliveryFee: input.deliveryFee ?? null,

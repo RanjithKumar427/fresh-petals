@@ -515,6 +515,15 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
      * network failure or non-2xx response is treated as "couldn't
      * confirm right now", the same fail-safe shape the engine itself
      * returns for a database failure — see /api/delivery/check.
+     *
+     * Kept as this page's own copy rather than importing
+     * utils/deliveryCheck.ts's shared version (Customer UX milestone):
+     * this script is `is:inline` (not bundled/processed by Astro), so it
+     * can't use ES module imports — converting it to a normal script to
+     * enable that surfaced ~90 pre-existing implicit-`any`/DOM-typing
+     * issues across this whole file, a disproportionate, unrelated
+     * rewrite for one shared function. ProductOptions.astro (already a
+     * normal script) uses the shared version instead.
      */
     async function checkDeliveryMethod(pincode, deliveryDate, method) {
       try {
@@ -1053,11 +1062,9 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
         return "#";
       }
 
-      if (!occasionSelected) {
-        showError("Please select an occasion.");
-        return "#";
-      }
-
+      // Occasion is optional (Customer UX milestone) — the business
+      // doesn't require it to fulfil an order; it's genuinely nice-to-have
+      // context, not a blocking field. See inquirySchema.ts's matching change.
       const method = getSelectedMethod();
 
       const cartLines = items

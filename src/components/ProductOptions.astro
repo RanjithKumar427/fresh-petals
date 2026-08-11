@@ -1,11 +1,26 @@
 ---
+// Customer UX milestone — restructured into two tiers instead of one
+// always-expanded configurator:
+//   1. Always visible: "Order on WhatsApp" (Journey A — Simple Order,
+//      no fields) + "+ Add to cart" (Journey C entry point).
+//   2. Collapsed "Sending as a gift?" panel (Journey B — Gift Order):
+//      progressive date/slot selection, recipient details, add-ons,
+//      greeting card, optional occasion/message — with its own
+//      "Send on WhatsApp" (revalidates via the real Delivery Engine,
+//      no fabricated slots/fees) and "Add to cart with these details"
+//      (preserves the existing per-item cart configuration capability).
+// Nothing about the Delivery Engine itself changed — same
+// /api/delivery/check, same DELIVERY_METHOD_OPTIONS, same fail-closed
+// behavior. See src/utils/deliveryCheck.ts for the shared fetch helper.
+import { DELIVERY_METHOD_OPTIONS } from "../server/services/delivery/DeliveryService";
 import type { Product } from "../data/productCatalog";
 
 type Props = {
   product: Product;
+  occasionOptions?: { name: string }[];
 };
 
-const { product } = Astro.props;
+const { product, occasionOptions = [] } = Astro.props;
 
 const whatsappNumber = "919652012274";
 
@@ -37,14 +52,6 @@ const addOns = [
   },
 ];
 
-const deliverySlots = [
-  "7 AM - 10 AM",
-  "9 AM - 2 PM",
-  "2 PM - 7 PM",
-  "8 PM - 9 PM",
-  "9 AM - 9 PM",
-];
-
 const greetingCards = [
   {
     id: "no-card",
@@ -67,6 +74,15 @@ const greetingCards = [
     image: "/images/cards/iloveu.jpg",
   },
 ];
+
+// The real four delivery methods from the engine itself (MORNING/
+// AFTERNOON/EVENING/EXPRESS with their actual labels) — replacing what
+// used to be a hand-written, hardcoded list of time ranges here
+// ("7 AM - 10 AM", "9 AM - 2 PM", ...) that didn't correspond to any real
+// DeliveryMethod and rendered a fabricated "(+ ₹0)" fee next to each one.
+// Sending now always revalidates through /api/delivery/check for the
+// real fee/promise — see buildDeliveryDetailsMessage() below.
+const timeSlots = DELIVERY_METHOD_OPTIONS;
 ---
 
 <section
@@ -80,31 +96,106 @@ const greetingCards = [
   data-product-category={product.category}
   data-whatsapp-number={whatsappNumber}
 >
-  <!-- Delivery Info -->
-  <div class="rounded-[22px] border border-[#EEE5E8] bg-[#FFF8FA] p-6">
-    <div class="flex items-center gap-3">
-      <svg class="h-5 w-5 shrink-0 text-[#7C243E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M12 21s7-5.4 7-12a7 7 0 1 0-14 0c0 6.6 7 12 7 12z"></path>
-        <circle cx="12" cy="9" r="2.4"></circle>
-      </svg>
-      <h2 class="text-[12px] font-semibold uppercase tracking-[0.28em] text-[#171717]">Delivery Info</h2>
-    </div>
+  <!-- Area context — purely storefront display of what AreaSelector
+       already wrote to localStorage; never the delivery decision. -->
+  <p data-area-context class="mb-3 hidden items-center gap-1.5 text-xs font-medium text-[#66565D]">
+    📍 Delivering to <span data-area-context-name class="font-semibold text-[#171717]"></span>
+  </p>
 
-    <div class="mt-5 grid grid-cols-2 gap-5">
-      <label>
+  <!-- Journey A — Simple Order: no fields, just product + area. -->
+  <button
+    type="button"
+    data-simple-whatsapp
+    class:list={[
+      "fp-btn-whatsapp w-full rounded-full bg-[#075838] px-7 py-4 text-[12px] font-bold uppercase tracking-[0.28em] text-white shadow-[0_14px_30px_rgba(7,88,56,0.28)]",
+      product.isAvailable ? "hover:bg-[#7C243E]" : "pointer-events-none bg-[#D8D1D4] text-[#7A6E73]",
+    ]}
+  >
+    {product.isAvailable ? "Order on WhatsApp" : "Unavailable"}
+  </button>
+
+  <!-- Journey C entry point — adds one unconfigured unit; full
+       configuration (add-ons, card, message) remains available via the
+       panel below and its own "Add to cart with these details". -->
+  <button
+    type="button"
+    data-simple-add-to-cart
+    class:list={[
+      "mt-3 w-full rounded-full border border-[#D8D1D4] bg-transparent px-7 py-3 text-[11px] font-semibold uppercase tracking-[0.24em] text-[#171717] transition duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] active:scale-[0.98] hover:border-[#171717]",
+      !product.isAvailable && "pointer-events-none border-[#EEE5E8] text-[#B8AEB3]",
+    ]}
+  >
+    {product.isAvailable ? "+ Add to cart" : "Unavailable"}
+  </button>
+
+  <div data-simple-feedback class="fp-cart-toast mt-3">
+    <div>
+      <p class="rounded-full bg-[#F3FFF7] px-3 py-2 text-center text-[11px] font-semibold text-[#075838]">
+        Added to cart
+      </p>
+    </div>
+  </div>
+
+  <!-- Journey B — Gift Order: collapsed by default, progressive
+       disclosure inside. Nothing here is shown unless the customer
+       opens it. -->
+  <details class="mt-6 rounded-[22px] border border-[#EEE5E8] bg-[#FFF8FA] p-5" data-delivery-details-panel>
+    <summary class="cursor-pointer list-none">
+      <div class="flex items-center justify-between gap-3">
+        <div>
+          <h2 class="text-[12px] font-semibold uppercase tracking-[0.24em] text-[#171717]">
+            Sending as a gift?
+          </h2>
+          <p class="mt-1 text-xs leading-5 text-[#66565D]">
+            Add a delivery date, recipient details and time slot.
+          </p>
+        </div>
+
+        <span class="shrink-0 rounded-full border border-[#E8D8DE] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[#7C243E]">
+          Add details
+        </span>
+      </div>
+    </summary>
+
+    <div class="mt-5 border-t border-[#EEE5E8] pt-5">
+      <!-- When should we deliver? -->
+      <div>
         <span class="block text-[10px] font-semibold uppercase tracking-[0.28em] text-[#171717]">
-          City
+          When should we deliver?
         </span>
 
-        <div class="mt-3 border-b border-[#E5D6DC] pb-2 text-sm text-[#171717]">
-          Hyderabad
-          <span class="ml-1 underline">Change city</span>
-        </div>
-      </label>
+        <div class="mt-3 flex flex-wrap items-center gap-2" role="group" aria-label="Choose a delivery date">
+          <button
+            type="button"
+            data-quick-date="today"
+            class="rounded-full border border-[#E5D6DC] bg-white px-4 py-2 text-xs font-semibold text-[#171717] transition hover:border-[#7C243E] aria-pressed:border-[#7C243E] aria-pressed:bg-[#171717] aria-pressed:text-white"
+            aria-pressed="false"
+          >
+            Today
+          </button>
 
-      <label>
+          <button
+            type="button"
+            data-quick-date="tomorrow"
+            class="rounded-full border border-[#E5D6DC] bg-white px-4 py-2 text-xs font-semibold text-[#171717] transition hover:border-[#7C243E] aria-pressed:border-[#7C243E] aria-pressed:bg-[#171717] aria-pressed:text-white"
+            aria-pressed="false"
+          >
+            Tomorrow
+          </button>
+
+          <input
+            type="date"
+            data-option-delivery-date
+            aria-label="Choose a delivery date"
+            class="rounded-full border border-[#E5D6DC] bg-white px-4 py-2 text-xs text-[#171717] outline-none transition-colors focus:border-[#7C243E]"
+          />
+        </div>
+      </div>
+
+      <!-- Pincode -->
+      <label class="mt-5 block max-w-[220px]">
         <span class="block text-[10px] font-semibold uppercase tracking-[0.28em] text-[#171717]">
-          Pin Code
+          Delivery Pincode
         </span>
 
         <input
@@ -113,192 +204,259 @@ const greetingCards = [
           maxlength="6"
           placeholder="500072"
           data-option-pincode
-          class="mt-2 w-full border-b border-[#E5D6DC] bg-transparent pb-2 text-sm text-[#171717] outline-none transition-colors focus:border-[#7C243E]"
+          class="mt-2 w-full rounded-full border border-[#E5D6DC] bg-white px-4 py-2.5 text-sm text-[#171717] outline-none transition-colors focus:border-[#7C243E]"
         />
       </label>
-    </div>
 
-    <p
-      data-delivery-status
-      class="mt-4 rounded-2xl border border-[#EEE5E8] bg-white px-4 py-2 text-center text-sm text-[#66565D]"
-    >
-      Enter your pincode to check delivery
-    </p>
-  </div>
+      <p
+        data-delivery-status
+        class="mt-3 rounded-2xl border border-[#EEE5E8] bg-white px-4 py-2 text-center text-sm text-[#66565D]"
+      >
+        Enter your pincode to check delivery
+      </p>
 
-  <!-- Date -->
-  <div class="mt-7">
-    <label class="block">
-      <span class="block text-[10px] font-semibold uppercase tracking-[0.28em] text-[#171717]">
-        Select Date of Delivery
-      </span>
+      <!-- Time slot — revealed once a date is chosen; real methods, real
+           fee/promise (confirmed at send time, never shown as fabricated
+           here). -->
+      <div class="mt-5 hidden" data-delivery-slot-panel>
+        <p class="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#171717]">
+          Select Preferred Delivery Time
+        </p>
 
-      <input
-        type="date"
-        data-option-delivery-date
-        class="mt-3 w-full max-w-[180px] rounded-full border border-[#E5D6DC] bg-white px-4 py-2 text-sm text-[#171717] outline-none transition-colors focus:border-[#7C243E]"
-      />
-    </label>
-  </div>
+        <div class="mt-3 space-y-2">
+          {
+            timeSlots.map((slot) => (
+              <label class="block">
+                <input
+                  type="radio"
+                  name={`delivery-slot-${product.id}`}
+                  value={slot.value}
+                  data-option-delivery-slot
+                  data-method={slot.method}
+                  class="peer sr-only"
+                />
 
-  <!-- Time -->
-  <div class="mt-7 hidden" data-delivery-slot-panel>
-    <p class="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#171717]">
-      Select Preferred Delivery Time
-    </p>
+                <span class="block cursor-pointer rounded-2xl border border-[#E5D6DC] px-4 py-2 text-center text-xs tracking-[0.16em] text-[#171717] transition-colors peer-checked:border-[#7C243E] peer-checked:bg-[#FFF3F6]">
+                  {slot.label}
+                </span>
+              </label>
+            ))
+          }
+        </div>
+      </div>
 
-    <div class="mt-3 space-y-2">
-      {
-        deliverySlots.map((slot) => (
-          <label class="block">
-            <input
-              type="radio"
-              name={`delivery-slot-${product.id}`}
-              value={slot}
-              data-option-delivery-slot
-              class="peer sr-only"
-            />
+      <!-- Recipient — required for "Send on WhatsApp" only. -->
+      <div class="mt-6 grid gap-4 sm:grid-cols-2">
+        <label class="block">
+          <span class="block text-[10px] font-semibold uppercase tracking-[0.28em] text-[#171717]">
+            Recipient Name
+          </span>
 
-            <span class="block cursor-pointer rounded-2xl border border-[#E5D6DC] px-4 py-2 text-center text-xs tracking-[0.16em] text-[#171717] transition-colors peer-checked:border-[#7C243E] peer-checked:bg-[#FFF3F6]">
-              {slot} (+ ₹0)
-            </span>
-          </label>
-        ))
-      }
-    </div>
-  </div>
+          <input
+            type="text"
+            data-option-recipient-name
+            placeholder="Who should receive the flowers?"
+            class="mt-2 w-full rounded-full border border-[#E5D6DC] bg-white px-4 py-2.5 text-sm text-[#171717] outline-none transition-colors focus:border-[#7C243E]"
+          />
+        </label>
 
-  <!-- Add-ons -->
-  <details class="mt-7 border-t border-[#EFEFEF] pt-5">
-    <summary class="cursor-pointer list-none text-[10px] font-semibold uppercase tracking-[0.28em] text-[#171717]">
-      Select Add-ons
-    </summary>
+        <label class="block">
+          <span class="block text-[10px] font-semibold uppercase tracking-[0.28em] text-[#171717]">
+            Recipient Phone
+          </span>
 
-    <div class="mt-4 grid gap-3 sm:grid-cols-2">
-      {
-        addOns.map((addOn) => (
-          <label class="flex cursor-pointer items-start gap-3 rounded-2xl border border-[#EEE5E8] p-3 transition-colors has-[:checked]:border-[#7C243E] has-[:checked]:bg-[#FFF8FA]">
-            <input
-              type="checkbox"
-              class="mt-1 accent-[#7C243E]"
-              data-option-addon
-              data-addon-id={addOn.id}
-              data-addon-name={addOn.name}
-              data-addon-price-label={addOn.priceLabel}
-            />
+          <input
+            type="tel"
+            data-option-recipient-phone
+            placeholder="10-digit mobile number"
+            class="mt-2 w-full rounded-full border border-[#E5D6DC] bg-white px-4 py-2.5 text-sm text-[#171717] outline-none transition-colors focus:border-[#7C243E]"
+          />
+        </label>
+      </div>
 
-            <span>
-              <span class="block text-sm font-semibold text-[#171717]">
-                {addOn.name}
-              </span>
-              <span class="block text-xs text-[#66565D]">
-                {addOn.priceLabel}
-              </span>
-            </span>
-          </label>
-        ))
-      }
+      <label class="mt-4 block">
+        <span class="block text-[10px] font-semibold uppercase tracking-[0.28em] text-[#171717]">
+          Delivery Landmark
+        </span>
+
+        <input
+          type="text"
+          data-option-landmark
+          placeholder="Apartment, office, landmark, etc."
+          class="mt-2 w-full rounded-full border border-[#E5D6DC] bg-white px-4 py-2.5 text-sm text-[#171717] outline-none transition-colors focus:border-[#7C243E]"
+        />
+      </label>
+
+      <!-- Add-ons -->
+      <details class="mt-6 border-t border-[#EFEFEF] pt-5">
+        <summary class="cursor-pointer list-none text-[10px] font-semibold uppercase tracking-[0.28em] text-[#171717]">
+          Select Add-ons
+        </summary>
+
+        <div class="mt-4 grid gap-3 sm:grid-cols-2">
+          {
+            addOns.map((addOn) => (
+              <label class="flex cursor-pointer items-start gap-3 rounded-2xl border border-[#EEE5E8] p-3 transition-colors has-[:checked]:border-[#7C243E] has-[:checked]:bg-[#FFF8FA]">
+                <input
+                  type="checkbox"
+                  class="mt-1 accent-[#7C243E]"
+                  data-option-addon
+                  data-addon-id={addOn.id}
+                  data-addon-name={addOn.name}
+                  data-addon-price-label={addOn.priceLabel}
+                />
+
+                <span>
+                  <span class="block text-sm font-semibold text-[#171717]">
+                    {addOn.name}
+                  </span>
+                  <span class="block text-xs text-[#66565D]">
+                    {addOn.priceLabel}
+                  </span>
+                </span>
+              </label>
+            ))
+          }
+        </div>
+      </details>
+
+      <!-- Greeting Card -->
+      <div class="mt-6">
+        <p class="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#171717]">
+          Select Greeting Card
+        </p>
+
+        <div class="mt-4 grid grid-cols-3 gap-3">
+          {
+            greetingCards
+              .filter((card) => card.id !== "no-card")
+              .map((card) => (
+                <label class="cursor-pointer">
+                  <input
+                    type="radio"
+                    name={`greeting-card-${product.id}`}
+                    value={card.name}
+                    data-option-greeting-card
+                    class="peer sr-only"
+                  />
+
+                  <span class="block rounded-2xl border border-[#EEE5E8] p-2 transition-colors peer-checked:border-[#7C243E]">
+                    <img
+                      src={card.image}
+                      alt={card.name}
+                      class="aspect-[3/4] w-full rounded-xl object-cover"
+                      loading="lazy"
+                      decoding="async"
+                    />
+
+                    <span class="mt-2 block text-center text-[10px] uppercase tracking-[0.28em] text-[#171717]">
+                      {card.name}
+                    </span>
+                  </span>
+                </label>
+              ))
+          }
+        </div>
+
+        <label class="mt-3 flex items-center gap-2 text-sm text-[#66565D]">
+          <input
+            type="radio"
+            name={`greeting-card-${product.id}`}
+            value="No card"
+            data-option-greeting-card
+            class="accent-[#7C243E]"
+            checked
+          />
+          No greeting card
+        </label>
+      </div>
+
+      <!-- Occasion — optional, matching Journey B's "don't demand fields
+           the business doesn't require" principle. Reuses the same
+           admin-managed taxonomy cart.astro already uses. -->
+      <label class="mt-6 block">
+        <span class="block text-[10px] font-semibold uppercase tracking-[0.28em] text-[#171717]">
+          Occasion (optional)
+        </span>
+
+        <select
+          data-option-occasion
+          class="mt-2 w-full rounded-full border border-[#E5D6DC] bg-white px-4 py-2.5 text-sm text-[#171717] outline-none transition-colors focus:border-[#7C243E]"
+        >
+          <option value="">Select occasion</option>
+          {
+            occasionOptions.map((occasion) => (
+              <option value={occasion.name}>{occasion.name}</option>
+            ))
+          }
+        </select>
+      </label>
+
+      <!-- Message -->
+      <label class="mt-6 block">
+        <span class="block text-[10px] font-semibold uppercase tracking-[0.28em] text-[#171717]">
+          Personalised Message (optional)
+        </span>
+
+        <textarea
+          rows="4"
+          placeholder="Send a personalized message 😊"
+          data-option-message
+          class="mt-3 w-full rounded-2xl border border-[#E5D6DC] bg-white px-4 py-3 text-sm leading-6 text-[#171717] outline-none transition-colors focus:border-[#7C243E]"
+        ></textarea>
+      </label>
+
+      <p data-delivery-details-error class="mt-4 hidden rounded-2xl border border-[#E7B7C0] bg-[#FFF3F5] px-4 py-3 text-sm font-semibold text-[#7C243E]"></p>
+
+      <!-- Send on WhatsApp — the real conversion action for this panel:
+           revalidates through the authoritative engine and opens
+           WhatsApp with a request, not a confirmed order. -->
+      <button
+        type="button"
+        data-delivery-details-whatsapp
+        class="fp-btn-whatsapp mt-6 w-full rounded-full bg-[#075838] px-7 py-4 text-[12px] font-bold uppercase tracking-[0.28em] text-white shadow-[0_14px_30px_rgba(7,88,56,0.28)] hover:bg-[#7C243E]"
+      >
+        Send on WhatsApp
+      </button>
+
+      <!-- Preserves the pre-existing ability to add a fully configured
+           item (date/slot/pincode/add-ons/card/message) to the cart for
+           a multi-product order — Complex Order (Journey C) still needs
+           this. Recipient/landmark/occasion above are not attached to
+           the cart item; cart.astro's own Delivery Details section
+           collects those once for the whole order at send time. -->
+      <button
+        type="button"
+        data-configured-add-to-cart
+        class:list={[
+          "mt-3 w-full rounded-full border border-[#D8D1D4] bg-transparent px-7 py-3 text-[11px] font-semibold uppercase tracking-[0.24em] text-[#171717] transition duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] active:scale-[0.98] hover:border-[#171717]",
+          !product.isAvailable && "pointer-events-none border-[#EEE5E8] text-[#B8AEB3]",
+        ]}
+      >
+        {product.isAvailable ? "Add to cart with these details" : "Unavailable"}
+      </button>
+
+      <div data-configured-feedback class="fp-cart-toast mt-4">
+        <div>
+          <p class="bg-[#F3FFF7] px-4 py-3 text-center text-sm font-semibold text-[#075838]">
+            Product added to cart.
+          </p>
+        </div>
+      </div>
+
+      <p class="mt-4 text-center text-xs leading-6 text-[#66565D]">
+        This is an order request, not a confirmed order.
+      </p>
     </div>
   </details>
 
-  <!-- Greeting Cards -->
-  <div class="mt-7">
-    <p class="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#171717]">
-      Select Greeting Card
-    </p>
-
-    <div class="mt-4 grid grid-cols-3 gap-3">
-      {
-        greetingCards
-          .filter((card) => card.id !== "no-card")
-          .map((card) => (
-            <label class="cursor-pointer">
-              <input
-                type="radio"
-                name={`greeting-card-${product.id}`}
-                value={card.name}
-                data-option-greeting-card
-                class="peer sr-only"
-              />
-
-              <span class="block rounded-2xl border border-[#EEE5E8] p-2 transition-colors peer-checked:border-[#7C243E]">
-                <img
-                  src={card.image}
-                  alt={card.name}
-                  class="aspect-[3/4] w-full rounded-xl object-cover"
-                  loading="lazy"
-                  decoding="async"
-                />
-
-                <span class="mt-2 block text-center text-[10px] uppercase tracking-[0.28em] text-[#171717]">
-                  {card.name}
-                </span>
-              </span>
-            </label>
-          ))
-      }
-    </div>
-
-    <label class="mt-3 flex items-center gap-2 text-sm text-[#66565D]">
-      <input
-        type="radio"
-        name={`greeting-card-${product.id}`}
-        value="No card"
-        data-option-greeting-card
-        class="accent-[#7C243E]"
-        checked
-      />
-      No greeting card
-    </label>
-  </div>
-
-  <!-- Message -->
-  <label class="mt-7 block">
-    <span class="block text-[10px] font-semibold uppercase tracking-[0.28em] text-[#171717]">
-      Personalised Message
-    </span>
-
-    <textarea
-      rows="4"
-      placeholder="Send a personalized message 😊"
-      data-option-message
-      class="mt-3 w-full rounded-2xl border border-[#E5D6DC] bg-white px-4 py-3 text-sm leading-6 text-[#171717] outline-none transition-colors focus:border-[#7C243E]"
-    ></textarea>
-  </label>
-
   <input type="hidden" data-option-quantity value="1" />
-  <input type="hidden" data-option-note value="" />
-
-  <!-- Add to Cart -->
-  <button
-    type="button"
-    data-configured-add-to-cart
-    class:list={[
-      "mt-7 w-full bg-[#111111] px-7 py-4 text-[11px] font-bold uppercase tracking-[0.28em] text-white transition duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] active:scale-[0.98] hover:bg-[#7C243E]",
-      !product.isAvailable && "pointer-events-none bg-[#D8D1D4] text-[#7A6E73]",
-    ]}
-  >
-    {product.isAvailable ? "Add to Cart" : "Unavailable"}
-  </button>
-
-  <button
-    type="button"
-    data-configured-whatsapp
-    class="mt-3 w-full bg-[#075838] px-7 py-4 text-[11px] font-bold uppercase tracking-[0.28em] text-white transition duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] active:scale-[0.98] hover:bg-[#7C243E]"
-  >
-    Confirm on WhatsApp
-  </button>
-
-  <p
-    data-configured-feedback
-    class="mt-4 hidden bg-[#F3FFF7] px-4 py-3 text-center text-sm font-semibold text-[#075838]"
-  >
-    Product added to cart.
-  </p>
 </section>
 
 <script>
   import { addToCart } from "../utils/cart";
+  import { getSelectedArea, AREA_UPDATED_EVENT } from "../utils/area";
+  import { checkDeliveryMethod } from "../utils/deliveryCheck";
 
   const optionsSection = document.querySelector("[data-product-options]");
 
@@ -320,6 +478,14 @@ const greetingCards = [
     return input?.value?.trim() || "";
   }
 
+  function getSelectedMethod() {
+    const input = optionsSection?.querySelector(
+      "[data-option-delivery-slot]:checked"
+    ) as HTMLInputElement | null;
+
+    return input?.dataset?.method || "";
+  }
+
   function getSelectedAddOns() {
     const selectedAddOns = Array.from(
       optionsSection?.querySelectorAll("[data-option-addon]:checked") || []
@@ -333,66 +499,111 @@ const greetingCards = [
     }));
   }
 
-  function getConfiguredCartItem() {
+  function getProductMeta() {
     if (!optionsSection) return null;
-
     const section = optionsSection as HTMLElement;
 
     return {
-      quantity: 1,
-      item: {
-        id: section.dataset.productId || "",
-        productId: section.dataset.productId || "",
-        slug: section.dataset.productSlug || "",
-        name: section.dataset.productName || "",
-        image: section.dataset.productImage || "",
-        priceLabel: section.dataset.productPriceLabel || "",
-        category: section.dataset.productCategory || "",
-        deliveryDate: getInputValue("[data-option-delivery-date]"),
-        deliverySlot: getRadioValue("[data-option-delivery-slot]"),
-        pincode: getInputValue("[data-option-pincode]"),
-        addOns: getSelectedAddOns(),
-        greetingCard: getRadioValue("[data-option-greeting-card]") || "No card",
-        message: getInputValue("[data-option-message]"),
-        note: "",
-      },
+      id: section.dataset.productId || "",
+      productId: section.dataset.productId || "",
+      slug: section.dataset.productSlug || "",
+      name: section.dataset.productName || "",
+      image: section.dataset.productImage || "",
+      priceLabel: section.dataset.productPriceLabel || "",
+      category: section.dataset.productCategory || "",
+      whatsappNumber: section.dataset.whatsappNumber || "",
     };
   }
 
-  function buildWhatsAppMessage() {
-    const configured = getConfiguredCartItem();
+  // ---------------------------------------------------------------------
+  // Area context (display only — never the delivery decision)
+  // ---------------------------------------------------------------------
+  function renderAreaContext(area: string | null) {
+    const context = document.querySelector<HTMLElement>("[data-area-context]");
+    const nameEl = document.querySelector<HTMLElement>("[data-area-context-name]");
+    if (!context || !nameEl) return;
 
-    if (!configured || !optionsSection) return "";
-
-    const item = configured.item;
-
-    const addOnsText =
-      item.addOns && item.addOns.length > 0
-        ? item.addOns
-            .map((addOn) => `- ${addOn.name} (${addOn.priceLabel})`)
-            .join("\n")
-        : "No add-ons selected";
-
-    return [
-      "Hi Fresh Petals, I want to confirm this flower order:",
-      "",
-      `Product: ${item.name}`,
-      `Price: ${item.priceLabel}`,
-      `Category: ${item.category}`,
-      `Pincode: ${item.pincode || "Not added"}`,
-      `Delivery Date: ${item.deliveryDate || "Not selected"}`,
-      `Delivery Slot: ${item.deliverySlot || "Not selected"}`,
-      `Greeting Card: ${item.greetingCard || "No card"}`,
-      "",
-      "Add-ons:",
-      addOnsText,
-      "",
-      `Message: ${item.message || "No message added"}`,
-      "",
-      "Please confirm availability, final price and delivery possibility.",
-    ].join("\n");
+    if (area) {
+      nameEl.textContent = area;
+      context.classList.remove("hidden");
+      context.classList.add("flex");
+    } else {
+      context.classList.add("hidden");
+      context.classList.remove("flex");
+    }
   }
 
+  renderAreaContext(getSelectedArea());
+  window.addEventListener(AREA_UPDATED_EVENT, ((event: CustomEvent<{ area: string }>) => {
+    renderAreaContext(event.detail.area);
+  }) as EventListener);
+
+  // ---------------------------------------------------------------------
+  // Journey A — Simple Order: "Order on WhatsApp", no fields.
+  // ---------------------------------------------------------------------
+  const simpleWhatsappButton = document.querySelector("[data-simple-whatsapp]");
+
+  simpleWhatsappButton?.addEventListener("click", () => {
+    const meta = getProductMeta();
+    if (!meta) return;
+
+    const area = getSelectedArea();
+
+    const message = area
+      ? [
+          "FreshPetals Order Request 🌸",
+          "",
+          "Product:",
+          meta.name,
+          "",
+          "Price:",
+          meta.priceLabel,
+          "",
+          "Delivery area:",
+          area,
+          "",
+          "Please confirm availability, final price and delivery details.",
+        ].join("\n")
+      : `Hi Fresh Petals, I want to order ${meta.name}. Please confirm today's availability and price.`;
+
+    window.open(`https://wa.me/${meta.whatsappNumber}?text=${encodeURIComponent(message)}`, "_blank");
+  });
+
+  // ---------------------------------------------------------------------
+  // Journey C entry — unconfigured "+ Add to cart"
+  // ---------------------------------------------------------------------
+  const simpleAddToCartButton = document.querySelector("[data-simple-add-to-cart]");
+  const simpleFeedback = document.querySelector("[data-simple-feedback]");
+
+  function flashFeedback(feedback: Element | null | undefined) {
+    if (!feedback) return;
+    feedback.classList.add("is-visible");
+    setTimeout(() => feedback.classList.remove("is-visible"), 1800);
+  }
+
+  simpleAddToCartButton?.addEventListener("click", () => {
+    const meta = getProductMeta();
+    if (!meta) return;
+
+    addToCart(
+      {
+        id: meta.id,
+        productId: meta.productId,
+        slug: meta.slug,
+        name: meta.name,
+        image: meta.image,
+        priceLabel: meta.priceLabel,
+        category: meta.category,
+      },
+      1
+    );
+
+    flashFeedback(simpleFeedback);
+  });
+
+  // ---------------------------------------------------------------------
+  // Journey B — Gift Order: progressive delivery details panel
+  // ---------------------------------------------------------------------
   const deliveryDateInput = optionsSection?.querySelector(
     "[data-option-delivery-date]"
   ) as HTMLInputElement | null;
@@ -401,61 +612,61 @@ const greetingCards = [
     "[data-delivery-slot-panel]"
   ) as HTMLElement | null;
 
-  deliveryDateInput?.addEventListener("change", () => {
-    if (!deliverySlotPanel) return;
+  // Business-timezone "today" (Asia/Kolkata), matching the server's
+  // authoritative businessTime.ts — the same fix already applied in
+  // cart.astro, for the same reason (UTC would disagree with the server
+  // for part of every day). Display-only; the real decision is always
+  // server-side.
+  const todayIso = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(new Date());
+  const tomorrowIso = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(
+    new Date(Date.now() + 24 * 60 * 60 * 1000)
+  );
 
-    if (deliveryDateInput.value) {
-      deliverySlotPanel.classList.remove("hidden");
-    } else {
-      deliverySlotPanel.classList.add("hidden");
+  if (deliveryDateInput) {
+    deliveryDateInput.min = todayIso;
+  }
+
+  const quickDateButtons = Array.from(
+    optionsSection?.querySelectorAll<HTMLButtonElement>("[data-quick-date]") || []
+  );
+
+  function revealSlotPanelIfDated() {
+    if (!deliverySlotPanel || !deliveryDateInput) return;
+    deliverySlotPanel.classList.toggle("hidden", !deliveryDateInput.value);
+  }
+
+  function applyQuickDateSelection(value: string) {
+    for (const button of quickDateButtons) {
+      button.setAttribute("aria-pressed", String(button.dataset.quickDate === value));
     }
+  }
+
+  quickDateButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      if (!deliveryDateInput) return;
+      const isToday = button.dataset.quickDate === "today";
+      deliveryDateInput.value = isToday ? todayIso : tomorrowIso;
+      applyQuickDateSelection(button.dataset.quickDate || "");
+      revealSlotPanelIfDated();
+    });
   });
 
-  const addConfiguredButton = document.querySelector("[data-configured-add-to-cart]");
-  const whatsappButton = document.querySelector("[data-configured-whatsapp]");
-  const feedback = document.querySelector("[data-configured-feedback]");
-
-  addConfiguredButton?.addEventListener("click", () => {
-    const configured = getConfiguredCartItem();
-
-    if (!configured) return;
-
-    addToCart(configured.item, configured.quantity);
-
-    feedback?.classList.remove("hidden");
-
-    setTimeout(() => {
-      feedback?.classList.add("hidden");
-    }, 1800);
+  deliveryDateInput?.addEventListener("change", () => {
+    // Manual date entry no longer matches either quick button.
+    applyQuickDateSelection("");
+    revealSlotPanelIfDated();
   });
 
-  whatsappButton?.addEventListener("click", () => {
-    if (!optionsSection) return;
+  // Live pincode serviceability status — informational only, exactly the
+  // same authoritative /api/delivery/check the engine exposes everywhere
+  // else; nothing computed locally.
+  const deliveryPincodeInput = optionsSection?.querySelector(
+    "[data-option-pincode]"
+  ) as HTMLInputElement | null;
+  const deliveryStatus = optionsSection?.querySelector("[data-delivery-status]") as HTMLElement | null;
 
-    const section = optionsSection as HTMLElement;
-    const whatsappNumber = section.dataset.whatsappNumber || "";
-    const message = encodeURIComponent(buildWhatsAppMessage());
-
-    window.open(`https://wa.me/${whatsappNumber}?text=${message}`, "_blank");
-  });
-</script>
-
-<script is:inline>
-  const deliveryPincodeInput = document.querySelector("[data-option-pincode]");
-  const deliveryStatus = document.querySelector("[data-delivery-status]");
-
-  const DELIVERY_STATUS_BASE_CLASS =
-    "mt-4 rounded-2xl border px-4 py-2 text-center text-sm";
-
-  // Delivery Capability Engine milestone — this used to look up a
-  // locally-embedded copy of service-area data (its own separate
-  // duplicate of the same logic in cart.astro and DeliveryChecker.astro).
-  // Now it asks the same authoritative DeliveryService every other
-  // delivery-aware surface in the app calls. This is a pure SERVICEABILITY
-  // question (pincode only, no date/method) — see
-  // DeliveryService.checkServiceability's own comment for why that's
-  // deliberately a separate question from "what can be promised".
-  let requestToken = 0;
+  const DELIVERY_STATUS_BASE_CLASS = "mt-3 rounded-2xl border px-4 py-2 text-center text-sm";
+  let serviceabilityRequestToken = 0;
 
   async function updateDeliveryStatus() {
     if (!deliveryStatus) return;
@@ -468,7 +679,7 @@ const greetingCards = [
       return;
     }
 
-    const thisRequest = ++requestToken;
+    const thisRequest = ++serviceabilityRequestToken;
 
     try {
       const response = await fetch("/api/delivery/check", {
@@ -478,10 +689,7 @@ const greetingCards = [
       });
       const result = await response.json();
 
-      // The customer may have kept typing (or cleared the field) while
-      // this request was in flight — only the most recent request should
-      // ever get to update the status line.
-      if (thisRequest !== requestToken) return;
+      if (thisRequest !== serviceabilityRequestToken) return;
 
       if (response.ok && result?.ok && result.data?.serviceable) {
         deliveryStatus.textContent = `Delivery available in ${result.data.area} • ₹${result.data.fee} delivery fee`;
@@ -491,11 +699,174 @@ const greetingCards = [
         deliveryStatus.className = `${DELIVERY_STATUS_BASE_CLASS} border-[#E7B7C0] bg-[#FFF3F5] text-[#7C243E]`;
       }
     } catch {
-      if (thisRequest !== requestToken) return;
+      if (thisRequest !== serviceabilityRequestToken) return;
       deliveryStatus.textContent = "We'll confirm delivery for this pincode on WhatsApp";
       deliveryStatus.className = `${DELIVERY_STATUS_BASE_CLASS} border-[#E7B7C0] bg-[#FFF3F5] text-[#7C243E]`;
     }
   }
 
   deliveryPincodeInput?.addEventListener("input", updateDeliveryStatus);
+
+  // "Add to cart with these details" — preserves the exact pre-existing
+  // per-item configuration capability (date/slot/pincode/add-ons/card/
+  // message), recipient/landmark/occasion excluded (cart.astro's own
+  // Delivery Details section collects those once for the whole order).
+  const configuredAddToCartButton = optionsSection?.querySelector("[data-configured-add-to-cart]");
+  const configuredFeedback = optionsSection?.querySelector("[data-configured-feedback]");
+
+  configuredAddToCartButton?.addEventListener("click", () => {
+    const meta = getProductMeta();
+    if (!meta) return;
+
+    addToCart(
+      {
+        id: meta.id,
+        productId: meta.productId,
+        slug: meta.slug,
+        name: meta.name,
+        image: meta.image,
+        priceLabel: meta.priceLabel,
+        category: meta.category,
+        deliveryDate: getInputValue("[data-option-delivery-date]"),
+        deliverySlot: getRadioValue("[data-option-delivery-slot]"),
+        pincode: getInputValue("[data-option-pincode]"),
+        addOns: getSelectedAddOns(),
+        greetingCard: getRadioValue("[data-option-greeting-card]") || "No card",
+        message: getInputValue("[data-option-message]"),
+        note: "",
+      },
+      1
+    );
+
+    flashFeedback(configuredFeedback);
+  });
+
+  // "Send on WhatsApp" — Journey B's real conversion action. Revalidates
+  // through the authoritative engine (never trusts what the customer
+  // last saw), builds a Gift-style message, opens WhatsApp. Does not log
+  // an inquiry: the schema's customerName/phone are DB NOT NULL and this
+  // panel deliberately doesn't collect them (Journey B stays lighter than
+  // the cart's full Delivery Details) — the WhatsApp message itself is
+  // the complete record for staff, same principle as the Simple Order
+  // button above.
+  const deliveryDetailsWhatsappButton = optionsSection?.querySelector(
+    "[data-delivery-details-whatsapp]"
+  );
+  const deliveryDetailsError = optionsSection?.querySelector(
+    "[data-delivery-details-error]"
+  ) as HTMLElement | null;
+
+  function showDeliveryDetailsError(message: string) {
+    if (!deliveryDetailsError) return;
+    deliveryDetailsError.textContent = message;
+    deliveryDetailsError.classList.remove("hidden");
+  }
+
+  function hideDeliveryDetailsError() {
+    if (!deliveryDetailsError) return;
+    deliveryDetailsError.textContent = "";
+    deliveryDetailsError.classList.add("hidden");
+  }
+
+  deliveryDetailsWhatsappButton?.addEventListener("click", async () => {
+    const meta = getProductMeta();
+    if (!meta) return;
+
+    hideDeliveryDetailsError();
+
+    const pincode = getInputValue("[data-option-pincode]");
+    const deliveryDate = getInputValue("[data-option-delivery-date]");
+    const method = getSelectedMethod();
+    const recipientName = getInputValue("[data-option-recipient-name]");
+    const recipientPhoneRaw = getInputValue("[data-option-recipient-phone]");
+    const landmark = getInputValue("[data-option-landmark]");
+    const occasion = getInputValue("[data-option-occasion]");
+    const message = getInputValue("[data-option-message]");
+    const addOns = getSelectedAddOns();
+    const greetingCard = getRadioValue("[data-option-greeting-card]") || "No card";
+
+    if (!/^[0-9]{6}$/.test(pincode)) {
+      showDeliveryDetailsError("Please enter a valid 6-digit delivery pincode.");
+      return;
+    }
+    if (!deliveryDate) {
+      showDeliveryDetailsError("Please select a delivery date.");
+      return;
+    }
+    if (!method) {
+      showDeliveryDetailsError("Please select a delivery time slot.");
+      return;
+    }
+    if (!recipientName) {
+      showDeliveryDetailsError("Please enter the recipient's name.");
+      return;
+    }
+
+    const recipientPhoneDigits = recipientPhoneRaw.replace(/\D/g, "");
+    const recipientPhoneLocal =
+      recipientPhoneDigits.length === 12 && recipientPhoneDigits.startsWith("91")
+        ? recipientPhoneDigits.slice(2)
+        : recipientPhoneDigits.length === 11 && recipientPhoneDigits.startsWith("0")
+          ? recipientPhoneDigits.slice(1)
+          : recipientPhoneDigits;
+
+    if (!/^[6-9]\d{9}$/.test(recipientPhoneLocal)) {
+      showDeliveryDetailsError("Please enter a valid 10-digit recipient mobile number.");
+      return;
+    }
+    if (!landmark) {
+      showDeliveryDetailsError("Please enter a delivery landmark.");
+      return;
+    }
+
+    // The one authoritative call — same shared helper cart.astro uses.
+    // Genuine revalidation: the pincode/date/slot could have been chosen
+    // seconds or minutes ago, and availability may have changed since.
+    const deliveryResult = await checkDeliveryMethod(pincode, deliveryDate, method);
+
+    const addOnsText =
+      addOns.length > 0
+        ? addOns.map((addOn) => `- ${addOn.name} (${addOn.priceLabel})`).join("\n")
+        : "None";
+
+    const deliveryLines = deliveryResult.available
+      ? [
+          `Area: ${deliveryResult.area}`,
+          `Delivery Option: ${deliveryResult.label}`,
+          `Promise: ${deliveryResult.promise}`,
+          `Delivery Fee: ₹${deliveryResult.fee}`,
+        ]
+      : [`Status: ${deliveryResult.reason}`];
+
+    const whatsappMessage = [
+      "FreshPetals Order Request 🌸",
+      "",
+      "This is a request, not a confirmed order — please confirm availability, final price, delivery fee and payment details.",
+      "",
+      "PRODUCT",
+      meta.name,
+      `Price: ${meta.priceLabel}`,
+      "",
+      "DELIVERY",
+      `Pincode: ${pincode}`,
+      `Date: ${deliveryDate}`,
+      ...deliveryLines,
+      "",
+      "RECIPIENT",
+      `Name: ${recipientName}`,
+      `Phone: ${recipientPhoneLocal}`,
+      `Landmark: ${landmark}`,
+      `Occasion: ${occasion || "Not specified"}`,
+      "",
+      `Greeting Card: ${greetingCard}`,
+      "Add-ons:",
+      addOnsText,
+      "",
+      `Message: ${message || "None"}`,
+      "",
+      "Please confirm availability, final price, delivery fee and payment details.",
+    ].join("\n");
+
+    window.open(`https://wa.me/${meta.whatsappNumber}?text=${encodeURIComponent(whatsappMessage)}`, "_blank");
+  });
 </script>

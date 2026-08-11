@@ -4,6 +4,7 @@ import ProductOptions from "../../components/ProductOptions.astro";
 import ProductCard from "../../components/ProductCard.astro";
 import { productCatalog } from "../../data/productCatalog";
 import type { Product } from "../../data/productCatalog";
+import { TaxonomyService } from "../../server/services/TaxonomyService";
 
 export function getStaticPaths() {
   return productCatalog.map((product) => ({
@@ -21,6 +22,11 @@ type Props = {
 };
 
 const { product } = Astro.props;
+
+// Customer UX milestone — same admin-managed taxonomy cart.astro's
+// Delivery Details section already uses for its Occasion field; reused
+// here rather than duplicated so both stay in sync automatically.
+const occasionOptions = await TaxonomyService.listOccasions();
 
 const flowerTypes = product.flowerTypes?.length
   ? product.flowerTypes.join(", ")
@@ -218,7 +224,7 @@ const recentlyViewedProducts = productCatalog
           Final price and availability will be confirmed on WhatsApp before payment.
         </p>
 
-        <ProductOptions product={product} />
+        <ProductOptions product={product} occasionOptions={occasionOptions} />
 
         <div class="mt-10 grid gap-8 border-t border-[#EEE5E8] pt-8 md:grid-cols-2">
           <div>

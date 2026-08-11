@@ -25,8 +25,12 @@ const areas = await DeliveryService.listAreas();
 
 <BaseLayout title="Fresh Petals Hyderabad">
   <main>
-    <AreaSelector areas={areas} />
+    <!-- Customer UX milestone: hero (real flower imagery) renders before
+         the area selector, not after — a customer should see flowers
+         before being asked anything. Area selection remains the very
+         next thing below it, not buried, just not gating the fold. -->
     <HomeHeroBanners />
+    <AreaSelector areas={areas} />
     <OccasionSection />
     <ProductSection />
     <PoojaProductsSection />
