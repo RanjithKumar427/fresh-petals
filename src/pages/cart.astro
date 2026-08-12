@@ -1176,31 +1176,47 @@ Please confirm availability, final price, delivery fee and payment details.
       return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
     }
 
+    // Customer UX validation milestone — this handler awaits a real
+    // server round-trip (buildCartWhatsappUrl's own delivery revalidation)
+    // before opening WhatsApp. A rapid double/triple-tap during that
+    // window previously re-ran the whole flow per tap: multiple WhatsApp
+    // tabs AND, since this path also logs an inquiry, multiple duplicate
+    // rows in the admin's inquiry list for one order. Guarded the same
+    // way as ProductOptions.astro's two WhatsApp buttons.
+    let sendCartInFlight = false;
+
     sendWhatsappButton?.addEventListener("click", async () => {
-      // buildCartWhatsappUrl() now awaits a server revalidation
-      // (checkDeliveryMethod), which breaks the synchronous call chain
-      // most browsers require for window.open() to count as a direct
-      // user gesture — calling it only after that await would get
-      // silently popup-blocked in several browsers. Opening a blank tab
-      // right here, still inside the synchronous click handler, and
-      // only pointing it at the real URL once validation finishes avoids
-      // that — same window, no extra popup-permission prompt.
-      const whatsappTab = window.open("", "_blank", "noopener,noreferrer");
+      if (sendCartInFlight) return;
+      sendCartInFlight = true;
 
-      const url = await buildCartWhatsappUrl();
+      try {
+        // buildCartWhatsappUrl() now awaits a server revalidation
+        // (checkDeliveryMethod), which breaks the synchronous call chain
+        // most browsers require for window.open() to count as a direct
+        // user gesture — calling it only after that await would get
+        // silently popup-blocked in several browsers. Opening a blank tab
+        // right here, still inside the synchronous click handler, and
+        // only pointing it at the real URL once validation finishes avoids
+        // that — same window, no extra popup-permission prompt.
+        const whatsappTab = window.open("", "_blank", "noopener,noreferrer");
 
-      if (url === "#") {
-        whatsappTab?.close();
-        return;
-      }
+        const url = await buildCartWhatsappUrl();
 
-      if (whatsappTab) {
-        whatsappTab.location.href = url;
-      } else {
-        // The blank-tab open itself was blocked (rare, but possible under
-        // strict popup settings) — fall back to a direct open with the
-        // final URL now that we have one.
-        window.open(url, "_blank", "noopener,noreferrer");
+        if (url === "#") {
+          whatsappTab?.close();
+          return;
+        }
+
+        if (whatsappTab) {
+          whatsappTab.location.href = url;
+        } else {
+          // The blank-tab open itself was blocked (rare, but possible under
+          // strict popup settings) — fall back to a direct open with the
+          // final URL now that we have one.
+          window.open(url, "_blank", "noopener,noreferrer");
+        }
+      } finally {
+        sendCartInFlight = false;
       }
     });
 

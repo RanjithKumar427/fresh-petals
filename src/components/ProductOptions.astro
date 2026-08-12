@@ -541,11 +541,27 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
   // ---------------------------------------------------------------------
   // Journey A — Simple Order: "Order on WhatsApp", no fields.
   // ---------------------------------------------------------------------
-  const simpleWhatsappButton = document.querySelector("[data-simple-whatsapp]");
+  const simpleWhatsappButton = document.querySelector<HTMLButtonElement>("[data-simple-whatsapp]");
+
+  // Customer UX validation milestone — a rapid double-tap (common on
+  // mobile) previously fired this handler once per tap, opening one
+  // WhatsApp window per tap with the same message. This button's own
+  // work is synchronous, but repeated physical taps can still queue
+  // multiple click events before the first one's window.open() call
+  // returns focus — a plain "already handled" guard, reset once the
+  // synchronous work is done, closes that window without changing any
+  // message-building or delivery logic.
+  let simpleWhatsappInFlight = false;
 
   simpleWhatsappButton?.addEventListener("click", () => {
+    if (simpleWhatsappInFlight) return;
+    simpleWhatsappInFlight = true;
+
     const meta = getProductMeta();
-    if (!meta) return;
+    if (!meta) {
+      simpleWhatsappInFlight = false;
+      return;
+    }
 
     const area = getSelectedArea();
 
@@ -567,6 +583,13 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
       : `Hi Fresh Petals, I want to order ${meta.name}. Please confirm today's availability and price.`;
 
     window.open(`https://wa.me/${meta.whatsappNumber}?text=${encodeURIComponent(message)}`, "_blank");
+
+    // Short cooldown, not a permanent lock: absorbs a rapid double/triple
+    // tap on the same gesture, but a customer who comes back moments
+    // later (e.g. to resend after closing the WhatsApp tab) isn't stuck.
+    setTimeout(() => {
+      simpleWhatsappInFlight = false;
+    }, 1000);
   });
 
   // ---------------------------------------------------------------------
@@ -768,7 +791,21 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
     deliveryDetailsError.classList.add("hidden");
   }
 
+  // Customer UX validation milestone — this handler awaits a real
+  // server round-trip (checkDeliveryMethod) before opening WhatsApp, a
+  // window of roughly a second in which a rapid double/triple-tap
+  // previously fired the whole flow again, opening one WhatsApp window
+  // per tap. Guarded the same way as the Simple Order button above; the
+  // try/finally releases the guard on every exit path (validation
+  // failure, success, or an unexpected error) without changing any of
+  // the validation or message-building logic itself.
+  let deliveryDetailsInFlight = false;
+
   deliveryDetailsWhatsappButton?.addEventListener("click", async () => {
+    if (deliveryDetailsInFlight) return;
+    deliveryDetailsInFlight = true;
+
+    try {
     const meta = getProductMeta();
     if (!meta) return;
 
@@ -868,5 +905,8 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
     ].join("\n");
 
     window.open(`https://wa.me/${meta.whatsappNumber}?text=${encodeURIComponent(whatsappMessage)}`, "_blank");
+    } finally {
+      deliveryDetailsInFlight = false;
+    }
   });
 </script>
