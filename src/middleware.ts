@@ -2,9 +2,24 @@ import { defineMiddleware } from "astro:middleware";
 import { AuthService } from "./server/services/AuthService";
 
 // Every /admin/* page and /api/admin/* endpoint requires a valid session
-// except the login page/endpoint themselves. Everything else on the site
+// except the login page/endpoint themselves, and the forgot/reset-password
+// flow -- by definition, someone using that flow doesn't have a valid
+// admin session yet. None of these grant admin access on their own:
+// reset-password.astro's own server-side check (AuthService.hasSession /
+// exchangeRecoveryCode) still gates whether the password form renders, and
+// a successful reset signs the recovery session back out immediately
+// (AuthService.updatePassword) -- the admin still has to sign in through
+// /admin/login afterward like anyone else. Everything else on the site
 // (the storefront) skips this entirely and stays untouched.
-const PUBLIC_PATHS = new Set(["/admin/login", "/api/admin/auth/login"]);
+const PUBLIC_PATHS = new Set([
+  "/admin/login",
+  "/api/admin/auth/login",
+  "/admin/forgot-password",
+  "/api/admin/auth/forgot-password",
+  "/admin/reset-password",
+  "/api/admin/auth/reset-password",
+  "/api/admin/auth/recovery-session",
+]);
 
 export const onRequest = defineMiddleware(async (context, next) => {
   const { url, cookies, request, redirect } = context;
