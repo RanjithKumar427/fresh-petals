@@ -128,13 +128,9 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
     {product.isAvailable ? "+ Add to cart" : "Unavailable"}
   </button>
 
-  <div data-simple-feedback class="fp-cart-toast mt-3">
-    <div>
-      <p class="rounded-full bg-[#F3FFF7] px-3 py-2 text-center text-[11px] font-semibold text-[#075838]">
-        Added to cart
-      </p>
-    </div>
-  </div>
+  <p data-simple-feedback class="mt-3 hidden rounded-full bg-[#F3FFF7] px-3 py-2 text-center text-[11px] font-semibold text-[#075838]">
+    Added to cart
+  </p>
 
   <!-- Journey B — Gift Order: collapsed by default, progressive
        disclosure inside. Nothing here is shown unless the customer
@@ -436,13 +432,9 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
         {product.isAvailable ? "Add to cart with these details" : "Unavailable"}
       </button>
 
-      <div data-configured-feedback class="fp-cart-toast mt-4">
-        <div>
-          <p class="bg-[#F3FFF7] px-4 py-3 text-center text-sm font-semibold text-[#075838]">
-            Product added to cart.
-          </p>
-        </div>
-      </div>
+      <p data-configured-feedback class="mt-4 hidden bg-[#F3FFF7] px-4 py-3 text-center text-sm font-semibold text-[#075838]">
+        Product added to cart.
+      </p>
 
       <p class="mt-4 text-center text-xs leading-6 text-[#66565D]">
         This is an order request, not a confirmed order.
@@ -600,8 +592,8 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
 
   function flashFeedback(feedback: Element | null | undefined) {
     if (!feedback) return;
-    feedback.classList.add("is-visible");
-    setTimeout(() => feedback.classList.remove("is-visible"), 1800);
+    feedback.classList.remove("hidden");
+    setTimeout(() => feedback.classList.add("hidden"), 1800);
   }
 
   simpleAddToCartButton?.addEventListener("click", () => {
