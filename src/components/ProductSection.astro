@@ -1,8 +1,33 @@
 ---
 import ProductCard from "./ProductCard.astro";
 import { productCatalog } from "../data/productCatalog";
+import { loadAuthoritativePrices, withAuthoritativePrice } from "../server/services/ProductPricing";
 
-const products = productCatalog.filter((product) => product.category === "Bouquets");
+// Catalog/Database Reconciliation milestone — same adapter every other
+// migrated storefront surface uses (see ProductPricing.ts). Overlays the
+// authoritative Postgres price onto this section's existing curated
+// selection below; does not touch which products are chosen, their order,
+// or any other field.
+const priceMap = await loadAuthoritativePrices();
+
+// Hand-picked spread across colour, mood and price point — the homepage
+// shows a curated edit, not the full catalogue. Full range lives at
+// /categories/bouquets via "View All Bouquets" below.
+const sectionProductSlugs = [
+  "blue-mountain-grace",
+  "red-affair",
+  "midnight-romance",
+  "rose-promise",
+  "sunshine-story",
+  "cotton-candy-poetry",
+  "snow-white-saga",
+  "rainbow-hug",
+];
+
+const products = sectionProductSlugs
+  .map((slug) => productCatalog.find((product) => product.slug === slug))
+  .filter((product): product is NonNullable<typeof product> => Boolean(product))
+  .map((product) => withAuthoritativePrice(product, priceMap));
 ---
 
 <section id="bouquets" class="bg-white px-5 py-14 md:px-8 md:py-16">
