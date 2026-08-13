@@ -2,6 +2,7 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import ProductCard from "../../components/ProductCard.astro";
 import { productCatalog } from "../../data/productCatalog";
+import { loadAuthoritativePrices, withAuthoritativePrice } from "../../server/services/ProductPricing";
 
 type CategoryMeta = {
   name: string;
@@ -9,7 +10,12 @@ type CategoryMeta = {
   description: string;
 };
 
-export function getStaticPaths() {
+export async function getStaticPaths() {
+  // Catalog/Database Reconciliation milestone — see products/[slug].astro's
+  // matching comment. One shared price map for every category page this
+  // build generates, not one query per category.
+  const priceMap = await loadAuthoritativePrices();
+
   const slugify = (value: string) =>
     value
       .toLowerCase()
@@ -297,7 +303,7 @@ export function getStaticPaths() {
         `Explore ${titleFromSlug(slug).toLowerCase()} from Fresh Petals Hyderabad. Final availability, pricing and delivery will be confirmed on WhatsApp.`,
     };
 
-    const products = getProductsForSlug(slug);
+    const products = getProductsForSlug(slug).map((product) => withAuthoritativePrice(product, priceMap));
 
     return {
       params: {

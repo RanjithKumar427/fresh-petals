@@ -2,6 +2,7 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import ProductCard from "../../components/ProductCard.astro";
 import { productCatalog, type Product } from "../../data/productCatalog";
+import { loadAuthoritativePrices, withAuthoritativePrice } from "../../server/services/ProductPricing";
 
 type OccasionMeta = {
   name: string;
@@ -12,7 +13,12 @@ type OccasionMeta = {
   fallbackProductSlugs: string[];
 };
 
-export function getStaticPaths() {
+export async function getStaticPaths() {
+  // Catalog/Database Reconciliation milestone — see products/[slug].astro's
+  // matching comment. One shared price map for every occasion page this
+  // build generates.
+  const priceMap = await loadAuthoritativePrices();
+
   const occasions: OccasionMeta[] = [
     {
       name: "Birthday",
@@ -260,10 +266,12 @@ export function getStaticPaths() {
       .map((slug) => productCatalog.find((product) => product.slug === slug))
       .filter((product): product is Product => Boolean(product));
 
-    const products: Product[] = [...taggedProducts, ...fallbackProducts].filter(
-      (product, index, array) =>
-        array.findIndex((item) => item.slug === product.slug) === index
-    );
+    const products: Product[] = [...taggedProducts, ...fallbackProducts]
+      .filter(
+        (product, index, array) =>
+          array.findIndex((item) => item.slug === product.slug) === index
+      )
+      .map((product) => withAuthoritativePrice(product, priceMap));
 
     return {
       params: {

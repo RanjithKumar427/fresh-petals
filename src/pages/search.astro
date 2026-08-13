@@ -2,10 +2,16 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 import ProductCard from "../components/ProductCard.astro";
 import { productCatalog } from "../data/productCatalog";
+import { loadAuthoritativePrices, withAuthoritativePrice } from "../server/services/ProductPricing";
 
 const categories = Array.from(
   new Set(productCatalog.map((product) => product.category))
 );
+
+// Catalog/Database Reconciliation milestone — see products/[slug].astro's
+// matching comment.
+const priceMap = await loadAuthoritativePrices();
+const searchableProducts = productCatalog.map((product) => withAuthoritativePrice(product, priceMap));
 ---
 
 <BaseLayout
@@ -121,7 +127,7 @@ const categories = Array.from(
           class="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4"
         >
           {
-            productCatalog.map((product) => (
+            searchableProducts.map((product) => (
               <div
                 data-product-result
                 data-product-name={product.name.toLowerCase()}

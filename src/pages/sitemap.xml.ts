@@ -34,8 +34,13 @@ const staticPages = [
   "/refer-a-friend",
 ];
 
-export const GET: APIRoute = ({ site }) => {
-  const categoryPaths = getCategoryStaticPaths().map(
+export const GET: APIRoute = async ({ site }) => {
+  // categories/[slug].astro's getStaticPaths() became async as part of the
+  // Catalog/Database Reconciliation milestone (it now fetches authoritative
+  // pricing before generating each category's product list) -- this call
+  // site needed to start awaiting it for the same reason, not a change to
+  // what URLs are produced.
+  const categoryPaths = (await getCategoryStaticPaths()).map(
     (entry) => `/categories/${entry.params.slug}`
   );
   const productPaths = productCatalog.map((product) => `/products/${product.slug}`);

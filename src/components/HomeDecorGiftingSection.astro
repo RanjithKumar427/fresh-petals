@@ -1,6 +1,9 @@
 ---
 import ProductCard from "./ProductCard.astro";
 import { productCatalog } from "../data/productCatalog";
+import { loadAuthoritativePrices, withAuthoritativePrice } from "../server/services/ProductPricing";
+
+const priceMap = await loadAuthoritativePrices();
 
 const sectionProductSlugs = [
   "dried-flower-bunch",
@@ -11,7 +14,8 @@ const sectionProductSlugs = [
 
 const products = sectionProductSlugs
   .map((slug) => productCatalog.find((product) => product.slug === slug))
-  .filter(Boolean);
+  .filter(Boolean)
+  .map((product) => withAuthoritativePrice(product, priceMap));
 ---
 
 <section class="bg-white px-5 py-14 md:px-8 md:py-16">

@@ -5,14 +5,22 @@ import ProductCard from "../../components/ProductCard.astro";
 import { productCatalog } from "../../data/productCatalog";
 import type { Product } from "../../data/productCatalog";
 import { TaxonomyService } from "../../server/services/TaxonomyService";
+import { loadAuthoritativePrices, withAuthoritativePrice } from "../../server/services/ProductPricing";
 
-export function getStaticPaths() {
+// Catalog/Database Reconciliation milestone — the product's displayed
+// price now comes from PostgreSQL (the admin-editable, authoritative
+// value), not from productCatalog.ts's own priceLabel. Everything else
+// about this product (name, description, images, flowerTypes, badge,
+// etc.) still comes from the catalog — see ProductPricing.ts's header for
+// exactly why that split is deliberate, not an oversight.
+export async function getStaticPaths() {
+  const priceMap = await loadAuthoritativePrices();
   return productCatalog.map((product) => ({
     params: {
       slug: product.slug,
     },
     props: {
-      product,
+      product: withAuthoritativePrice(product, priceMap),
     },
   }));
 }

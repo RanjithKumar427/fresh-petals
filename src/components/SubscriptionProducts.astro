@@ -1,10 +1,13 @@
 ---
 import ProductCard from "./ProductCard.astro";
 import { productCatalog } from "../data/productCatalog";
+import { loadAuthoritativePrices, withAuthoritativePrice } from "../server/services/ProductPricing";
 
-const subscriptions = productCatalog.filter(
-  (product) => product.category === "Subscriptions"
-);
+const priceMap = await loadAuthoritativePrices();
+
+const subscriptions = productCatalog
+  .filter((product) => product.category === "Subscriptions")
+  .map((product) => withAuthoritativePrice(product, priceMap));
 ---
 
 <section id="subscription-products" class="bg-white px-5 py-14 md:px-8 md:py-16">
