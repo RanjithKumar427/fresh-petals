@@ -1,28 +1,47 @@
 ---
-// Visual Discovery Homepage Redesign milestone — the "Pinterest/Xiaohongshu
-// interaction philosophy, not the UI" piece the brief asked for: an
-// image-dominant, varied-aspect-ratio feed built with a pure-CSS multi-column
-// masonry (`columns-*` + `break-inside-avoid`), not a JS masonry library —
-// no dependency, no client-side layout code at all. Every card is a single
-// tap target straight to the real product page; no button stack, no badges,
-// matching "TAP CARD -> product -> WhatsApp", not "View / Add / WhatsApp"
-// competing on every card the way ProductCard.astro's list-page treatment
-// does elsewhere (that component is intentionally left untouched — search,
-// category and occasion pages keep exactly the card they already had).
+// Deep Discovery Redesign milestone — a substantial rework of the prior
+// masonry (Visual Discovery Homepage Redesign / Phase C), after the product
+// owner's explicit review: a masonry grid of "image + product name + bold
+// price" still reads as an ecommerce product-tile grid, not a Xiaohongshu-
+// style discovery feed, no matter how varied the card heights are. Three
+// concrete changes address that, each traceable to a specific principle in
+// the brief rather than a generic "make it prettier" pass:
 //
-// Products and images are 100% real, existing catalog entries — nothing
-// fabricated. The selection deliberately draws from Bouquets and Lilies
-// specifically: auditing the actual image assets found every bouquet/lily
-// product has its own dedicated photograph (/images/bouquets/*, /images/
-// lilies/*), while most other categories currently reuse a small set of
-// generic category thumbnails across many products. A "beautiful visual
-// discovery" feed built from repeated stock-style images would look broken,
-// not premium — so this feed showcases the products whose photography can
-// actually carry it, rather than forcing category variety the asset library
-// doesn't yet support. Deliberately different products from ProductSection's
-// existing curated 8 (blue-mountain-grace, red-affair, midnight-romance,
-// rose-promise, sunshine-story, cotton-candy-poetry, snow-white-saga,
-// rainbow-hug) so the page doesn't repeat itself a few sections later.
+// 1. No section heading. "Discover Beautiful Ideas" (a serif fp-h2 + eyebrow
+//    block) was itself an "interrupting section heading" breaking the feed
+//    into a labeled ecommerce section. The feed now starts immediately
+//    below the topic row with only an aria-label for the accessible name —
+//    no visible heading, so scrolling from topics into imagery is
+//    uninterrupted, matching "one continuous discovery surface".
+// 2. Card captions replaced. The previous card showed the bare product name
+//    (e.g. "Stargazer Affair") in a semibold line above a bold accent-color
+//    price -- that is a catalogue listing. Each card now leads with the
+//    product's own existing `description` field (e.g. "A striking
+//    stargazer lily arrangement made for romantic surprises...") -- real,
+//    already-authored editorial copy already used in quotes on the product
+//    page, not fabricated -- so the caption reads as content/context, not
+//    an item name. Price is still shown (never hidden -- this is still a
+//    real flower business) but small, regular-weight and positioned last,
+//    "visible but quiet" rather than the loudest thing on the card.
+// 3. Higher density. Section padding cut from py-12/16 to a slim top pad
+//    (the topic row above already provides separation) and inter-card
+//    gaps/margins tightened, so more imagery is visible per scroll instead
+//    of a few large-gapped cards -- the brief's "high content density" and
+//    "avoid large section gaps between every item".
+//
+// Still zero JavaScript, zero masonry library (pure CSS `columns-*` +
+// `break-inside-avoid`), zero new dependency, zero backend change. Every
+// card is still a single tap target straight to the real product page --
+// ProductCard.astro (used by search/category/occasion pages) remains
+// untouched.
+//
+// Selection still deliberately scoped to Bouquets + Lilies -- the two
+// categories where every product has its own dedicated photograph, per the
+// image-asset audit from the prior revision (still true, not re-derived).
+// Expanded from 12 to 16 products for the higher density this brief asks
+// for, still deliberately different from ProductSection's existing curated
+// 8 (blue-mountain-grace, red-affair, midnight-romance, rose-promise,
+// sunshine-story, cotton-candy-poetry, snow-white-saga, rainbow-hug).
 //
 // Pricing: same authoritative adapter every other storefront surface uses
 // (see ProductPricing.ts) -- no new query, no second price source.
@@ -42,6 +61,10 @@ const feedSlugs = [
   "white-silence",
   "luxe-lily-bloom",
   "stargazer-affair",
+  "blush-garden-kiss",
+  "sunshine-confession",
+  "violet-picnic",
+  "ivory-lily-grace",
 ];
 
 // A short, fixed rhythm of aspect ratios (not random) so the masonry reads
@@ -61,28 +84,18 @@ const feedProducts = feedSlugs
   }));
 ---
 
-<section class="bg-white px-5 py-12 md:px-8 md:py-16" aria-labelledby="discovery-feed-heading">
+<section class="bg-white px-5 pb-10 pt-3 md:px-8 md:pb-14" aria-label="Discover beautiful flowers">
   <div class="mx-auto max-w-7xl">
-    <div class="mb-7 text-center">
-      <p class="fp-eyebrow">
-        Fresh Petals Hyderabad
-      </p>
-
-      <h2 id="discovery-feed-heading" class="fp-h2 mt-2">
-        Discover Beautiful Ideas
-      </h2>
-    </div>
-
-    <div class="columns-2 gap-3 md:columns-3 md:gap-4 lg:columns-4">
+    <div class="columns-2 gap-2.5 md:columns-3 md:gap-3 lg:columns-4">
       {
         feedProducts.map((product) => (
           <a
             href={`/products/${product.slug}`}
-            class="group mb-3 block break-inside-avoid md:mb-4"
-            aria-label={`${product.name}, ${product.priceLabel}`}
+            class="group mb-2.5 block break-inside-avoid md:mb-3"
+            aria-label={`${product.name} — ${product.description}, ${product.priceLabel}`}
           >
             <div
-              class="overflow-hidden rounded-[18px] bg-[#F8F1F3]"
+              class="overflow-hidden rounded-xl bg-[#F5EFF1]"
               style={`aspect-ratio: ${product.ratio};`}
             >
               <img
@@ -90,15 +103,15 @@ const feedProducts = feedSlugs
                 alt=""
                 loading="lazy"
                 decoding="async"
-                class="h-full w-full object-cover transition duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-105"
+                class="h-full w-full object-cover transition duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.03]"
               />
             </div>
 
-            <p class="mt-2 line-clamp-1 text-[13px] font-medium text-[#2A2025] transition group-hover:text-[#7C243E]">
-              {product.name}
+            <p class="mt-1.5 line-clamp-2 text-[12.5px] leading-snug text-[#3A3033]">
+              {product.description}
             </p>
 
-            <p class="text-[12px] font-semibold text-[#7C243E]">
+            <p class="mt-1 text-[11px] text-[#8A7D82]">
               {product.priceLabel}
             </p>
           </a>

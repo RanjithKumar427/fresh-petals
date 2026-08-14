@@ -18,20 +18,23 @@ const { areas } = Astro.props;
 
 {
   areas.length > 0 && (
-    <section class="border-b border-[#EEE5E8] bg-[#FBF4F6] px-5 py-6 md:px-8 md:py-8" data-area-selector>
+    <section class="border-b border-[#F3EEEF] bg-white px-5 py-3 md:px-8" data-area-selector>
       <div class="mx-auto max-w-7xl">
-        <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#D98B9A]">
-          Fresh flowers, delivered to your area
-        </p>
-        <h2 class="mt-1 text-lg font-semibold text-[#171717] md:text-xl">Where are you ordering from?</h2>
+        <div
+          class="fp-scrollbar-hide flex items-center gap-2 overflow-x-auto"
+          role="group"
+          aria-label="Select your delivery area"
+        >
+          <span class="shrink-0 text-[12px] text-[#9B8A90]">
+            📍 Delivering to
+          </span>
 
-        <div class="mt-4 flex flex-wrap gap-2.5" role="group" aria-label="Select your delivery area">
           {
             areas.map((area) => (
               <button
                 type="button"
                 data-area-option={area}
-                class="rounded-full border border-[#E5D3D8] bg-white px-4 py-2.5 text-[13px] font-medium text-[#171717] transition hover:border-[#D98B9A] hover:bg-[#FDF0F3] aria-pressed:border-[#D98B9A] aria-pressed:bg-[#171717] aria-pressed:text-white"
+                class="shrink-0 rounded-full border border-[#EEE5E8] px-3.5 py-1.5 text-[12px] text-[#44383D] transition hover:border-[#D98B9A] aria-pressed:border-[#7C243E] aria-pressed:bg-[#FDF3F5] aria-pressed:text-[#7C243E] aria-pressed:font-semibold"
                 aria-pressed="false"
               >
                 {area}

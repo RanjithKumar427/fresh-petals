@@ -25,12 +25,18 @@ import ReferEarnSection from "../components/ReferEarnSection.astro";
 const areas = await DeliveryService.listAreas();
 ---
 
-<BaseLayout title="Fresh Petals Hyderabad">
+<BaseLayout title="Fresh Petals Hyderabad" showCategoryCarousel={false}>
   <main>
-    <!-- Customer UX milestone: hero (real flower imagery) renders before
-         the area selector, not after — a customer should see flowers
-         before being asked anything. Area selection remains the very
-         next thing below it, not buried, just not gating the fold. -->
+    <!-- Deep Discovery Redesign milestone — RoundCategoryCarousel (a
+         second, denser icon-nav strip) is deliberately turned off only on
+         the homepage: stacked on top of CityBar + EcommerceHeader + MegaNav
+         + the hero, it was exactly the "too much navigation chrome before
+         any content" the brief's own audit called out. It still renders
+         everywhere else (category/product/search pages keep it — those are
+         wayfinding contexts, not discovery). Hero (real flower imagery)
+         still renders before the area strip — a customer should see
+         flowers before being asked anything — but is deliberately smaller
+         now; see HomeHeroBanners.astro. -->
     <HomeHeroBanners />
     <AreaSelector areas={areas} />
     <FindYourFlowersSection />
