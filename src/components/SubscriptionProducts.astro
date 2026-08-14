@@ -1,5 +1,11 @@
 ---
-import ProductCard from "./ProductCard.astro";
+// Complete Homepage Visual Consistency milestone — not in the brief's
+// explicit list of seven, but found during Step 1's mandated audit
+// ("search the homepage for every use of ProductCard") — also used the
+// shared ecommerce card, which would have left one more visual break in
+// an otherwise fully-converted homepage. Same conversion pattern applied
+// for the same "the entire homepage must feel like one product" reason.
+import DiscoveryPostCard from "./DiscoveryPostCard.astro";
 import { productCatalog } from "../data/productCatalog";
 import { loadAuthoritativePrices, withAuthoritativePrice } from "../server/services/ProductPricing";
 
@@ -10,46 +16,35 @@ const subscriptions = productCatalog
   .map((product) => withAuthoritativePrice(product, priceMap));
 ---
 
-<section id="subscription-products" class="bg-white px-5 py-14 md:px-8 md:py-16">
+<section id="subscription-products" class="bg-[#F5F5F5] px-3 pb-8 pt-5 md:px-6 md:pb-12">
   <div class="mx-auto max-w-7xl">
-    <div class="mb-9 text-center">
-      <p class="fp-eyebrow">
-        Fresh Petals Hyderabad
-      </p>
-
-      <h2 class="fp-h2 mt-3">
+    <div class="mb-3 flex items-baseline justify-between px-0.5">
+      <h2 class="text-[15px] font-medium text-black/80">
         Flower Subscriptions
       </h2>
 
-      <p class="mx-auto mt-4 max-w-2xl text-sm leading-7 text-[#66565D]">
-        Recurring flower plans for pooja, jasmine, home styling and custom flower needs.
-      </p>
+      <a
+        href="/categories/subscriptions"
+        class="group inline-flex items-center gap-1 text-[12px] text-black/45 transition hover:text-[#FF2442]"
+      >
+        View all
+        <span aria-hidden="true" class="transition group-hover:translate-x-0.5">→</span>
+      </a>
     </div>
 
-    <div class="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+    <div class="columns-2 gap-2 md:columns-3 md:gap-2.5 lg:columns-4 xl:columns-5">
       {
         subscriptions.map((product) => (
-          <ProductCard
+          <DiscoveryPostCard
+            slug={product.slug}
             name={product.name}
             image={product.image}
-            priceLabel={product.priceLabel}
-            priceType={product.priceType}
-            category={product.category}
             description={product.description}
-            slug={product.slug}
-            isAvailable={product.isAvailable}
+            category={product.category}
+            priceLabel={product.priceLabel}
           />
         ))
       }
-    </div>
-
-    <div class="mt-12 flex justify-center">
-      <a
-        href="/categories/subscriptions"
-        class="fp-btn-block"
-      >
-        View All Subscriptions
-      </a>
     </div>
   </div>
 </section>

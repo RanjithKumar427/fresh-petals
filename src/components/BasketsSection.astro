@@ -1,5 +1,7 @@
 ---
-import ProductCard from "./ProductCard.astro";
+// Complete Homepage Visual Consistency milestone — see PoojaProductsSection
+// for the full reasoning; same conversion pattern applied here.
+import DiscoveryPostCard from "./DiscoveryPostCard.astro";
 import { productCatalog } from "../data/productCatalog";
 import { loadAuthoritativePrices, withAuthoritativePrice } from "../server/services/ProductPricing";
 
@@ -10,46 +12,35 @@ const products = productCatalog
   .map((product) => withAuthoritativePrice(product, priceMap));
 ---
 
-<section id="baskets" class="bg-white px-5 py-14 md:px-8 md:py-16">
+<section id="baskets" class="bg-[#F5F5F5] px-3 pb-8 pt-5 md:px-6 md:pb-12">
   <div class="mx-auto max-w-7xl">
-    <div class="mb-9 text-center">
-      <p class="fp-eyebrow">
-        Fresh Petals Hyderabad
-      </p>
-
-      <h2 class="fp-h2 mt-3">
+    <div class="mb-3 flex items-baseline justify-between px-0.5">
+      <h2 class="text-[15px] font-medium text-black/80">
         Baskets
       </h2>
 
-      <p class="mx-auto mt-4 max-w-2xl text-sm leading-7 text-[#66565D]">
-        Fresh flower baskets for gifting, pooja, celebrations and premium custom arrangements.
-      </p>
+      <a
+        href="/categories/baskets"
+        class="group inline-flex items-center gap-1 text-[12px] text-black/45 transition hover:text-[#FF2442]"
+      >
+        View all
+        <span aria-hidden="true" class="transition group-hover:translate-x-0.5">→</span>
+      </a>
     </div>
 
-    <div class="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+    <div class="columns-2 gap-2 md:columns-3 md:gap-2.5 lg:columns-4 xl:columns-5">
       {
         products.map((product) => (
-          <ProductCard
+          <DiscoveryPostCard
+            slug={product.slug}
             name={product.name}
             image={product.image}
-            priceLabel={product.priceLabel}
-            priceType={product.priceType}
-            category={product.category}
             description={product.description}
-            slug={product.slug}
-            isAvailable={product.isAvailable}
+            category={product.category}
+            priceLabel={product.priceLabel}
           />
         ))
       }
-    </div>
-
-    <div class="mt-12 flex justify-center">
-      <a
-        href="/categories/baskets"
-        class="fp-btn-block"
-      >
-        View All Baskets
-      </a>
     </div>
   </div>
 </section>

@@ -1,18 +1,29 @@
 ---
-import ProductCard from "./ProductCard.astro";
+// Xiaohongshu-Inspired Post Card System milestone — converted from the
+// shared ecommerce ProductCard.astro (image/category/name/description/
+// price/View/Add/WhatsApp button stack) to the same discovery post-card
+// language as DiscoveryFeed.astro, flagged explicitly by the product owner
+// as the next thing on the homepage that still read as an ecommerce
+// catalogue. Confirmed safe to change here specifically: this component's
+// only live, routed usage is index.astro (the homepage) -- CategoryGrid.astro
+// also imports it, but CategoryGrid.astro itself is never imported by any
+// page or component in the repository, i.e. dead code, not a real route --
+// so this change cannot affect any other live page. ProductCard.astro
+// itself is untouched; search/category/occasion pages keep it exactly as
+// it was.
+//
+// Curated slug list, order, price source (PostgreSQL via ProductPricing)
+// and destination category link are all unchanged from before -- only the
+// card presentation and section chrome changed.
+import DiscoveryPostCard from "./DiscoveryPostCard.astro";
 import { productCatalog } from "../data/productCatalog";
 import { loadAuthoritativePrices, withAuthoritativePrice } from "../server/services/ProductPricing";
 
-// Catalog/Database Reconciliation milestone — same adapter every other
-// migrated storefront surface uses (see ProductPricing.ts). Overlays the
-// authoritative Postgres price onto this section's existing curated
-// selection below; does not touch which products are chosen, their order,
-// or any other field.
 const priceMap = await loadAuthoritativePrices();
 
 // Hand-picked spread across colour, mood and price point — the homepage
 // shows a curated edit, not the full catalogue. Full range lives at
-// /categories/bouquets via "View All Bouquets" below.
+// /categories/bouquets via the "View all" link below.
 const sectionProductSlugs = [
   "blue-mountain-grace",
   "red-affair",
@@ -30,46 +41,35 @@ const products = sectionProductSlugs
   .map((product) => withAuthoritativePrice(product, priceMap));
 ---
 
-<section id="bouquets" class="bg-white px-5 py-14 md:px-8 md:py-16">
+<section id="bouquets" class="bg-[#F5F5F5] px-3 pb-8 pt-5 md:px-6 md:pb-12">
   <div class="mx-auto max-w-7xl">
-    <div class="mb-9 text-center">
-      <p class="fp-eyebrow">
-        Fresh Petals Hyderabad
-      </p>
-
-      <h2 class="fp-h2 mt-3">
+    <div class="mb-3 flex items-baseline justify-between px-0.5">
+      <h2 class="text-[15px] font-medium text-black/80">
         Bouquets
       </h2>
 
-      <p class="mx-auto mt-4 max-w-2xl text-sm leading-7 text-[#66565D]">
-        Fresh hand-arranged bouquets for gifting, celebrations and custom flower orders.
-      </p>
+      <a
+        href="/categories/bouquets"
+        class="group inline-flex items-center gap-1 text-[12px] text-black/45 transition hover:text-[#FF2442]"
+      >
+        View all
+        <span aria-hidden="true" class="transition group-hover:translate-x-0.5">→</span>
+      </a>
     </div>
 
-    <div class="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+    <div class="columns-2 gap-2 md:columns-3 md:gap-2.5 lg:columns-4 xl:columns-5">
       {
         products.map((product) => (
-          <ProductCard
+          <DiscoveryPostCard
+            slug={product.slug}
             name={product.name}
             image={product.image}
-            priceLabel={product.priceLabel}
-            priceType={product.priceType}
-            category={product.category}
             description={product.description}
-            slug={product.slug}
-            isAvailable={product.isAvailable}
+            category={product.category}
+            priceLabel={product.priceLabel}
           />
         ))
       }
-    </div>
-
-    <div class="mt-12 flex justify-center">
-      <a
-        href="/categories/bouquets"
-        class="fp-btn-block"
-      >
-        View All Bouquets
-      </a>
     </div>
   </div>
 </section>

@@ -1,0 +1,67 @@
+---
+// Xiaohongshu-Inspired Post Card System milestone — the reusable card unit
+// extracted from DiscoveryFeed.astro so any other homepage discovery
+// surface (starting with ProductSection.astro) can adopt the same visual
+// language instead of the shared ecommerce ProductCard.astro. Deliberately
+// its own component, not a variant/prop on ProductCard.astro: ProductCard
+// is still used as-is by search/category/occasion pages (real ecommerce
+// browsing contexts, where View/Add/WhatsApp on every tile is correct),
+// and this milestone's own rule is "do not rewrite ProductCard globally".
+//
+// No button, no price badge, no CTA — the whole card is a single tap
+// target straight to the real product page, where full price, delivery
+// context, cart and "Order on WhatsApp" already live untouched.
+//
+// Image renders at its own natural intrinsic aspect ratio (no forced
+// ratio) so masonry heights come from the real photography, not a
+// synthetic pattern. Caption is the product's own real `description`
+// field, lightly trimmed into caption form (leading article + trailing
+// period dropped) — never invented copy. Metadata is the product's real
+// category — never a fabricated engagement number.
+interface Props {
+  slug: string;
+  name: string;
+  image: string;
+  description: string;
+  category: string;
+  priceLabel: string;
+}
+
+const { slug, name, image, description, category, priceLabel } = Astro.props;
+
+function toCaption(value: string): string {
+  const withoutArticle = value.replace(/^(A|An)\s+/, "");
+  const withoutTrailingPeriod = withoutArticle.replace(/\.\s*$/, "");
+  return withoutTrailingPeriod.charAt(0).toUpperCase() + withoutTrailingPeriod.slice(1);
+}
+
+const caption = toCaption(description);
+---
+
+<a
+  href={`/products/${slug}`}
+  class="group mb-2 block break-inside-avoid overflow-hidden rounded-xl border border-black/[0.08] bg-white md:mb-2.5"
+  aria-label={`${name} — ${caption}, ${priceLabel}`}
+>
+  <img
+    src={image}
+    alt=""
+    loading="lazy"
+    decoding="async"
+    class="block h-auto w-full transition duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.02]"
+  />
+
+  <div class="px-2.5 py-2">
+    <p class="line-clamp-2 text-[12.5px] leading-snug text-black/80 transition-colors group-hover:text-[#FF2442]">
+      {caption}
+    </p>
+
+    <p class="mt-1 text-[11px] text-black/45">
+      {category}
+    </p>
+
+    <p class="mt-1 text-[11px] text-black/45">
+      {priceLabel}
+    </p>
+  </div>
+</a>

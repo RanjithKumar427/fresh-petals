@@ -1,50 +1,21 @@
 ---
-// Deep Discovery Redesign milestone — a substantial rework of the prior
-// masonry (Visual Discovery Homepage Redesign / Phase C), after the product
-// owner's explicit review: a masonry grid of "image + product name + bold
-// price" still reads as an ecommerce product-tile grid, not a Xiaohongshu-
-// style discovery feed, no matter how varied the card heights are. Three
-// concrete changes address that, each traceable to a specific principle in
-// the brief rather than a generic "make it prettier" pass:
+// Xiaohongshu-Inspired Post Card System milestone — the card markup itself
+// was extracted into DiscoveryPostCard.astro (see that file's header for
+// the full reasoning: natural image aspect ratio, real-description-derived
+// caption, no CTA/button/price-badge on the card) so ProductSection.astro
+// could adopt the exact same visual language rather than a second,
+// slightly-different reimplementation. This file is now just the section
+// shell: canvas background, layout grid, and which real products appear.
 //
-// 1. No section heading. "Discover Beautiful Ideas" (a serif fp-h2 + eyebrow
-//    block) was itself an "interrupting section heading" breaking the feed
-//    into a labeled ecommerce section. The feed now starts immediately
-//    below the topic row with only an aria-label for the accessible name —
-//    no visible heading, so scrolling from topics into imagery is
-//    uninterrupted, matching "one continuous discovery surface".
-// 2. Card captions replaced. The previous card showed the bare product name
-//    (e.g. "Stargazer Affair") in a semibold line above a bold accent-color
-//    price -- that is a catalogue listing. Each card now leads with the
-//    product's own existing `description` field (e.g. "A striking
-//    stargazer lily arrangement made for romantic surprises...") -- real,
-//    already-authored editorial copy already used in quotes on the product
-//    page, not fabricated -- so the caption reads as content/context, not
-//    an item name. Price is still shown (never hidden -- this is still a
-//    real flower business) but small, regular-weight and positioned last,
-//    "visible but quiet" rather than the loudest thing on the card.
-// 3. Higher density. Section padding cut from py-12/16 to a slim top pad
-//    (the topic row above already provides separation) and inter-card
-//    gaps/margins tightened, so more imagery is visible per scroll instead
-//    of a few large-gapped cards -- the brief's "high content density" and
-//    "avoid large section gaps between every item".
-//
-// Still zero JavaScript, zero masonry library (pure CSS `columns-*` +
-// `break-inside-avoid`), zero new dependency, zero backend change. Every
-// card is still a single tap target straight to the real product page --
-// ProductCard.astro (used by search/category/occasion pages) remains
-// untouched.
-//
-// Selection still deliberately scoped to Bouquets + Lilies -- the two
-// categories where every product has its own dedicated photograph, per the
-// image-asset audit from the prior revision (still true, not re-derived).
-// Expanded from 12 to 16 products for the higher density this brief asks
-// for, still deliberately different from ProductSection's existing curated
-// 8 (blue-mountain-grace, red-affair, midnight-romance, rose-promise,
-// sunshine-story, cotton-candy-poetry, snow-white-saga, rainbow-hug).
+// Selection still scoped to Bouquets + Lilies -- the two categories where
+// every product has its own dedicated photograph, per the original image-
+// asset audit (Deep Discovery Redesign) -- and still deliberately
+// different from ProductSection's own curated 8 so the page doesn't
+// repeat itself a screen later.
 //
 // Pricing: same authoritative adapter every other storefront surface uses
 // (see ProductPricing.ts) -- no new query, no second price source.
+import DiscoveryPostCard from "./DiscoveryPostCard.astro";
 import { productCatalog } from "../data/productCatalog";
 import { loadAuthoritativePrices, withAuthoritativePrice } from "../server/services/ProductPricing";
 
@@ -67,54 +38,27 @@ const feedSlugs = [
   "ivory-lily-grace",
 ];
 
-// A short, fixed rhythm of aspect ratios (not random) so the masonry reads
-// as an intentional editorial layout rather than noise -- repeats every 4
-// cards: tall, square, short-wide, square.
-const ratioRhythm = ["4 / 5", "1 / 1", "5 / 4", "1 / 1"];
-
 const priceMap = await loadAuthoritativePrices();
 
 const feedProducts = feedSlugs
   .map((slug) => productCatalog.find((product) => product.slug === slug))
   .filter((product): product is NonNullable<typeof product> => Boolean(product))
-  .map((product) => withAuthoritativePrice(product, priceMap))
-  .map((product, index) => ({
-    ...product,
-    ratio: ratioRhythm[index % ratioRhythm.length],
-  }));
+  .map((product) => withAuthoritativePrice(product, priceMap));
 ---
 
-<section class="bg-white px-5 pb-10 pt-3 md:px-8 md:pb-14" aria-label="Discover beautiful flowers">
+<section class="bg-[#F5F5F5] px-3 pb-8 pt-3 md:px-6 md:pb-12" aria-label="Discover beautiful flowers">
   <div class="mx-auto max-w-7xl">
-    <div class="columns-2 gap-2.5 md:columns-3 md:gap-3 lg:columns-4">
+    <div class="columns-2 gap-2 md:columns-3 md:gap-2.5 lg:columns-4 xl:columns-5">
       {
         feedProducts.map((product) => (
-          <a
-            href={`/products/${product.slug}`}
-            class="group mb-2.5 block break-inside-avoid md:mb-3"
-            aria-label={`${product.name} — ${product.description}, ${product.priceLabel}`}
-          >
-            <div
-              class="overflow-hidden rounded-xl bg-[#F5EFF1]"
-              style={`aspect-ratio: ${product.ratio};`}
-            >
-              <img
-                src={product.image}
-                alt=""
-                loading="lazy"
-                decoding="async"
-                class="h-full w-full object-cover transition duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.03]"
-              />
-            </div>
-
-            <p class="mt-1.5 line-clamp-2 text-[12.5px] leading-snug text-[#3A3033]">
-              {product.description}
-            </p>
-
-            <p class="mt-1 text-[11px] text-[#8A7D82]">
-              {product.priceLabel}
-            </p>
-          </a>
+          <DiscoveryPostCard
+            slug={product.slug}
+            name={product.name}
+            image={product.image}
+            description={product.description}
+            category={product.category}
+            priceLabel={product.priceLabel}
+          />
         ))
       }
     </div>
