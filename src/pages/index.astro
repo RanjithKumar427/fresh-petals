@@ -4,6 +4,8 @@ import { DeliveryService } from "../server/services/delivery/DeliveryService";
 
 import AreaSelector from "../components/AreaSelector.astro";
 import HomeHeroBanners from "../components/HomeHeroBanners.astro";
+import FindYourFlowersSection from "../components/FindYourFlowersSection.astro";
+import DiscoveryFeed from "../components/DiscoveryFeed.astro";
 import OccasionSection from "../components/OccasionSection.astro";
 import ProductSection from "../components/ProductSection.astro";
 import PoojaProductsSection from "../components/PoojaProductsSection.astro";
@@ -31,6 +33,8 @@ const areas = await DeliveryService.listAreas();
          next thing below it, not buried, just not gating the fold. -->
     <HomeHeroBanners />
     <AreaSelector areas={areas} />
+    <FindYourFlowersSection />
+    <DiscoveryFeed />
     <OccasionSection />
     <ProductSection />
     <PoojaProductsSection />
