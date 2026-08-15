@@ -11,8 +11,12 @@
   --color-green: #075838;
   --color-black: #111111;
 
-  /* Slower, more deliberate easing for hover/reveal motion —
-     premium brands favor unhurried transitions over snappy defaults. */
+  /* Two-tier motion system.
+     --ease-micro: for reflexive feedback (hover, press, focus) — quick
+     and controlled, so response never reads as lag.
+     --ease-premium: for anything that settles or arrives (cards,
+     dropdowns, reveals) — an unhurried deceleration, no overshoot. */
+  --ease-micro: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-premium: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -166,16 +170,34 @@ body {
 .fp-btn-pink,
 .fp-btn-pill-dark,
 .fp-btn-block {
+  /* Button feedback is Micro-tier: it must feel instantaneous, not graceful. */
   transition:
-    background 0.25s var(--ease-premium),
-    color 0.25s var(--ease-premium),
-    transform 0.15s var(--ease-premium);
+    background 0.15s var(--ease-micro),
+    color 0.15s var(--ease-micro),
+    transform 0.15s var(--ease-micro);
 }
 
 .fp-btn-dark:active,
 .fp-btn-pink:active,
 .fp-btn-pill-dark:active,
 .fp-btn-block:active {
+  transform: scale(0.97);
+}
+
+/* WhatsApp / order-commit CTAs — the site's actual conversion click,
+   appearing on every product card, the PDP, cart and the mobile bar.
+   A slower, deliberate settle on the color change (vs. the 150ms
+   flick every other button uses) plus a press scale makes this one
+   read as "sending," not as an ordinary hover state. Every instance
+   previously had its own ad hoc transition string; this unifies them. */
+.fp-btn-whatsapp {
+  transition:
+    background-color 0.25s var(--ease-premium),
+    color 0.25s var(--ease-premium),
+    transform 0.15s var(--ease-micro);
+}
+
+.fp-btn-whatsapp:active {
   transform: scale(0.97);
 }
 
@@ -209,6 +231,73 @@ textarea:focus-visible,
 .fp-card:hover {
   border-color: #d8b5be;
   box-shadow: 0 18px 45px rgba(40, 24, 32, 0.1);
+}
+
+/* Micro-tier tap feedback for icon-only controls (header, bottom bar).
+   Deliberately no hover scale-up — a growing icon on hover reads as a
+   toy bounce, not attention. Only color shifts on hover; only a
+   press-scale confirms the tap actually landed. */
+.fp-icon-tap {
+  transition:
+    color 0.15s var(--ease-micro),
+    opacity 0.15s var(--ease-micro),
+    transform 0.15s var(--ease-micro);
+}
+
+.fp-icon-tap:active {
+  transform: scale(0.96);
+}
+
+/* Cart badge acknowledgement pulse — plays once when an item lands,
+   via a class the cart scripts toggle. Scale settles back down rather
+   than bouncing past 1, so it reads as "received" not "boing". */
+@keyframes fp-badge-receive {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(1.28);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.fp-badge-pulse {
+  animation: fp-badge-receive 0.4s var(--ease-premium);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fp-badge-pulse {
+    animation: none;
+  }
+}
+
+/* Add-to-cart confirmation — Standard tier. Grows open and cross-fades
+   in rather than snapping into existence, then reverses the same way
+   on exit, so the reward moment reads as arriving and settling. */
+.fp-cart-toast {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows 0.4s var(--ease-premium),
+    opacity 0.3s var(--ease-premium);
+}
+
+.fp-cart-toast > div {
+  overflow: hidden;
+}
+
+.fp-cart-toast.is-visible {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fp-cart-toast {
+    transition: opacity 0.2s linear;
+  }
 }
 
 /* Hide ugly horizontal scrollbar but keep scroll */
