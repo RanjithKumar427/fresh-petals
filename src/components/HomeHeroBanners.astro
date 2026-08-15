@@ -82,7 +82,16 @@ const slides = [
 
           <div class="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent"></div>
 
-          <div class="relative z-10 mx-auto flex h-full max-w-7xl items-end px-5 pb-6 md:items-center md:px-8 md:pb-0">
+          <!-- Stage 3 (Phase 1 discovery hardening) -- md:items-center
+               previously moved the caption to vertical centre on desktop,
+               which is exactly where the gradient above is weakest
+               (via-black/10, 10% opacity): confirmed live, white text on
+               the "Pooja Flowers" slide was barely legible against bright
+               florals. Dropped rather than darkening the gradient itself
+               (which would dim the photography the hero exists to show) --
+               the caption now anchors bottom-left at every breakpoint,
+               inside the strong from-black/50 zone, matching mobile. -->
+          <div class="relative z-10 mx-auto flex h-full max-w-7xl items-end px-5 pb-6 md:px-8">
             <div class="max-w-xl text-white md:max-w-2xl">
               <p class="text-[9px] font-semibold uppercase tracking-[0.24em] text-white/80">
                 {slide.label}
@@ -102,19 +111,56 @@ const slides = [
       ))
     }
 
-    <div class="absolute bottom-5 left-1/2 z-20 flex -translate-x-1/2 items-center gap-3 md:bottom-8">
+    <!-- Stage 3 (Phase 1 discovery hardening) -- the dots were previously
+         both the visual bar AND the tap target at h-[3px] (a 3px-tall hit
+         area). Split: each button below centres a nested span carrying
+         the actual 3px visual bar unchanged -- the design doesn't get
+         bigger, only what you can tap does. The pause control is a
+         fourth, matching-size button so the autoplay (WCAG 2.2.2 --
+         content that moves/auto-updates for >5s needs a way to pause it)
+         has a real stop, not just a slide-jump side-effect from clicking
+         a dot.
+
+         Hit-area size is responsive, not a flat 44px: at a flat 44px,
+         live measurement found this row overlapping the caption's "Shop
+         Now" line by ~20px on mobile, where the hero is only 150px tall.
+         32px clears WCAG 2.5.8's actual Level AA minimum (24x24 CSS px --
+         44px is the AAA/best-practice target, not the requirement) with
+         margin, and only grows to the full 44px from sm: (640px) up,
+         where the hero is already 220px+ tall and there's real room. -->
+    <div class="absolute bottom-2 left-1/2 z-20 flex -translate-x-1/2 items-center sm:bottom-5 md:bottom-8">
       {
         slides.map((_, index) => (
           <button
             type="button"
-            class={`hero-dot h-[3px] rounded-full transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-              index === 0 ? "w-12 bg-white" : "w-6 bg-white/45"
-            }`}
+            class="hero-dot-hit flex h-8 w-8 items-center justify-center sm:h-11 sm:w-11"
             data-dot={index}
             aria-label={`Go to slide ${index + 1}`}
-          />
+          >
+            <span
+              class={`hero-dot h-[3px] rounded-full transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                index === 0 ? "w-12 bg-white" : "w-6 bg-white/45"
+              }`}
+            />
+          </button>
         ))
       }
+
+      <button
+        type="button"
+        data-hero-pause
+        aria-pressed="false"
+        aria-label="Pause automatic slide rotation"
+        class="flex h-8 w-8 items-center justify-center text-white/80 transition hover:text-white sm:h-11 sm:w-11"
+      >
+        <svg data-hero-pause-icon class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <rect x="6" y="5" width="4" height="14" rx="1"></rect>
+          <rect x="14" y="5" width="4" height="14" rx="1"></rect>
+        </svg>
+        <svg data-hero-play-icon class="hidden h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M7 5v14l12-7z"></path>
+        </svg>
+      </button>
     </div>
   </div>
 </section>
@@ -127,9 +173,16 @@ const slides = [
       slider.querySelectorAll(".hero-slide")
     ) as HTMLElement[];
 
-    const dots = Array.from(
-      slider.querySelectorAll(".hero-dot")
+    // Stage 3 -- the visual bar (.hero-dot) now lives inside a 44x44 hit
+    // area (.hero-dot-hit); state classes still toggle on the bar, clicks
+    // are still bound to the button, which is what needs to be 44px.
+    const dotButtons = Array.from(
+      slider.querySelectorAll(".hero-dot-hit")
     ) as HTMLButtonElement[];
+
+    const pauseButton = slider.querySelector<HTMLButtonElement>("[data-hero-pause]");
+    const pauseIcon = slider.querySelector("[data-hero-pause-icon]");
+    const playIcon = slider.querySelector("[data-hero-play-icon]");
 
     let currentSlide = 0;
     const totalSlides = slides.length;
@@ -142,7 +195,10 @@ const slides = [
         slide.classList.toggle("pointer-events-none", !isActive);
       });
 
-      dots.forEach((dot: HTMLButtonElement, dotIndex: number) => {
+      dotButtons.forEach((button: HTMLButtonElement, dotIndex: number) => {
+        const dot = button.querySelector(".hero-dot");
+        if (!dot) return;
+
         dot.classList.toggle("w-12", dotIndex === index);
         dot.classList.toggle("bg-white", dotIndex === index);
 
@@ -158,14 +214,51 @@ const slides = [
       showSlide(next);
     };
 
-    let interval = window.setInterval(nextSlide, 4500);
+    // Stage 3 -- WCAG 2.2.2 (Pause, Stop, Hide): auto-advancing content
+    // running longer than 5s needs a real pause, not just "clicking a dot
+    // happens to reset the timer" (the only control that existed before).
+    // Also: a visitor with prefers-reduced-motion never gets an
+    // auto-starting interval at all -- the slider starts paused, same
+    // mechanism, just not auto-triggered.
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let interval: number | null = null;
+    let isPaused = prefersReducedMotion;
 
-    dots.forEach((dot: HTMLButtonElement, index: number) => {
-      dot.addEventListener("click", () => {
+    const setPausedState = (paused: boolean) => {
+      isPaused = paused;
+
+      if (interval !== null) {
         window.clearInterval(interval);
-        showSlide(index);
+        interval = null;
+      }
+
+      if (!paused) {
         interval = window.setInterval(nextSlide, 4500);
+      }
+
+      pauseButton?.setAttribute("aria-pressed", paused ? "true" : "false");
+      pauseButton?.setAttribute(
+        "aria-label",
+        paused ? "Resume automatic slide rotation" : "Pause automatic slide rotation"
+      );
+      pauseIcon?.classList.toggle("hidden", paused);
+      playIcon?.classList.toggle("hidden", !paused);
+    };
+
+    setPausedState(isPaused);
+
+    dotButtons.forEach((button: HTMLButtonElement, index: number) => {
+      button.addEventListener("click", () => {
+        showSlide(index);
+        // A manual slide choice shouldn't silently resume autoplay for a
+        // visitor who paused it (or who has reduced-motion on) -- only
+        // restart the timer if it was already running.
+        if (!isPaused) setPausedState(false);
       });
+    });
+
+    pauseButton?.addEventListener("click", () => {
+      setPausedState(!isPaused);
     });
   }
 </script>
