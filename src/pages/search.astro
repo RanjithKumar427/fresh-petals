@@ -17,6 +17,7 @@ const searchableProducts = productCatalog.map((product) => withAuthoritativePric
 <BaseLayout
   title="Search Flowers | Fresh Petals Hyderabad"
   description="Search Fresh Petals Hyderabad products including bouquets, pooja flowers, jasmine, flower boxes, baskets, add-ons and subscriptions."
+  showCategoryCarousel={false}
 >
   <main class="bg-white">
     <section class="px-5 py-12 md:px-8 md:py-16">
@@ -134,6 +135,22 @@ const searchableProducts = productCatalog.map((product) => withAuthoritativePric
                 data-product-category={product.category}
                 data-product-description={product.description.toLowerCase()}
                 data-product-long-description={product.longDescription.toLowerCase()}
+                // P1.3a (Phase 1 discovery hardening) -- occasionTags/
+                // collectionTags/flowerTypes exist on every product (the
+                // routes and cards already run on them) but were invisible
+                // to search: measured "romantic" returning 1 result
+                // against 16 products actually tagged romantic. Indexed
+                // as one lowercase space-joined string, same substring
+                // match as every other field below -- no new search
+                // mechanism, no semantic/AI matching, just more of what's
+                // already real data.
+                data-product-tags={[
+                  ...(product.occasionTags ?? []),
+                  ...(product.collectionTags ?? []),
+                  ...(product.flowerTypes ?? []),
+                ]
+                  .join(" ")
+                  .toLowerCase()}
               >
                 <ProductCard
                   id={product.id}
@@ -218,13 +235,15 @@ const searchableProducts = productCatalog.map((product) => withAuthoritativePric
         const category = card.dataset.productCategory || "";
         const description = card.dataset.productDescription || "";
         const longDescription = card.dataset.productLongDescription || "";
+        const tags = card.dataset.productTags || "";
 
         const matchesQuery =
           !query ||
           name.includes(query) ||
           category.toLowerCase().includes(query) ||
           description.includes(query) ||
-          longDescription.includes(query);
+          longDescription.includes(query) ||
+          tags.includes(query);
 
         const matchesCategory =
           selectedCategory === "all" || category === selectedCategory;
