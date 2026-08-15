@@ -118,20 +118,28 @@ const feedGroups: string[][] = [
   ],
   // Formerly PoojaProductsSection.
   ["daily-pooja-flowers", "jasmine-malli", "pooja-flower-box", "temple-bulk-flowers"],
-  // Formerly FlowerboxSection.
-  ["diy-flowerbox", "loose-flower-box", "gift-flower-box", "pooja-flowerbox"],
-  // Formerly BasketsSection.
-  ["flower-basket", "gift-basket", "pooja-basket", "premium-flower-basket"],
+  // Formerly FlowerboxSection. diy-flowerbox dropped (Phase 1 discovery
+  // hardening, P0.2) -- shares addon-table-decor.jpg (mason-jar sunflowers
+  // on a dining table) with 6 other products; verified by opening the
+  // file, not by filename. No correct photograph exists in the repo.
+  // Reachable via MegaNav/categories until real photography exists.
+  ["loose-flower-box", "gift-flower-box", "pooja-flowerbox"],
+  // Formerly BasketsSection. premium-flower-basket dropped (P0.2) -- same
+  // addon-table-decor.jpg mismatch as above.
+  ["flower-basket", "gift-basket", "pooja-basket"],
   // Formerly OffersSection.
   ["flowers-under-499", "bouquets-under-999", "flower-gifts-under-1499", "todays-flower-offers"],
   // Formerly HomeDecorGiftingSection. dried-flower-bunch and
   // room-mist-flower-gift-addon were dropped here (Phase 6) -- the wrong-
   // object image audit found both display a photo of three pillar candles,
-  // not the product. No correct photograph exists anywhere in the repo for
-  // either, so rather than keep featuring a wrong photo on the homepage,
-  // both are left reachable via MegaNav/categories until real photography
-  // exists. Not a deletion -- productCatalog.ts is unchanged.
-  ["clear-glass-vase", "mini-succulent-gift"],
+  // not the product. clear-glass-vase dropped here (Phase 1 discovery
+  // hardening, P0.2) -- same addon-table-decor.jpg mismatch (mason jars,
+  // not a vase). No correct photograph exists anywhere in the repo for any
+  // of the three, so rather than keep featuring a wrong photo on the
+  // homepage, all three are left reachable via MegaNav/categories until
+  // real photography exists. Not a deletion -- productCatalog.ts is
+  // unchanged.
+  ["mini-succulent-gift"],
   // Formerly WeddingTraditionalSection.
   ["bridal-flower-accessories", "event-garlands", "fresh-flower-toran", "jasmine-gajra"],
   // Formerly SubscriptionProducts.
@@ -144,6 +152,15 @@ const feedGroups: string[][] = [
 ];
 
 const feedSlugs = curateDiscoveryOrder(feedGroups.flat());
+
+// P1.2 (Phase 1 discovery hardening) -- the audit measured the homepage
+// feed at ~14.3 of the page's ~21.7 mobile screens with no cap, batch, or
+// end marker; every one of the feed's cards shipped in the initial
+// response regardless of whether a visitor ever scrolled that far. Every
+// card still renders server-side (see DiscoveryFeed's initialVisibleCount
+// handling) -- this only changes what's visible before a tap, not what's
+// crawlable or what exists. 28 sits in the plan's specified 24-30 range.
+const FEED_INITIAL_VISIBLE_COUNT = 28;
 ---
 
 <BaseLayout title="Fresh Petals Hyderabad" showCategoryCarousel={false}>
@@ -161,7 +178,7 @@ const feedSlugs = curateDiscoveryOrder(feedGroups.flat());
     <HomeHeroBanners />
     <AreaSelector areas={areas} />
     <FindYourFlowersSection />
-    <DiscoveryFeed slugs={feedSlugs} />
+    <DiscoveryFeed slugs={feedSlugs} initialVisibleCount={FEED_INITIAL_VISIBLE_COUNT} />
     <!-- Phase 4 milestone — OccasionSection moved from directly after the
          feed (where it interrupted discovery at screen 3.0, measured) down
          into the commerce zone with WhatsAppOrderSection/TrustSection,
