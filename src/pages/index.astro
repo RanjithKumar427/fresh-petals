@@ -73,6 +73,37 @@ const feedGroups: string[][] = [
     "sunshine-confession",
     "violet-picnic",
     "ivory-lily-grace",
+    // Phase 6 (Discovery Architecture Hardening — content-native pass) —
+    // the 23 Bouquets/Lilies that each own a dedicated photograph but were
+    // never in feedGroups, so they never reached the homepage. The audit
+    // confirmed curateDiscoveryOrder() only ever reorders whatever slugs
+    // it's given -- it can't add or remove products -- so the homepage's
+    // duplicate-image problem (10/52 cards repeating an image another card
+    // already showed) was a selection gap here, not a curation bug. Adding
+    // these is the whole fix; the function itself is untouched.
+    "cloud-white",
+    "colourful-confession",
+    "daisy-morning",
+    "first-love",
+    "lavender-whisper",
+    "lily-calm",
+    "little-lilly-prayer",
+    "love-at-first-sight",
+    "pink-lily-wish",
+    "pink-secret",
+    "pink-tulip-promise",
+    "purple-promise",
+    "purple-whisper",
+    "sweet-petal-hour",
+    "timeless-hug",
+    "winter-whisper",
+    "all-white-fragrance",
+    "blush-lily-letter",
+    "coral-lily-bloom",
+    "fragrance-festive-giftbox",
+    "mandarin-lily-glow",
+    "pink-serenity-flowerbox",
+    "sunrise-asiatic-vase",
   ],
   // Formerly ProductSection — hand-picked spread across colour/mood/price.
   [
@@ -93,8 +124,14 @@ const feedGroups: string[][] = [
   ["flower-basket", "gift-basket", "pooja-basket", "premium-flower-basket"],
   // Formerly OffersSection.
   ["flowers-under-499", "bouquets-under-999", "flower-gifts-under-1499", "todays-flower-offers"],
-  // Formerly HomeDecorGiftingSection.
-  ["dried-flower-bunch", "clear-glass-vase", "mini-succulent-gift", "room-mist-flower-gift-addon"],
+  // Formerly HomeDecorGiftingSection. dried-flower-bunch and
+  // room-mist-flower-gift-addon were dropped here (Phase 6) -- the wrong-
+  // object image audit found both display a photo of three pillar candles,
+  // not the product. No correct photograph exists anywhere in the repo for
+  // either, so rather than keep featuring a wrong photo on the homepage,
+  // both are left reachable via MegaNav/categories until real photography
+  // exists. Not a deletion -- productCatalog.ts is unchanged.
+  ["clear-glass-vase", "mini-succulent-gift"],
   // Formerly WeddingTraditionalSection.
   ["bridal-flower-accessories", "event-garlands", "fresh-flower-toran", "jasmine-gajra"],
   // Formerly SubscriptionProducts.
