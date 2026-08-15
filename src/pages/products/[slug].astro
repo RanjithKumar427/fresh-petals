@@ -145,7 +145,7 @@ const relatedProducts = productCatalog
               </svg>
 
               <svg
-                class="fp-save-icon-filled hidden h-[18px] w-[18px] text-[#FF2442]"
+                class="fp-save-icon-filled hidden h-[18px] w-[18px] text-[#7C243E]"
                 viewBox="0 0 24 24"
                 fill="currentColor"
                 aria-hidden="true"
@@ -175,8 +175,14 @@ const relatedProducts = productCatalog
           {product.name}
         </h1>
 
+        {/* P0.1 (Phase 1 discovery hardening) -- ratingLabel is mood/
+            merchandising copy ("Blush tones", "Elegant gift"), not a
+            rating. It was previously rendered in #075838 -- the same
+            trust-green used sitewide for verified/confirmed badges --
+            directly under the H1, reading as a credential it isn't.
+            Restyled as plain supporting text; content unchanged. */}
         {product.ratingLabel && (
-          <p class="mt-5 text-[13px] font-semibold uppercase tracking-[0.32em] text-[#075838]">
+          <p class="mt-5 text-[13px] font-medium text-[#8A8087]">
             {product.ratingLabel}
           </p>
         )}
@@ -344,16 +350,15 @@ const relatedProducts = productCatalog
         Customer Reviews
       </h2>
 
-      <div class="mt-8 grid gap-6 border-t border-[#EEE5E8] pt-8 md:grid-cols-3 md:items-center">
-        <div>
-          <p class="text-xl tracking-[0.18em] text-[#E6A3B3]">
-            ★★★★★
-          </p>
-          <p class="mt-2 text-sm text-[#66565D]">
-            5.00 out of 5
-          </p>
-        </div>
-
+      <!-- P0.1 (Phase 1 discovery hardening) -- this block previously
+           rendered a hardcoded ★★★★★ / "5.00 out of 5" directly beside
+           "Be the first to write a review" on all 89 product pages: a
+           fabricated 5.00 average over zero real reviews, contradicted by
+           its own neighbouring copy. Removed rather than replaced -- no
+           review count or score exists anywhere in the codebase to
+           honestly show instead. The two remaining columns re-flow to
+           md:grid-cols-2 rather than leaving an empty gap. -->
+      <div class="mt-8 grid gap-6 border-t border-[#EEE5E8] pt-8 md:grid-cols-2 md:items-center">
         <div>
           <p class="text-sm font-medium text-[#171717]">
             Be the first to write a review
@@ -461,11 +466,26 @@ const relatedProducts = productCatalog
 
   syncAllButtons();
 
+  // Stage 2 fix (Phase 1 discovery hardening) -- this page also renders
+  // ProductCard (the "You May Also Like" rail), which now carries its own
+  // identical delegated save listener (P1.5). Both listen on `document`,
+  // so a single click was toggling save twice and cancelling itself out --
+  // caught live, not assumed. Kept this dedicated script (rather than
+  // relying solely on ProductCard's) because relatedProducts can be empty
+  // for some product, in which case ProductCard never renders on the page
+  // at all and its script wouldn't be bundled -- the hero save button
+  // must keep working regardless. The event-level flag below makes
+  // whichever listener runs first "claim" the click so the other
+  // no-ops, without depending on script registration order.
   document.addEventListener("click", (event) => {
     const target = event.target as HTMLElement;
     const button = target.closest<HTMLButtonElement>("[data-save-toggle]");
 
     if (!button) return;
+
+    const marked = event as Event & { __fpSaveHandled?: boolean };
+    if (marked.__fpSaveHandled) return;
+    marked.__fpSaveHandled = true;
 
     event.preventDefault();
 
