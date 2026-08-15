@@ -25,7 +25,35 @@ const discoveryOptions = [
   { label: "Thank You", emoji: "💛", href: "/occasions/thank-you" },
   { label: "Pooja", emoji: "🪷", href: "/occasions/pooja" },
   { label: "Wedding", emoji: "💍", href: "/occasions/wedding" },
-  { label: "Something Beautiful", emoji: "✨", href: "/categories/bestselling-bouquets" },
+  // Phase 6 — was /categories/bestselling-bouquets, the one chip in this
+  // discovery row that led to catalogue mode instead of discovery mode.
+  // /occasions/just-because carries 40 tagged products across 38 distinct
+  // images (the second-most photographically diverse occasion page on the
+  // site) and is a precise semantic fit for "something beautiful, no
+  // reason needed."
+  { label: "Something Beautiful", emoji: "✨", href: "/occasions/just-because" },
+];
+
+// Phase 4 (True Visual Discovery Experience) milestone — this second, quieter
+// row is the compensating control for collapsing the eight homepage rails
+// (ProductSection through SubscriptionProducts) into one continuous feed —
+// see index.astro's own comment. Those rails each carried a "View all →"
+// link into /categories/*; deleting the rails without replacing those links
+// would have deleted every homepage path into the category catalogue, which
+// is a navigation regression, not a discovery gain. Same destinations, same
+// plain-text-row grammar as the occasion chips above (no imagery, no "N
+// options" counts) — visually secondary (smaller, lighter) so it reads as
+// wayfinding, not as nine more department banners.
+const categoryLinks = [
+  { label: "Bouquets", href: "/categories/bouquets" },
+  { label: "Pooja Flowers", href: "/categories/pooja-flowers" },
+  { label: "Flowerbox", href: "/categories/flowerbox" },
+  { label: "Baskets", href: "/categories/baskets" },
+  { label: "Offers", href: "/categories/offers" },
+  { label: "Add-ons", href: "/categories/add-ons" },
+  { label: "Home Decor", href: "/categories/dried-flowers" },
+  { label: "Wedding", href: "/categories/wedding" },
+  { label: "Subscriptions", href: "/categories/subscriptions" },
 ];
 ---
 
@@ -44,5 +72,21 @@ const discoveryOptions = [
         ))
       }
     </div>
+
+    <nav
+      class="fp-scrollbar-hide -mt-0.5 flex items-center gap-4 overflow-x-auto pb-1 pt-0.5"
+      aria-label="Browse flower categories"
+    >
+      {
+        categoryLinks.map((link) => (
+          <a
+            href={link.href}
+            class="shrink-0 whitespace-nowrap py-0.5 text-[11px] text-black/40 transition hover:text-[#FF2442]"
+          >
+            {link.label}
+          </a>
+        ))
+      }
+    </nav>
   </div>
 </section>

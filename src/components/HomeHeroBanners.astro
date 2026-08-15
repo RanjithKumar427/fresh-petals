@@ -1,4 +1,22 @@
  ---
+// Phase 4 (True Visual Discovery Experience) milestone — three changes,
+// all from the Opus audit's live measurement:
+//   - Height reduced (220/280/360 -> 150/220/280). At 390px the hero was
+//     measured consuming 220px of the 458px preceding the first savable
+//     flower — 48% of the first screen. Still real flower photography
+//     (kept, deliberately, per the earlier product decision recorded
+//     below: "a customer should see flowers before being asked
+//     anything") — just no longer the majority of the first screen.
+//   - Each slide is now the tap target (the whole slide is an <a>, not
+//     just the small arrow-link at the bottom) and the separate "Shop
+//     Now" link element was replaced with plain visual label text — one
+//     honest tap target per slide instead of a banner + a button doing
+//     the same job, matching the "whole card is one tap target" pattern
+//     already established on DiscoveryPostCard.
+//   - Per-slide heading demoted from <h1> to <h2> (all three slides exist
+//     in the DOM simultaneously, opacity-toggled, not conditionally
+//     rendered — the audit found 3 <h1> elements on the homepage, none of
+//     which name the page); one real, visually-hidden page <h1> added.
 const slides = [
   {
     image: "/images/hero-main-banner.jpg",
@@ -19,27 +37,38 @@ const slides = [
     href: "/categories/bouquets",
   },
   {
-    image: "/images/hero-pooja.jpg",
+    image: "/images/pooja-flowers.jpg",
     label: "Daily Fresh Flowers For Rituals",
     title: "Pooja Flowers",
     subtitle:
       "Fresh flowers, jasmine, garlands and pooja essentials for daily rituals.",
     button: "Order Now",
-    href: "/categories/pooja-flowers",
+    // Phase 6 — the only hero slide with a genuinely equivalent occasion
+    // page (17 tagged products + 7 fallbacks, already DiscoveryFeed-native)
+    // and strictly better photography than /categories/pooja-flowers,
+    // whose 11 products share only 5 distinct images. The other two
+    // slides keep their /categories/* hrefs -- "offers" and "bouquets"
+    // have no honest occasion equivalent, so forcing one would misrepresent
+    // the destination rather than fix the inconsistency.
+    href: "/occasions/pooja",
   },
 ];
 ---
 
 <section class="bg-white">
+  <h1 class="sr-only">Fresh Petals — Fresh Flowers Delivered in Hyderabad</h1>
+
   <div
     id="fresh-petals-hero-slider"
-    class="relative h-[220px] w-full overflow-hidden sm:h-[280px] md:h-[360px]"
+    class="relative h-[150px] w-full overflow-hidden sm:h-[220px] md:h-[280px]"
   >
     {
       slides.map((slide, index) => (
-        <div
-          class={`hero-slide absolute inset-0 transition-opacity duration-[900ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${
-            index === 0 ? "opacity-100" : "opacity-0"
+        <a
+          href={slide.href}
+          aria-label={`${slide.title} — ${slide.button}`}
+          class={`hero-slide absolute inset-0 block transition-opacity duration-[900ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${
+            index === 0 ? "opacity-100" : "pointer-events-none opacity-0"
           }`}
           data-slide={index}
         >
@@ -59,23 +88,17 @@ const slides = [
                 {slide.label}
               </p>
 
-              <h1 class="fp-serif mt-1.5 text-xl uppercase leading-[1.05] text-white sm:text-2xl md:mt-2 md:text-3xl">
+              <h2 class="fp-serif mt-1.5 text-xl uppercase leading-[1.05] text-white sm:text-2xl md:mt-2 md:text-3xl">
                 {slide.title}
-              </h1>
+              </h2>
 
-              <div class="mt-2.5 md:mt-3">
-                <a
-                  href={slide.href}
-                  class="group inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-white transition hover:text-white/75"
-                  aria-label={`${slide.button} - ${slide.title}`}
-                >
-                  {slide.button}
-                  <span aria-hidden="true" class="transition group-hover:translate-x-0.5">→</span>
-                </a>
-              </div>
+              <p class="mt-2.5 inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/90 md:mt-3">
+                {slide.button}
+                <span aria-hidden="true">→</span>
+              </p>
             </div>
           </div>
-        </div>
+        </a>
       ))
     }
 
@@ -113,8 +136,10 @@ const slides = [
 
     const showSlide = (index: number) => {
       slides.forEach((slide: HTMLElement, slideIndex: number) => {
-        slide.classList.toggle("opacity-100", slideIndex === index);
-        slide.classList.toggle("opacity-0", slideIndex !== index);
+        const isActive = slideIndex === index;
+        slide.classList.toggle("opacity-100", isActive);
+        slide.classList.toggle("opacity-0", !isActive);
+        slide.classList.toggle("pointer-events-none", !isActive);
       });
 
       dots.forEach((dot: HTMLButtonElement, dotIndex: number) => {
