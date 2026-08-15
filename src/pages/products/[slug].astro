@@ -54,46 +54,66 @@ const trustIndicators = [
   "Hand-Arranged",
 ];
 
+// Content / Integrity milestone (Phase 0) — the old fallback silently
+// swapped in `productCatalog.slice(0, 6)` (the first six catalogue
+// entries, unrelated to this product) whenever the real category/
+// occasion/collection filter came up short, and displayed the result
+// under the heading "You May Also Like". Removed: this list is now only
+// ever genuinely related products, even when that's fewer than six or
+// zero — see the section below, which hides itself entirely rather than
+// pad with arbitrary items.
+//
+// Phase 6 — the OR-filter above looked fixed but wasn't: occasionTags are
+// near-universal (birthday alone is on 61 of 89 products), so the filter
+// matched almost the whole catalogue for almost every product, and
+// `.slice(0, 6)` fell back to raw catalogue order. Simulated across all 89
+// product pages: 75 of them rendered the identical six bouquets, including
+// on a florist's cutting tool and a chocolate add-on -- the exact
+// "unrelated items under a related-items heading" defect the Phase 0
+// removal above was meant to end, reproduced through a different
+// mechanism. Fixed by scoring real overlap depth instead of a boolean
+// match, using the same three fields -- no new data, no component change.
 const relatedProducts = productCatalog
   .filter((item) => item.slug !== product.slug)
-  .filter((item) => {
-    const sameCategory = item.category === product.category;
+  .map((item) => {
+    const sameCategory = item.category === product.category ? 5 : 0;
 
-    const matchingOccasion = item.occasionTags?.some((tag) =>
-      product.occasionTags?.includes(tag)
-    );
-
-    const matchingCollection = item.collectionTags?.some((tag) =>
+    const collectionOverlap = (item.collectionTags ?? []).filter((tag) =>
       product.collectionTags?.includes(tag)
-    );
+    ).length * 2;
 
-    return sameCategory || matchingOccasion || matchingCollection;
+    const occasionOverlap = (item.occasionTags ?? []).filter((tag) =>
+      product.occasionTags?.includes(tag)
+    ).length;
+
+    return { item, score: sameCategory + collectionOverlap + occasionOverlap };
   })
-  .slice(0, 6);
-
-const fallbackRelatedProducts = productCatalog
-  .filter((item) => item.slug !== product.slug)
-  .slice(0, 6);
-
-const finalRelatedProducts =
-  relatedProducts.length >= 6 ? relatedProducts : fallbackRelatedProducts;
-
-const recentlyViewedProducts = productCatalog
-  .filter((item) => item.slug !== product.slug)
-  .slice(0, 10);
+  .filter((entry) => entry.score > 0)
+  .sort((a, b) => b.score - a.score)
+  .slice(0, 6)
+  .map((entry) => entry.item);
 ---
 
 <BaseLayout
   title={`${product.name} | Fresh Petals Hyderabad`}
   description={product.description}
   image={product.image}
+  showCategoryCarousel={false}
 >
   <!-- Main Product Section -->
   <section class="px-5 py-10 md:px-8 md:py-12">
     <div class="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[1.12fr_0.88fr] lg:items-start">
       <!-- Left sticky image -->
       <aside class="lg:sticky lg:top-28 lg:self-start">
-        <div class="overflow-hidden rounded-[22px] bg-[#F8F1F3] shadow-[0_20px_50px_rgba(40,24,32,0.10)]">
+        <!-- Phase 6 — Save is taught as the core discovery primitive on
+             every DiscoveryPostCard, then vanished the moment a customer
+             actually reached a product; the destination was the one place
+             it was missing. Placed on the image, not the CTA column below
+             (which already stacks Order-on-WhatsApp + Add-to-cart + two
+             more buttons inside Delivery Details) so it doesn't compete
+             with those, and so it's the exact gesture already learned from
+             every feed card. Reuses src/utils/saved.ts unchanged. -->
+        <div class="relative overflow-hidden rounded-[22px] bg-[#F8F1F3] shadow-[0_20px_50px_rgba(40,24,32,0.10)]">
           <img
             src={product.image}
             alt={product.name}
@@ -101,6 +121,39 @@ const recentlyViewedProducts = productCatalog
             loading="eager"
             decoding="async"
           />
+
+          <button
+            type="button"
+            data-save-toggle
+            data-save-id={product.slug}
+            aria-label={`Save ${product.name}`}
+            aria-pressed="false"
+            class="fp-save-btn absolute right-3 top-3 z-20 flex h-11 w-11 items-center justify-center"
+          >
+            <span class="fp-save-visual flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-black/55 shadow-sm backdrop-blur transition active:scale-90">
+              <svg
+                class="fp-save-icon-outline h-[18px] w-[18px]"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M12 21s-7.5-4.6-9.8-9.1C.6 8 2 4.5 5.6 4.5c2.1 0 3.7 1.2 4.4 2.7.7-1.5 2.3-2.7 4.4-2.7 3.6 0 5 3.5 3.4 6.9C19.5 16.4 12 21 12 21Z"></path>
+              </svg>
+
+              <svg
+                class="fp-save-icon-filled hidden h-[18px] w-[18px] text-[#FF2442]"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path d="M12 21s-7.5-4.6-9.8-9.1C.6 8 2 4.5 5.6 4.5c2.1 0 3.7 1.2 4.4 2.7.7-1.5 2.3-2.7 4.4-2.7 3.6 0 5 3.5 3.4 6.9C19.5 16.4 12 21 12 21Z"></path>
+              </svg>
+            </span>
+          </button>
         </div>
       </aside>
 
@@ -136,19 +189,19 @@ const recentlyViewedProducts = productCatalog
           “{product.longDescription}”
         </p>
 
-        <div class="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2.5">
-          {trustIndicators.map((label) => (
-            <div class="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#66565D]">
-              <svg class="h-3.5 w-3.5 shrink-0 text-[#075838]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <circle cx="12" cy="12" r="9"></circle>
-                <path d="M8.5 12.5l2.5 2.5 5-5"></path>
-              </svg>
-              {label}
-            </div>
-          ))}
-        </div>
+        <!-- Trust indicators: supporting tier — true of the whole
+             catalogue, so it recedes to one quiet caption line instead
+             of four repeated icon badges. -->
+        <p class="mt-6 flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.1em] text-[#8A8087]">
+          <svg class="h-3 w-3 shrink-0 text-[#075838]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="9"></circle>
+            <path d="M8.5 12.5l2.5 2.5 5-5"></path>
+          </svg>
+          {trustIndicators.join("  ·  ")}
+        </p>
 
-        <!-- Product info cards -->
+        <!-- Product info — primary tier: what actually shapes the
+             buying decision gets the boxed, icon-led treatment. -->
         <div class="mt-8 grid gap-3 sm:grid-cols-2">
           <div class="rounded-[22px] border border-[#EEE5E8] bg-[#FFF8FA] p-5">
             <div class="flex gap-4">
@@ -188,44 +241,18 @@ const recentlyViewedProducts = productCatalog
               </div>
             </div>
           </div>
+        </div>
 
-          <div class="rounded-[22px] border border-[#EEE5E8] bg-[#FFF8FA] p-5">
-            <div class="flex gap-4">
-              <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#EEE5E8] bg-white text-[#7C243E]">
-                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M7 21V9"></path>
-                  <path d="M12 21V5"></path>
-                  <path d="M17 21v-9"></path>
-                </svg>
-              </span>
-              <div>
-                <h3 class="text-sm font-bold text-[#111111]">
-                  No of stems
-                </h3>
-                <p class="mt-3 text-sm leading-7 text-[#66565D]">
-                  {stemCount}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div class="rounded-[22px] border border-[#EEE5E8] bg-[#FFF8FA] p-5">
-            <div class="flex gap-4">
-              <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#EEE5E8] bg-white text-[#7C243E]">
-                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11Z"></path>
-                </svg>
-              </span>
-              <div>
-                <h3 class="text-sm font-bold text-[#111111]">
-                  Care
-                </h3>
-                <p class="mt-3 text-sm leading-7 text-[#66565D]">
-                  {careLevel}
-                </p>
-              </div>
-            </div>
-          </div>
+        <!-- Product info — secondary tier: still useful, but plain
+             label/value pairs rather than boxed cards so they read as
+             detail, not as decisions of equal weight to the above. -->
+        <div class="mt-4 flex flex-wrap gap-x-8 gap-y-2 border-t border-[#F3ECEF] pt-4">
+          <p class="text-xs text-[#66565D]">
+            <span class="font-semibold text-[#171717]">Stems</span> — {stemCount}
+          </p>
+          <p class="text-xs text-[#66565D]">
+            <span class="font-semibold text-[#171717]">Care</span> — {careLevel}
+          </p>
         </div>
 
         <p class="mt-7 rounded-2xl border border-[#F1D4DC] bg-[#FFF8FA] px-5 py-4 text-sm font-semibold text-[#7C243E]">
@@ -269,38 +296,46 @@ const recentlyViewedProducts = productCatalog
     </div>
   </section>
 
-  <!-- You May Also Like -->
-  <section class="border-t border-[#F3ECEF] bg-white px-5 py-14 md:px-8 md:py-16">
-    <div class="mx-auto max-w-7xl">
-      <div class="text-center">
-        <p class="fp-eyebrow">
-          Fresh Petals Picks
-        </p>
+  <!-- You May Also Like — Content / Integrity milestone (Phase 0): only
+       renders when relatedProducts has genuine matches. No arbitrary-
+       products fallback anymore, so an empty result now means the
+       section doesn't render, not that it pads itself with unrelated
+       items labelled as picks. -->
+  {
+    relatedProducts.length > 0 && (
+      <section class="border-t border-[#F3ECEF] bg-white px-5 py-14 md:px-8 md:py-16">
+        <div class="mx-auto max-w-7xl">
+          <div class="text-center">
+            <p class="fp-eyebrow">
+              Fresh Petals Picks
+            </p>
 
-        <h2 class="fp-h2 mt-3">
-          You May Also Like
-        </h2>
-      </div>
+            <h2 class="fp-h2 mt-3">
+              You May Also Like
+            </h2>
+          </div>
 
-      <div class="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-        {
-          finalRelatedProducts.map((item) => (
-            <ProductCard
-              id={item.id}
-              name={item.name}
-              image={item.image}
-              priceLabel={item.priceLabel}
-              category={item.category}
-              description={item.description}
-              slug={item.slug}
-              priceType={item.priceType}
-              isAvailable={item.isAvailable}
-            />
-          ))
-        }
-      </div>
-    </div>
-  </section>
+          <div class="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+            {
+              relatedProducts.map((item) => (
+                <ProductCard
+                  id={item.id}
+                  name={item.name}
+                  image={item.image}
+                  priceLabel={item.priceLabel}
+                  category={item.category}
+                  description={item.description}
+                  slug={item.slug}
+                  priceType={item.priceType}
+                  isAvailable={item.isAvailable}
+                />
+              ))
+            }
+          </div>
+        </div>
+      </section>
+    )
+  }
 
   <!-- Customer Reviews -->
   <section class="border-t border-[#F3ECEF] bg-white px-5 py-14 md:px-8 md:py-16">
@@ -340,38 +375,17 @@ const recentlyViewedProducts = productCatalog
     </div>
   </section>
 
-  <!-- Recently Viewed -->
-  <section class="border-t border-[#F3ECEF] bg-white px-5 py-14 md:px-8 md:py-16">
-    <div class="mx-auto max-w-7xl">
-      <div class="text-center">
-        <p class="fp-eyebrow">
-          Popular with customers
-        </p>
-
-        <h2 class="fp-h2 mt-3">
-          Recently Viewed
-        </h2>
-      </div>
-
-      <div class="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-5">
-        {
-          recentlyViewedProducts.map((item) => (
-            <ProductCard
-              id={item.id}
-              name={item.name}
-              image={item.image}
-              priceLabel={item.priceLabel}
-              category={item.category}
-              description={item.description}
-              slug={item.slug}
-              priceType={item.priceType}
-              isAvailable={item.isAvailable}
-            />
-          ))
-        }
-      </div>
-    </div>
-  </section>
+  <!-- Content / Integrity milestone (Phase 0) — "Recently Viewed" removed.
+       It rendered `productCatalog.slice(0, 10)` — the first ten catalogue
+       entries, labelled "Popular with customers" — with no actual view
+       tracking anywhere in the codebase. Same fabricated-signal problem
+       the discovery cards already deliberately avoid (no fake likes/
+       saves/view counts); this one had just shipped anyway. A truthful
+       version (a real, client-only "products you've actually looked at"
+       list, the same localStorage pattern as Save) is a natural follow-up
+       but is intentionally not bundled into this pass — removing the
+       fake version now, rather than replacing it, keeps this change
+       isolated per this milestone's own instructions. -->
 
   <!-- Refer & Earn -->
   <section class="border-t border-[#F3ECEF] bg-[#FFFDFD] px-5 py-16 text-center md:px-8">
@@ -393,3 +407,74 @@ const recentlyViewedProducts = productCatalog
     </div>
   </section>
 </BaseLayout>
+
+<style>
+  /* Save button visuals — the Tailwind utility classes above cover
+     everything except the fill-pop animation, which DiscoveryPostCard.astro
+     defines in its own scoped <style> (Astro scopes styles per-component,
+     so it doesn't reach this page). Copied rather than shared to avoid
+     introducing a new shared-style module for four lines. */
+  @media (prefers-reduced-motion: no-preference) {
+    .fp-save-btn.is-saved .fp-save-icon-filled {
+      animation: fp-save-pop 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+  }
+
+  @keyframes fp-save-pop {
+    0% {
+      transform: scale(0.6);
+    }
+    60% {
+      transform: scale(1.18);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+</style>
+
+<script>
+  // Same pattern as DiscoveryPostCard.astro's script block: a delegated
+  // listener plus a SAVED_UPDATED_EVENT-driven repaint, so this stays in
+  // sync automatically if a customer saves/unsaves this same product from
+  // a card elsewhere (another tab, or the "You May Also Like" rail once it
+  // carries a save button too). saved.ts itself is untouched.
+  import { isSaved, toggleSaved, SAVED_UPDATED_EVENT } from "../../utils/saved";
+
+  function applyState(button: HTMLElement, saved: boolean) {
+    button.setAttribute("aria-pressed", saved ? "true" : "false");
+    button.classList.toggle("is-saved", saved);
+
+    const outline = button.querySelector(".fp-save-icon-outline");
+    const filled = button.querySelector(".fp-save-icon-filled");
+
+    outline?.classList.toggle("hidden", saved);
+    filled?.classList.toggle("hidden", !saved);
+  }
+
+  function syncAllButtons() {
+    document.querySelectorAll<HTMLButtonElement>("[data-save-toggle]").forEach((button) => {
+      const id = button.dataset.saveId || "";
+      applyState(button, isSaved(id));
+    });
+  }
+
+  syncAllButtons();
+
+  document.addEventListener("click", (event) => {
+    const target = event.target as HTMLElement;
+    const button = target.closest<HTMLButtonElement>("[data-save-toggle]");
+
+    if (!button) return;
+
+    event.preventDefault();
+
+    const id = button.dataset.saveId || "";
+
+    if (!id) return;
+
+    toggleSaved(id);
+  });
+
+  window.addEventListener(SAVED_UPDATED_EVENT, syncAllButtons);
+</script>
