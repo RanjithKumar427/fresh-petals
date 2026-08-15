@@ -1628,7 +1628,16 @@ export const productCatalog: Product[] = [
     slug: "chocolates-addon",
     name: "Chocolates",
     category: "Add-ons",
-    image: "/images/addon-chocolates.jpg",
+    // P0.1 content containment: addon-chocolates.jpg was a bouquet built out
+    // of ~13 Cadbury Dairy Milk bars with the trademark fully legible, and
+    // has been removed. The only other chocolate photograph in the repo
+    // (addon-chocolate.jpg) carried six more third-party trademarks plus a
+    // creator watermark and was removed too. No unbranded chocolate
+    // photograph exists here, and substituting a different branded product
+    // would simply move the problem, so the visual surface is suppressed.
+    // The add-on itself is unchanged and still orderable — the actual
+    // chocolate options are confirmed on WhatsApp, as the copy already says.
+    image: "/images/product-placeholder.svg",
     priceLabel: "Add-on item",
     priceType: "quote",
     description: "Chocolates that can be added along with flower orders.",
@@ -1688,7 +1697,12 @@ export const productCatalog: Product[] = [
     slug: "premium-card-addon",
     name: "Premium Cards",
     category: "Add-ons",
-    image: "/images/addon-card.jpg",
+    // P0.1 content containment: addon-card.jpg was a photograph of a real,
+    // fully legible private birthday letter and has been removed from the
+    // repo. cards/iloveu.jpg was visually verified (generic quilled card, no
+    // people, no private message, no third-party branding) and is an honest
+    // representation of this add-on.
+    image: "/images/cards/iloveu.jpg",
     priceLabel: "Add-on item",
     priceType: "quote",
     description: "Premium greeting cards for flower gifting orders.",
@@ -2076,7 +2090,14 @@ export const productCatalog: Product[] = [
     slug: "flower-food-sachets",
     name: "Flower Food Sachets",
     category: "Floral Tools",
-    image: "/images/addon-card.jpg",
+    // P0.1 content containment: this pointed at addon-card.jpg (a private
+    // handwritten letter, now removed) — which was also a wrong-object
+    // mapping, since a greeting card is not a flower food sachet. No
+    // photograph of this product exists anywhere in the repo, so rather
+    // than substitute an unrelated image the visual surface is suppressed.
+    // The product itself is untouched and stays purchasable via search,
+    // its route and its category.
+    image: "/images/product-placeholder.svg",
     priceLabel: "Add-on item",
     priceType: "quote",
     description: "Flower food sachets for vase flowers and loose flowerboxes.",
@@ -2106,27 +2127,42 @@ export const productCatalog: Product[] = [
     slug: "pet-friendly-flowerbox",
     name: "Pet Friendly Flowerbox",
     category: "Pet Friendly",
-    image: "/images/subscription-2.jpg",
+    // P0.1 trust containment. This listing asserted a pet-safety property it
+    // has no evidence for: the product record carries no flowerTypes field,
+    // so nothing anywhere in this catalogue states which flowers go in the
+    // box, and there is no botanical safety data in the repo to check them
+    // against. The photograph made it worse — bouquet-8.jpg is a watering can
+    // of daisies and orange chrysanthemum/marigold-family blooms, which are
+    // commonly listed as unsafe for cats and dogs, and it is not a flowerbox
+    // at all. Image suppressed (no correct, verified photograph exists here)
+    // and the copy rewritten from an asserted safety claim into what the
+    // business can actually stand behind: a conversation before ordering.
+    // Nothing was invented — no flower list has been added. The product,
+    // route, category, search entry and cart behaviour are untouched.
+    // Restore a substantive claim only once a named, verified flower list
+    // and real photography exist.
+    image: "/images/product-placeholder.svg",
     priceLabel: "From ₹899",
     priceType: "from",
-    description: "Flowerbox curated with pet-conscious flower choices.",
+    description: "Flowerbox planned with you if you have pets at home.",
     longDescription:
-      "A pet-conscious flowerbox option for homes with cats or dogs. Final flower selection is confirmed based on availability and customer preference.",
+      "If you have cats or dogs at home, tell us on WhatsApp before ordering and we will go through the flowers available that day with you. We cannot guarantee that any flower is safe for pets, so please keep every arrangement out of their reach.",
     isAvailable: true,
     requiresConfirmation: true,
-    badge: "Pet-conscious",
+    badge: "Discussed before order",
     ratingLabel: "For homes with pets",
     collectionTags: ["pet-friendly", "flowerbox", "home-decor"],
     occasionTags: ["housewarming", "just-because"],
     whatsIncluded: [
-      "Fresh flowers selected with pet-conscious preference",
+      "Flower mix discussed with you before the order is confirmed",
       "Flowerbox packing",
-      "WhatsApp confirmation of flower mix",
+      "WhatsApp confirmation of the final flowers",
       "Care note on request",
     ],
     careNotes: [
       "Always keep flowers out of reach of pets.",
-      "Mention pet type before confirmation.",
+      "No flower is guaranteed safe for pets — check with your vet if unsure.",
+      "Mention your pet type before confirmation.",
       "Confirm flower mix before payment.",
     ],
   },

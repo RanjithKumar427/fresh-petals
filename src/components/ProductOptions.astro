@@ -52,21 +52,23 @@ const addOns = [
   },
 ];
 
+// P0.1 content containment: two of the four card options were removed
+// because their photographs were not ours to publish, not because the
+// card products changed.
+//   - "LoveSongs" (cards/lovesongs.jpg) was a phone screenshot of somebody
+//     else's card listing — the iOS status bar, notch and mail badge were
+//     all still in frame.
+//   - "MyFav" (cards/myfav.jpg) was a real, handwritten anniversary card
+//     addressed to a named private individual.
+// Both files are deleted from the repo. cards/iloveu.jpg was opened and
+// verified clean (generic quilled Valentine's card, no people, no private
+// text, no third-party branding) and is kept. Additional card designs
+// should be re-added only from photography we own.
 const greetingCards = [
   {
     id: "no-card",
     name: "No Card",
     image: "",
-  },
-  {
-    id: "lovesongs",
-    name: "LoveSongs",
-    image: "/images/cards/lovesongs.jpg",
-  },
-  {
-    id: "myfav",
-    name: "MyFav",
-    image: "/images/cards/myfav.jpg",
   },
   {
     id: "iloveu",
