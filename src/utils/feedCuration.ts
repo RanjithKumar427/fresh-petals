@@ -1,9 +1,35 @@
 import { productCatalog } from "../data/productCatalog";
+import imageDimensionsData from "../data/imageDimensions.json";
+
+const imageDimensions = imageDimensionsData as Record<string, { width: number; height: number }>;
+
+type ImageShape = "portrait" | "square" | "landscape";
+
+/**
+ * Phase 1 (Discovery System Hardening), P1.1 -- coarse aspect-ratio
+ * bucketing, not exact ratio matching. The audit's root-cause finding:
+ * this module already had an image-*identity* tiebreaker (line ~96 below)
+ * but no image-*shape* awareness, so two different photographs that
+ * happen to both be square (47 of 71 catalog images are) satisfied the
+ * existing tiebreaker perfectly while still producing back-to-back
+ * pixel-identical card heights. A product missing from imageDimensions.json
+ * is treated as "square" (neutral) rather than excluded -- this function
+ * must never let a data gap remove a product from consideration.
+ */
+function imageShape(image: string): ImageShape {
+  const dimensions = imageDimensions[image];
+  if (!dimensions) return "square";
+  const ratio = dimensions.width / dimensions.height;
+  if (ratio > 1.15) return "landscape";
+  if (ratio < 0.87) return "portrait";
+  return "square";
+}
 
 interface CurationCandidate {
   slug: string;
   category: string;
   image: string;
+  shape: ImageShape;
 }
 
 /**
@@ -43,6 +69,31 @@ interface CurationCandidate {
  * categories share a stock photo -- e.g. cat-pooja.jpg is reused by four
  * products) -- again, only when an alternative exists in that bucket.
  *
+ * Phase 1 (Discovery System Hardening), P1.1 addendum -- that image
+ * tiebreaker alone still let two *different* photographs with the same
+ * shape land back to back, and 47 of 71 catalog images are square, which
+ * measurably produced long runs of pixel-identical card heights (Bouquets
+ * and Lilies, the two largest buckets, are both ~100% square). The pick
+ * now also prefers a candidate whose image aspect-ratio bucket (portrait/
+ * square/landscape, see imageShape() above) differs from the previous
+ * card's, falling back to the plain image-difference check, then to the
+ * first remaining item, exactly as before. Bucket *selection* above -- the
+ * part that spreads categories across the feed -- is untouched, so this
+ * can only reorder shapes that already coexist inside one category.
+ *
+ * Measured, honest limit: as of this catalog, 16 of 18 categories are
+ * internally shape-homogeneous (every image in the category is the same
+ * portrait/square/landscape bucket) -- Bouquets and Lilies, the two
+ * largest, are both 100% square. Verified by simulation against the real
+ * catalog that this tiebreaker is therefore currently a no-op on the
+ * homepage and occasion feeds: there is nothing of a different shape to
+ * prefer within the category the scheduler is already forced to pick from.
+ * It is not dead code -- it activates the moment any category's own
+ * photography becomes shape-mixed -- but today's ceiling is photography,
+ * not this function. Do not "fix" that by overriding bucket selection
+ * above; that reintroduces the 16-consecutive-category-run defect this
+ * module exists to prevent.
+ *
  * Content reality always wins: if every remaining candidate would repeat
  * the previous category or image, the repeat is emitted rather than
  * dropped -- this function reorders real products, it never invents,
@@ -56,7 +107,9 @@ export function curateDiscoveryOrder(slugs: string[]): string[] {
   const candidates: CurationCandidate[] = slugs
     .map((slug) => {
       const product = productCatalog.find((item) => item.slug === slug);
-      return product ? { slug, category: product.category, image: product.image } : null;
+      return product
+        ? { slug, category: product.category, image: product.image, shape: imageShape(product.image) }
+        : null;
     })
     .filter((candidate): candidate is CurationCandidate => candidate !== null);
 
@@ -78,6 +131,7 @@ export function curateDiscoveryOrder(slugs: string[]): string[] {
   const result: CurationCandidate[] = [];
   let lastCategory: string | null = null;
   let lastImage: string | null = null;
+  let lastShape: ImageShape | null = null;
 
   while (result.length < candidates.length) {
     const nonEmpty = categoryOrder.filter((category) => (buckets.get(category)?.length ?? 0) > 0);
@@ -93,13 +147,28 @@ export function curateDiscoveryOrder(slugs: string[]): string[] {
     const chosenCategory = pool[0];
     const bucket = buckets.get(chosenCategory)!;
 
-    let pickIndex = bucket.findIndex((candidate) => candidate.image !== lastImage);
+    // P1.1 -- strictly a within-bucket pick refinement; which category
+    // bucket gets chosen (above) is completely untouched. Three-tier
+    // fallback, each only used if the previous one finds nothing:
+    //   1. different image AND different shape than the previous card
+    //      (the actual fix -- stops two different square photos landing
+    //      back to back)
+    //   2. different image only (the original Phase 5 tiebreaker)
+    //   3. first remaining item ("content reality wins" -- never dropped,
+    //      never invented, just repeated when no alternative exists)
+    let pickIndex = bucket.findIndex(
+      (candidate) => candidate.image !== lastImage && candidate.shape !== lastShape
+    );
+    if (pickIndex === -1) {
+      pickIndex = bucket.findIndex((candidate) => candidate.image !== lastImage);
+    }
     if (pickIndex === -1) pickIndex = 0;
 
     const [picked] = bucket.splice(pickIndex, 1);
     result.push(picked);
     lastCategory = picked.category;
     lastImage = picked.image;
+    lastShape = picked.shape;
   }
 
   return result.map((candidate) => candidate.slug);
