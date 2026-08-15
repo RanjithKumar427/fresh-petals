@@ -78,8 +78,23 @@ import imageDimensions from "../data/imageDimensions.json";
 import imageVariantsData from "../data/imageVariants.json";
 
 const imageVariants = imageVariantsData as Record<string, Record<string, string>>;
+// Phase 6 correction -- the flat px/50vw tokens above were measured once
+// against a single representative width per breakpoint band, not derived
+// from the grid's real math (DiscoveryFeed.astro's gap-x-*/grid-cols-* at
+// each breakpoint). Re-derived directly from that CSS: real desktop
+// column width ranges from 233px (768px, 3 cols) up to 318px (1023px,
+// still 3 cols) before the next breakpoint kicks in -- the old flat 235px
+// under-declared by up to 27% there, silently selecting the 240w
+// derivative for a slot nearly 320px wide. calc() tracks the actual
+// column width at every viewport instead of one flat number per band;
+// mobile's `50vw - 16px` matches DiscoveryFeed's 2-col gap-x-2 (8px) +
+// section px-3 (12px/side) exactly the same way the desktop terms do.
 const IMAGE_SIZES =
-  "(min-width: 1280px) 248px, (min-width: 1024px) 236px, (min-width: 768px) 235px, 50vw";
+  "(min-width: 1328px) 248px, " +
+  "(min-width: 1280px) calc((100vw - 88px) / 5), " +
+  "(min-width: 1024px) calc((100vw - 78px) / 4), " +
+  "(min-width: 768px) calc((100vw - 68px) / 3), " +
+  "calc(50vw - 16px)";
 
 const OCCASION_LABELS: Record<string, string> = {
   anniversary: "Anniversary",
