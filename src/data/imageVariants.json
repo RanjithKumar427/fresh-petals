@@ -1,0 +1,357 @@
+{
+  "/images/bouquets/bouquet-blue-mountain-grace-01.webp": {
+    "240": "/images/bouquets/bouquet-blue-mountain-grace-01-240w.webp",
+    "480": "/images/bouquets/bouquet-blue-mountain-grace-01-480w.webp",
+    "720": "/images/bouquets/bouquet-blue-mountain-grace-01-720w.webp"
+  },
+  "/images/bouquets/bouquet-blush-garden-kiss-01.webp": {
+    "240": "/images/bouquets/bouquet-blush-garden-kiss-01-240w.webp",
+    "480": "/images/bouquets/bouquet-blush-garden-kiss-01-480w.webp",
+    "720": "/images/bouquets/bouquet-blush-garden-kiss-01-720w.webp"
+  },
+  "/images/bouquets/bouquet-cloud-nine-blue-01.webp": {
+    "240": "/images/bouquets/bouquet-cloud-nine-blue-01-240w.webp",
+    "480": "/images/bouquets/bouquet-cloud-nine-blue-01-480w.webp",
+    "720": "/images/bouquets/bouquet-cloud-nine-blue-01-720w.webp"
+  },
+  "/images/bouquets/bouquet-cloud-white-01.webp": {
+    "240": "/images/bouquets/bouquet-cloud-white-01-240w.webp",
+    "480": "/images/bouquets/bouquet-cloud-white-01-480w.webp",
+    "720": "/images/bouquets/bouquet-cloud-white-01-720w.webp"
+  },
+  "/images/bouquets/bouquet-colour-pop-love-01.webp": {
+    "240": "/images/bouquets/bouquet-colour-pop-love-01-240w.webp",
+    "480": "/images/bouquets/bouquet-colour-pop-love-01-480w.webp",
+    "720": "/images/bouquets/bouquet-colour-pop-love-01-720w.webp"
+  },
+  "/images/bouquets/bouquet-colourful-confession-01.webp": {
+    "240": "/images/bouquets/bouquet-colourful-confession-01-240w.webp",
+    "480": "/images/bouquets/bouquet-colourful-confession-01-480w.webp",
+    "720": "/images/bouquets/bouquet-colourful-confession-01-720w.webp"
+  },
+  "/images/bouquets/bouquet-cotton-candy-01.webp": {
+    "240": "/images/bouquets/bouquet-cotton-candy-01-240w.webp",
+    "480": "/images/bouquets/bouquet-cotton-candy-01-480w.webp",
+    "720": "/images/bouquets/bouquet-cotton-candy-01-720w.webp"
+  },
+  "/images/bouquets/bouquet-cotton-candy-poetry-01.webp": {
+    "240": "/images/bouquets/bouquet-cotton-candy-poetry-01-240w.webp",
+    "480": "/images/bouquets/bouquet-cotton-candy-poetry-01-480w.webp",
+    "720": "/images/bouquets/bouquet-cotton-candy-poetry-01-720w.webp"
+  },
+  "/images/bouquets/bouquet-country-love-note-01.webp": {
+    "240": "/images/bouquets/bouquet-country-love-note-01-240w.webp",
+    "480": "/images/bouquets/bouquet-country-love-note-01-480w.webp",
+    "720": "/images/bouquets/bouquet-country-love-note-01-720w.webp"
+  },
+  "/images/bouquets/bouquet-daisy-morning-01.webp": {
+    "240": "/images/bouquets/bouquet-daisy-morning-01-240w.webp",
+    "480": "/images/bouquets/bouquet-daisy-morning-01-480w.webp",
+    "720": "/images/bouquets/bouquet-daisy-morning-01-720w.webp"
+  },
+  "/images/bouquets/bouquet-dear-sunshine-01.webp": {
+    "240": "/images/bouquets/bouquet-dear-sunshine-01-240w.webp",
+    "480": "/images/bouquets/bouquet-dear-sunshine-01-480w.webp",
+    "720": "/images/bouquets/bouquet-dear-sunshine-01-720w.webp"
+  },
+  "/images/bouquets/bouquet-first-love-01.webp": {
+    "240": "/images/bouquets/bouquet-first-love-01-240w.webp",
+    "480": "/images/bouquets/bouquet-first-love-01-480w.webp",
+    "720": "/images/bouquets/bouquet-first-love-01-720w.webp"
+  },
+  "/images/bouquets/bouquet-lavender-whisper-01.webp": {
+    "240": "/images/bouquets/bouquet-lavender-whisper-01-240w.webp",
+    "480": "/images/bouquets/bouquet-lavender-whisper-01-480w.webp",
+    "720": "/images/bouquets/bouquet-lavender-whisper-01-720w.webp"
+  },
+  "/images/bouquets/bouquet-lilac-garden-01.webp": {
+    "240": "/images/bouquets/bouquet-lilac-garden-01-240w.webp",
+    "480": "/images/bouquets/bouquet-lilac-garden-01-480w.webp",
+    "720": "/images/bouquets/bouquet-lilac-garden-01-720w.webp"
+  },
+  "/images/bouquets/bouquet-lily-calm-01.webp": {
+    "240": "/images/bouquets/bouquet-lily-calm-01-240w.webp",
+    "480": "/images/bouquets/bouquet-lily-calm-01-480w.webp",
+    "720": "/images/bouquets/bouquet-lily-calm-01-720w.webp"
+  },
+  "/images/bouquets/bouquet-little-lilly-prayer-01.webp": {
+    "240": "/images/bouquets/bouquet-little-lilly-prayer-01-240w.webp",
+    "480": "/images/bouquets/bouquet-little-lilly-prayer-01-480w.webp",
+    "720": "/images/bouquets/bouquet-little-lilly-prayer-01-720w.webp"
+  },
+  "/images/bouquets/bouquet-love-at-first-sight-01.webp": {
+    "240": "/images/bouquets/bouquet-love-at-first-sight-01-240w.webp",
+    "480": "/images/bouquets/bouquet-love-at-first-sight-01-480w.webp",
+    "720": "/images/bouquets/bouquet-love-at-first-sight-01-720w.webp"
+  },
+  "/images/bouquets/bouquet-midnight-romance-01.webp": {
+    "240": "/images/bouquets/bouquet-midnight-romance-01-240w.webp",
+    "480": "/images/bouquets/bouquet-midnight-romance-01-480w.webp",
+    "720": "/images/bouquets/bouquet-midnight-romance-01-720w.webp"
+  },
+  "/images/bouquets/bouquet-peach-petal-promise-01.webp": {
+    "240": "/images/bouquets/bouquet-peach-petal-promise-01-240w.webp",
+    "480": "/images/bouquets/bouquet-peach-petal-promise-01-480w.webp",
+    "720": "/images/bouquets/bouquet-peach-petal-promise-01-720w.webp"
+  },
+  "/images/bouquets/bouquet-pink-lily-wish-01.webp": {
+    "240": "/images/bouquets/bouquet-pink-lily-wish-01-240w.webp",
+    "480": "/images/bouquets/bouquet-pink-lily-wish-01-480w.webp",
+    "720": "/images/bouquets/bouquet-pink-lily-wish-01-720w.webp"
+  },
+  "/images/bouquets/bouquet-pink-secret-01.webp": {
+    "240": "/images/bouquets/bouquet-pink-secret-01-240w.webp",
+    "480": "/images/bouquets/bouquet-pink-secret-01-480w.webp",
+    "720": "/images/bouquets/bouquet-pink-secret-01-720w.webp"
+  },
+  "/images/bouquets/bouquet-pink-tulip-promise-01.webp": {
+    "240": "/images/bouquets/bouquet-pink-tulip-promise-01-240w.webp",
+    "480": "/images/bouquets/bouquet-pink-tulip-promise-01-480w.webp",
+    "720": "/images/bouquets/bouquet-pink-tulip-promise-01-720w.webp"
+  },
+  "/images/bouquets/bouquet-purple-crush-01.webp": {
+    "240": "/images/bouquets/bouquet-purple-crush-01-240w.webp",
+    "480": "/images/bouquets/bouquet-purple-crush-01-480w.webp",
+    "720": "/images/bouquets/bouquet-purple-crush-01-720w.webp"
+  },
+  "/images/bouquets/bouquet-purple-promise-01.webp": {
+    "240": "/images/bouquets/bouquet-purple-promise-01-240w.webp",
+    "480": "/images/bouquets/bouquet-purple-promise-01-480w.webp",
+    "720": "/images/bouquets/bouquet-purple-promise-01-720w.webp"
+  },
+  "/images/bouquets/bouquet-purple-whisper-01.webp": {
+    "240": "/images/bouquets/bouquet-purple-whisper-01-240w.webp",
+    "480": "/images/bouquets/bouquet-purple-whisper-01-480w.webp",
+    "720": "/images/bouquets/bouquet-purple-whisper-01-720w.webp"
+  },
+  "/images/bouquets/bouquet-rainbow-hug-01.webp": {
+    "240": "/images/bouquets/bouquet-rainbow-hug-01-240w.webp",
+    "480": "/images/bouquets/bouquet-rainbow-hug-01-480w.webp",
+    "720": "/images/bouquets/bouquet-rainbow-hug-01-720w.webp"
+  },
+  "/images/bouquets/bouquet-red-affair-01.webp": {
+    "240": "/images/bouquets/bouquet-red-affair-01-240w.webp",
+    "480": "/images/bouquets/bouquet-red-affair-01-480w.webp",
+    "720": "/images/bouquets/bouquet-red-affair-01-720w.webp"
+  },
+  "/images/bouquets/bouquet-rose-promise-01.webp": {
+    "240": "/images/bouquets/bouquet-rose-promise-01-240w.webp",
+    "480": "/images/bouquets/bouquet-rose-promise-01-480w.webp",
+    "720": "/images/bouquets/bouquet-rose-promise-01-720w.webp"
+  },
+  "/images/bouquets/bouquet-snow-white-saga-01.webp": {
+    "240": "/images/bouquets/bouquet-snow-white-saga-01-240w.webp",
+    "480": "/images/bouquets/bouquet-snow-white-saga-01-480w.webp",
+    "720": "/images/bouquets/bouquet-snow-white-saga-01-720w.webp"
+  },
+  "/images/bouquets/bouquet-sunshine-confession-01.webp": {
+    "240": "/images/bouquets/bouquet-sunshine-confession-01-240w.webp",
+    "480": "/images/bouquets/bouquet-sunshine-confession-01-480w.webp",
+    "720": "/images/bouquets/bouquet-sunshine-confession-01-720w.webp"
+  },
+  "/images/bouquets/bouquet-sunshine-story-01.webp": {
+    "240": "/images/bouquets/bouquet-sunshine-story-01-240w.webp",
+    "480": "/images/bouquets/bouquet-sunshine-story-01-480w.webp",
+    "720": "/images/bouquets/bouquet-sunshine-story-01-720w.webp"
+  },
+  "/images/bouquets/bouquet-sweet-petal-hour-01.webp": {
+    "240": "/images/bouquets/bouquet-sweet-petal-hour-01-240w.webp",
+    "480": "/images/bouquets/bouquet-sweet-petal-hour-01-480w.webp",
+    "720": "/images/bouquets/bouquet-sweet-petal-hour-01-720w.webp"
+  },
+  "/images/bouquets/bouquet-timeless-hug-01.webp": {
+    "240": "/images/bouquets/bouquet-timeless-hug-01-240w.webp",
+    "480": "/images/bouquets/bouquet-timeless-hug-01-480w.webp",
+    "720": "/images/bouquets/bouquet-timeless-hug-01-720w.webp"
+  },
+  "/images/bouquets/bouquet-violet-picnic-01.webp": {
+    "240": "/images/bouquets/bouquet-violet-picnic-01-240w.webp",
+    "480": "/images/bouquets/bouquet-violet-picnic-01-480w.webp",
+    "720": "/images/bouquets/bouquet-violet-picnic-01-720w.webp"
+  },
+  "/images/bouquets/bouquet-white-silence-01.webp": {
+    "240": "/images/bouquets/bouquet-white-silence-01-240w.webp",
+    "480": "/images/bouquets/bouquet-white-silence-01-480w.webp",
+    "720": "/images/bouquets/bouquet-white-silence-01-720w.webp"
+  },
+  "/images/bouquets/bouquet-wild-sunset-charm-01.webp": {
+    "240": "/images/bouquets/bouquet-wild-sunset-charm-01-240w.webp",
+    "480": "/images/bouquets/bouquet-wild-sunset-charm-01-480w.webp",
+    "720": "/images/bouquets/bouquet-wild-sunset-charm-01-720w.webp"
+  },
+  "/images/bouquets/bouquet-winter-whisper-01.webp": {
+    "240": "/images/bouquets/bouquet-winter-whisper-01-240w.webp",
+    "480": "/images/bouquets/bouquet-winter-whisper-01-480w.webp",
+    "720": "/images/bouquets/bouquet-winter-whisper-01-720w.webp"
+  },
+  "/images/lilies/lily-all-white-fragrance-01.webp": {
+    "240": "/images/lilies/lily-all-white-fragrance-01-240w.webp",
+    "480": "/images/lilies/lily-all-white-fragrance-01-480w.webp",
+    "720": "/images/lilies/lily-all-white-fragrance-01-720w.webp"
+  },
+  "/images/lilies/lily-fragrance-festive-giftbox-01.webp": {
+    "240": "/images/lilies/lily-fragrance-festive-giftbox-01-240w.webp",
+    "480": "/images/lilies/lily-fragrance-festive-giftbox-01-480w.webp",
+    "720": "/images/lilies/lily-fragrance-festive-giftbox-01-720w.webp"
+  },
+  "/images/lilies/lily-mandarin-lily-glow-01.webp": {
+    "240": "/images/lilies/lily-mandarin-lily-glow-01-240w.webp",
+    "480": "/images/lilies/lily-mandarin-lily-glow-01-480w.webp",
+    "720": "/images/lilies/lily-mandarin-lily-glow-01-720w.webp"
+  },
+  "/images/lilies/lily-pink-serenity-flowerbox-01.webp": {
+    "240": "/images/lilies/lily-pink-serenity-flowerbox-01-240w.webp",
+    "480": "/images/lilies/lily-pink-serenity-flowerbox-01-480w.webp",
+    "720": "/images/lilies/lily-pink-serenity-flowerbox-01-720w.webp"
+  },
+  "/images/lilies/lily-blush-lily-letter-01.webp": {
+    "240": "/images/lilies/lily-blush-lily-letter-01-240w.webp",
+    "480": "/images/lilies/lily-blush-lily-letter-01-480w.webp",
+    "720": "/images/lilies/lily-blush-lily-letter-01-720w.webp"
+  },
+  "/images/lilies/lily-coral-lily-bloom-01.webp": {
+    "240": "/images/lilies/lily-coral-lily-bloom-01-240w.webp",
+    "480": "/images/lilies/lily-coral-lily-bloom-01-480w.webp",
+    "720": "/images/lilies/lily-coral-lily-bloom-01-720w.webp"
+  },
+  "/images/lilies/lily-ivory-lily-grace-01.webp": {
+    "240": "/images/lilies/lily-ivory-lily-grace-01-240w.webp",
+    "480": "/images/lilies/lily-ivory-lily-grace-01-480w.webp",
+    "720": "/images/lilies/lily-ivory-lily-grace-01-720w.webp"
+  },
+  "/images/lilies/lily-luxe-lily-bloom-01.webp": {
+    "240": "/images/lilies/lily-luxe-lily-bloom-01-240w.webp",
+    "480": "/images/lilies/lily-luxe-lily-bloom-01-480w.webp",
+    "720": "/images/lilies/lily-luxe-lily-bloom-01-720w.webp"
+  },
+  "/images/lilies/lily-stargazer-affair-01.webp": {
+    "240": "/images/lilies/lily-stargazer-affair-01-240w.webp",
+    "480": "/images/lilies/lily-stargazer-affair-01-480w.webp",
+    "720": "/images/lilies/lily-stargazer-affair-01-720w.webp"
+  },
+  "/images/lilies/lily-sunrise-asiatic-vase-01.webp": {
+    "240": "/images/lilies/lily-sunrise-asiatic-vase-01-240w.webp",
+    "480": "/images/lilies/lily-sunrise-asiatic-vase-01-480w.webp",
+    "720": "/images/lilies/lily-sunrise-asiatic-vase-01-720w.webp"
+  },
+  "/images/cat-pooja.jpg": {
+    "240": "/images/cat-pooja-240w.webp",
+    "480": "/images/cat-pooja-480w.webp",
+    "720": "/images/cat-pooja-720w.webp"
+  },
+  "/images/jasmine.jpg": {
+    "240": "/images/jasmine-240w.webp",
+    "480": "/images/jasmine-480w.webp",
+    "720": "/images/jasmine-720w.webp"
+  },
+  "/images/pooja-flowers.jpg": {
+    "240": "/images/pooja-flowers-240w.webp",
+    "480": "/images/pooja-flowers-480w.webp",
+    "720": "/images/pooja-flowers-720w.webp"
+  },
+  "/images/addon-table-decor.jpg": {
+    "240": "/images/addon-table-decor-240w.webp",
+    "480": "/images/addon-table-decor-480w.webp",
+    "720": "/images/addon-table-decor-720w.webp"
+  },
+  "/images/bouquet-6.jpg": {
+    "240": "/images/bouquet-6-240w.webp",
+    "480": "/images/bouquet-6-480w.webp",
+    "720": "/images/bouquet-6-720w.webp"
+  },
+  "/images/bouquet-3.jpg": {
+    "240": "/images/bouquet-3-240w.webp",
+    "480": "/images/bouquet-3-480w.webp",
+    "720": "/images/bouquet-3-720w.webp"
+  },
+  "/images/cat-basket.jpg": {
+    "240": "/images/cat-basket-240w.webp",
+    "480": "/images/cat-basket-480w.webp",
+    "720": "/images/cat-basket-720w.webp"
+  },
+  "/images/bouquet-9.jpg": {
+    "240": "/images/bouquet-9-240w.webp",
+    "480": "/images/bouquet-9-480w.webp",
+    "720": "/images/bouquet-9-720w.webp"
+  },
+  "/images/bouquet-4.jpg": {
+    "240": "/images/bouquet-4-240w.webp",
+    "480": "/images/bouquet-4-480w.webp",
+    "720": "/images/bouquet-4-720w.webp"
+  },
+  "/images/bouquet-1.jpg": {
+    "240": "/images/bouquet-1-240w.webp",
+    "480": "/images/bouquet-1-480w.webp",
+    "720": "/images/bouquet-1-720w.webp"
+  },
+  "/images/bouquet-2.jpg": {
+    "240": "/images/bouquet-2-240w.webp",
+    "480": "/images/bouquet-2-480w.webp",
+    "720": "/images/bouquet-2-720w.webp"
+  },
+  "/images/addon-chocolates.jpg": {
+    "240": "/images/addon-chocolates-240w.webp",
+    "480": "/images/addon-chocolates-480w.webp",
+    "720": "/images/addon-chocolates-720w.webp"
+  },
+  "/images/addon-candle.jpg": {
+    "240": "/images/addon-candle-240w.webp",
+    "480": "/images/addon-candle-480w.webp",
+    "720": "/images/addon-candle-720w.webp"
+  },
+  "/images/addon-card.jpg": {
+    "240": "/images/addon-card-240w.webp",
+    "480": "/images/addon-card-480w.webp",
+    "720": "/images/addon-card-720w.webp"
+  },
+  "/images/banner-pooja.jpg": {
+    "240": "/images/banner-pooja-240w.webp",
+    "480": "/images/banner-pooja-480w.webp",
+    "720": "/images/banner-pooja-720w.webp"
+  },
+  "/images/bouquet-7.jpg": {
+    "240": "/images/bouquet-7-240w.webp",
+    "480": "/images/bouquet-7-480w.webp",
+    "720": "/images/bouquet-7-720w.webp"
+  },
+  "/images/bouquet-5.jpg": {
+    "240": "/images/bouquet-5-240w.webp",
+    "480": "/images/bouquet-5-480w.webp",
+    "720": "/images/bouquet-5-720w.webp"
+  },
+  "/images/cat-plant.jpg": {
+    "240": "/images/cat-plant-240w.webp",
+    "480": "/images/cat-plant-480w.webp",
+    "720": "/images/cat-plant-720w.webp"
+  },
+  "/images/bouquet-10.jpg": {
+    "240": "/images/bouquet-10-240w.webp",
+    "480": "/images/bouquet-10-480w.webp",
+    "720": "/images/bouquet-10-720w.webp"
+  },
+  "/images/bouquet-8.jpg": {
+    "240": "/images/bouquet-8-240w.webp",
+    "480": "/images/bouquet-8-480w.webp",
+    "720": "/images/bouquet-8-720w.webp"
+  },
+  "/images/occasion-event.jpg": {
+    "240": "/images/occasion-event-240w.webp",
+    "480": "/images/occasion-event-480w.webp",
+    "720": "/images/occasion-event-720w.webp"
+  },
+  "/images/cat-bouquets.jpg": {
+    "240": "/images/cat-bouquets-240w.webp",
+    "480": "/images/cat-bouquets-480w.webp",
+    "720": "/images/cat-bouquets-720w.webp"
+  },
+  "/images/event-flowers.jpg": {
+    "240": "/images/event-flowers-240w.webp",
+    "480": "/images/event-flowers-480w.webp",
+    "720": "/images/event-flowers-720w.webp"
+  },
+  "/images/rose-bouquet.jpg": {
+    "240": "/images/rose-bouquet-240w.webp",
+    "480": "/images/rose-bouquet-480w.webp",
+    "720": "/images/rose-bouquet-720w.webp"
+  }
+}

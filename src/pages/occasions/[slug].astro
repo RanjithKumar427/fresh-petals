@@ -1,8 +1,9 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import ProductCard from "../../components/ProductCard.astro";
+import DiscoveryFeed from "../../components/DiscoveryFeed.astro";
 import { productCatalog, type Product } from "../../data/productCatalog";
 import { loadAuthoritativePrices, withAuthoritativePrice } from "../../server/services/ProductPricing";
+import { curateDiscoveryOrder } from "../../utils/feedCuration";
 
 type OccasionMeta = {
   name: string;
@@ -289,6 +290,35 @@ const { occasion, products } = Astro.props as {
   occasion: OccasionMeta;
   products: Product[];
 };
+
+// Discovery Architecture Hardening (Phase 5), Workstream B milestone —
+// this page previously rendered a `ProductCard` grid (VIEW/ADD/ORDER ON
+// WHATSAPP on every tile), so a customer who tapped an occasion tag from
+// a homepage discovery card landed straight back in full ecommerce mode —
+// the exact "discovery -> catalogue" trap this milestone exists to close.
+// getStaticPaths() above (slug resolution, tag/fallback matching, dedup,
+// pricing) is completely unchanged; only what renders the resulting
+// `products` list changes, from ProductCard to the same DiscoveryFeed
+// component the homepage uses -- no second card implementation, no
+// duplicated masonry/pricing logic. The slug order is passed through the
+// same curateDiscoveryOrder() the homepage now uses (src/utils/
+// feedCuration.ts), for the same reason: a handful of occasion pages have
+// specific known repeats in their fallback lists, and this keeps that
+// behavior consistent rather than inventing a second ordering approach.
+//
+// Removing the per-card WhatsApp buttons is a real commerce-access
+// change, not just a visual one -- per this milestone's own explicit
+// exception, ONE restrained page-level WhatsApp entry point replaces
+// them, reusing the exact existing wa.me link pattern (same number, same
+// encodeURIComponent construction) every other WhatsApp CTA on the site
+// already uses -- not a second WhatsApp implementation.
+const feedSlugs = curateDiscoveryOrder(products.map((product) => product.slug));
+
+const whatsappNumber = "919652012274";
+const whatsappMessage = encodeURIComponent(
+  `Hi Fresh Petals, I'm looking for ${occasion.name} flowers. Please help me choose and confirm availability.`
+);
+const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
 ---
 
 <BaseLayout
@@ -296,9 +326,9 @@ const { occasion, products } = Astro.props as {
   description={occasion.description}
 >
   <main class="bg-white">
-    <section class="px-5 py-12 md:px-8 md:py-16">
+    <section class="px-5 pt-12 md:px-8 md:pt-16">
       <div class="mx-auto max-w-7xl">
-        <div class="mb-10 text-center">
+        <div class="text-center">
           <p class="fp-eyebrow">
             {occasion.eyebrow}
           </p>
@@ -331,24 +361,28 @@ const { occasion, products } = Astro.props as {
             </span>
           </div>
         </div>
+      </div>
+    </section>
 
-        {
-          products.length > 0 ? (
-            <div class="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-              {products.map((product) => (
-                <ProductCard
-                  name={product.name}
-                  image={product.image}
-                  priceLabel={product.priceLabel}
-                  priceType={product.priceType}
-                  category={product.category}
-                  description={product.description}
-                  slug={product.slug}
-                  isAvailable={product.isAvailable}
-                />
-              ))}
-            </div>
-          ) : (
+    {
+      products.length > 0 ? (
+        <Fragment>
+          <DiscoveryFeed slugs={feedSlugs} />
+
+          <section class="px-5 pb-14 text-center md:px-8">
+            <a
+              href={whatsappUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="fp-btn-whatsapp inline-flex items-center rounded-full bg-[#075838] px-6 py-3 text-[11px] font-bold uppercase tracking-[0.18em] text-white shadow-[0_10px_22px_rgba(7,88,56,0.22)] transition hover:bg-[#7C243E]"
+            >
+              Ask about {occasion.name} flowers on WhatsApp
+            </a>
+          </section>
+        </Fragment>
+      ) : (
+        <section class="px-5 pb-14 md:px-8">
+          <div class="mx-auto max-w-7xl">
             <div class="rounded-[24px] border border-[#EEE5E8] bg-[#FFF8FA] p-8 text-center">
               <h2 class="text-lg font-semibold text-[#171717]">
                 No products found
@@ -358,9 +392,9 @@ const { occasion, products } = Astro.props as {
                 This occasion does not have active products yet.
               </p>
             </div>
-          )
-        }
-      </div>
-    </section>
+          </div>
+        </section>
+      )
+    }
   </main>
 </BaseLayout>

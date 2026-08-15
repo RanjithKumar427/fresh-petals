@@ -7,22 +7,106 @@ import HomeHeroBanners from "../components/HomeHeroBanners.astro";
 import FindYourFlowersSection from "../components/FindYourFlowersSection.astro";
 import DiscoveryFeed from "../components/DiscoveryFeed.astro";
 import OccasionSection from "../components/OccasionSection.astro";
-import ProductSection from "../components/ProductSection.astro";
-import PoojaProductsSection from "../components/PoojaProductsSection.astro";
-import FlowerboxSection from "../components/FlowerboxSection.astro";
-import BasketsSection from "../components/BasketsSection.astro";
-import OffersSection from "../components/OffersSection.astro";
-import PopularWithFlowers from "../components/PopularWithFlowers.astro";
-import HomeDecorGiftingSection from "../components/HomeDecorGiftingSection.astro";
-import WeddingTraditionalSection from "../components/WeddingTraditionalSection.astro";
 import TrustSection from "../components/TrustSection.astro";
 import WhatsAppOrderSection from "../components/WhatsAppOrderSection.astro";
-import SubscriptionProducts from "../components/SubscriptionProducts.astro";
-import UnboxingReels from "../components/UnboxingReels.astro";
 import CustomerReviews from "../components/CustomerReviews.astro";
 import ReferEarnSection from "../components/ReferEarnSection.astro";
+import { curateDiscoveryOrder } from "../utils/feedCuration";
 
 const areas = await DeliveryService.listAreas();
+
+// Phase 4 (True Visual Discovery Experience) milestone — the Opus audit's
+// central finding: the homepage was "nine catalogue departments rendering
+// a beautiful tile" — eight separate rail components (ProductSection,
+// PoojaProductsSection, FlowerboxSection, BasketsSection, OffersSection,
+// HomeDecorGiftingSection, WeddingTraditionalSection, SubscriptionProducts),
+// each just a `category === X` filter with its own "Heading … View all →"
+// exit, all rendering the identical card. Measured impact at 390px: 6,706px
+// (7.9 screens) of the homepage was nine near-identical department
+// boundaries, and discovery dropped from 2.5 continuous screens to zero.
+//
+// These eight groups are folded into ONE DiscoveryFeed instead — same
+// slugs, same authoritative Postgres pricing (via ProductPricing, loaded
+// once inside DiscoveryFeed.astro exactly as before), same destination
+// product pages. What changes is that the page no longer announces "this
+// department is finished" nine times. The eight component files are left
+// on disk, unimported — not deleted — so this is a one-line revert if
+// needed, matching the precedent already set by UnboxingReels.astro.
+//
+// PopularWithFlowers (category "Add-ons": candles, greeting cards,
+// chocolates) is deliberately NOT folded in — the audit classified it as
+// cart cross-sell, not flower discovery content. It remains reachable via
+// MegaNav and the compact category row below (see
+// FindYourFlowersSection.astro).
+//
+// Discovery Architecture Hardening (Phase 5), Workstream A milestone —
+// the groups below are now passed through curateDiscoveryOrder()
+// (src/utils/feedCuration.ts) instead of the old position-based
+// interleave(). That function's own header comment has the full
+// reasoning; short version: the position-based interleave ran out of
+// small-group position-mates partway through and dumped the two large
+// pools (Bouquets, Lilies) consecutively at the tail -- measured live as
+// 16 same-category cards in a row -- and happened to place two visually
+// near-identical blue-and-white bouquets as cards 0 and 1. The new
+// function groups by each product's real category (not by which of these
+// nine hand-picked lists it came from) and always continues from
+// whichever category has the most cards left, which is what keeps a
+// large category spread across the whole feed instead of exhausted early
+// and backloaded.
+const feedGroups: string[][] = [
+  // Original curated discovery feed — Bouquets + Lilies, the two
+  // categories where every product has its own dedicated photograph.
+  [
+    "cloud-nine-blue",
+    "colour-pop-love",
+    "cotton-candy",
+    "country-love-note",
+    "dear-sunshine",
+    "lilac-garden",
+    "peach-petal-promise",
+    "wild-sunset-charm",
+    "purple-crush",
+    "white-silence",
+    "luxe-lily-bloom",
+    "stargazer-affair",
+    "blush-garden-kiss",
+    "sunshine-confession",
+    "violet-picnic",
+    "ivory-lily-grace",
+  ],
+  // Formerly ProductSection — hand-picked spread across colour/mood/price.
+  [
+    "blue-mountain-grace",
+    "red-affair",
+    "midnight-romance",
+    "rose-promise",
+    "sunshine-story",
+    "cotton-candy-poetry",
+    "snow-white-saga",
+    "rainbow-hug",
+  ],
+  // Formerly PoojaProductsSection.
+  ["daily-pooja-flowers", "jasmine-malli", "pooja-flower-box", "temple-bulk-flowers"],
+  // Formerly FlowerboxSection.
+  ["diy-flowerbox", "loose-flower-box", "gift-flower-box", "pooja-flowerbox"],
+  // Formerly BasketsSection.
+  ["flower-basket", "gift-basket", "pooja-basket", "premium-flower-basket"],
+  // Formerly OffersSection.
+  ["flowers-under-499", "bouquets-under-999", "flower-gifts-under-1499", "todays-flower-offers"],
+  // Formerly HomeDecorGiftingSection.
+  ["dried-flower-bunch", "clear-glass-vase", "mini-succulent-gift", "room-mist-flower-gift-addon"],
+  // Formerly WeddingTraditionalSection.
+  ["bridal-flower-accessories", "event-garlands", "fresh-flower-toran", "jasmine-gajra"],
+  // Formerly SubscriptionProducts.
+  [
+    "daily-pooja-flower-subscription",
+    "weekly-flowerbox-subscription",
+    "jasmine-malli-subscription",
+    "custom-flower-subscription",
+  ],
+];
+
+const feedSlugs = curateDiscoveryOrder(feedGroups.flat());
 ---
 
 <BaseLayout title="Fresh Petals Hyderabad" showCategoryCarousel={false}>
@@ -40,20 +124,24 @@ const areas = await DeliveryService.listAreas();
     <HomeHeroBanners />
     <AreaSelector areas={areas} />
     <FindYourFlowersSection />
-    <DiscoveryFeed />
+    <DiscoveryFeed slugs={feedSlugs} />
+    <!-- Phase 4 milestone — OccasionSection moved from directly after the
+         feed (where it interrupted discovery at screen 3.0, measured) down
+         into the commerce zone with WhatsAppOrderSection/TrustSection,
+         where its promo/logistics framing ("Flat 10% Off", "Subscription
+         Starting At ₹299") belongs. -->
     <OccasionSection />
-    <ProductSection />
-    <PoojaProductsSection />
-    <FlowerboxSection />
-    <BasketsSection />
-    <OffersSection />
-    <PopularWithFlowers />
-    <HomeDecorGiftingSection />
-    <WeddingTraditionalSection />
-    <TrustSection />
     <WhatsAppOrderSection />
-    <SubscriptionProducts />
-    <UnboxingReels />
+    <TrustSection />
+    <!-- Content / Integrity milestone (Phase 0) — UnboxingReels removed
+         here. Its filename promised video/unboxing content; its actual
+         markup was a stray, invalid-HTML duplicate of Footer.astro (no
+         opening <footer> tag). Rather than fabricate reels content or ship
+         broken markup, it's removed until real video content exists to
+         put in its place — see docs/architecture for the longer-term
+         content-model direction. The component file itself is left on
+         disk, unused, pending your decision on whether to delete it
+         outright. -->
     <CustomerReviews />
     <ReferEarnSection />
   </main>
