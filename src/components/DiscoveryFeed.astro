@@ -1,25 +1,77 @@
 ---
 // Xiaohongshu-Inspired Post Card System milestone — the card markup itself
 // was extracted into DiscoveryPostCard.astro (see that file's header for
-// the full reasoning: natural image aspect ratio, real-description-derived
-// caption, no CTA/button/price-badge on the card) so ProductSection.astro
-// could adopt the exact same visual language rather than a second,
-// slightly-different reimplementation. This file is now just the section
+// the full reasoning: natural image aspect ratio, name-led caption, no
+// CTA/button/price-badge on the card). This file is now just the section
 // shell: canvas background, layout grid, and which real products appear.
 //
-// Selection still scoped to Bouquets + Lilies -- the two categories where
-// every product has its own dedicated photograph, per the original image-
-// asset audit (Deep Discovery Redesign) -- and still deliberately
-// different from ProductSection's own curated 8 so the page doesn't
-// repeat itself a screen later.
+// Phase 4 (True Visual Discovery Experience) milestone — two changes,
+// both driven directly by the Opus audit's live measurements:
+//
+// 1. Now accepts an optional `slugs` prop (default: the original curated
+//    16 Bouquets/Lilies). index.astro passes a larger, interleaved list
+//    that folds in what used to be eight separate homepage rails
+//    (ProductSection, PoojaProductsSection, FlowerboxSection,
+//    BasketsSection, OffersSection, HomeDecorGiftingSection,
+//    WeddingTraditionalSection, SubscriptionProducts) -- see index.astro's
+//    own comment for why. This component's job doesn't change: given a
+//    slug list, render it as one canvas. Those eight component files are
+//    left on disk, unimported, matching the precedent already set by
+//    UnboxingReels.astro -- not deleted, just no longer part of the
+//    render tree, so the change is a one-line revert if needed. Add-ons
+//    (PopularWithFlowers' category) were deliberately excluded, not
+//    folded in -- the audit classified them as cart cross-sell (candles,
+//    greeting cards, chocolates), not flower discovery content; they
+//    remain reachable via MegaNav and the compact category row in
+//    FindYourFlowersSection.
+//
+// 2. Switched the container from CSS `columns-*` to CSS Grid with a
+//    computed `grid-row: span N` per card. The audit measured two real
+//    defects in the `columns-*` approach: (a) DOM order and visual
+//    reading order diverge -- multi-column fills top-to-bottom PER
+//    COLUMN, so a screen-reader/keyboard user encounters items 0,1,2,3 in
+//    a completely different order than a sighted user scanning left-to-
+//    right; (b) at >=1280px, `xl:columns-5` computed 5 column tracks but
+//    the block only ever filled 4 of them, leaving an empty orphaned
+//    column. Grid with `grid-auto-flow: row` (the default -- NOT `dense`,
+//    which would reorder items to fill gaps and reintroduce the same
+//    reading-order problem in a different form) keeps items in strict DOM
+//    order while still allowing each card to occupy a different number of
+//    fine-grained row tracks, producing a waterfall look without
+//    sacrificing accessibility.
+//
+// Row-span computation, honestly caveated: `grid-row: span N` is one
+// static value -- it can't be different per breakpoint through CSS alone
+// without a much larger rewrite (container queries + JS ResizeObserver),
+// which is more machinery than "smallest robust change" justifies here.
+// N is computed once against a representative ~240px column width; at
+// narrower/wider actual column widths the packing is not pixel-perfect
+// (a card may end a few rows short or long of its neighbors) -- a known,
+// accepted tradeoff of pure-CSS grid masonry, not a bug. What this fixes
+// unconditionally at every breakpoint: DOM order = visual order, and no
+// orphaned column. What it does NOT do: manufacture visual variety where
+// the photography has none -- 47 of 71 unique catalog images are exactly
+// square (confirmed via imageDimensions.json), so cards drawing from
+// Bouquets/Lilies will still render close to equal height. That's a
+// photography fact, not something this component can or should fake.
 //
 // Pricing: same authoritative adapter every other storefront surface uses
 // (see ProductPricing.ts) -- no new query, no second price source.
 import DiscoveryPostCard from "./DiscoveryPostCard.astro";
 import { productCatalog } from "../data/productCatalog";
 import { loadAuthoritativePrices, withAuthoritativePrice } from "../server/services/ProductPricing";
+import imageDimensionsData from "../data/imageDimensions.json";
+import {
+  ROW_UNIT_PX,
+  MOBILE_COLUMN_WIDTH,
+  TABLET_COLUMN_WIDTH,
+  DESKTOP_COLUMN_WIDTH,
+  computeRowSpan,
+} from "../utils/feedLayout";
 
-const feedSlugs = [
+const imageDimensions = imageDimensionsData as Record<string, { width: number; height: number }>;
+
+const defaultSlugs = [
   "cloud-nine-blue",
   "colour-pop-love",
   "cotton-candy",
@@ -38,29 +90,136 @@ const feedSlugs = [
   "ivory-lily-grace",
 ];
 
+interface Props {
+  slugs?: string[];
+  // P1.2 (Phase 1 discovery hardening) — when set, only the first N cards
+  // render visible; the rest are marked `hidden` (not omitted -- every
+  // card is still server-rendered, so there's no fetch/pagination request
+  // and nothing to lose if JS fails) and revealed by a plain button below
+  // the grid. Left undefined on occasion pages, which stay fully visible
+  // as before -- this is a homepage-specific fix for a homepage-specific
+  // problem (73 cards / ~14 mobile screens), not a change to how
+  // DiscoveryFeed behaves everywhere it's used.
+  initialVisibleCount?: number;
+}
+
+const { slugs = defaultSlugs, initialVisibleCount } = Astro.props;
+
+// Grid tuning, derived from live measurement (see the Opus audit): at
+// 1536px a 1:1 image in a 248px column rendered a 323px card, i.e. a
+// ~75px caption block below a square image. ROW_UNIT_PX is the grain of
+// the implicit grid; CAPTION_ROWS is that 75px block expressed in that
+// grain.
+//
+// Three reference column widths, not one, and not two -- history here,
+// because each fix was caught by live measurement, not assumed correct:
+//
+// 1. A first version used a single ~240px reference at every breakpoint --
+//    correct on desktop, but badly over-reserved space at mobile's real
+//    ~172px columns (a card rendered 736px tall for content that only
+//    needed 248px).
+// 2. Fixed by splitting into two tiers (mobile/desktop), each with its own
+//    CSS custom property switched by a plain media query -- no JS, no
+//    ResizeObserver. That surfaced a second bug: `grid-row: span K` tracks
+//    are separated by (K-1) real row-gaps that count as part of the
+//    item's occupied space, so with an 8px row-gap the effective unit per
+//    track was ROW_UNIT_PX + 8, not ROW_UNIT_PX -- every card rendered
+//    ~3x its intended reservation. Fixed by zeroing row-gap (column-gap
+//    kept via gap-x-* below) and moving vertical spacing to margin-bottom
+//    on the card instead, the same mechanism the pre-Phase-4 CSS-columns
+//    layout already used for that purpose.
+// 3. With both of those fixed, live measurement at the 768px boundary
+//    still found real image cropping (`overflow-hidden` on the card
+//    silently clips content taller than its reserved grid-row span): the
+//    2-column bucket spans viewports from ~360px up to ~767px, and actual
+//    column width in that single bucket ranges from ~164px to ~367px --
+//    more than 2x -- so one "mobile" reference could not represent both
+//    ends without either badly under-reserving (cropping real product
+//    photos) at the wide end or badly over-reserving at the narrow end.
+//    Split the 2-column bucket itself into two tiers at Tailwind's own
+//    `sm:` boundary (640px), biased slightly toward over- rather than
+//    under-reservation in each tier (a card a little taller than strictly
+//    needed is a cosmetic gap; a cropped product photo is a real defect).
+// Phase 1 (Discovery System Hardening), Stage 2b -- ROW_UNIT_PX/
+// CAPTION_ROWS/*_COLUMN_WIDTH and computeRowSpan() moved to
+// src/utils/feedLayout.ts so saved.astro's grid migration reuses the same
+// math instead of re-deriving it (see that file for the constants'
+// measurement history). Behavior here is unchanged -- pure extraction.
 const priceMap = await loadAuthoritativePrices();
 
-const feedProducts = feedSlugs
+const feedProducts = slugs
   .map((slug) => productCatalog.find((product) => product.slug === slug))
   .filter((product): product is NonNullable<typeof product> => Boolean(product))
-  .map((product) => withAuthoritativePrice(product, priceMap));
+  .map((product) => withAuthoritativePrice(product, priceMap))
+  .map((product) => ({
+    ...product,
+    rowSpanMobile: computeRowSpan(product.image, MOBILE_COLUMN_WIDTH, imageDimensions),
+    rowSpanTablet: computeRowSpan(product.image, TABLET_COLUMN_WIDTH, imageDimensions),
+    rowSpanDesktop: computeRowSpan(product.image, DESKTOP_COLUMN_WIDTH, imageDimensions),
+  }));
 ---
 
 <section class="bg-[#F5F5F5] px-3 pb-8 pt-3 md:px-6 md:pb-12" aria-label="Discover beautiful flowers">
   <div class="mx-auto max-w-7xl">
-    <div class="columns-2 gap-2 md:columns-3 md:gap-2.5 lg:columns-4 xl:columns-5">
+    <div
+      class="grid grid-cols-2 gap-x-2 md:grid-cols-3 md:gap-x-2.5 lg:grid-cols-4 xl:grid-cols-5"
+      style={`grid-auto-rows: ${ROW_UNIT_PX}px; grid-auto-flow: row; row-gap: 0;`}
+      data-discovery-grid
+    >
       {
-        feedProducts.map((product) => (
+        feedProducts.map((product, index) => (
           <DiscoveryPostCard
             slug={product.slug}
             name={product.name}
             image={product.image}
-            description={product.description}
-            category={product.category}
             priceLabel={product.priceLabel}
+            priceType={product.priceType}
+            occasionTags={product.occasionTags}
+            badge={product.badge}
+            gridRowSpanMobile={product.rowSpanMobile}
+            gridRowSpanTablet={product.rowSpanTablet}
+            gridRowSpanDesktop={product.rowSpanDesktop}
+            initiallyHidden={initialVisibleCount != null && index >= initialVisibleCount}
           />
         ))
       }
     </div>
+
+    {
+      initialVisibleCount != null && feedProducts.length > initialVisibleCount && (
+        <div class="mt-6 flex justify-center">
+          <button
+            type="button"
+            data-reveal-feed-trigger
+            class="rounded-full border border-black/15 bg-white px-8 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-black/70 transition hover:border-black/30 hover:text-black active:scale-95"
+          >
+            Show more flowers
+          </button>
+        </div>
+      )
+    }
   </div>
 </section>
+
+<script>
+  // P1.2 — plain reveal, no fetch, no pagination, no infinite scroll. Every
+  // card is already in the DOM (see DiscoveryPostCard's `hidden` attribute
+  // via `initiallyHidden`); this just clears `hidden` on the currently-
+  // hidden cards inside this specific grid and removes the trigger button.
+  // Scoped to [data-discovery-grid] (not the whole document) so this can't
+  // interact with an unrelated hidden card elsewhere on the page -- e.g.
+  // saved.astro reuses DiscoveryPostCard's own `initiallyHidden` +
+  // data-product-slug for its own per-slug reveal (Stage 2b), which is a
+  // different grid with no data-discovery-grid marker and is therefore
+  // untouched by this query even if both ever rendered on one page.
+  document.querySelectorAll<HTMLButtonElement>("[data-reveal-feed-trigger]").forEach((trigger) => {
+    trigger.addEventListener("click", () => {
+      document
+        .querySelectorAll<HTMLElement>("[data-discovery-grid] [data-product-slug][hidden]")
+        .forEach((card) => {
+          card.hidden = false;
+        });
+      trigger.remove();
+    });
+  });
+</script>

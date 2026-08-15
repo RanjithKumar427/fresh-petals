@@ -1,0 +1,188 @@
+---
+// Discovery Experience — Phase 1 (Save) milestone. "My flower inspiration",
+// not "my wishlist" — no account, no login, no order-intent implied.
+//
+// Saved state only exists in the visitor's own browser (localStorage), but
+// which product each saved slug refers to only exists at build/server
+// time. Rather than hand-rolling a second copy of the card markup in
+// client JS (which would drift from DiscoveryPostCard.astro over time),
+// every product's real DiscoveryPostCard is server-rendered here, hidden
+// by default, and a small client script reveals only the ones the visitor
+// has actually saved. Hidden <img> elements with loading="lazy" are not
+// fetched by the browser until un-hidden, so this costs markup, not image
+// bandwidth.
+import BaseLayout from "../layouts/BaseLayout.astro";
+import DiscoveryPostCard from "../components/DiscoveryPostCard.astro";
+import { productCatalog } from "../data/productCatalog";
+import { loadAuthoritativePrices, withAuthoritativePrice } from "../server/services/ProductPricing";
+import imageDimensionsData from "../data/imageDimensions.json";
+import {
+  ROW_UNIT_PX,
+  MOBILE_COLUMN_WIDTH,
+  TABLET_COLUMN_WIDTH,
+  DESKTOP_COLUMN_WIDTH,
+  computeRowSpan,
+} from "../utils/feedLayout";
+
+const imageDimensions = imageDimensionsData as Record<string, { width: number; height: number }>;
+
+const priceMap = await loadAuthoritativePrices();
+
+// Stage 2b (Phase 1 discovery hardening) -- migrated off `columns-*` CSS
+// masonry onto the same CSS Grid + computed grid-row-span mechanism
+// DiscoveryFeed.astro uses, reusing its exact math via feedLayout.ts
+// rather than a third re-derivation. The audit's reasoning for the
+// original DiscoveryFeed migration applies identically here: `columns-*`
+// fills top-to-bottom PER COLUMN, so DOM order and visual reading order
+// diverge for keyboard/screen-reader users, and at >=1280px a 5th column
+// track went unfilled. This page's card count is small and variable (the
+// same 89-product server-render, just fewer visible), which is exactly
+// why grid's per-card `grid-row: span N` handles it correctly regardless
+// of how many end up shown.
+const products = productCatalog
+  .map((product) => withAuthoritativePrice(product, priceMap))
+  .map((product) => ({
+    ...product,
+    rowSpanMobile: computeRowSpan(product.image, MOBILE_COLUMN_WIDTH, imageDimensions),
+    rowSpanTablet: computeRowSpan(product.image, TABLET_COLUMN_WIDTH, imageDimensions),
+    rowSpanDesktop: computeRowSpan(product.image, DESKTOP_COLUMN_WIDTH, imageDimensions),
+  }));
+---
+
+<BaseLayout
+  title="Saved Flowers | Fresh Petals Hyderabad"
+  description="Flowers you've saved on Fresh Petals — come back to them anytime and ask about availability on WhatsApp."
+  showCategoryCarousel={false}
+>
+  <section class="bg-[#F5F5F5] px-3 pb-16 pt-8 md:px-6 md:pt-10">
+    <div class="mx-auto max-w-7xl">
+      <div class="mb-5 flex flex-wrap items-end justify-between gap-3 px-0.5">
+        <div>
+          <h1 class="text-[20px] font-medium text-black/80 md:text-[22px]">
+            Saved Flowers
+          </h1>
+
+          <p class="mt-1 text-[13px] text-black/45">
+            Flowers you've saved — come back to them anytime.
+          </p>
+        </div>
+
+        <div id="saved-whatsapp-bar" hidden>
+          <a
+            id="saved-whatsapp-link"
+            href="#"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="fp-btn-whatsapp inline-flex items-center rounded-full bg-[#075838] px-5 py-2.5 text-[11px] font-bold uppercase tracking-[0.18em] text-white shadow-[0_10px_22px_rgba(7,88,56,0.22)] transition hover:bg-[#7C243E]"
+          >
+            Ask about these on WhatsApp
+          </a>
+        </div>
+      </div>
+
+      <div id="saved-empty-state" class="rounded-2xl border border-black/[0.08] bg-white px-6 py-16 text-center">
+        <p class="text-[15px] text-black/70">
+          Save flowers you love and come back to them anytime.
+        </p>
+
+        <a
+          href="/"
+          class="mt-4 inline-flex items-center gap-1 text-[13px] font-medium text-[#7C243E]"
+        >
+          Explore flowers
+          <span aria-hidden="true">→</span>
+        </a>
+      </div>
+
+      <div
+        id="saved-grid"
+        class="grid grid-cols-2 gap-x-2 md:grid-cols-3 md:gap-x-2.5 lg:grid-cols-4 xl:grid-cols-5"
+        style={`grid-auto-rows: ${ROW_UNIT_PX}px; grid-auto-flow: row; row-gap: 0;`}
+      >
+        {
+          products.map((product) => (
+            <DiscoveryPostCard
+              slug={product.slug}
+              name={product.name}
+              image={product.image}
+              priceLabel={product.priceLabel}
+              priceType={product.priceType}
+              occasionTags={product.occasionTags}
+              badge={product.badge}
+              gridRowSpanMobile={product.rowSpanMobile}
+              gridRowSpanTablet={product.rowSpanTablet}
+              gridRowSpanDesktop={product.rowSpanDesktop}
+              initiallyHidden
+            />
+          ))
+        }
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<script>
+  import { getSavedIds, pruneSaved, SAVED_UPDATED_EVENT } from "../utils/saved";
+
+  // Same WhatsApp number and wa.me link pattern every other storefront
+  // WhatsApp CTA uses (see ProductCard.astro) — no second WhatsApp
+  // implementation, no inquiry-logging call bypassed: ProductCard's own
+  // per-product "Order on WhatsApp" link is the same kind of plain wa.me
+  // deep link with no /api/inquiries call. That fire-and-forget admin log
+  // only exists on the full cart checkout flow (cart.astro), a heavier,
+  // separate journey this page intentionally doesn't imitate — saving is
+  // meant to stay the lowest-friction path available.
+  const whatsappNumber = "919652012274";
+
+  function render() {
+    const savedIds = getSavedIds();
+    const wrappers = document.querySelectorAll<HTMLElement>("#saved-grid [data-product-slug]");
+
+    const matchedNames: string[] = [];
+    const validSlugs: string[] = [];
+
+    wrappers.forEach((wrapper) => {
+      const slug = wrapper.dataset.productSlug || "";
+      validSlugs.push(slug);
+
+      const isMatched = savedIds.includes(slug);
+      wrapper.hidden = !isMatched;
+
+      if (isMatched) {
+        matchedNames.push(wrapper.dataset.productName || "");
+      }
+    });
+
+    const emptyState = document.getElementById("saved-empty-state");
+    const whatsappBar = document.getElementById("saved-whatsapp-bar");
+    const whatsappLink = document.getElementById("saved-whatsapp-link") as HTMLAnchorElement | null;
+
+    const hasMatches = matchedNames.length > 0;
+
+    if (emptyState) emptyState.hidden = hasMatches;
+    if (whatsappBar) whatsappBar.hidden = !hasMatches;
+
+    if (whatsappLink && hasMatches) {
+      const message = [
+        "Hi FreshPetals, I'm interested in these flowers:",
+        "",
+        ...matchedNames.map((name, index) => `${index + 1}. ${name}`),
+        "",
+        "Could you help me with availability and delivery?",
+      ].join("\n");
+
+      whatsappLink.href = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+    }
+
+    // Self-heal: a saved id that no longer matches any real product
+    // (removed/renamed in the catalogue) is dropped rather than left
+    // invisible forever. pruneSaved dispatches SAVED_UPDATED_EVENT only
+    // when it actually changes something, which re-enters render() once
+    // more (harmless — the second pass finds nothing left to prune).
+    pruneSaved(validSlugs);
+  }
+
+  render();
+
+  window.addEventListener(SAVED_UPDATED_EVENT, render);
+</script>

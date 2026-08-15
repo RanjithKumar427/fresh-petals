@@ -124,6 +124,15 @@ interface Props {
   gridRowSpanMobile?: number;
   gridRowSpanTablet?: number;
   gridRowSpanDesktop?: number;
+  // P1.2 (Phase 1 discovery hardening) — when set, the card renders with
+  // the native `hidden` attribute (removed from layout entirely, not just
+  // visually). Every card still renders server-side either way — nothing
+  // is fetched later, this only defers what's visible. Used by
+  // DiscoveryFeed's "Show more" control (paired with the root div's
+  // data-product-slug below, scoped to that grid) and by saved.astro's
+  // own per-slug reveal (Stage 2b), which drives the same attribute from
+  // its own matching logic instead.
+  initiallyHidden?: boolean;
 }
 
 const {
@@ -137,6 +146,7 @@ const {
   gridRowSpanMobile,
   gridRowSpanTablet,
   gridRowSpanDesktop,
+  initiallyHidden,
 } = Astro.props;
 
 const isGridItem =
@@ -196,6 +206,9 @@ const ariaLabel = contextLabel
       ? `--fp-rows-mobile: ${gridRowSpanMobile}; --fp-rows-tablet: ${gridRowSpanTablet}; --fp-rows-desktop: ${gridRowSpanDesktop};`
       : undefined
   }
+  hidden={initiallyHidden || undefined}
+  data-product-slug={slug}
+  data-product-name={name}
 >
   <a
     href={`/products/${slug}`}
@@ -224,7 +237,7 @@ const ariaLabel = contextLabel
       aria-pressed="false"
       class="fp-save-btn absolute right-1 top-1 z-20 flex h-11 w-11 items-center justify-center"
     >
-      <span class="fp-save-visual flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-black/55 shadow-sm backdrop-blur transition group-hover:text-[#FF2442] active:scale-90">
+      <span class="fp-save-visual flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-black/55 shadow-sm backdrop-blur transition group-hover:text-[#7C243E] active:scale-90">
         <svg
           class="fp-save-icon-outline h-[18px] w-[18px]"
           viewBox="0 0 24 24"
@@ -239,7 +252,7 @@ const ariaLabel = contextLabel
         </svg>
 
         <svg
-          class="fp-save-icon-filled hidden h-[18px] w-[18px] text-[#FF2442]"
+          class="fp-save-icon-filled hidden h-[18px] w-[18px] text-[#7C243E]"
           viewBox="0 0 24 24"
           fill="currentColor"
           aria-hidden="true"
@@ -251,7 +264,7 @@ const ariaLabel = contextLabel
   </div>
 
   <div class="px-2.5 py-2">
-    <p class="pointer-events-none line-clamp-1 text-[13px] font-medium leading-snug text-black/80 transition-colors group-hover:text-[#FF2442]">
+    <p class="pointer-events-none line-clamp-1 text-[13px] font-medium leading-snug text-black/80 transition-colors group-hover:text-[#7C243E]">
       {name}
     </p>
 
@@ -262,7 +275,7 @@ const ariaLabel = contextLabel
             <>
               <a
                 href={`/occasions/${tag}`}
-                class="relative z-20 pointer-events-auto underline-offset-2 hover:text-[#FF2442] hover:underline"
+                class="relative z-20 pointer-events-auto underline-offset-2 hover:text-[#7C243E] hover:underline"
               >
                 {OCCASION_LABELS[tag]}
               </a>
@@ -353,11 +366,22 @@ const ariaLabel = contextLabel
 
   syncAllButtons();
 
+  // Event-level guard (Phase 1 discovery hardening) -- matches the same
+  // fix in ProductCard.astro and products/[slug].astro's own save script.
+  // These don't currently share a page, but if that ever changes, more
+  // than one delegated listener processing the same click would toggle
+  // save twice and cancel itself out (confirmed live on the product page
+  // before this guard existed) -- this keeps all three mutually safe
+  // regardless of which combination ends up on one page.
   document.addEventListener("click", (event) => {
     const target = event.target as HTMLElement;
     const button = target.closest<HTMLButtonElement>("[data-save-toggle]");
 
     if (!button) return;
+
+    const marked = event as Event & { __fpSaveHandled?: boolean };
+    if (marked.__fpSaveHandled) return;
+    marked.__fpSaveHandled = true;
 
     event.preventDefault();
 
