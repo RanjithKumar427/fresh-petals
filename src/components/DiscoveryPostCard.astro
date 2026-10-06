@@ -74,10 +74,8 @@
 // converging near ~240px once the grid hits its max-w-7xl cap). A
 // product without generated variants renders with plain `src` only,
 // exactly as before Phase 5 -- this never breaks on a missing derivative.
-import imageDimensions from "../data/imageDimensions.json";
-import imageVariantsData from "../data/imageVariants.json";
-
-const imageVariants = imageVariantsData as Record<string, Record<string, string>>;
+// Shared manifests plus visible garland photos (src/data/photoManifest.ts).
+import { photoDimensions as imageDimensions, photoVariants as imageVariants } from "../data/photoManifest";
 // Phase 6 correction -- the flat px/50vw tokens above were measured once
 // against a single representative width per breakpoint band, not derived
 // from the grid's real math (DiscoveryFeed.astro's gap-x-*/grid-cols-* at
@@ -111,12 +109,15 @@ const OCCASION_LABELS: Record<string, string> = {
   sympathy: "Sympathy",
   "thank-you": "Thank you",
   wedding: "Wedding",
+  engagement: "Engagement",
 };
 
 interface Props {
   slug: string;
   name: string;
   image: string;
+  /** Descriptive alt text when the catalogue has one (garlands); defaults to the name. */
+  alt?: string;
   priceLabel: string;
   priceType: "fixed" | "from" | "market" | "quote";
   occasionTags?: string[];
@@ -139,6 +140,7 @@ const {
   slug,
   name,
   image,
+  alt,
   priceLabel,
   priceType,
   occasionTags,
@@ -198,7 +200,7 @@ const ariaLabel = contextLabel
 
 <div
   class:list={[
-    "group relative mb-2 overflow-hidden rounded-xl border border-black/[0.08] bg-white md:mb-2.5",
+    "group relative mb-2 overflow-hidden rounded-xl border border-black/[0.08] bg-paper md:mb-2.5",
     isGridItem ? "fp-grid-item" : "block break-inside-avoid",
   ]}
   style={
@@ -223,7 +225,7 @@ const ariaLabel = contextLabel
       sizes={srcset ? IMAGE_SIZES : undefined}
       width={dimensions?.width}
       height={dimensions?.height}
-      alt=""
+      alt={alt ?? name}
       loading="lazy"
       decoding="async"
       class="pointer-events-none block h-auto w-full transition duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.02]"
@@ -237,7 +239,7 @@ const ariaLabel = contextLabel
       aria-pressed="false"
       class="fp-save-btn absolute right-1 top-1 z-20 flex h-11 w-11 items-center justify-center"
     >
-      <span class="fp-save-visual flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-black/55 shadow-sm backdrop-blur transition group-hover:text-[#7C243E] active:scale-90">
+      <span class="fp-save-visual flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-black/55 shadow-sm backdrop-blur transition group-hover:text-berry active:scale-90">
         <svg
           class="fp-save-icon-outline h-[18px] w-[18px]"
           viewBox="0 0 24 24"
@@ -252,7 +254,7 @@ const ariaLabel = contextLabel
         </svg>
 
         <svg
-          class="fp-save-icon-filled hidden h-[18px] w-[18px] text-[#7C243E]"
+          class="fp-save-icon-filled hidden h-[18px] w-[18px] text-berry"
           viewBox="0 0 24 24"
           fill="currentColor"
           aria-hidden="true"
@@ -264,18 +266,18 @@ const ariaLabel = contextLabel
   </div>
 
   <div class="px-2.5 py-2">
-    <p class="pointer-events-none line-clamp-1 text-[13px] font-medium leading-snug text-black/80 transition-colors group-hover:text-[#7C243E]">
+    <p class="pointer-events-none line-clamp-1 text-[13px] font-medium leading-snug text-black/80 transition-colors group-hover:text-berry">
       {name}
     </p>
 
     {
       tags.length > 0 ? (
-        <p class="mt-1 flex flex-wrap items-center gap-x-1 text-[11px] text-black/45">
+        <p class="mt-1 flex flex-wrap items-center gap-x-1.5 text-[11px] text-ink/80">
           {tags.map((tag, index) => (
             <>
               <a
                 href={`/occasions/${tag}`}
-                class="relative z-20 pointer-events-auto underline-offset-2 hover:text-[#7C243E] hover:underline"
+                class="relative z-20 pointer-events-auto inline-flex min-h-[24px] items-center underline-offset-2 hover:text-berry hover:underline"
               >
                 {OCCASION_LABELS[tag]}
               </a>

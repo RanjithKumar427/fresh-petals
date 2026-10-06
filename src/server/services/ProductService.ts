@@ -48,10 +48,48 @@ export async function getPublishBlockers(product: Product): Promise<string[]> {
     blockers.push("Enter a selling price.");
   }
 
+  // Garlands keep their publication approval rules (see src/data/garlandRules.ts):
+  // published, photo permission granted and the sample verified.
+  if (product.garland) {
+    if (product.garland.photoPermission !== "granted") {
+      blockers.push("Record photo-publication permission (or use your own photographs) before publishing this garland.");
+    }
+    if (!product.garland.sampleVerified) {
+      blockers.push("Verify a made sample of this garland before publishing it.");
+    }
+    if (product.garland.sellingMode === "cart" && (!product.garland.readyForSale || product.priceType !== "fixed" || !product.sellingPrice)) {
+      blockers.push("Cart mode needs a fixed price and 'Ready for sale' — or switch back to WhatsApp enquiry.");
+    }
+  }
+
   return blockers;
 }
 
-function splitInput(data: ReturnType<typeof productInputSchema.parse>) {
+/**
+ * Rules that keep a garland's identity and selling behaviour intact,
+ * whatever the request body says. Returns field errors, empty when fine.
+ */
+function garlandRuleErrors(existing: Product, data: ReturnType<typeof productInputSchema.parse>, slug: string): Record<string, string> {
+  const errors: Record<string, string> = {};
+  if (!existing.garland) {
+    if (data.garland) errors.garland = "Only garland designs have garland details.";
+    return errors;
+  }
+  if (slug !== existing.slug) errors.slug = `The address of garland ${existing.garland.designCode} is fixed (/products/${existing.slug}).`;
+  if (data.categoryId !== existing.categoryId) errors.categoryId = "Garland designs stay in the Garlands category.";
+  if (data.priceType !== "fixed" && data.priceType !== "quote") {
+    errors.priceType = "Garlands have a price or 'Price on request'.";
+  }
+  if (data.priceType === "quote" && data.sellingPrice) {
+    errors.sellingPrice = "Clear the price, or choose 'Price' instead of 'Price on request'.";
+  }
+  if (data.garland?.sellingMode === "cart" && !(data.garland.readyForSale && data.priceType === "fixed" && data.sellingPrice)) {
+    errors.sellingMode = "Cart mode needs a fixed price and 'Ready for sale'. A price alone keeps the WhatsApp enquiry.";
+  }
+  return errors;
+}
+
+function splitInput(data: ReturnType<typeof productInputSchema.parse>, isGarland = false) {
   const core = {
     slug: data.slug,
     name: data.name,
@@ -83,6 +121,8 @@ function splitInput(data: ReturnType<typeof productInputSchema.parse>) {
     flowerTypeIds: data.flowerTypeIds,
     whatsIncluded: data.whatsIncluded,
     careInstructions: data.careInstructions,
+    options: data.options,
+    garland: isGarland ? (data.garland ?? undefined) : undefined,
   };
 
   return { core, relations };
@@ -96,6 +136,11 @@ function friendlyMessage(error: unknown): string {
 export const ProductService = {
   async list(filter?: ProductListFilter): Promise<ProductListItem[]> {
     return ProductRepository.list(filter);
+  },
+
+  /** Admin product list: like list(), plus each garland's design code (searchable). */
+  async listForAdmin(filter?: ProductListFilter): Promise<ProductListItem[]> {
+    return ProductRepository.list({ ...filter, withDesignCodes: true });
   },
 
   async get(id: number): Promise<Product | null> {
@@ -140,6 +185,13 @@ export const ProductService = {
     const data = parsed.data;
     const slug = data.slug || slugify(data.name);
 
+    const existing = await ProductRepository.findById(id);
+    if (!existing) return fail("Product not found.");
+    const ruleErrors = garlandRuleErrors(existing, data, slug);
+    if (Object.keys(ruleErrors).length > 0) {
+      return fail(Object.values(ruleErrors).join(" "), ruleErrors);
+    }
+
     const clashing = await ProductRepository.findBySlug(slug);
     if (clashing && clashing.id !== id) {
       return fail("A product with this slug already exists.", { slug: "Slug already in use." });
@@ -148,7 +200,18 @@ export const ProductService = {
       return fail("Selected category does not exist.", { categoryId: "Choose a valid category." });
     }
 
-    const { core, relations } = splitInput({ ...data, slug });
+    // A published garland must keep meeting its approval rules: an edit that
+    // withdraws photo permission or sample verification is refused until the
+    // design is unpublished first.
+    if (existing.garland && existing.status === "published" && data.garland) {
+      if (data.garland.photoPermission !== "granted" || !data.garland.sampleVerified) {
+        return fail("This garland is published. Move it back to draft before withdrawing photo permission or sample verification.", {
+          photoPermission: "Unpublish first.",
+        });
+      }
+    }
+
+    const { core, relations } = splitInput({ ...data, slug }, !!existing.garland);
     try {
       const product = await ProductRepository.update(id, core, relations);
       if (!product) return fail("Product not found.");
@@ -159,7 +222,11 @@ export const ProductService = {
   },
 
   async remove(id: number): Promise<ServiceResult<null>> {
-    if (!(await ProductRepository.findById(id))) return fail("Product not found.");
+    const existing = await ProductRepository.findById(id);
+    if (!existing) return fail("Product not found.");
+    if (existing.garland) {
+      return fail(`Garland ${existing.garland.designCode} can't be deleted — its design code and address are permanent. Archive it instead.`);
+    }
     try {
       await ProductRepository.delete(id);
       return ok(null);
@@ -195,6 +262,9 @@ export const ProductService = {
   async duplicate(id: number): Promise<ServiceResult<Product>> {
     const source = await ProductRepository.findById(id);
     if (!source) return fail("Product not found.");
+    if (source.garland) {
+      return fail(`Garland ${source.garland.designCode} can't be duplicated — every garland design has its own permanent code.`);
+    }
 
     const candidateSlug = await uniqueSlug(`${source.slug}-copy`);
 
@@ -234,6 +304,7 @@ export const ProductService = {
       flowerTypeIds: source.flowerTypeIds,
       whatsIncluded: source.whatsIncluded,
       careInstructions: source.careInstructions,
+      options: source.options,
     };
 
     try {

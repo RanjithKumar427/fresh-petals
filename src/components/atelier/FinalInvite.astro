@@ -1,0 +1,244 @@
+---
+// G. Final invitation — the human moment: a hand holding out flowers
+// (bouquet-6.jpg, cropped to the hand and bouquet). Deliberately unlike the
+// hero: a deep green band, the photograph flush against the page edge with
+// no mat or backing layer, ivory type beside it. As the band scrolls
+// through the viewport the photograph rises a little more slowly than the
+// type (parallax depth); reduced motion shows it still.
+import { HOME_LANDING } from "../../data/seoLanding";
+import { getFinalPhoto } from "../../data/atelierHome";
+
+const shot = getFinalPhoto();
+---
+
+<section class="final" data-final aria-labelledby="final-title" style={`--photo-ar: ${shot.width} / ${shot.height}`}>
+  <div class="final__photo">
+    <img
+      src={shot.src}
+      srcset={shot.srcset}
+      sizes="(min-width: 1024px) 450px, 86vw"
+      width={shot.width}
+      height={shot.height}
+      alt={shot.alt}
+      loading="lazy"
+      decoding="async"
+    />
+  </div>
+
+  <div class="final__copy">
+    <p class="final__eyebrow" data-reveal="fade">Ready when you are</p>
+    <h2 id="final-title" class="final__title" data-reveal="mask">Pick the flowers. <em>We'll confirm the rest on WhatsApp.</em></h2>
+    <div class="final__actions">
+      <a class="final__btn" href="/categories/bouquets">Shop bouquets</a>
+      <a class="final__btn final__btn--quiet" href="/categories/all-flowers">See all flowers</a>
+    </div>
+    <nav class="final__links" aria-label="Flower collections in Bengaluru">
+      <p>Also in Bengaluru</p>
+      <ul>
+        {
+          HOME_LANDING.links.map((link) => (
+            <li>
+              <a href={link.href}>{link.label}</a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+  </div>
+</section>
+
+<script>
+  const final = document.querySelector<HTMLElement>("[data-final]");
+  if (final && document.documentElement.classList.contains("motion")) {
+    let raf = 0;
+    const update = () => {
+      raf = 0;
+      const r = final.getBoundingClientRect();
+      const vh = window.innerHeight;
+      // -1 as the band enters from below, 0 centred, 1 as it leaves.
+      const p = Math.max(-1, Math.min(1, (vh / 2 - (r.top + r.height / 2)) / ((vh + r.height) / 2)));
+      final.style.setProperty("--fp", p.toFixed(4));
+    };
+    const schedule = () => {
+      if (!raf) raf = requestAnimationFrame(update);
+    };
+    new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting) {
+        window.addEventListener("scroll", schedule, { passive: true });
+        schedule();
+      } else window.removeEventListener("scroll", schedule);
+    }).observe(final);
+  }
+</script>
+
+<style>
+  .final {
+    --fp: 0;
+    position: relative;
+    overflow: clip;
+    display: grid;
+    gap: 2.5rem;
+    background: var(--color-ink);
+    color: var(--color-ivory);
+    padding: 0 0 clamp(3.5rem, 8vw, 6rem);
+  }
+
+  /* Flush to the left edge; one rounded inner corner. */
+  .final__photo {
+    width: min(82vw, 460px);
+    aspect-ratio: var(--photo-ar);
+    overflow: hidden;
+    border-radius: 0 0 18px 0;
+    background: var(--color-ink-deep);
+  }
+
+  .final__photo img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    /* Just enough overscan for the parallax drift (source is only 640px). */
+    scale: 1.03;
+    translate: 0 calc(var(--fp) * -1.4%);
+  }
+
+  .final__copy {
+    padding: 0 clamp(16px, 4vw, 56px);
+    max-width: 640px;
+  }
+
+  .final__eyebrow {
+    margin: 0 0 0.8rem;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--color-rose);
+  }
+
+  .final__title {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 360;
+    font-size: clamp(2.3rem, 1.3rem + 4vw, 4.8rem);
+    line-height: 0.95;
+    letter-spacing: -0.035em;
+    max-width: 14ch;
+  }
+
+  .final__title em {
+    display: block;
+    margin-top: 0.3em;
+    font-style: italic;
+    font-size: 0.55em;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: var(--color-rose);
+    max-width: 22ch;
+  }
+
+  .final__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-top: 1.8rem;
+  }
+
+  .final__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
+    padding: 0 1.4rem;
+    border-radius: 999px;
+    background: var(--color-ivory);
+    color: var(--color-ink);
+    font-size: 0.875rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: background-color 0.18s var(--ease-micro), color 0.18s var(--ease-micro);
+  }
+
+  .final__btn:hover {
+    background: var(--color-rose);
+  }
+
+  .final__btn--quiet {
+    background: transparent;
+    color: var(--color-ivory);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-ivory) 55%, transparent);
+  }
+
+  .final__btn--quiet:hover {
+    background: color-mix(in srgb, var(--color-ivory) 12%, transparent);
+  }
+
+  .final__btn:focus-visible,
+  .final__links a:focus-visible {
+    outline: 3px solid var(--color-rose);
+    outline-offset: 3px;
+  }
+
+  .final__links {
+    margin-top: 2.2rem;
+  }
+
+  .final__links p {
+    margin: 0 0 0.6rem;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: color-mix(in srgb, var(--color-ivory) 75%, transparent);
+  }
+
+  .final__links ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .final__links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 1rem;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--color-ivory) 35%, transparent);
+    color: var(--color-ivory);
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: border-color 0.18s var(--ease-micro), background-color 0.18s var(--ease-micro);
+  }
+
+  .final__links a:hover {
+    border-color: var(--color-ivory);
+    background: color-mix(in srgb, var(--color-ivory) 10%, transparent);
+  }
+
+  @media (min-width: 1024px) {
+    .final {
+      grid-template-columns: auto minmax(0, 1fr);
+      align-items: center;
+      gap: clamp(3rem, 6vw, 6rem);
+      padding: 0;
+    }
+
+    .final__photo {
+      width: auto;
+      height: min(80svh, 600px);
+      border-radius: 0 18px 18px 0;
+      margin: clamp(3rem, 6vw, 5rem) 0;
+    }
+
+    .final__copy {
+      padding: 3rem clamp(16px, 4vw, 56px) 3rem 0;
+      translate: 0 calc(var(--fp) * -24px);
+    }
+  }
+</style>

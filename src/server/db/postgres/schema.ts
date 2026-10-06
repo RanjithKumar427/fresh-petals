@@ -303,6 +303,67 @@ export const productCareInstructions = pgTable(
 );
 
 // ---------------------------------------------------------------------
+// Garlands (drizzle/0011_garland_management.sql). A garland is an ordinary
+// `products` row — same editor, images, pricing, status and storefront
+// price channel as every bouquet — plus one `garland_details` row holding
+// what only garlands have: the stable public design code (FP-G…), sold
+// unit, length, flowers, thickness, finish, preparation time, substitution
+// policy, selling mode and the photo/sample approvals. Unknown facts stay
+// NULL. `product_options` is generic (any product may use it); garlands
+// are its first user.
+// ---------------------------------------------------------------------
+export const garlandFilterEnum = pgEnum("garland_filter", ["rose", "tuberose", "lotus", "designer-mixed"]);
+export const garlandUnitEnum = pgEnum("garland_unit", ["single", "pair", "set"]);
+export const garlandSellingModeEnum = pgEnum("garland_selling_mode", ["enquiry", "cart"]);
+export const photoPermissionEnum = pgEnum("photo_permission", ["unconfirmed", "granted", "refused"]);
+
+export const garlandDetails = pgTable("garland_details", {
+  productId: integer("product_id")
+    .primaryKey()
+    .references(() => products.id, { onDelete: "cascade" }),
+  designCode: text("design_code").notNull().unique(), // immutable (DB trigger + service guard)
+  soldUnit: garlandUnitEnum("sold_unit"),
+  length: text("length"),
+  flowerRecipe: text("flower_recipe"),
+  thickness: text("thickness"),
+  finish: text("finish"),
+  leadTime: text("lead_time"),
+  substitutionPolicy: text("substitution_policy"),
+  sellingMode: garlandSellingModeEnum("selling_mode").notNull().default("enquiry"),
+  readyForSale: boolean("ready_for_sale").notNull().default(false),
+  photoPermission: photoPermissionEnum("photo_permission").notNull().default("unconfirmed"),
+  sampleVerified: boolean("sample_verified").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const productGarlandFilters = pgTable(
+  "product_garland_filters",
+  {
+    productId: integer("product_id")
+      .notNull()
+      .references(() => products.id, { onDelete: "cascade" }),
+    filter: garlandFilterEnum("filter").notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.productId, table.filter] })]
+);
+
+export const productOptions = pgTable(
+  "product_options",
+  {
+    id: serial("id").primaryKey(),
+    productId: integer("product_id")
+      .notNull()
+      .references(() => products.id, { onDelete: "cascade" }),
+    optionName: text("option_name").notNull(), // e.g. "Finish"
+    valueLabel: text("value_label").notNull(), // e.g. "Gold tassels"
+    extraCharge: integer("extra_charge"), // INR added for this choice; NULL = no extra charge
+    sortOrder: integer("sort_order").notNull().default(0),
+  },
+  (table) => [index("idx_product_options_product_id").on(table.productId)]
+);
+
+// ---------------------------------------------------------------------
 // Delivery Capability Engine — promotes src/data/serviceAreas.ts (a
 // static, compile-time array shipped into every page's public JS bundle
 // today) into a real table, per this milestone's mandated architecture

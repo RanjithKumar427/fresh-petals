@@ -8,7 +8,7 @@ export type SectionConfig = {
   label: string;
 };
 
-export const SECTIONS: SectionConfig[] = [
+const BOUQUET_SECTIONS: SectionConfig[] = [
   { id: "basic-information", label: "Basic Information" },
   { id: "images", label: "Images" },
   { id: "pricing", label: "Pricing" },
@@ -19,6 +19,25 @@ export const SECTIONS: SectionConfig[] = [
   { id: "seo", label: "SEO" },
   { id: "publishing", label: "Publishing" },
 ];
+
+/** Garlands reuse the same editor: their own details and options replace the bouquet-only sections. */
+const GARLAND_SECTIONS: SectionConfig[] = [
+  { id: "basic-information", label: "Basic Information" },
+  { id: "images", label: "Images" },
+  { id: "pricing", label: "Pricing" },
+  { id: "garland-details", label: "Garland Details" },
+  { id: "options", label: "Options & Charges" },
+  { id: "classification", label: "Classification" },
+  { id: "seo", label: "SEO" },
+  { id: "publishing", label: "Publishing" },
+];
+
+/** Kept for existing imports: the bouquet section list. */
+export const SECTIONS = BOUQUET_SECTIONS;
+
+export function getSections(draft: ProductDraft): SectionConfig[] {
+  return draft.garland ? GARLAND_SECTIONS : BOUQUET_SECTIONS;
+}
 
 /**
  * Real ✓/⚠ per section — every section is functional this milestone, so
@@ -57,6 +76,12 @@ export function getSectionStatus(
 
     case "seo":
       return draft.seoTitle || draft.seoDescription ? "complete" : "unavailable";
+
+    case "garland-details":
+      return draft.garland && draft.garland.photoPermission === "granted" && draft.garland.sampleVerified ? "complete" : "warning";
+
+    case "options":
+      return draft.options.length > 0 ? "complete" : "unavailable";
 
     case "publishing":
       return getPublishBlockers(draft, uncategorizedCategoryId).length === 0 ? "complete" : "warning";

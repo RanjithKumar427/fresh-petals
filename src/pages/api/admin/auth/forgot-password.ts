@@ -10,6 +10,22 @@ function looksLikeEmail(value: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
 
+/**
+ * Where the emailed link points. In production this must be SITE_URL
+ * (https://onlyfreshpetals.in) — never the request's own Host header,
+ * which a client controls. Outside production the request origin is used
+ * so local and preview runs never email a production link.
+ */
+function resetRedirect(request: Request): string | null {
+  const configured = process.env.SITE_URL;
+  const nonProduction = process.env.VERCEL_ENV === "preview" || process.env.VERCEL_ENV === "development" || !import.meta.env.PROD;
+  if (!nonProduction) {
+    if (!configured) return null;
+    return new URL("/admin/reset-password", configured).toString();
+  }
+  return new URL("/admin/reset-password", configured || new URL(request.url).origin).toString();
+}
+
 export const POST: APIRoute = async ({ request, cookies, redirect }) => {
   const form = await request.formData();
   const email = String(form.get("email") || "").trim();
@@ -21,17 +37,14 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
     return redirect(`/admin/forgot-password?error=${encodeURIComponent("Please enter a valid email address.")}`);
   }
 
-  // SITE_URL is the same single source of truth astro.config.mjs already
-  // uses for canonical/sitemap URLs. Falling back to this request's own
-  // origin (not a hardcoded guess) keeps local dev pointed at localhost
-  // instead of accidentally emailing a production reset link while testing.
-  const siteUrl = process.env.SITE_URL || new URL(request.url).origin;
-  const redirectTo = new URL("/admin/reset-password", siteUrl).toString();
+  const redirectTo = resetRedirect(request);
+  if (redirectTo) {
+    await AuthService.requestPasswordReset(email, redirectTo, request, cookies);
+  } else {
+    console.error("[forgot-password] SITE_URL is not set in production; no reset email sent.");
+  }
 
-  await AuthService.requestPasswordReset(email, redirectTo, request, cookies);
-
-  // Same response whether or not this email belongs to a registered admin
-  // -- see AuthService.requestPasswordReset's comment. Never distinguish
-  // "not registered" here; that's exactly what account enumeration looks for.
+  // Same response whether or not this email belongs to an administrator,
+  // and whether or not an email was sent: never distinguish them here.
   return redirect("/admin/forgot-password?sent=1");
 };

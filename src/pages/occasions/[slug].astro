@@ -4,6 +4,10 @@ import DiscoveryFeed from "../../components/DiscoveryFeed.astro";
 import { productCatalog, type Product } from "../../data/productCatalog";
 import { loadAuthoritativePrices, withAuthoritativePrice } from "../../server/services/ProductPricing";
 import { curateDiscoveryOrder } from "../../utils/feedCuration";
+import LandingDetails from "../../components/LandingDetails.astro";
+import { OCCASION_LANDING, NOINDEX_OCCASION_SLUGS, lowestPrice } from "../../data/seoLanding";
+import { GARLAND_OCCASION_ROUTES, LAUNCH_OCCASION_ROUTES, garlandsPromoted, launchProductsForOccasion } from "../../data/launchCatalogue";
+import LiveGarlands from "../../components/LiveGarlands.astro";
 
 type OccasionMeta = {
   name: string;
@@ -26,7 +30,7 @@ export async function getStaticPaths() {
       slug: "birthday",
       eyebrow: "Birthday Flowers",
       description:
-        "Fresh bouquets, baskets, flower boxes and hampers for birthday gifting in Hyderabad.",
+        "Fresh bouquets, baskets, flower boxes and hampers for birthday gifting in Bengaluru.",
       heroNote:
         "Choose a birthday-ready flower gift and confirm today’s flower availability on WhatsApp.",
       fallbackProductSlugs: [
@@ -64,6 +68,16 @@ export async function getStaticPaths() {
         "temple-bulk-flowers",
         "jasmine-malli",
       ],
+    },
+    {
+      // Built only when it has products (see the filter below): garland
+      // designs once they are public, or the drafts in a local preview.
+      name: "Engagement",
+      slug: "engagement",
+      eyebrow: "Engagement Flowers",
+      description: "Garlands for engagement ceremonies, made to order and quoted on WhatsApp.",
+      heroNote: "Garlands are made to order; the flowers, length and price are confirmed with you on WhatsApp.",
+      fallbackProductSlugs: [],
     },
     {
       name: "Pooja",
@@ -226,7 +240,25 @@ export async function getStaticPaths() {
     },
   ];
 
-  return occasions.map((occasion) => {
+  return occasions
+    // Engagement has no launch products of its own; its page exists once it
+    // has some, or once garlands are promoted (its garlands load live).
+    .filter((occasion) => occasion.slug !== "engagement" || launchProductsForOccasion("engagement").length > 0 || garlandsPromoted())
+    .map((occasion) => {
+    // Launch occasions (src/data/launchCatalogue.ts) recommend only launch
+    // products genuinely tagged for them — no fallback add-ons, baskets or
+    // torans that aren't ready. An empty one is noindexed and left out of
+    // the menu and sitemap.
+    if (LAUNCH_OCCASION_ROUTES.has(occasion.slug)) {
+      return {
+        params: { slug: occasion.slug },
+        props: {
+          occasion,
+          products: launchProductsForOccasion(occasion.slug).map((product) => withAuthoritativePrice(product, priceMap)),
+        },
+      };
+    }
+
     const taggedProducts = productCatalog.filter((product) =>
       product.occasionTags?.includes(occasion.slug)
     );
@@ -287,13 +319,39 @@ const whatsappMessage = encodeURIComponent(
   `Hi Fresh Petals, I'm looking for ${occasion.name} flowers. Please help me choose and confirm availability.`
 );
 const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
+
+// Search landing copy for occasions mapped to a distinct Bengaluru search
+// (src/data/seoLanding.ts). /occasions/pooja is noindexed so it doesn't
+// compete with /categories/pooja-flowers for pooja-flower searches.
+const landing = OCCASION_LANDING[occasion.slug];
+const pageTitle = landing?.title ?? `${occasion.name} Flowers | Fresh Petals Bengaluru`;
+const pageDescription =
+  products.length === 0
+    ? `Our ${occasion.name.toLowerCase()} range isn't ready yet. Ask Fresh Petals for a custom order on WhatsApp.`
+    : (landing?.description ?? occasion.description);
+const pageHeading = landing?.h1 ?? `${occasion.name} Flowers`;
+const fromPrice = landing ? lowestPrice(products) : null;
+// Wedding and engagement also show the live garland designs for that
+// occasion, loaded in the browser so admin changes need no deployment. They
+// aren't known at build time, so they don't count towards indexing here.
+const liveGarlands = GARLAND_OCCASION_ROUTES.has(occasion.slug);
+const noindex = products.length === 0 || NOINDEX_OCCASION_SLUGS.has(occasion.slug);
+const breadcrumbJsonLd = {
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Home", item: new URL("/", Astro.site).toString() },
+    { "@type": "ListItem", position: 2, name: `${occasion.name} Flowers`, item: new URL(`/occasions/${occasion.slug}`, Astro.site).toString() },
+  ],
+};
 ---
 
 <BaseLayout
-  title={`${occasion.name} Flowers | Fresh Petals Hyderabad`}
-  description={occasion.description}
+  title={pageTitle}
+  description={pageDescription}
+  noindex={noindex}
+  jsonLd={noindex ? [] : [breadcrumbJsonLd]}
 >
-  <main class="bg-white">
+  <main class="bg-paper">
     <section class="px-5 pt-12 md:px-8 md:pt-16">
       <div class="mx-auto max-w-7xl">
         <div class="text-center">
@@ -302,32 +360,52 @@ const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
           </p>
 
           <h1 class="fp-h1 mt-3">
-            {occasion.name}
+            {pageHeading}
           </h1>
 
-          <p class="mx-auto mt-5 max-w-2xl text-sm leading-7 text-[#66565D] md:text-base">
-            {occasion.description}
-          </p>
+          {/* A launch occasion with nothing ready shows only its heading and
+               the custom-order prompt below — no description of items that
+               aren't on sale yet. */}
+          {
+            products.length === 0 ? null : landing ? (
+              <div class="mx-auto mt-5 max-w-2xl space-y-3 text-sm leading-7 text-moss md:text-base">
+                {landing.intro.map((paragraph) => <p>{paragraph}</p>)}
+                {fromPrice !== null && (
+                  <p class="font-semibold text-berry">
+                    Prices on this page start from ₹{fromPrice}. The final price is confirmed on WhatsApp before you pay.
+                  </p>
+                )}
+              </div>
+            ) : (
+              <p class="mx-auto mt-5 max-w-2xl text-sm leading-7 text-moss md:text-base">
+                {occasion.description}
+              </p>
+            )
+          }
 
-          <div class="mx-auto mt-6 max-w-2xl rounded-[24px] border border-[#EEE5E8] bg-[#FFF8FA] px-5 py-4">
-            <p class="text-sm leading-7 text-[#66565D]">
+          {products.length > 0 && (
+          <div class="mx-auto mt-6 max-w-2xl rounded-[24px] border border-line bg-linen px-5 py-4">
+            <p class="text-sm leading-7 text-moss">
               {occasion.heroNote}
             </p>
           </div>
+          )}
 
+          {products.length > 0 && (
           <div class="mx-auto mt-6 flex max-w-2xl flex-wrap items-center justify-center gap-2">
-            <span class="rounded-full border border-[#EEE5E8] bg-white px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#7C243E]">
+            <span class="rounded-full border border-line bg-paper px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-berry">
               {products.length} option{products.length === 1 ? "" : "s"}
             </span>
 
-            <span class="rounded-full border border-[#E5EFE9] bg-[#F6FBF8] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#075838]">
+            <span class="rounded-full border border-mint-soft bg-mint-soft px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-ink">
               WhatsApp confirmed
             </span>
 
-            <span class="rounded-full border border-[#EEE5E8] bg-white px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#66565D]">
-              Hyderabad delivery
+            <span class="rounded-full border border-line bg-paper px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-moss">
+              Delivery area confirmed on WhatsApp
             </span>
           </div>
+          )}
         </div>
       </div>
     </section>
@@ -342,27 +420,37 @@ const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
               href={whatsappUrl}
               target="_blank"
               rel="noopener noreferrer"
-              class="fp-btn-whatsapp inline-flex items-center rounded-full bg-[#075838] px-6 py-3 text-[11px] font-bold uppercase tracking-[0.18em] text-white shadow-[0_10px_22px_rgba(7,88,56,0.22)] transition hover:bg-[#7C243E]"
+              class="fp-btn-whatsapp inline-flex items-center rounded-full bg-ink px-6 py-3 text-[11px] font-bold uppercase tracking-[0.18em] text-white shadow-[0_10px_22px_rgba(7,88,56,0.22)] transition hover:bg-berry"
             >
               Ask about {occasion.name} flowers on WhatsApp
             </a>
           </section>
         </Fragment>
       ) : (
-        <section class="px-5 pb-14 md:px-8">
+        <section class="px-5 pb-14 md:px-8" data-occasion-empty>
           <div class="mx-auto max-w-7xl">
-            <div class="rounded-[24px] border border-[#EEE5E8] bg-[#FFF8FA] p-8 text-center">
-              <h2 class="text-lg font-semibold text-[#171717]">
-                No products found
+            <div class="rounded-[24px] border border-line bg-linen p-8 text-center">
+              <h2 class="text-lg font-semibold text-ink">
+                Our {occasion.name.toLowerCase()} range isn't ready yet
               </h2>
 
-              <p class="mt-3 text-sm leading-7 text-[#66565D]">
-                This occasion does not have active products yet.
+              <p class="mt-3 text-sm leading-7 text-moss">
+                Tell us what you need and we'll let you know what we can make.
               </p>
+              <a
+                href="/custom-orders"
+                class="mt-6 inline-flex min-h-[44px] items-center rounded-full bg-ink px-6 text-[11px] font-bold uppercase tracking-[0.18em] text-white transition hover:bg-berry"
+              >
+                Ask for a custom order
+              </a>
             </div>
           </div>
         </section>
       )
     }
+
+    {liveGarlands && <LiveGarlands occasion={occasion.slug} />}
+
+    {landing && <LandingDetails content={landing} />}
   </main>
 </BaseLayout>

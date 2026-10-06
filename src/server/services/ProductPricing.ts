@@ -21,6 +21,7 @@
 // this migration is actually about: one number, one source, everywhere a
 // customer can see it.
 import { ProductRepository } from "../db/repositories/ProductRepository";
+import { isExemptFromDatabasePrice, type GarlandDesign } from "../../data/garlandRules";
 
 export type AuthoritativePrice = {
   priceLabel: string | null;
@@ -70,7 +71,10 @@ async function loadPriceMap(): Promise<Map<string, AuthoritativePrice>> {
  * authoritative price for every product, keyed by slug. Call this once per
  * page/component, before mapping over productCatalog entries.
  */
-export function loadAuthoritativePrices(): Promise<Map<string, AuthoritativePrice>> {
+export function loadAuthoritativePrices({ fresh = false }: { fresh?: boolean } = {}): Promise<Map<string, AuthoritativePrice>> {
+  // Static builds share one read; on-demand pages (garlands) ask for a fresh
+  // one so a warm server never shows an outdated price.
+  if (fresh) return loadPriceMap();
   if (!cache) cache = loadPriceMap();
   return cache;
 }
@@ -91,6 +95,16 @@ export function withAuthoritativePrice<T extends { slug: string; priceLabel: str
   priceMap: Map<string, AuthoritativePrice>
 ): T {
   const authoritative = priceMap.get(product.slug);
+  // Garland designs (src/data/garlandRules.ts) skip this check only when
+  // isExemptFromDatabasePrice says so: unpublished drafts (local preview
+  // builds only, never sold) and public enquiry designs with no confirmed
+  // price. A public garland with a confirmed price or in cart mode needs a
+  // database row and fails here without one, like any other product. A
+  // draft keeps its own price label even if a row exists.
+  const garland = (product as { garland?: GarlandDesign }).garland;
+  if (garland && isExemptFromDatabasePrice(garland)) {
+    return product;
+  }
   if (!authoritative) {
     throw new Error(
       `No authoritative price found in the database for product slug "${product.slug}". ` +

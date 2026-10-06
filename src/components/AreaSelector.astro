@@ -9,6 +9,8 @@
 // `prerender = false`) via DeliveryService.listAreas() — the same
 // server-rendered-data approach the rest of the storefront already uses
 // for catalogue content, not a new API route.
+import { STOREFRONT_CITY } from "../config/storefront";
+
 interface Props {
   areas: string[];
 }
@@ -17,15 +19,25 @@ const { areas } = Astro.props;
 ---
 
 {
+  areas.length === 0 && (
+    <section class="border-b border-line bg-paper px-5 py-3 md:px-8" data-area-pending>
+      <p class="mx-auto max-w-7xl text-[12px] text-moss">
+        📍 {STOREFRONT_CITY} delivery areas are being confirmed. Message us on WhatsApp to check your pincode.
+      </p>
+    </section>
+  )
+}
+
+{
   areas.length > 0 && (
-    <section class="border-b border-[#F3EEEF] bg-white px-5 py-3 md:px-8" data-area-selector>
+    <section class="border-b border-line bg-paper px-5 py-3 md:px-8" data-area-selector>
       <div class="mx-auto max-w-7xl">
         <div
           class="fp-scrollbar-hide flex items-center gap-2 overflow-x-auto"
           role="group"
           aria-label="Select your delivery area"
         >
-          <span class="shrink-0 text-[12px] text-[#9B8A90]">
+          <span class="shrink-0 text-[12px] text-moss">
             📍 Delivering to
           </span>
 
@@ -34,7 +46,7 @@ const { areas } = Astro.props;
               <button
                 type="button"
                 data-area-option={area}
-                class="shrink-0 rounded-full border border-[#EEE5E8] px-3.5 py-1.5 text-[12px] text-[#44383D] transition hover:border-[#D98B9A] aria-pressed:border-[#7C243E] aria-pressed:bg-[#FDF3F5] aria-pressed:text-[#7C243E] aria-pressed:font-semibold"
+                class="shrink-0 rounded-full border border-line px-3.5 py-1.5 text-[12px] text-moss transition hover:border-rose-deep aria-pressed:border-berry aria-pressed:bg-linen aria-pressed:text-berry aria-pressed:font-semibold"
                 aria-pressed="false"
               >
                 {area}

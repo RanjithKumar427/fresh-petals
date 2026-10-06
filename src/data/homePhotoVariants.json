@@ -1,0 +1,245 @@
+{
+  "/images/hero-bouquets.jpg": {
+    "width": 735,
+    "height": 908,
+    "variants": {
+      "360": "/images/hero-bouquets-360w.webp",
+      "480": "/images/hero-bouquets-480w.webp",
+      "600": "/images/hero-bouquets-600w.webp",
+      "735": "/images/hero-bouquets-735w.webp"
+    }
+  },
+  "/images/hero-main-banner.jpg": {
+    "width": 1199,
+    "height": 735,
+    "variants": {
+      "360": "/images/hero-main-banner-360w.webp",
+      "480": "/images/hero-main-banner-480w.webp",
+      "600": "/images/hero-main-banner-600w.webp",
+      "720": "/images/hero-main-banner-720w.webp",
+      "1199": "/images/hero-main-banner-1199w.webp"
+    }
+  },
+  "/images/banner-bouquet.jpg": {
+    "width": 736,
+    "height": 1308,
+    "variants": {
+      "360": "/images/banner-bouquet-360w.webp",
+      "480": "/images/banner-bouquet-480w.webp",
+      "600": "/images/banner-bouquet-600w.webp",
+      "736": "/images/banner-bouquet-736w.webp"
+    }
+  },
+  "/images/banner-pooja.jpg": {
+    "width": 736,
+    "height": 981,
+    "variants": {
+      "360": "/images/banner-pooja-360w.webp",
+      "480": "/images/banner-pooja-480w.webp",
+      "600": "/images/banner-pooja-600w.webp",
+      "736": "/images/banner-pooja-736w.webp"
+    }
+  },
+  "/images/pooja-flowers.jpg": {
+    "width": 720,
+    "height": 960,
+    "variants": {
+      "360": "/images/pooja-flowers-360w.webp",
+      "480": "/images/pooja-flowers-480w.webp",
+      "600": "/images/pooja-flowers-600w.webp",
+      "720": "/images/pooja-flowers-720w.webp"
+    }
+  },
+  "/images/bouquet-1.jpg": {
+    "width": 735,
+    "height": 1240,
+    "variants": {
+      "360": "/images/bouquet-1-360w.webp",
+      "480": "/images/bouquet-1-480w.webp",
+      "600": "/images/bouquet-1-600w.webp",
+      "735": "/images/bouquet-1-735w.webp"
+    }
+  },
+  "/images/bouquet-6.jpg": {
+    "width": 640,
+    "height": 1138,
+    "variants": {
+      "360": "/images/bouquet-6-360w.webp",
+      "480": "/images/bouquet-6-480w.webp",
+      "640": "/images/bouquet-6-640w.webp"
+    }
+  },
+  "/images/cat-bouquets.jpg": {
+    "width": 736,
+    "height": 920,
+    "variants": {
+      "360": "/images/cat-bouquets-360w.webp",
+      "480": "/images/cat-bouquets-480w.webp",
+      "600": "/images/cat-bouquets-600w.webp",
+      "736": "/images/cat-bouquets-736w.webp"
+    }
+  },
+  "/images/rose-bouquet.jpg": {
+    "width": 736,
+    "height": 1104,
+    "variants": {
+      "360": "/images/rose-bouquet-360w.webp",
+      "480": "/images/rose-bouquet-480w.webp",
+      "600": "/images/rose-bouquet-600w.webp",
+      "736": "/images/rose-bouquet-736w.webp"
+    }
+  },
+  "/images/cat-pooja.jpg": {
+    "width": 736,
+    "height": 1308,
+    "variants": {
+      "360": "/images/cat-pooja-360w.webp",
+      "480": "/images/cat-pooja-480w.webp",
+      "600": "/images/cat-pooja-600w.webp",
+      "736": "/images/cat-pooja-736w.webp"
+    }
+  },
+  "/images/jasmine.jpg": {
+    "width": 720,
+    "height": 927,
+    "variants": {
+      "360": "/images/jasmine-360w.webp",
+      "480": "/images/jasmine-480w.webp",
+      "600": "/images/jasmine-600w.webp",
+      "720": "/images/jasmine-720w.webp"
+    }
+  },
+  "/images/occasion-wedding.jpg": {
+    "width": 736,
+    "height": 1181,
+    "variants": {
+      "360": "/images/occasion-wedding-360w.webp",
+      "480": "/images/occasion-wedding-480w.webp",
+      "600": "/images/occasion-wedding-600w.webp",
+      "736": "/images/occasion-wedding-736w.webp"
+    }
+  },
+  "/images/occasion-event.jpg": {
+    "width": 736,
+    "height": 1308,
+    "variants": {
+      "360": "/images/occasion-event-360w.webp",
+      "480": "/images/occasion-event-480w.webp",
+      "600": "/images/occasion-event-600w.webp",
+      "736": "/images/occasion-event-736w.webp"
+    }
+  },
+  "/images/cat-basket.jpg": {
+    "width": 736,
+    "height": 1102,
+    "variants": {
+      "360": "/images/cat-basket-360w.webp",
+      "480": "/images/cat-basket-480w.webp",
+      "600": "/images/cat-basket-600w.webp",
+      "736": "/images/cat-basket-736w.webp"
+    }
+  },
+  "/images/cat-vases.jpg": {
+    "width": 640,
+    "height": 800,
+    "variants": {
+      "360": "/images/cat-vases-360w.webp",
+      "480": "/images/cat-vases-480w.webp",
+      "640": "/images/cat-vases-640w.webp"
+    }
+  },
+  "/images/cat-plant.jpg": {
+    "width": 736,
+    "height": 1104,
+    "variants": {
+      "360": "/images/cat-plant-360w.webp",
+      "480": "/images/cat-plant-480w.webp",
+      "600": "/images/cat-plant-600w.webp",
+      "736": "/images/cat-plant-736w.webp"
+    }
+  },
+  "/images/cat-candle.jpg": {
+    "width": 736,
+    "height": 1349,
+    "variants": {
+      "360": "/images/cat-candle-360w.webp",
+      "480": "/images/cat-candle-480w.webp",
+      "600": "/images/cat-candle-600w.webp",
+      "736": "/images/cat-candle-736w.webp"
+    }
+  },
+  "/images/bouquet-1#hero": {
+    "width": 735,
+    "height": 992,
+    "crop": {
+      "left": 0,
+      "top": 186,
+      "width": 735,
+      "height": 992
+    },
+    "variants": {
+      "360": "/images/bouquet-1-hero-360w.webp",
+      "480": "/images/bouquet-1-hero-480w.webp",
+      "600": "/images/bouquet-1-hero-600w.webp",
+      "735": "/images/bouquet-1-hero-735w.webp"
+    }
+  },
+  "/images/bouquet-1#tulips": {
+    "width": 360,
+    "height": 360,
+    "crop": {
+      "left": 110,
+      "top": 290,
+      "width": 360,
+      "height": 360
+    },
+    "variants": {
+      "180": "/images/bouquet-1-tulips-180w.webp",
+      "240": "/images/bouquet-1-tulips-240w.webp",
+      "360": "/images/bouquet-1-tulips-360w.webp"
+    }
+  },
+  "/images/banner-bouquet#centre": {
+    "width": 380,
+    "height": 300,
+    "crop": {
+      "left": 230,
+      "top": 450,
+      "width": 380,
+      "height": 300
+    },
+    "variants": {
+      "240": "/images/banner-bouquet-centre-240w.webp",
+      "380": "/images/banner-bouquet-centre-380w.webp"
+    }
+  },
+  "/images/banner-bouquet#tie": {
+    "width": 360,
+    "height": 290,
+    "crop": {
+      "left": 190,
+      "top": 1010,
+      "width": 360,
+      "height": 290
+    },
+    "variants": {
+      "240": "/images/banner-bouquet-tie-240w.webp",
+      "360": "/images/banner-bouquet-tie-360w.webp"
+    }
+  },
+  "/images/bouquet-6#closing": {
+    "width": 640,
+    "height": 900,
+    "crop": {
+      "left": 0,
+      "top": 50,
+      "width": 640,
+      "height": 900
+    },
+    "variants": {
+      "360": "/images/bouquet-6-closing-360w.webp",
+      "480": "/images/bouquet-6-closing-480w.webp",
+      "640": "/images/bouquet-6-closing-640w.webp"
+    }
+  }
+}

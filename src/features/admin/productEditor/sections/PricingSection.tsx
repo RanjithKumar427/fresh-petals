@@ -20,7 +20,14 @@ function numberOrNull(value: string): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+const GARLAND_PRICE_OPTIONS: { value: PriceType; label: string; hint: string }[] = [
+  { value: "fixed", label: "Price", hint: "Shown on the card, page and WhatsApp" },
+  { value: "quote", label: "Price on request", hint: "Quoted on WhatsApp" },
+];
+
 export default function PricingSection({ draft, onChange }: Props) {
+  const isGarland = !!draft.garland;
+  const priceOptions = isGarland ? GARLAND_PRICE_OPTIONS : PRICE_TYPE_OPTIONS;
   const needsSellingPrice = draft.priceType === "fixed" || draft.priceType === "from";
   const savings = computeSavings(draft.sellingPrice, draft.compareAtPrice);
   const discountPercent = computeDiscountPercent(draft.sellingPrice, draft.compareAtPrice);
@@ -32,12 +39,13 @@ export default function PricingSection({ draft, onChange }: Props) {
 
       <div className="mt-5">
         <label className="fp-label block text-[10px] text-[#66565D]">Price Type</label>
-        <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
-          {PRICE_TYPE_OPTIONS.map((option) => (
+        <div className={`mt-2 grid grid-cols-2 gap-2 ${isGarland ? "" : "sm:grid-cols-4"}`}>
+          {priceOptions.map((option) => (
             <button
               key={option.value}
               type="button"
-              onClick={() => onChange({ priceType: option.value })}
+              aria-pressed={draft.priceType === option.value}
+              onClick={() => onChange(option.value === "quote" && isGarland ? { priceType: "quote", sellingPrice: null, compareAtPrice: null } : { priceType: option.value })}
               className={`rounded-lg border px-3 py-2 text-left transition ${
                 draft.priceType === option.value
                   ? "border-[#7C243E] bg-[#F8DCE5]"
@@ -51,6 +59,11 @@ export default function PricingSection({ draft, onChange }: Props) {
         </div>
       </div>
 
+      {isGarland && draft.priceType === "quote" ? (
+        <p className="mt-5 rounded-lg bg-[#FBF7F5] px-4 py-3 text-[13px] text-[#66565D]" data-price-on-request>
+          Customers see "Price on request" and ask for a quote on WhatsApp.
+        </p>
+      ) : (
       <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2">
         <FormField
           label={`Selling Price ${needsSellingPrice ? "" : "(optional)"}`}
@@ -124,6 +137,12 @@ export default function PricingSection({ draft, onChange }: Props) {
           </div>
         </FormField>
       </div>
+      )}
+      {isGarland && (
+        <p className="mt-3 text-[12px] text-[#9B948F]">
+          The price is shown as you set it. What it covers (single, pair or set) comes from "Sold as" in Garland Details; no totals are calculated.
+        </p>
+      )}
 
       {(savings !== null || margin !== null) && (
         <div className="mt-5 grid grid-cols-1 gap-3 rounded-xl bg-[#FBF7F5] p-4 sm:grid-cols-3">

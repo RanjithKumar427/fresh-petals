@@ -7,5 +7,11 @@ declare namespace App {
       id: string;
       email: string;
     };
+    /** Set only on /admin/mfa for an approved admin who has passed the password step (aal1) but not yet the second factor. */
+    pendingAdmin?: {
+      id: string;
+      email: string;
+      hasVerifiedFactor: boolean;
+    };
   }
 }

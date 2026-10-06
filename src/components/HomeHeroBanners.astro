@@ -17,13 +17,15 @@
 //     in the DOM simultaneously, opacity-toggled, not conditionally
 //     rendered — the audit found 3 <h1> elements on the homepage, none of
 //     which name the page); one real, visually-hidden page <h1> added.
+import { HOME_LANDING } from "../data/seoLanding";
+
 const slides = [
   {
     image: "/images/hero-main-banner.jpg",
-    label: "Fresh Flowers Delivered In Hyderabad",
-    title: "Same Day Delivery",
+    label: "Fresh Flowers In Bengaluru",
+    title: "Order On WhatsApp",
     subtitle:
-      "Fresh pooja flowers, jasmine, bouquets and garlands delivered across Hyderabad.",
+      "Fresh pooja flowers, jasmine, bouquets and garlands in Bengaluru. Delivery area, slot and fee are confirmed on WhatsApp.",
     button: "Shop Now",
     href: "/categories/offers",
   },
@@ -55,8 +57,8 @@ const slides = [
 ];
 ---
 
-<section class="bg-white">
-  <h1 class="sr-only">Fresh Petals — Fresh Flowers Delivered in Hyderabad</h1>
+<section class="bg-paper">
+  <h1 class="sr-only">{HOME_LANDING.h1}</h1>
 
   <div
     id="fresh-petals-hero-slider"
@@ -77,6 +79,7 @@ const slides = [
             alt={slide.title}
             class="absolute inset-0 h-full w-full object-cover"
             loading={index === 0 ? "eager" : "lazy"}
+            fetchpriority={index === 0 ? "high" : undefined}
             decoding="async"
           />
 
@@ -97,7 +100,7 @@ const slides = [
                 {slide.label}
               </p>
 
-              <h2 class="fp-serif mt-1.5 text-xl uppercase leading-[1.05] text-white sm:text-2xl md:mt-2 md:text-3xl">
+              <h2 class="fp-serif mt-1.5 text-xl leading-[1.05] text-white sm:text-2xl md:mt-2 md:text-3xl">
                 {slide.title}
               </h2>
 
@@ -139,7 +142,7 @@ const slides = [
           >
             <span
               class={`hero-dot h-[3px] rounded-full transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-                index === 0 ? "w-12 bg-white" : "w-6 bg-white/45"
+                index === 0 ? "w-12 bg-paper" : "w-6 bg-white/45"
               }`}
             />
           </button>
@@ -200,7 +203,7 @@ const slides = [
         if (!dot) return;
 
         dot.classList.toggle("w-12", dotIndex === index);
-        dot.classList.toggle("bg-white", dotIndex === index);
+        dot.classList.toggle("bg-paper", dotIndex === index);
 
         dot.classList.toggle("w-6", dotIndex !== index);
         dot.classList.toggle("bg-white/45", dotIndex !== index);

@@ -20,35 +20,37 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
 ---
 
 <BaseLayout
-  title="Cart | Fresh Petals Hyderabad"
+  title="Cart | Fresh Petals Bengaluru"
+  noindex
   description="Review your Fresh Petals flower order cart and continue on WhatsApp."
+  showCategoryCarousel={false}
 >
-  <main class="bg-white">
+  <main class="bg-paper">
     <section class="px-5 py-12 md:px-8 md:py-16">
       <div class="mx-auto max-w-5xl">
         <div class="mb-10 text-center">
           <p class="fp-eyebrow">
-            Fresh Petals Hyderabad
+            Fresh Petals Bengaluru
           </p>
 
           <h1 class="fp-h1 mt-3">
             Your Cart
           </h1>
 
-          <p class="mx-auto mt-5 max-w-2xl text-sm leading-7 text-[#66565D] md:text-base">
+          <p class="mx-auto mt-5 max-w-2xl text-sm leading-7 text-moss md:text-base">
             Review your selected flowers and continue on WhatsApp for availability, final price and payment confirmation.
           </p>
         </div>
 
         <div
           data-cart-empty
-          class="hidden rounded-[24px] border border-[#EEE5E8] bg-[#FFF8FA] p-8 text-center"
+          class="hidden rounded-[24px] border border-line bg-linen p-8 text-center"
         >
-          <h2 class="text-lg font-semibold text-[#171717]">
+          <h2 class="text-lg font-semibold text-ink">
             Your cart is empty
           </h2>
 
-          <p class="mt-3 text-sm leading-7 text-[#66565D]">
+          <p class="mt-3 text-sm leading-7 text-moss">
             Add bouquets, pooja flowers, flower boxes, baskets or add-ons to prepare your order.
           </p>
 
@@ -63,14 +65,14 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
         <div data-cart-content class="hidden">
           <div data-cart-items class="space-y-5"></div>
 
-          <div class="mt-8 rounded-[24px] border border-[#EEE5E8] bg-[#FFF8FA] p-5">
-            <h2 class="text-[12px] font-bold uppercase tracking-[0.24em] text-[#171717]">
+          <div class="mt-8 rounded-[24px] border border-line bg-linen p-5">
+            <h2 class="text-[12px] font-bold uppercase tracking-[0.24em] text-ink">
               Order Details
             </h2>
 
             <div class="mt-5 grid gap-3 md:grid-cols-2">
               <div>
-                <label class="mb-2 block text-[10px] font-bold uppercase tracking-[0.22em] text-[#7C243E]">
+                <label class="mb-2 block text-[10px] font-bold uppercase tracking-[0.22em] text-berry">
                   Name
                 </label>
 
@@ -78,12 +80,12 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
                   type="text"
                   data-customer-name
                   placeholder="Your name"
-                  class="w-full rounded-full border border-[#E5D6DC] bg-white px-5 py-3 text-sm text-[#171717] outline-none transition placeholder:text-[#A99DA3] focus:border-[#7C243E]"
+                  class="w-full rounded-full border border-line-strong bg-paper px-5 py-3 text-sm text-ink outline-none transition placeholder:text-sage focus:border-berry"
                 />
               </div>
 
               <div>
-                <label class="mb-2 block text-[10px] font-bold uppercase tracking-[0.22em] text-[#7C243E]">
+                <label class="mb-2 block text-[10px] font-bold uppercase tracking-[0.22em] text-berry">
                   Phone / WhatsApp
                 </label>
 
@@ -91,13 +93,13 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
                   type="tel"
                   data-customer-phone
                   placeholder="Your phone number"
-                  class="w-full rounded-full border border-[#E5D6DC] bg-white px-5 py-3 text-sm text-[#171717] outline-none transition placeholder:text-[#A99DA3] focus:border-[#7C243E]"
+                  class="w-full rounded-full border border-line-strong bg-paper px-5 py-3 text-sm text-ink outline-none transition placeholder:text-sage focus:border-berry"
                 />
               </div>
 
               <div>
-                <label class="mb-2 block text-[10px] font-bold uppercase tracking-[0.22em] text-[#7C243E]">
-                  Main Delivery Pincode
+                <label class="mb-2 block text-[10px] font-bold uppercase tracking-[0.22em] text-berry">
+                  Delivery Pincode (optional)
                 </label>
 
                 <input
@@ -105,31 +107,31 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
                   inputmode="numeric"
                   maxlength="6"
                   data-customer-pincode
-                  placeholder="Delivery pincode"
-                  class="w-full rounded-full border border-[#E5D6DC] bg-white px-5 py-3 text-sm text-[#171717] outline-none transition placeholder:text-[#A99DA3] focus:border-[#7C243E]"
+                  placeholder="6-digit pincode — optional"
+                  class="w-full rounded-full border border-line-strong bg-paper px-5 py-3 text-sm text-ink outline-none transition placeholder:text-sage focus:border-berry"
                 />
               </div>
 
               <div>
-                <label class="mb-2 block text-[10px] font-bold uppercase tracking-[0.22em] text-[#7C243E]">
+                <label class="mb-2 block text-[10px] font-bold uppercase tracking-[0.22em] text-berry">
                   Main Delivery Date
                 </label>
 
                 <input
                   type="date"
                   data-delivery-date
-                  class="w-full rounded-full border border-[#E5D6DC] bg-white px-5 py-3 text-sm text-[#171717] outline-none transition focus:border-[#7C243E]"
+                  class="w-full rounded-full border border-line-strong bg-paper px-5 py-3 text-sm text-ink outline-none transition focus:border-berry"
                 />
               </div>
 
               <div class="md:col-span-2">
-                <label class="mb-2 block text-[10px] font-bold uppercase tracking-[0.22em] text-[#7C243E]">
+                <label class="mb-2 block text-[10px] font-bold uppercase tracking-[0.22em] text-berry">
                   Main Delivery Time Slot
                 </label>
 
                 <select
                   data-delivery-slot
-                  class="w-full rounded-full border border-[#E5D6DC] bg-white px-5 py-3 text-sm text-[#171717] outline-none transition focus:border-[#7C243E]"
+                  class="w-full rounded-full border border-line-strong bg-paper px-5 py-3 text-sm text-ink outline-none transition focus:border-berry"
                 >
                   <option value="">Select delivery time slot</option>
                   {
@@ -143,7 +145,7 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
               </div>
 
               <div class="md:col-span-2">
-                <label class="mb-2 block text-[10px] font-bold uppercase tracking-[0.22em] text-[#7C243E]">
+                <label class="mb-2 block text-[10px] font-bold uppercase tracking-[0.22em] text-berry">
                   Delivery Address / Order Note
                 </label>
 
@@ -151,23 +153,23 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
                   rows="3"
                   data-customer-note
                   placeholder="Delivery address, preferred flowers, special instructions, etc."
-                  class="w-full rounded-[20px] border border-[#E5D6DC] bg-white px-5 py-3 text-sm text-[#171717] outline-none transition placeholder:text-[#A99DA3] focus:border-[#7C243E]"
+                  class="w-full rounded-[20px] border border-line-strong bg-paper px-5 py-3 text-sm text-ink outline-none transition placeholder:text-sage focus:border-berry"
                 ></textarea>
               </div>
             </div>
 
-            <div class="mt-8 border-t border-[#EEE5E8] pt-6">
-              <h2 class="text-[12px] font-bold uppercase tracking-[0.24em] text-[#171717]">
+            <div class="mt-8 border-t border-line pt-6">
+              <h2 class="text-[12px] font-bold uppercase tracking-[0.24em] text-ink">
                 Delivery Details
               </h2>
 
-              <p class="mt-2 text-xs leading-6 text-[#66565D]">
+              <p class="mt-2 text-xs leading-6 text-moss">
                 Who are the flowers for, and where should they arrive?
               </p>
 
               <div class="mt-5 grid gap-3 md:grid-cols-2">
                 <div>
-                  <label class="mb-2 block text-[10px] font-bold uppercase tracking-[0.22em] text-[#7C243E]">
+                  <label class="mb-2 block text-[10px] font-bold uppercase tracking-[0.22em] text-berry">
                     Recipient Name
                   </label>
 
@@ -175,12 +177,12 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
                     type="text"
                     data-recipient-name
                     placeholder="Who should receive the flowers?"
-                    class="w-full rounded-full border border-[#E5D6DC] bg-white px-5 py-3 text-sm text-[#171717] outline-none transition placeholder:text-[#A99DA3] focus:border-[#7C243E]"
+                    class="w-full rounded-full border border-line-strong bg-paper px-5 py-3 text-sm text-ink outline-none transition placeholder:text-sage focus:border-berry"
                   />
                 </div>
 
                 <div>
-                  <label class="mb-2 block text-[10px] font-bold uppercase tracking-[0.22em] text-[#7C243E]">
+                  <label class="mb-2 block text-[10px] font-bold uppercase tracking-[0.22em] text-berry">
                     Recipient Phone
                   </label>
 
@@ -188,12 +190,12 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
                     type="tel"
                     data-recipient-phone
                     placeholder="10-digit mobile number"
-                    class="w-full rounded-full border border-[#E5D6DC] bg-white px-5 py-3 text-sm text-[#171717] outline-none transition placeholder:text-[#A99DA3] focus:border-[#7C243E]"
+                    class="w-full rounded-full border border-line-strong bg-paper px-5 py-3 text-sm text-ink outline-none transition placeholder:text-sage focus:border-berry"
                   />
                 </div>
 
                 <div>
-                  <label class="mb-2 block text-[10px] font-bold uppercase tracking-[0.22em] text-[#7C243E]">
+                  <label class="mb-2 block text-[10px] font-bold uppercase tracking-[0.22em] text-berry">
                     Delivery Landmark
                   </label>
 
@@ -201,18 +203,18 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
                     type="text"
                     data-delivery-landmark
                     placeholder="Apartment, office, landmark, etc."
-                    class="w-full rounded-full border border-[#E5D6DC] bg-white px-5 py-3 text-sm text-[#171717] outline-none transition placeholder:text-[#A99DA3] focus:border-[#7C243E]"
+                    class="w-full rounded-full border border-line-strong bg-paper px-5 py-3 text-sm text-ink outline-none transition placeholder:text-sage focus:border-berry"
                   />
                 </div>
 
                 <div>
-                  <label class="mb-2 block text-[10px] font-bold uppercase tracking-[0.22em] text-[#7C243E]">
+                  <label class="mb-2 block text-[10px] font-bold uppercase tracking-[0.22em] text-berry">
                     Occasion
                   </label>
 
                   <select
                     data-occasion
-                    class="w-full rounded-full border border-[#E5D6DC] bg-white px-5 py-3 text-sm text-[#171717] outline-none transition focus:border-[#7C243E]"
+                    class="w-full rounded-full border border-line-strong bg-paper px-5 py-3 text-sm text-ink outline-none transition focus:border-berry"
                   >
                     <option value="">Select occasion</option>
                     {
@@ -225,7 +227,7 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
                 </div>
 
                 <div class="md:col-span-2 hidden" data-occasion-other-wrapper>
-                  <label class="mb-2 block text-[10px] font-bold uppercase tracking-[0.22em] text-[#7C243E]">
+                  <label class="mb-2 block text-[10px] font-bold uppercase tracking-[0.22em] text-berry">
                     Tell us more (optional)
                   </label>
 
@@ -234,7 +236,7 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
                     data-occasion-other
                     placeholder="Short description of the occasion"
                     maxlength="80"
-                    class="w-full rounded-full border border-[#E5D6DC] bg-white px-5 py-3 text-sm text-[#171717] outline-none transition placeholder:text-[#A99DA3] focus:border-[#7C243E]"
+                    class="w-full rounded-full border border-line-strong bg-paper px-5 py-3 text-sm text-ink outline-none transition placeholder:text-sage focus:border-berry"
                   />
                 </div>
               </div>
@@ -247,41 +249,41 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
 
             <div
               data-cart-summary
-              class="mt-5 hidden rounded-[24px] border border-[#EEE5E8] bg-white p-5"
+              class="mt-5 hidden rounded-[24px] border border-line bg-paper p-5"
             ></div>
 
             <div
               data-cart-error
-              class="mt-5 hidden rounded-2xl border border-[#E7B7C0] bg-[#FFF3F5] p-4 text-sm font-semibold text-[#7C243E]"
+              class="mt-5 hidden rounded-2xl border border-rose bg-linen p-4 text-sm font-semibold text-berry"
             ></div>
                 <div
   data-cart-error
-  class="mt-5 hidden rounded-2xl border border-[#E7B7C0] bg-[#FFF3F5] p-4 text-sm font-semibold text-[#7C243E]"
+  class="mt-5 hidden rounded-2xl border border-rose bg-linen p-4 text-sm font-semibold text-berry"
 ></div>
 
-<div class="mt-6 rounded-[24px] border border-[#E5EFE9] bg-[#F6FBF8] p-5">
-  <h3 class="text-[12px] font-bold uppercase tracking-[0.24em] text-[#075838]">
+<div class="mt-6 rounded-[24px] border border-mint-soft bg-mint-soft p-5">
+  <h3 class="text-[12px] font-bold uppercase tracking-[0.24em] text-ink">
     Before Sending
   </h3>
 
-  <ul class="mt-4 space-y-3 text-sm leading-6 text-[#5E5358]">
+  <ul class="mt-4 space-y-3 text-sm leading-6 text-moss">
     <li class="flex gap-2">
-      <span class="mt-1 text-[#075838]">•</span>
+      <span class="mt-1 text-ink">•</span>
       <span>No payment is collected on this website.</span>
     </li>
 
     <li class="flex gap-2">
-      <span class="mt-1 text-[#075838]">•</span>
+      <span class="mt-1 text-ink">•</span>
       <span>Final flower availability and price are confirmed on WhatsApp.</span>
     </li>
 
     <li class="flex gap-2">
-      <span class="mt-1 text-[#075838]">•</span>
+      <span class="mt-1 text-ink">•</span>
       <span>Delivery fee depends on pincode, date and slot.</span>
     </li>
 
     <li class="flex gap-2">
-      <span class="mt-1 text-[#075838]">•</span>
+      <span class="mt-1 text-ink">•</span>
       <span>Custom items may vary based on daily market freshness.</span>
     </li>
   </ul>
@@ -290,7 +292,7 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
               <button
                 type="button"
                 data-send-cart-whatsapp
-                class="inline-flex items-center justify-center rounded-full bg-[#075838] px-7 py-4 text-[11px] font-bold uppercase tracking-[0.22em] text-white transition hover:bg-[#7C243E]"
+                class="fp-btn-whatsapp inline-flex items-center justify-center rounded-full bg-ink px-7 py-4 text-[11px] font-bold uppercase tracking-[0.22em] text-white hover:bg-berry"
               >
                 Send Cart on WhatsApp
               </button>
@@ -298,13 +300,13 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
               <button
                 type="button"
                 data-clear-cart
-                class="inline-flex items-center justify-center rounded-full border border-[#111111] px-7 py-4 text-[11px] font-bold uppercase tracking-[0.22em] text-[#111111] transition hover:bg-[#111111] hover:text-white"
+                class="inline-flex items-center justify-center rounded-full border border-ink px-7 py-4 text-[11px] font-bold uppercase tracking-[0.22em] text-ink transition hover:bg-ink hover:text-white"
               >
                 Clear Cart
               </button>
             </div>
 
-            <p class="mt-4 text-xs leading-6 text-[#66565D]">
+            <p class="mt-4 text-xs leading-6 text-moss">
               Final flower availability, price, delivery fee and payment confirmation will happen on WhatsApp.
             </p>
           </div>
@@ -479,10 +481,10 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
 
       if (type === "success") {
         serviceAreaResult.className =
-          "mt-5 rounded-2xl border border-[#B9D8C6] bg-[#F3FFF7] p-4 text-sm leading-7 text-[#075838]";
+          "mt-5 rounded-2xl border border-mint-line bg-mint-soft p-4 text-sm leading-7 text-ink";
       } else {
         serviceAreaResult.className =
-          "mt-5 rounded-2xl border border-[#E7B7C0] bg-[#FFF3F5] p-4 text-sm leading-7 text-[#7C243E]";
+          "mt-5 rounded-2xl border border-rose bg-linen p-4 text-sm leading-7 text-berry";
       }
     }
 
@@ -580,7 +582,7 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
 
       return `
         <div>
-          <p class="font-semibold text-[#171717]">Add-ons</p>
+          <p class="font-semibold text-ink">Add-ons</p>
           <ul class="mt-1 list-disc space-y-1 pl-5">
             ${addOnRows}
           </ul>
@@ -609,7 +611,7 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
 
   return `
     <div>
-      <p class="font-semibold text-[#171717]">Subscription</p>
+      <p class="font-semibold text-ink">Subscription</p>
       <ul class="mt-1 list-disc space-y-1 pl-5">
         ${rows.map((row) => `<li>${escapeHtml(row)}</li>`).join("")}
       </ul>
@@ -633,7 +635,7 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
         deliveryRows.length > 0
           ? `
             <div>
-              <p class="font-semibold text-[#171717]">Configured Details</p>
+              <p class="font-semibold text-ink">Configured Details</p>
               <ul class="mt-1 list-disc space-y-1 pl-5">
                 ${deliveryRows.map((row) => `<li>${escapeHtml(row)}</li>`).join("")}
               </ul>
@@ -642,7 +644,7 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
           : "";
 
       return `
-        <div class="mt-4 space-y-3 rounded-2xl border border-[#EEE5E8] bg-[#FFF8FA] p-4 text-xs leading-6 text-[#66565D]">
+        <div class="mt-4 space-y-3 rounded-2xl border border-line bg-linen p-4 text-xs leading-6 text-moss">
           ${deliveryHtml}
           ${renderAddOnsHtml(item.addOns)}
           ${renderSubscriptionHtml(item.subscription)}
@@ -727,10 +729,10 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
         const itemElement = document.createElement("div");
 
         itemElement.className =
-          "grid gap-4 rounded-[24px] border border-[#EEE5E8] bg-white p-4 shadow-[0_10px_30px_rgba(40,24,32,0.05)] md:grid-cols-[110px_1fr_auto] md:items-start";
+          "grid gap-4 rounded-[24px] border border-line bg-paper p-4 shadow-[0_10px_30px_rgba(40,24,32,0.05)] md:grid-cols-[110px_1fr_auto] md:items-start";
 
         itemElement.innerHTML = `
-          <a href="/products/${escapeHtml(item.slug)}" class="block overflow-hidden rounded-2xl bg-[#F8F1F3]">
+          <a href="/products/${escapeHtml(item.slug)}" class="block overflow-hidden rounded-2xl bg-linen">
             <img
               src="${escapeHtml(item.image)}"
               alt="${escapeHtml(item.name)}"
@@ -739,17 +741,17 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
           </a>
 
           <div>
-            <p class="text-[10px] font-semibold uppercase tracking-[0.24em] text-[#9B6B78]">
+            <p class="text-[10px] font-semibold uppercase tracking-[0.24em] text-rose-deep">
               ${escapeHtml(item.category)}
             </p>
 
             <a href="/products/${escapeHtml(item.slug)}" class="mt-2 block">
-              <h2 class="text-base font-semibold text-[#171717]">
+              <h2 class="text-base font-semibold text-ink">
                 ${escapeHtml(item.name)}
               </h2>
             </a>
 
-            <p class="mt-2 text-sm font-bold text-[#7C243E]">
+            <p class="mt-2 text-sm font-bold text-berry">
               ${escapeHtml(item.priceLabel)}
             </p>
 
@@ -757,23 +759,23 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
           </div>
 
           <div class="flex items-center justify-between gap-3 md:flex-col md:items-end">
-            <div class="flex items-center rounded-full border border-[#E5D6DC] bg-white">
+            <div class="flex items-center rounded-full border border-line-strong bg-paper">
               <button
                 type="button"
                 data-decrease="${escapeHtml(item.id)}"
-                class="px-4 py-2 text-sm font-bold text-[#171717]"
+                class="px-4 py-2 text-sm font-bold text-ink"
               >
                 -
               </button>
 
-              <span class="min-w-8 text-center text-sm font-semibold text-[#171717]">
+              <span class="min-w-8 text-center text-sm font-semibold text-ink">
                 ${escapeHtml(item.quantity)}
               </span>
 
               <button
                 type="button"
                 data-increase="${escapeHtml(item.id)}"
-                class="px-4 py-2 text-sm font-bold text-[#171717]"
+                class="px-4 py-2 text-sm font-bold text-ink"
               >
                 +
               </button>
@@ -782,7 +784,7 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
             <button
               type="button"
               data-remove="${escapeHtml(item.id)}"
-              class="text-[10px] font-bold uppercase tracking-[0.18em] text-[#7C243E] underline underline-offset-4"
+              class="text-[10px] font-bold uppercase tracking-[0.18em] text-berry underline underline-offset-4"
             >
               Remove
             </button>
@@ -841,10 +843,10 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
           const configuredHtml = renderConfiguredDetailsHtml(item);
 
           return `
-            <div class="border-b border-[#F0E4E8] pb-3">
+            <div class="border-b border-line pb-3">
               <div class="flex justify-between gap-4">
                 <span>${index + 1}. ${escapeHtml(item.name)}</span>
-                <strong class="text-right text-[#171717]">
+                <strong class="text-right text-ink">
                   ${escapeHtml(item.priceLabel)} × ${escapeHtml(item.quantity)}
                 </strong>
               </div>
@@ -880,78 +882,78 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
       cartSummary.classList.remove("hidden");
 
       cartSummary.innerHTML = `
-        <h3 class="text-[12px] font-bold uppercase tracking-[0.24em] text-[#171717]">
+        <h3 class="text-[12px] font-bold uppercase tracking-[0.24em] text-ink">
           Cart Order Summary
         </h3>
 
-        <div class="mt-4 space-y-3 text-sm leading-6 text-[#5E5358]">
-          <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
+        <div class="mt-4 space-y-3 text-sm leading-6 text-moss">
+          <div class="flex justify-between gap-4 border-b border-line pb-2">
             <span>Name</span>
-            <strong class="text-right text-[#171717]">${escapeHtml(customerName)}</strong>
+            <strong class="text-right text-ink">${escapeHtml(customerName)}</strong>
           </div>
 
-          <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
+          <div class="flex justify-between gap-4 border-b border-line pb-2">
             <span>Phone</span>
-            <strong class="text-right text-[#171717]">${escapeHtml(customerPhone)}</strong>
+            <strong class="text-right text-ink">${escapeHtml(customerPhone)}</strong>
           </div>
 
-          <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
+          <div class="flex justify-between gap-4 border-b border-line pb-2">
             <span>Recipient</span>
-            <strong class="text-right text-[#171717]">${escapeHtml(recipientName)}</strong>
+            <strong class="text-right text-ink">${escapeHtml(recipientName)}</strong>
           </div>
 
-          <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
+          <div class="flex justify-between gap-4 border-b border-line pb-2">
             <span>Recipient Phone</span>
-            <strong class="text-right text-[#171717]">${escapeHtml(recipientPhone)}</strong>
+            <strong class="text-right text-ink">${escapeHtml(recipientPhone)}</strong>
           </div>
 
-          <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
+          <div class="flex justify-between gap-4 border-b border-line pb-2">
             <span>Landmark</span>
-            <strong class="text-right text-[#171717]">${escapeHtml(landmark)}</strong>
+            <strong class="text-right text-ink">${escapeHtml(landmark)}</strong>
           </div>
 
-          <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
+          <div class="flex justify-between gap-4 border-b border-line pb-2">
             <span>Occasion</span>
-            <strong class="text-right text-[#171717]">${escapeHtml(occasion)}</strong>
+            <strong class="text-right text-ink">${escapeHtml(occasion)}</strong>
           </div>
 
-          <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
+          <div class="flex justify-between gap-4 border-b border-line pb-2">
             <span>Main Pincode</span>
-            <strong class="text-right text-[#171717]">${escapeHtml(pincode)}</strong>
+            <strong class="text-right text-ink">${escapeHtml(pincode)}</strong>
           </div>
 
-          <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
+          <div class="flex justify-between gap-4 border-b border-line pb-2">
             <span>Area</span>
-            <strong class="text-right text-[#171717]">${escapeHtml(areaText)}</strong>
+            <strong class="text-right text-ink">${escapeHtml(areaText)}</strong>
           </div>
 
-          <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
+          <div class="flex justify-between gap-4 border-b border-line pb-2">
             <span>Delivery Fee</span>
-            <strong class="text-right text-[#171717]">${escapeHtml(deliveryFeeText)}</strong>
+            <strong class="text-right text-ink">${escapeHtml(deliveryFeeText)}</strong>
           </div>
 
-          <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
+          <div class="flex justify-between gap-4 border-b border-line pb-2">
             <span>Service Status</span>
-            <strong class="text-right text-[#075838]">${escapeHtml(serviceStatusText)}</strong>
+            <strong class="text-right text-ink">${escapeHtml(serviceStatusText)}</strong>
           </div>
 
-          <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
+          <div class="flex justify-between gap-4 border-b border-line pb-2">
             <span>Main Delivery Date</span>
-            <strong class="text-right text-[#171717]">${escapeHtml(deliveryDate)}</strong>
+            <strong class="text-right text-ink">${escapeHtml(deliveryDate)}</strong>
           </div>
 
-          <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
+          <div class="flex justify-between gap-4 border-b border-line pb-2">
             <span>Main Delivery Slot</span>
-            <strong class="text-right text-[#171717]">${escapeHtml(deliverySlot)}</strong>
+            <strong class="text-right text-ink">${escapeHtml(deliverySlot)}</strong>
           </div>
 
-          <div class="flex justify-between gap-4 border-b border-[#F0E4E8] pb-2">
+          <div class="flex justify-between gap-4 border-b border-line pb-2">
             <span>Delivery Promise</span>
-            <strong class="text-right text-[#075838]">${escapeHtml(slotStatusText)}</strong>
+            <strong class="text-right text-ink">${escapeHtml(slotStatusText)}</strong>
           </div>
 
           <div class="pt-2">
-            <h4 class="mb-3 text-[11px] font-bold uppercase tracking-[0.20em] text-[#171717]">
+            <h4 class="mb-3 text-[11px] font-bold uppercase tracking-[0.20em] text-ink">
               Items
             </h4>
             <div class="space-y-3">
@@ -960,12 +962,12 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
           </div>
 
           <div>
-            <span class="block text-[#66565D]">Address / Order Note</span>
-            <strong class="mt-1 block text-[#171717]">${escapeHtml(note || "None")}</strong>
+            <span class="block text-moss">Address / Order Note</span>
+            <strong class="mt-1 block text-ink">${escapeHtml(note || "None")}</strong>
           </div>
         </div>
 
-        <p class="mt-4 rounded-2xl bg-[#FFF8FA] p-4 text-xs leading-6 text-[#7C243E]">
+        <p class="mt-4 rounded-2xl bg-linen p-4 text-xs leading-6 text-berry">
           This is an estimated cart summary. Final price, flower availability, delivery fee and payment confirmation will happen on WhatsApp.
         </p>
       `;
@@ -1024,8 +1026,10 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
         return "#";
       }
 
-      if (!/^[0-9]{6}$/.test(pincode)) {
-        showError("Please enter a valid 6-digit delivery pincode.");
+      // Pincode is optional: delivery area, timing and charges are always
+      // confirmed on WhatsApp. If one is given it must be a real 6-digit code.
+      if (pincode && !/^[0-9]{6}$/.test(pincode)) {
+        showError("Please enter a valid 6-digit pincode, or leave it blank.");
         return "#";
       }
 
@@ -1076,7 +1080,14 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
       // saw: the pincode/date/method could have been typed seconds ago
       // or minutes ago, and a slot's cutoff (or the area's own data) may
       // have changed in between. Nothing downstream trusts client state.
-      const deliveryResult = await checkDeliveryMethod(pincode, deliveryDate, method);
+      const deliveryResult = pincode
+        ? await checkDeliveryMethod(pincode, deliveryDate, method)
+        : {
+            available: false,
+            method,
+            label: deliverySlot || method,
+            reason: "No pincode given — we'll confirm the delivery area on WhatsApp.",
+          };
 
       let areaText = "Manual confirmation needed";
       let deliveryFeeText = "To be confirmed";
@@ -1140,7 +1151,7 @@ Name: ${recipientName}
 Phone: ${recipientPhoneLocal}
 
 DELIVERY
-Pincode: ${pincode}
+Pincode: ${pincode || "Not given — please confirm the delivery area"}
 Area: ${areaText}
 Delivery Option: ${deliveryResult.label}
 Promise: ${promiseText}

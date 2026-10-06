@@ -47,25 +47,11 @@ export const SupabaseAdminUserRepository = {
     });
   },
 
-  /**
-   * Upserts a profile row for an id that must already exist in Supabase
-   * Auth (the FK on admin_users.id enforces this — inserting for a
-   * nonexistent auth user fails loudly, not silently). Self-healing path
-   * for AuthService.verifySession(): if a valid Supabase Auth session
-   * exists but its profile row doesn't yet (e.g. an admin invited via the
-   * dashboard rather than scripts/link-admin-identity.mjs), login/session
-   * verification creates it rather than failing.
-   */
-  async create(input: { id: string; email: string; role?: string }): Promise<AdminUser> {
-    return withRepositoryCall("SupabaseAdminUserRepository.create", async () => {
-      const [row] = await getDb()
-        .insert(adminUsers)
-        .values({ id: input.id, email: input.email.trim().toLowerCase(), role: input.role ?? "admin", createdAt: new Date() })
-        .onConflictDoUpdate({ target: adminUsers.id, set: { email: input.email.trim().toLowerCase() } })
-        .returning();
-      return mapRow(row);
-    });
-  },
+  // No create/upsert here on purpose. Administrators are provisioned only
+  // by a trusted operator (scripts/link-admin-identity.mjs); an earlier
+  // version created a row (role defaulting to "admin") for any account
+  // that signed in successfully, which made every Supabase Auth user an
+  // administrator.
 
   async touchLastLogin(id: string): Promise<void> {
     return withRepositoryCall("SupabaseAdminUserRepository.touchLastLogin", async () => {

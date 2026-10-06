@@ -1,0 +1,251 @@
+---
+// The main section of a garland design's product page. Shows the whole
+// photograph (contained, never cropped), the public design code and only
+// facts that are confirmed; everything else reads "To be confirmed". The
+// owner's confirmed price is shown as set, without saying what it covers
+// unless that is recorded. Only a design switched to cart mode
+// (isCartGarland) uses the existing cart (ProductOptions); every other design
+// is a WhatsApp enquiry carrying the code, title, listed price, chosen
+// options and quantity. No pincode or delivery slot is asked.
+import ProductOptions from "./ProductOptions.astro";
+import { GARLAND_FILTERS, GARLAND_PREVIEW, formatGarlandPrice, garlandPhotoSrcset, isCartGarland, isListedGarland, optionValues, type GarlandProduct } from "../data/garlands";
+import { garlandEnquiryHref } from "../utils/garlandEnquiry";
+
+interface Props {
+  product: GarlandProduct;
+  occasionOptions?: { name: string }[];
+}
+
+const { product, occasionOptions } = Astro.props;
+const design = product.garland;
+const cart = isCartGarland(design);
+const price = formatGarlandPrice(design);
+const isDraft = !isListedGarland(design);
+const pageUrl = Astro.site ? new URL(`/products/${product.slug}`, Astro.site).toString() : `/products/${product.slug}`;
+const srcset = garlandPhotoSrcset(design.image);
+const filterChips = GARLAND_FILTERS.filter((filter) => design.filters.includes(filter.key));
+const TBC = "To be confirmed on WhatsApp";
+const facts = [
+  { label: "Sold as", value: design.soldUnit },
+  { label: "Length", value: design.length },
+  { label: "Flowers", value: design.flowerRecipe },
+  { label: "Thickness", value: design.weightOrThickness },
+  { label: "Finish", value: design.finish ?? null },
+  { label: "Preparation time", value: design.leadTime },
+  { label: "Substitutions", value: design.substitutionPolicy },
+];
+// Only confirmed photographs (design.gallery) join the gallery. Provisional
+// related views are shown separately, in a local preview only.
+const gallery = design.gallery;
+const pendingViews = GARLAND_PREVIEW ? design.relatedViews : [];
+// The enquiry goes through the live check (garland-enquiry.ts), which builds
+// the WhatsApp message from the saved details at the moment of enquiry.
+const quoteHref = garlandEnquiryHref({ code: design.code, quantity: 1 });
+/** Version marker the admin checks to confirm the website shows the latest save. */
+const version = (product as { version?: string | null }).version ?? undefined;
+const chargeLabel = (charge: number | null) => (charge ? ` (+₹${charge.toLocaleString("en-IN")})` : "");
+const quoteLabel = price ? "Enquire on WhatsApp" : "Ask for a quote on WhatsApp";
+---
+
+<section class="px-5 py-10 md:px-8 md:py-12" data-garland-product={design.code} data-garland-version={version}>
+  <div class="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
+    <aside class="lg:sticky lg:top-28 lg:self-start">
+      <div class="relative overflow-hidden rounded-[22px] bg-linen">
+        <img
+          src={design.image.path}
+          srcset={srcset}
+          sizes={srcset ? "(min-width: 1024px) 50vw, 100vw" : undefined}
+          width={design.image.width}
+          height={design.image.height}
+          alt={design.image.alt}
+          class="mx-auto block h-auto max-h-[78vh] w-full object-contain"
+          loading="eager"
+          fetchpriority="high"
+          decoding="async"
+        />
+      </div>
+      {gallery.length > 0 && (
+        <ul class="mt-3 grid grid-cols-3 gap-2" aria-label="More photographs">
+          {gallery.map((view) => (
+            <li class="overflow-hidden rounded-xl bg-linen">
+              <img src={view.path} width={view.width} height={view.height} alt={view.alt} loading="lazy" decoding="async" class="aspect-square w-full object-contain" />
+            </li>
+          ))}
+        </ul>
+      )}
+    </aside>
+
+    <div class="max-w-[560px] lg:pl-2">
+      {isDraft && (
+        <p class="mb-6 rounded-2xl border border-line bg-linen px-5 py-4 text-sm leading-6 text-ink" data-draft-banner>
+          <strong class="font-semibold">Draft preview — not public.</strong> This design is waiting for photo permission,
+          a verified sample and confirmed details. It appears only in a local preview build.
+        </p>
+      )}
+
+      <div class="flex flex-wrap items-center gap-3">
+        <a href="/categories/garlands" class="text-[11px] font-semibold uppercase tracking-[0.32em] text-rose-deep hover:underline">
+          Garlands / Poola Mala
+        </a>
+        <span class="rounded-full bg-linen px-4 py-1 text-[11px] font-semibold tracking-[0.18em] text-berry" data-design-code>
+          {design.code}
+        </span>
+      </div>
+
+      <h1 class="fp-serif mt-5 text-4xl leading-[1] text-ink md:text-5xl">{design.title}</h1>
+
+      {filterChips.length > 0 && (
+        <p class="mt-4 flex flex-wrap gap-2">
+          {filterChips.map(({ key, label }) => (
+            <a
+              href={`/categories/garlands?filter=${key}`}
+              class="inline-flex min-h-[32px] items-center rounded-full border border-line px-3 text-[12px] font-semibold text-ink hover:border-ink"
+            >
+              {label}
+            </a>
+          ))}
+        </p>
+      )}
+
+      {
+        price ? (
+          <div class="mt-6">
+            <p class="text-2xl font-bold text-berry" data-garland-price>{price}</p>
+            <p class="mt-2 text-sm leading-6 text-moss">
+              Made to order. Anything listed below as “to be confirmed” is agreed with you on WhatsApp before you pay.
+            </p>
+          </div>
+        ) : (
+          <div class="mt-6">
+            <p class="text-2xl font-bold text-berry">Price on request</p>
+            <p class="mt-2 text-sm leading-6 text-moss">
+              Made to order. We confirm the flowers, length and price with you on WhatsApp before anything is made.
+            </p>
+          </div>
+        )
+      }
+
+      <dl class="mt-7 grid gap-x-6 gap-y-3 rounded-[22px] border border-line bg-paper p-5 text-sm leading-6 sm:grid-cols-2" data-garland-facts>
+        <div>
+          <dt class="font-semibold text-ink">Design code</dt>
+          <dd class="mt-0.5 text-moss">{design.code}</dd>
+        </div>
+        {facts.map((fact) => (
+          <div>
+            <dt class="font-semibold text-ink">{fact.label}</dt>
+            <dd class="mt-0.5 text-moss">{fact.value ?? TBC}</dd>
+          </div>
+        ))}
+      </dl>
+      {!design.filterRecipeVerified && filterChips.length > 0 && (
+        <p class="mt-2 text-xs leading-5 text-moss">The flower filter is based on the photograph; the exact flowers are confirmed with you.</p>
+      )}
+
+      {
+        cart ? (
+          <ProductOptions product={product} occasionOptions={occasionOptions} />
+        ) : (
+          <div class="mt-7 rounded-[22px] border border-line bg-linen p-5" data-garland-quote-panel data-code={design.code} data-title={design.title} data-price={price ?? undefined} data-unit={design.soldUnit ?? undefined} data-url={pageUrl}>
+            <h2 class="text-sm font-bold text-ink">{price ? "Enquire about this design" : "Ask for a quotation"}</h2>
+            <div class="mt-4 flex items-center gap-3">
+              <span id="garland-qty-label" class="text-sm font-semibold text-ink">Quantity</span>
+              <div class="inline-flex items-center rounded-full border border-line-strong bg-paper" role="group" aria-labelledby="garland-qty-label">
+                <button type="button" data-qty-step="-1" aria-label="Decrease quantity" class="h-11 w-11 rounded-full text-lg text-ink">−</button>
+                <input
+                  type="number"
+                  inputmode="numeric"
+                  min="1"
+                  max="500"
+                  value="1"
+                  aria-labelledby="garland-qty-label"
+                  data-garland-qty
+                  class="h-11 w-14 border-0 bg-transparent text-center text-sm font-semibold text-ink [appearance:textfield]"
+                />
+                <button type="button" data-qty-step="1" aria-label="Increase quantity" class="h-11 w-11 rounded-full text-lg text-ink">+</button>
+              </div>
+            </div>
+            {design.options.length > 0 ? (
+              <div class="mt-4 grid gap-3">
+                {design.options.map((option) => (
+                  <label class="grid gap-1 text-sm font-semibold text-ink">
+                    {option.label}
+                    <select data-garland-option={option.label} class="min-h-[44px] rounded-xl border border-line-strong bg-paper px-3 text-sm font-normal">
+                      <option value="">No preference</option>
+                      {optionValues(option).map((value) => (
+                        <option value={value.label} data-charge-label={chargeLabel(value.extraCharge)}>
+                          {value.label}{chargeLabel(value.extraCharge)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ))}
+              </div>
+            ) : (
+              <p class="mt-4 text-sm leading-6 text-moss">
+                No options are confirmed for this design yet — tell us what you need (single or pair, colours, finish) in the chat.
+              </p>
+            )}
+            <a
+              href={quoteHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-garland-quote={design.code}
+              class="mt-5 flex min-h-[48px] items-center justify-center rounded-full bg-berry px-6 text-sm font-semibold text-white transition hover:bg-ink"
+            >
+              {quoteLabel}
+            </a>
+            <p class="mt-3 text-xs leading-5 text-moss">
+              Opens WhatsApp with the design code, title{price ? ", listed price" : ""} and quantity filled in. Nothing is
+              charged here; there is no pincode or delivery slot to choose.
+            </p>
+          </div>
+        )
+      }
+
+      {pendingViews.length > 0 && (
+        <section class="mt-8 rounded-[22px] border border-dashed border-line-strong p-5" data-pending-views aria-labelledby="pending-views-title">
+          <h2 id="pending-views-title" class="text-sm font-bold text-ink">Related views — pending confirmation (preview only)</h2>
+          <p class="mt-1 text-xs leading-5 text-moss">
+            These photographs may show the same design. They join the gallery only once confirmed.
+          </p>
+          <ul class="mt-3 grid grid-cols-3 gap-2">
+            {pendingViews.map((view) => (
+              <li class="overflow-hidden rounded-xl bg-linen">
+                <img src={view.path} width={view.width} height={view.height} alt={view.alt} loading="lazy" decoding="async" class="aspect-square w-full object-contain" />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+    </div>
+  </div>
+</section>
+
+<script>
+  import { garlandEnquiryHref } from "../utils/garlandEnquiry";
+
+  document.querySelectorAll<HTMLElement>("[data-garland-quote-panel]").forEach((panel) => {
+    const qty = panel.querySelector<HTMLInputElement>("[data-garland-qty]");
+    const link = panel.querySelector<HTMLAnchorElement>("[data-garland-quote]");
+    const selects = [...panel.querySelectorAll<HTMLSelectElement>("[data-garland-option]")];
+    if (!qty || !link) return;
+    const clamp = (value: number) => Math.min(500, Math.max(1, Math.floor(value) || 1));
+    const update = () => {
+      const options = selects.filter((select) => select.value).map((select) => ({ name: select.dataset.garlandOption ?? "", value: select.value }));
+      link.href = garlandEnquiryHref({ code: panel.dataset.code ?? "", quantity: clamp(Number(qty.value)), options });
+    };
+    panel.querySelectorAll<HTMLButtonElement>("[data-qty-step]").forEach((button) =>
+      button.addEventListener("click", () => {
+        qty.value = String(clamp(Number(qty.value) + Number(button.dataset.qtyStep)));
+        update();
+      })
+    );
+    qty.addEventListener("input", update);
+    qty.addEventListener("change", () => {
+      qty.value = String(clamp(Number(qty.value)));
+      update();
+    });
+    selects.forEach((select) => select.addEventListener("change", update));
+    update();
+  });
+</script>

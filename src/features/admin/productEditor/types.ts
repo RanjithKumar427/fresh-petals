@@ -17,6 +17,36 @@ export type ProductImageDraft = {
   isPrimary: boolean;
   /** Display-only (not sent to PATCH /api/admin/products/[id]) — comes back from the upload response. */
   sizeBytes?: number;
+  /** Display-only, from the media row. */
+  width?: number | null;
+  height?: number | null;
+};
+
+export type GarlandFilter = "rose" | "tuberose" | "lotus" | "designer-mixed";
+export type GarlandUnit = "single" | "pair" | "set";
+
+/** Garland-only facts (server: GarlandDetails). designCode is read-only. */
+export type GarlandDraft = {
+  designCode: string;
+  soldUnit: GarlandUnit | null;
+  length: string | null;
+  flowerRecipe: string | null;
+  thickness: string | null;
+  finish: string | null;
+  leadTime: string | null;
+  substitutionPolicy: string | null;
+  sellingMode: "enquiry" | "cart";
+  readyForSale: boolean;
+  photoPermission: "unconfirmed" | "granted" | "refused";
+  sampleVerified: boolean;
+  filters: GarlandFilter[];
+};
+
+export type OptionDraft = {
+  optionName: string;
+  valueLabel: string;
+  extraCharge: number | null;
+  sortOrder: number;
 };
 
 export type ProductDraft = {
@@ -51,6 +81,9 @@ export type ProductDraft = {
   flowerTypeIds: number[];
   whatsIncluded: string[];
   careInstructions: string[];
+  options: OptionDraft[];
+  /** Present only for garland designs. */
+  garland: GarlandDraft | null;
 };
 
 export type CategoryOption = { id: number; name: string; slug: string };
@@ -91,5 +124,28 @@ export function toProductInput(draft: ProductDraft) {
     bestseller: draft.bestseller,
     newArrival: draft.newArrival,
     requiresWhatsappConfirmation: draft.requiresWhatsappConfirmation,
+    options: draft.options.map((option, index) => ({
+      optionName: option.optionName,
+      valueLabel: option.valueLabel,
+      extraCharge: option.extraCharge,
+      sortOrder: index,
+    })),
+    // The design code is never sent: it can't be changed.
+    garland: draft.garland
+      ? {
+          soldUnit: draft.garland.soldUnit,
+          length: draft.garland.length,
+          flowerRecipe: draft.garland.flowerRecipe,
+          thickness: draft.garland.thickness,
+          finish: draft.garland.finish,
+          leadTime: draft.garland.leadTime,
+          substitutionPolicy: draft.garland.substitutionPolicy,
+          sellingMode: draft.garland.sellingMode,
+          readyForSale: draft.garland.readyForSale,
+          photoPermission: draft.garland.photoPermission,
+          sampleVerified: draft.garland.sampleVerified,
+          filters: draft.garland.filters,
+        }
+      : undefined,
   };
 }

@@ -21,6 +21,17 @@ export function getPublishBlockers(draft: ProductDraft, uncategorizedCategoryId:
   if ((draft.priceType === "fixed" || draft.priceType === "from") && !draft.sellingPrice) {
     blockers.push("Enter a selling price.");
   }
+  if (draft.garland) {
+    if (draft.garland.photoPermission !== "granted") {
+      blockers.push("Record photo-publication permission (or use your own photographs) before publishing this garland.");
+    }
+    if (!draft.garland.sampleVerified) {
+      blockers.push("Verify a made sample of this garland before publishing it.");
+    }
+    if (draft.garland.sellingMode === "cart" && (!draft.garland.readyForSale || draft.priceType !== "fixed" || !draft.sellingPrice)) {
+      blockers.push("Cart mode needs a fixed price and 'Ready for sale' — or switch back to WhatsApp enquiry.");
+    }
+  }
 
   return blockers;
 }

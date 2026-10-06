@@ -1,0 +1,156 @@
+---
+// Compact footer with verified links and contact details only. The
+// Instagram handle is the business's existing account (still named
+// freshpetals.hyderabad — flagged for the owner's decision).
+import Wordmark from "./Wordmark.astro";
+import { SITE_NAV } from "../../data/navigation";
+
+const whatsappNumber = "919652012274";
+const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent("Hi Fresh Petals, I have a question about an order.")}`;
+const instagramUrl = "https://www.instagram.com/freshpetals.hyderabad/";
+
+// Same structure as the header (src/data/navigation.ts).
+const shop = SITE_NAV.flatMap((item) => (item.links ? [{ label: item.label, href: item.href }, ...item.links.slice(1)] : []));
+const visit = SITE_NAV.filter((item) => !item.links).map(({ label, href }) => ({ label, href }));
+const help = [
+  { label: "Delivery", href: "/shipping" },
+  { label: "Refunds", href: "/refunds" },
+  { label: "FAQs", href: "/faqs" },
+  { label: "Privacy", href: "/privacy" },
+  { label: "Terms", href: "/terms" },
+];
+---
+
+<footer id="footer" class="site-footer">
+  <div class="site-footer__inner">
+    <div class="site-footer__brand">
+      <Wordmark tone="ivory" size="lg" />
+      <p>Hand-tied bouquets in Bengaluru, starting with Chamarajpet and Basavanagudi. Choose online, confirm on WhatsApp.</p>
+    </div>
+
+    <nav aria-label="Shop" class="site-footer__col">
+      <p class="site-footer__title">Shop</p>
+      <ul>{shop.map((link) => <li><a href={link.href}>{link.label}</a></li>)}</ul>
+    </nav>
+
+    <nav aria-label="Fresh Petals" class="site-footer__col">
+      <p class="site-footer__title">Fresh Petals</p>
+      <ul>{visit.map((link) => <li><a href={link.href}>{link.label}</a></li>)}</ul>
+    </nav>
+
+    <nav aria-label="Help" class="site-footer__col">
+      <p class="site-footer__title">Help</p>
+      <ul>{help.map((link) => <li><a href={link.href}>{link.label}</a></li>)}</ul>
+    </nav>
+
+    <div class="site-footer__col">
+      <p class="site-footer__title">Talk to us</p>
+      <ul>
+        <li>
+          <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">WhatsApp +91 96520 12274</a>
+        </li>
+        <li>
+          <a href={instagramUrl} target="_blank" rel="noopener noreferrer">Instagram</a>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="site-footer__base">
+    <p>© 2026 Fresh Petals</p>
+    <p>Availability, final price and delivery are confirmed on WhatsApp before you pay.</p>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    position: relative;
+    z-index: 1;
+    background: var(--color-ink);
+    color: var(--color-ivory);
+    padding: clamp(3rem, 6vw, 5rem) clamp(16px, 4vw, 48px) 1.5rem;
+  }
+
+  .site-footer__inner {
+    max-width: 1320px;
+    margin: 0 auto;
+    display: grid;
+    gap: 2.5rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .site-footer__brand {
+    grid-column: 1 / -1;
+  }
+
+  @media (min-width: 1024px) {
+    .site-footer__inner {
+      grid-template-columns: 1.6fr repeat(4, minmax(0, 1fr));
+    }
+
+    .site-footer__brand {
+      grid-column: auto;
+    }
+  }
+
+  .site-footer__brand p {
+    margin: 1rem 0 0;
+    max-width: 32ch;
+    color: color-mix(in srgb, var(--color-ivory) 78%, transparent);
+    line-height: 1.6;
+  }
+
+  .site-footer__title {
+    margin: 0 0 0.75rem;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--color-rose);
+  }
+
+  .site-footer__col ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .site-footer__col a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    color: var(--color-ivory);
+    text-decoration: none;
+    background-image: linear-gradient(var(--color-apricot), var(--color-apricot));
+    background-size: 0% 1px;
+    background-repeat: no-repeat;
+    background-position: 0 calc(100% - 8px);
+    transition: background-size 0.3s var(--ease-premium);
+  }
+
+  .site-footer__col a:hover {
+    background-size: 100% 1px;
+  }
+
+  .site-footer__col a:focus-visible,
+  .site-footer__brand a:focus-visible {
+    outline-color: var(--color-rose);
+  }
+
+  .site-footer__base {
+    max-width: 1320px;
+    margin: clamp(2.5rem, 5vw, 4rem) auto 0;
+    padding-top: 1.25rem;
+    border-top: 1px solid color-mix(in srgb, var(--color-ivory) 18%, transparent);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.5rem 2rem;
+    font-size: 0.8125rem;
+    color: color-mix(in srgb, var(--color-ivory) 70%, transparent);
+  }
+
+  .site-footer__base p {
+    margin: 0;
+  }
+</style>

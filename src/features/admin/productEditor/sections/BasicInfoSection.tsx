@@ -71,6 +71,12 @@ export default function BasicInfoSection({ draft, onChange }: Props) {
           />
         </FormField>
 
+        {draft.garland ? (
+          <FormField label="URL Slug" htmlFor="slug" hint={`Fixed for garland ${draft.garland.designCode} — its address never changes.`}>
+            <input id="slug" type="text" value={draft.slug} readOnly aria-readonly="true" className={`${inputClassName} bg-[#FBF7F5] text-[#66565D]`} />
+            <p className="mt-1 text-[12px] text-[#9B948F]">/products/{draft.slug}</p>
+          </FormField>
+        ) : (
         <FormField
           label="URL Slug"
           htmlFor="slug"
@@ -112,6 +118,7 @@ export default function BasicInfoSection({ draft, onChange }: Props) {
             </div>
           )}
         </FormField>
+        )}
 
         <FormField
           label="Short Description"

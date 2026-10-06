@@ -1,7 +1,6 @@
 import { productCatalog } from "../data/productCatalog";
-import imageDimensionsData from "../data/imageDimensions.json";
-
-const imageDimensions = imageDimensionsData as Record<string, { width: number; height: number }>;
+// Shared manifests plus visible garland photos (src/data/photoManifest.ts).
+import { photoDimensions as imageDimensions } from "../data/photoManifest";
 
 type ImageShape = "portrait" | "square" | "landscape";
 

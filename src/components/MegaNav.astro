@@ -55,10 +55,6 @@ const menuItems = [
     ],
   },
   {
-    label: "Studio",
-    href: "/studio",
-  },
-  {
     label: "Eid Al-Adha",
     href: "/categories/eid-al-adha",
   },
@@ -159,10 +155,6 @@ const menuItems = [
     ],
   },
   {
-    label: "50% Off",
-    href: "/categories/offers",
-  },
-  {
     label: "Rewards",
     href: "/rewards",
     columns: [
@@ -179,22 +171,22 @@ const menuItems = [
 ];
 ---
 
-<nav class="relative z-40 hidden border-b border-[#EEE5E8] bg-white lg:block">
+<nav class="relative z-40 hidden border-b border-line bg-paper lg:block">
   <div class="mx-auto flex max-w-7xl items-center justify-center gap-9 px-8">
     {
       menuItems.map((item) => (
         <div class="group">
           <a
             href={item.href}
-            class="relative block whitespace-nowrap py-4 text-[13px] font-medium uppercase tracking-[0.28em] text-[#111111] transition-colors duration-300 ease-out hover:text-[#D98B9A]"
+            class="relative block whitespace-nowrap py-4 text-[13px] font-medium uppercase tracking-[0.28em] text-ink transition-colors duration-150 ease-[cubic-bezier(0.4,0,0.2,1)] hover:text-rose-deep"
           >
             {item.label}
 
-            <span class="absolute bottom-0 left-0 h-px w-0 bg-[#111111] transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:w-full" />
+            <span class="absolute bottom-0 left-0 h-px w-0 bg-ink transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:w-full" />
           </a>
 
           {item.columns && (
-            <div class="pointer-events-none absolute left-0 top-full z-50 w-full translate-y-3 border-b border-[#EEE5E8] bg-white/95 opacity-0 shadow-[0_20px_50px_rgba(40,24,32,0.08)] backdrop-blur-sm transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100">
+            <div class="pointer-events-none absolute left-0 top-full z-50 w-full translate-y-3 border-b border-line bg-white/95 opacity-0 shadow-[0_20px_50px_rgba(40,24,32,0.08)] backdrop-blur-sm transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100">
               <div
                 class={`mx-auto grid max-w-7xl gap-20 px-12 py-14 ${
                   item.columns.length === 1 ? "md:grid-cols-1" : "md:grid-cols-4"
@@ -206,7 +198,7 @@ const menuItems = [
                       class="translate-y-2 opacity-0 transition-all duration-500 ease-out group-hover:translate-y-0 group-hover:opacity-100"
                       style={`transition-delay: ${columnIndex * 70}ms`}
                     >
-                      <h3 class="mb-6 text-[13px] font-medium uppercase tracking-[0.32em] text-[#333333]">
+                      <h3 class="mb-6 text-[13px] font-medium uppercase tracking-[0.32em] text-ink">
                         {column.title}
                       </h3>
 
@@ -219,7 +211,7 @@ const menuItems = [
                             >
                               <a
                                 href={link.href}
-                                class="text-[14px] font-normal uppercase tracking-[0.28em] text-[#333333] transition-colors duration-300 ease-out hover:text-[#000000]"
+                                class="text-[14px] font-normal uppercase tracking-[0.28em] text-ink transition-colors duration-300 ease-out hover:text-ink"
                               >
                                 {link.label}
                               </a>

@@ -20,12 +20,18 @@ function timeAgo(iso: string): string {
 }
 
 export default function ProductListRow({ product, onPublish, onArchive, onUnarchive, onDuplicate, onDelete }: Props) {
+  // Garlands have a permanent design code and address: no duplicate or delete (archive instead).
+  const isGarland = !!product.designCode;
   const menuItems: OverflowMenuItem[] = [
-    { label: "Duplicate", onClick: onDuplicate },
+    ...(isGarland ? [] : [{ label: "Duplicate", onClick: onDuplicate }]),
     ...(product.status === "archived"
       ? [{ label: "Restore to Draft", onClick: onUnarchive }]
-      : [{ label: "Archive", onClick: onArchive }]),
-    { label: "Delete", onClick: onDelete, danger: true },
+      : [
+          // Back to draft takes a garland off the live website.
+          ...(isGarland && product.status === "published" ? [{ label: "Unpublish (back to draft)", onClick: onUnarchive }] : []),
+          { label: "Archive", onClick: onArchive },
+        ]),
+    ...(isGarland ? [] : [{ label: "Delete", onClick: onDelete, danger: true }]),
   ];
 
   return (
@@ -44,6 +50,11 @@ export default function ProductListRow({ product, onPublish, onArchive, onUnarch
           >
             {product.name}
           </a>
+          {product.designCode && (
+            <span className="inline-flex items-center rounded-full bg-[#F3F0EE] px-2 py-0.5 text-[10px] font-bold tracking-[0.08em] text-[#66565D]" data-design-code>
+              {product.designCode}
+            </span>
+          )}
           {product.featured && (
             <span className="inline-flex items-center rounded-full bg-[#F8DCE5] px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.1em] text-[#7C243E]">
               ★ Featured

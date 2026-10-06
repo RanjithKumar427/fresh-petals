@@ -1,4 +1,6 @@
 ---
+import imageVariants from "../data/imageVariants.json";
+
 type PriceType = "fixed" | "from" | "market" | "quote";
 
 interface Props {
@@ -33,6 +35,15 @@ const productUrl = slug ? `/products/${slug}` : "#";
 
 const cartId = id || slug || name.toLowerCase().replaceAll(" ", "-");
 
+// Responsive variants (240/480/720w) from the existing manifest, so grid
+// cards stop downloading the 1200px originals on phones.
+const variants = (imageVariants as Record<string, Record<string, string>>)[image];
+const srcset = variants
+  ? Object.entries(variants)
+      .map(([width, path]) => `${path} ${width}w`)
+      .join(", ")
+  : undefined;
+
 const defaultMessage = `Hi Fresh Petals, I want to order ${name}. Please confirm today's availability and price.`;
 
 const finalMessage = whatsappText || defaultMessage;
@@ -47,15 +58,29 @@ const priceBadge =
       : priceType === "quote"
         ? "Custom quote"
         : "Today’s price";
+const priceBadgeShort =
+  priceType === "fixed" ? "Fixed" : priceType === "from" ? "From" : priceType === "quote" ? "Quote" : "Today’s";
 ---
 
 <article
   class="group fp-card overflow-hidden hover:-translate-y-1"
 >
-  <a href={productUrl} class="block" aria-label={`View ${name}`}>
-    <div class="relative aspect-square overflow-hidden bg-[#F8F1F3]">
+  <!-- P1.5 (Phase 1 discovery hardening) -- the <a> below used to wrap the
+       whole image container including where the price badge sits. Adding
+       a save button meant it could no longer wrap the container itself:
+       a <button> can't legally nest inside an <a>, the same reason
+       DiscoveryPostCard.astro's card link is a sibling overlay rather than
+       a wrapper (see that file's header comment). Restructured so the
+       positioning container is now the outer element, the <a> wraps only
+       the image + unavailable-overlay (identical tap target as before),
+       and the price badge + new save button are its siblings. Purely
+       structural -- no visual change to the existing elements. -->
+  <div class="relative aspect-square overflow-hidden bg-linen">
+    <a href={productUrl} class="block h-full w-full" aria-label={`View ${name}`}>
       <img
         src={image}
+        srcset={srcset}
+        sizes={srcset ? "(min-width: 1024px) 23vw, (min-width: 768px) 31vw, 48vw" : undefined}
         alt={name}
         loading="lazy"
         decoding="async"
@@ -65,42 +90,80 @@ const priceBadge =
       {
         !isAvailable && (
           <div class="absolute inset-0 flex items-center justify-center bg-black/45">
-            <span class="rounded-full bg-white px-4 py-2 text-[11px] font-bold uppercase tracking-[0.22em] text-[#2A2025]">
+            <span class="rounded-full bg-paper px-4 py-2 text-[11px] font-bold uppercase tracking-[0.22em] text-ink">
               Unavailable
             </span>
           </div>
         )
       }
+    </a>
 
-      <span class="absolute left-3 top-3 rounded-full bg-white/95 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[#7C243E] shadow-sm">
-        {priceBadge}
-      </span>
-    </div>
-  </a>
+    <!-- Short label on narrow cards so it never runs under the save button. -->
+    <span class="absolute left-3 top-3 max-w-[calc(100%-4rem)] truncate rounded-full bg-white/95 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-berry shadow-sm sm:tracking-[0.18em]">
+      <span class="sm:hidden">{priceBadgeShort}</span><span class="hidden sm:inline">{priceBadge}</span>
+    </span>
+
+    {
+      slug && (
+        <button
+          type="button"
+          data-save-toggle
+          data-save-id={slug}
+          aria-label={`Save ${name}`}
+          aria-pressed="false"
+          class="fp-save-btn absolute right-1 top-1 z-20 flex h-11 w-11 items-center justify-center"
+        >
+          <span class="fp-save-visual flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-black/55 shadow-sm backdrop-blur transition active:scale-90">
+            <svg
+              class="fp-save-icon-outline h-[18px] w-[18px]"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M12 21s-7.5-4.6-9.8-9.1C.6 8 2 4.5 5.6 4.5c2.1 0 3.7 1.2 4.4 2.7.7-1.5 2.3-2.7 4.4-2.7 3.6 0 5 3.5 3.4 6.9C19.5 16.4 12 21 12 21Z" />
+            </svg>
+
+            <svg
+              class="fp-save-icon-filled hidden h-[18px] w-[18px] text-berry"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path d="M12 21s-7.5-4.6-9.8-9.1C.6 8 2 4.5 5.6 4.5c2.1 0 3.7 1.2 4.4 2.7.7-1.5 2.3-2.7 4.4-2.7 3.6 0 5 3.5 3.4 6.9C19.5 16.4 12 21 12 21Z" />
+            </svg>
+          </span>
+        </button>
+      )
+    }
+  </div>
 
   <div class="p-5">
-    <p class="text-[10px] font-semibold uppercase tracking-[0.24em] text-[#9B6B78]">
+    <p class="text-[10px] font-semibold uppercase tracking-[0.24em] text-rose-deep">
       {category}
     </p>
 
     <a href={productUrl} class="mt-2 block">
-      <h3 class="line-clamp-2 min-h-[42px] text-[15px] font-semibold leading-snug text-[#2A2025] transition group-hover:text-[#7C243E]">
+      <h3 class="line-clamp-2 min-h-[42px] text-[15px] font-semibold leading-snug text-ink transition group-hover:text-berry">
         {name}
       </h3>
     </a>
 
-    <p class="mt-2 line-clamp-2 min-h-[38px] text-[13px] leading-6 text-[#66565D]">
+    <p class="mt-2 line-clamp-2 min-h-[38px] text-[13px] leading-6 text-moss">
       {description}
     </p>
 
-    <p class="mt-4 text-[14px] font-bold text-[#7C243E]">
+    <p class="mt-4 text-[14px] font-bold text-berry">
       {priceLabel}
     </p>
 
     <div class="mt-4 grid grid-cols-2 gap-2">
       <a
         href={productUrl}
-        class="inline-flex items-center justify-center rounded-full border border-[#111111] px-4 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[#111111] transition active:scale-95 hover:bg-[#111111] hover:text-white"
+        class="inline-flex items-center justify-center rounded-full border border-ink px-4 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-ink transition active:scale-95 hover:bg-ink hover:text-white"
       >
         View
       </a>
@@ -115,16 +178,19 @@ const priceBadge =
         data-cart-price-label={priceLabel}
         data-cart-category={category}
         class:list={[
-          "inline-flex items-center justify-center rounded-full px-4 py-2 text-[10px] font-bold uppercase tracking-[0.16em] transition active:scale-95",
+          "inline-flex items-center justify-center rounded-full border px-4 py-2 text-[10px] font-bold uppercase tracking-[0.16em] transition active:scale-95",
           isAvailable
-            ? "bg-[#7C243E] text-white hover:bg-[#111111]"
-            : "pointer-events-none bg-[#D8D1D4] text-[#7A6E73]",
+            ? "border-line-strong text-ink hover:border-berry hover:text-berry"
+            : "pointer-events-none border-line text-sage",
         ]}
       >
         {isAvailable ? "Add" : "Closed"}
       </button>
     </div>
 
+    <!-- Order on WhatsApp is the site's primary conversion path, so it
+         stays the one solid-filled button on the card; View/Add above
+         are outline-only and read as secondary by comparison. -->
     <a
       href={whatsappUrl}
       target="_blank"
@@ -135,27 +201,85 @@ const priceBadge =
       data-whatsapp-product-name={name}
       data-whatsapp-price-label={priceLabel}
       class:list={[
-        "mt-3 inline-flex w-full items-center justify-center rounded-full px-4 py-2 text-[10px] font-bold uppercase tracking-[0.18em] transition active:scale-95",
+        "fp-btn-whatsapp mt-3 inline-flex w-full items-center justify-center rounded-full px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.18em] shadow-[0_10px_22px_rgba(7,88,56,0.22)]",
         isAvailable
-          ? "bg-[#075838] text-white hover:bg-[#7C243E]"
-          : "pointer-events-none bg-[#D8D1D4] text-[#7A6E73]",
+          ? "bg-ink text-white hover:bg-berry"
+          : "pointer-events-none bg-linen text-moss",
       ]}
     >
       {isAvailable ? "Order on WhatsApp" : "Unavailable"}
     </a>
 
-    <p
-      data-cart-feedback={cartId}
-      class="mt-3 hidden rounded-full bg-[#F3FFF7] px-3 py-2 text-center text-[11px] font-semibold text-[#075838]"
-    >
-      Added to cart
-    </p>
+    <div data-cart-feedback={cartId} class="fp-cart-toast mt-3">
+      <div>
+        <p class="rounded-full bg-mint-soft px-3 py-2 text-center text-[11px] font-semibold text-ink">
+          Added to cart
+        </p>
+      </div>
+    </div>
   </div>
 </article>
 
 <script>
   import { addToCart } from "../utils/cart";
   import { getSelectedArea, AREA_UPDATED_EVENT } from "../utils/area";
+  // P1.5 (Phase 1 discovery hardening) -- same pattern DiscoveryPostCard.astro
+  // and products/[slug].astro already use: a delegated listener plus a
+  // SAVED_UPDATED_EVENT-driven repaint. Added directly here (not assumed
+  // to already exist on the page) because ProductCard renders on /search
+  // and /categories/*, neither of which renders DiscoveryPostCard, so
+  // there is no other save listener present to rely on. Astro dedupes
+  // this whole script block once per page no matter how many ProductCard
+  // instances render -- confirmed by this component already relying on
+  // that same dedup for its addToCart/WhatsApp wiring below.
+  import { isSaved, toggleSaved, SAVED_UPDATED_EVENT } from "../utils/saved";
+
+  function applySaveState(button: HTMLElement, saved: boolean) {
+    button.setAttribute("aria-pressed", saved ? "true" : "false");
+    button.classList.toggle("is-saved", saved);
+
+    const outline = button.querySelector(".fp-save-icon-outline");
+    const filled = button.querySelector(".fp-save-icon-filled");
+
+    outline?.classList.toggle("hidden", saved);
+    filled?.classList.toggle("hidden", !saved);
+  }
+
+  function syncSaveButtons() {
+    document.querySelectorAll<HTMLButtonElement>("[data-save-toggle]").forEach((button) => {
+      const id = button.dataset.saveId || "";
+      applySaveState(button, isSaved(id));
+    });
+  }
+
+  syncSaveButtons();
+
+  // Same event-level guard as products/[slug].astro's dedicated save
+  // script and DiscoveryPostCard.astro's -- more than one of these
+  // delegated listeners can legitimately coexist on one page (e.g. the
+  // product page's own hero save button + this component's related-
+  // products rail), and without the guard a single click toggles save
+  // twice via both listeners and cancels itself out. Confirmed live.
+  document.addEventListener("click", (event) => {
+    const target = event.target as HTMLElement;
+    const button = target.closest<HTMLButtonElement>("[data-save-toggle]");
+
+    if (!button) return;
+
+    const marked = event as Event & { __fpSaveHandled?: boolean };
+    if (marked.__fpSaveHandled) return;
+    marked.__fpSaveHandled = true;
+
+    event.preventDefault();
+
+    const id = button.dataset.saveId || "";
+
+    if (!id) return;
+
+    toggleSaved(id);
+  });
+
+  window.addEventListener(SAVED_UPDATED_EVENT, syncSaveButtons);
 
   // Customer UX milestone — Simple Order (Journey A): the product card's
   // WhatsApp link is server-rendered with a generic message (area is
@@ -228,12 +352,37 @@ const priceBadge =
       const feedback = document.querySelector(`[data-cart-feedback="${id}"]`);
 
       if (feedback) {
-        feedback.classList.remove("hidden");
+        feedback.classList.add("is-visible");
 
         setTimeout(() => {
-          feedback.classList.add("hidden");
-        }, 1600);
+          feedback.classList.remove("is-visible");
+        }, 1800);
       }
     });
   });
-</script>   
+</script>
+
+<style>
+  /* P1.5 (Phase 1 discovery hardening) -- same fill-pop animation
+     DiscoveryPostCard.astro and products/[slug].astro already define in
+     their own scoped <style> blocks. Astro scopes styles per-component,
+     so it doesn't reach here automatically; copied rather than extracted
+     into a shared module for four lines, matching the existing pattern. */
+  @media (prefers-reduced-motion: no-preference) {
+    .fp-save-btn.is-saved .fp-save-icon-filled {
+      animation: fp-save-pop 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+  }
+
+  @keyframes fp-save-pop {
+    0% {
+      transform: scale(0.6);
+    }
+    60% {
+      transform: scale(1.18);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+</style>   

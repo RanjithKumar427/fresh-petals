@@ -8,6 +8,8 @@ interface Props {
   onPublish: () => void;
   onArchive: () => void;
   onUnarchive: () => void;
+  /** Garlands: take a published design off the website (back to draft). */
+  onUnpublish?: () => void;
 }
 
 function formatDate(iso: string | null): string {
@@ -15,7 +17,7 @@ function formatDate(iso: string | null): string {
   return new Date(iso).toLocaleString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" });
 }
 
-export default function PublishingSection({ draft, blockers, onSaveDraft, onPublish, onArchive, onUnarchive }: Props) {
+export default function PublishingSection({ draft, blockers, onSaveDraft, onPublish, onArchive, onUnarchive, onUnpublish }: Props) {
   return (
     <section id="section-publishing" className="fp-card scroll-mt-6 p-6">
       <h2 className="fp-serif text-lg tracking-[0.08em] text-[#171717]">Publishing</h2>
@@ -77,6 +79,17 @@ export default function PublishingSection({ draft, blockers, onSaveDraft, onPubl
           </button>
         )}
 
+        {draft.garland && draft.status === "published" && onUnpublish && (
+          <button
+            type="button"
+            onClick={onUnpublish}
+            data-unpublish
+            className="rounded-full border border-[#D8D1D4] px-4 py-2 text-[11px] font-bold uppercase tracking-[0.14em] text-[#171717] transition hover:border-[#7C243E]"
+          >
+            Unpublish
+          </button>
+        )}
+
         {draft.status !== "published" && (
           <button
             type="button"
@@ -97,7 +110,9 @@ export default function PublishingSection({ draft, blockers, onSaveDraft, onPubl
         </a>
       </div>
       <p className="mt-2 text-[11px] text-[#9B948F]">
-        Preview opens the live storefront page — new products appear there once the storefront is rebuilt.
+        {draft.garland
+          ? "Garland changes reach the website by themselves — the Website bar at the top says when the saved version is live. Unpublishing closes its WhatsApp enquiry link at once and removes the page as soon as the website refreshes."
+          : "Preview opens the live storefront page — new products appear there once the storefront is rebuilt."}
       </p>
     </section>
   );

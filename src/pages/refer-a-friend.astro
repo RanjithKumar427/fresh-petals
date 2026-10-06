@@ -11,7 +11,7 @@ const steps = [
   {
     title: "Share Fresh Petals",
     description:
-      "Send Fresh Petals to a friend who may need pooja flowers, jasmine, bouquets, hampers or subscription flowers in Hyderabad.",
+      "Send Fresh Petals to a friend who may need pooja flowers, jasmine, bouquets, hampers or subscription flowers in Bengaluru.",
   },
   {
     title: "Friend places first order",
@@ -37,10 +37,10 @@ const eligibleOrders = [
 ---
 
 <BaseLayout
-  title="Refer a Friend | Fresh Petals Hyderabad"
-  description="Refer a friend to Fresh Petals Hyderabad and claim manual WhatsApp-confirmed rewards on eligible flower orders."
+  title="Refer a Friend | Fresh Petals Bengaluru"
+  description="Refer a friend to Fresh Petals Bengaluru and claim manual WhatsApp-confirmed rewards on eligible flower orders."
 >
-  <main class="bg-white">
+  <main class="bg-paper">
     <section class="px-5 py-14 md:px-8 md:py-20">
       <div class="mx-auto max-w-7xl">
         <div class="mx-auto max-w-3xl text-center">
@@ -48,12 +48,12 @@ const eligibleOrders = [
             Refer & Earn
           </p>
 
-          <h1 class="fp-serif mt-4 text-3xl uppercase tracking-[0.20em] text-[#171717] md:text-5xl">
+          <h1 class="fp-serif mt-4 text-3xl text-ink md:text-5xl">
             Refer Fresh Petals To A Friend
           </h1>
 
-          <p class="mx-auto mt-5 max-w-2xl text-sm leading-7 text-[#66565D] md:text-base">
-            Refer someone who needs fresh flowers in Hyderabad. When their first order is confirmed
+          <p class="mx-auto mt-5 max-w-2xl text-sm leading-7 text-moss md:text-base">
+            Refer someone who needs fresh flowers in Bengaluru. When their first order is confirmed
             and completed, both of you can claim a manual reward on WhatsApp.
           </p>
 
@@ -61,7 +61,7 @@ const eligibleOrders = [
             href={whatsappHref}
             target="_blank"
             rel="noopener noreferrer"
-            class="mt-8 inline-flex rounded-full bg-[#075838] px-7 py-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-white transition hover:bg-[#06492f]"
+            class="mt-8 inline-flex rounded-full bg-ink px-7 py-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-white transition hover:bg-ink-deep"
           >
             Refer on WhatsApp
           </a>
@@ -70,16 +70,16 @@ const eligibleOrders = [
         <div class="mt-14 grid gap-5 md:grid-cols-3">
           {
             steps.map((step, index) => (
-              <article class="rounded-[28px] border border-[#EEE5E8] bg-[#FFF8FA] p-7">
-                <span class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#7C243E] text-sm font-semibold text-white">
+              <article class="rounded-[28px] border border-line bg-linen p-7">
+                <span class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-berry text-sm font-semibold text-white">
                   {index + 1}
                 </span>
 
-                <h2 class="mt-5 text-xl font-semibold text-[#171717]">
+                <h2 class="mt-5 text-xl font-semibold text-ink">
                   {step.title}
                 </h2>
 
-                <p class="mt-4 text-sm leading-7 text-[#66565D]">
+                <p class="mt-4 text-sm leading-7 text-moss">
                   {step.description}
                 </p>
               </article>
@@ -87,17 +87,17 @@ const eligibleOrders = [
           }
         </div>
 
-        <div class="mt-12 grid gap-6 rounded-[32px] border border-[#E5EFE9] bg-[#F6FBF8] p-8 md:grid-cols-[0.9fr_1.1fr] md:p-10">
+        <div class="mt-12 grid gap-6 rounded-[32px] border border-mint-soft bg-mint-soft p-8 md:grid-cols-[0.9fr_1.1fr] md:p-10">
           <div>
-            <p class="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#075838]">
+            <p class="text-[10px] font-semibold uppercase tracking-[0.32em] text-ink">
               Eligible orders
             </p>
 
-            <h2 class="mt-3 text-2xl font-semibold text-[#171717]">
+            <h2 class="mt-3 text-2xl font-semibold text-ink">
               Referral can be used on real Fresh Petals orders
             </h2>
 
-            <p class="mt-4 text-sm leading-7 text-[#66565D]">
+            <p class="mt-4 text-sm leading-7 text-moss">
               Since Fresh Petals pricing depends on daily flower availability, referral benefits are
               applied manually after final order confirmation.
             </p>
@@ -106,7 +106,7 @@ const eligibleOrders = [
           <div class="grid gap-3 sm:grid-cols-2">
             {
               eligibleOrders.map((item) => (
-                <div class="rounded-2xl border border-[#D8E7DD] bg-white px-4 py-3 text-sm font-medium text-[#171717]">
+                <div class="rounded-2xl border border-mint-line bg-paper px-4 py-3 text-sm font-medium text-ink">
                   {item}
                 </div>
               ))

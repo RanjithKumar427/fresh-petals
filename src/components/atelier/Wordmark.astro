@@ -1,0 +1,66 @@
+---
+// Text wordmark (no usable logo file exists in the repository): Fraunces
+// display with an italic "Petals", and the city as a small tracked label.
+interface Props {
+  tone?: "ink" | "ivory";
+  size?: "md" | "lg";
+}
+const { tone = "ink", size = "md" } = Astro.props;
+---
+
+<span class:list={["wordmark", `wordmark--${tone}`, `wordmark--${size}`]}>
+  <span class="wordmark__name">Fresh <em>Petals</em></span>
+  <span class="wordmark__city">Bengaluru</span>
+</span>
+
+<style>
+  .wordmark {
+    display: inline-flex;
+    flex-direction: column;
+    line-height: 1;
+    gap: 0.28rem;
+  }
+
+  .wordmark__name {
+    font-family: var(--font-display);
+    font-size: 1.55rem;
+    font-weight: 420;
+    letter-spacing: -0.02em;
+    font-variation-settings: "opsz" 72;
+    white-space: nowrap;
+  }
+
+  /* Upright light weight rather than italic: the wordmark appears on every
+     page, and this keeps the italic font file off pages that do not use it. */
+  .wordmark__name em {
+    font-style: normal;
+    font-weight: 280;
+    letter-spacing: -0.01em;
+  }
+
+  .wordmark__city {
+    font-family: var(--font-sans);
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    opacity: 0.72;
+    padding-left: 0.1rem;
+  }
+
+  .wordmark--lg .wordmark__name {
+    font-size: clamp(2.4rem, 1.6rem + 3vw, 4rem);
+  }
+
+  .wordmark--lg .wordmark__city {
+    font-size: 11px;
+  }
+
+  .wordmark--ink {
+    color: var(--color-ink);
+  }
+
+  .wordmark--ivory {
+    color: var(--color-ivory);
+  }
+</style>

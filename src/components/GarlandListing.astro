@@ -1,0 +1,107 @@
+---
+// The garland design listing with flower filters, used by the live
+// /categories/garlands page. Every design stays in the HTML; the chips only
+// show or hide cards, with ?filter=rose deep links. Drafts are only ever
+// passed in by a local preview, which marks them with a banner.
+import GarlandCard from "./GarlandCard.astro";
+import { GARLAND_FILTERS, isListedGarland, type GarlandProduct } from "../data/garlands";
+
+interface Props {
+  garlands: GarlandProduct[];
+  /** Other (non-design) garland orders follow this listing on the page. */
+  hasMore?: boolean;
+}
+
+const { garlands, hasMore = false } = Astro.props;
+const drafts = garlands.filter((product) => !isListedGarland(product.garland)).length;
+const filters = GARLAND_FILTERS.map((filter) => ({
+  ...filter,
+  count: garlands.filter((product) => product.garland.filters.includes(filter.key)).length,
+})).filter((filter) => filter.count > 0);
+---
+
+<section aria-labelledby="garland-designs-title" data-garland-listing>
+  <h2 id="garland-designs-title" class="sr-only">Garland designs</h2>
+  {drafts > 0 && (
+    <p class="mb-6 rounded-2xl border border-line bg-linen px-5 py-4 text-sm leading-6 text-ink" data-draft-banner>
+      <strong class="font-semibold">Draft preview — not public.</strong> {drafts} of {garlands.length} designs are
+      drafts awaiting photo permission, sample checks and confirmed details. They appear only in a local
+      preview build.
+    </p>
+  )}
+  <div
+    role="group"
+    aria-label="Filter garlands by flower"
+    class="-mx-5 mb-6 flex gap-2 overflow-x-auto px-5 pb-1 [scrollbar-width:none] md:mx-0 md:flex-wrap md:overflow-visible md:px-0"
+    data-garland-filters
+  >
+    <button
+      type="button"
+      aria-pressed="true"
+      data-garland-filter="all"
+      class="garland-chip inline-flex min-h-[44px] shrink-0 items-center gap-1 rounded-full border border-line bg-paper px-4 text-[12px] font-semibold text-ink transition"
+    >
+      All <span class="text-moss">({garlands.length})</span>
+    </button>
+    {filters.map((filter) => (
+      <button
+        type="button"
+        aria-pressed="false"
+        data-garland-filter={filter.key}
+        class="garland-chip inline-flex min-h-[44px] shrink-0 items-center gap-1 rounded-full border border-line bg-paper px-4 text-[12px] font-semibold text-ink transition"
+      >
+        {filter.label} <span class="text-moss">({filter.count})</span>
+      </button>
+    ))}
+  </div>
+  <p class="sr-only" aria-live="polite" data-garland-status></p>
+  <div class="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-4">
+    {garlands.map((product, index) => <GarlandCard product={product} eager={index < 4} />)}
+  </div>
+  {hasMore && <h2 class="fp-serif mb-5 mt-14 text-2xl text-ink md:text-3xl">More garland orders</h2>}
+</section>
+
+<script>
+  const listing = document.querySelector<HTMLElement>("[data-garland-listing]");
+  if (listing) {
+    const chips = [...listing.querySelectorAll<HTMLButtonElement>("[data-garland-filter]")];
+    const cards = [...listing.querySelectorAll<HTMLElement>("[data-garland-card]")];
+    const status = listing.querySelector<HTMLElement>("[data-garland-status]");
+    const apply = (key: string, updateUrl: boolean) => {
+      const chip = chips.find((item) => item.dataset.garlandFilter === key) ?? chips[0];
+      const active = chip.dataset.garlandFilter ?? "all";
+      chips.forEach((item) => item.setAttribute("aria-pressed", item === chip ? "true" : "false"));
+      let shown = 0;
+      cards.forEach((card) => {
+        const match = active === "all" || (card.dataset.garlandFilters ?? "").split(" ").includes(active);
+        card.hidden = !match;
+        if (match) shown += 1;
+      });
+      if (status) status.textContent = `${shown} garland design${shown === 1 ? "" : "s"} shown`;
+      if (updateUrl) {
+        const url = new URL(window.location.href);
+        if (active === "all") url.searchParams.delete("filter");
+        else url.searchParams.set("filter", active);
+        history.replaceState(null, "", url);
+      }
+    };
+    chips.forEach((chip) => chip.addEventListener("click", () => apply(chip.dataset.garlandFilter ?? "all", true)));
+    const initial = new URLSearchParams(window.location.search).get("filter");
+    if (initial) apply(initial, false);
+  }
+</script>
+
+<style>
+  .garland-chip[aria-pressed="true"] {
+    border-color: var(--color-ink);
+    background: var(--color-ink);
+    color: var(--color-paper);
+  }
+  .garland-chip[aria-pressed="true"] span {
+    color: inherit;
+    opacity: 0.8;
+  }
+  :global([data-garland-card][hidden]) {
+    display: none;
+  }
+</style>

@@ -8,7 +8,12 @@
 // /api/delivery/check, never from this value. See DeliveryService's
 // listAreas() header comment for the same point from the read side.
 
-const AREA_KEY = "fresh_petals_selected_area";
+import { STOREFRONT_CITY } from "../config/storefront";
+
+// Scoped to the storefront city: an area a visitor picked under the old
+// Hyderabad storefront (stored under the unscoped key) must not resurface
+// here as "Delivering to <Hyderabad area>".
+const AREA_KEY = `fresh_petals_selected_area:${STOREFRONT_CITY.toLowerCase()}`;
 export const AREA_UPDATED_EVENT = "fresh-petals-area-updated";
 
 export function getSelectedArea(): string | null {

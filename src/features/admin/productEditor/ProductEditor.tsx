@@ -2,8 +2,9 @@ import { useCallback, useEffect, useState } from "react";
 import EditorShell from "./EditorShell";
 import Sidebar from "./Sidebar";
 import PreviewPanel from "./PreviewPanel";
+import WebsiteStatus, { type WebsiteChange } from "./WebsiteStatus";
 import { useAutosave } from "./useAutosave";
-import { SECTIONS } from "./completion";
+import { getSections } from "./completion";
 import { getPublishBlockers } from "./publishReadiness";
 import { toProductInput, type CategoryOption, type ProductDraft, type ProductStatus, type TagOption } from "./types";
 import BasicInfoSection from "./sections/BasicInfoSection";
@@ -14,6 +15,8 @@ import FlowerDetailsSection from "./sections/FlowerDetailsSection";
 import IncludedSection from "./sections/IncludedSection";
 import CareSection from "./sections/CareSection";
 import SEOSection from "./sections/SEOSection";
+import GarlandDetailsSection from "./sections/GarlandDetailsSection";
+import OptionsSection from "./sections/OptionsSection";
 import PublishingSection from "./sections/PublishingSection";
 import ConfirmDialog from "../shared/ConfirmDialog";
 
@@ -26,14 +29,22 @@ interface Props {
   uncategorizedCategoryId: number;
 }
 
-async function saveProduct(draft: ProductDraft): Promise<{ ok: boolean; error?: string }> {
+async function saveProduct(draft: ProductDraft): Promise<{ ok: boolean; error?: string; website?: WebsiteChange }> {
   const response = await fetch(`/api/admin/products/${draft.id}`, {
     method: "PATCH",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(toProductInput(draft)),
   });
   const result = await response.json();
-  return result.ok ? { ok: true } : { ok: false, error: result.error };
+  if (result.ok) return { ok: true, website: result.website };
+  // Name the actual problems (e.g. "garland.length: Keep this under 60
+  // characters.") rather than only "Please fix the highlighted fields."
+  const details: string[] = Object.entries((result.fieldErrors ?? {}) as Record<string, string>).map(([field, message]) => {
+    const label = field.replace(/^garland\./, "").replace(/^options\.\d+\./, "option ").replace(/([A-Z])/g, " $1").toLowerCase();
+    return `${label}: ${message}`;
+  });
+  const generic = result.error === "Please fix the highlighted fields.";
+  return { ok: false, error: generic && details.length ? `Not saved — ${details.join(" · ")}` : result.error };
 }
 
 export default function ProductEditor({
@@ -45,13 +56,21 @@ export default function ProductEditor({
   uncategorizedCategoryId,
 }: Props) {
   const [draft, setDraft] = useState<ProductDraft>(product);
-  const [activeSectionId, setActiveSectionId] = useState(SECTIONS[0].id);
+  const sections = getSections(product);
+  const [activeSectionId, setActiveSectionId] = useState(sections[0].id);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [statusError, setStatusError] = useState<string | null>(null);
+  // Garlands only: what the latest save did to the live website.
+  const [websiteChange, setWebsiteChange] = useState<WebsiteChange | null>(null);
+  const save = useCallback(async (data: ProductDraft) => {
+    const result = await saveProduct(data);
+    if (result.website) setWebsiteChange(result.website);
+    return result;
+  }, []);
 
   const { status, error, lastSavedAt, saveNow } = useAutosave(
     draft,
-    saveProduct,
+    save,
     product.updatedAt ? new Date(product.updatedAt) : null
   );
 
@@ -62,7 +81,7 @@ export default function ProductEditor({
   // Tracks which section is most in view so the sidebar highlight follows
   // scrolling, not just clicks.
   useEffect(() => {
-    const sectionEls = SECTIONS.map((section) => document.getElementById(`section-${section.id}`)).filter(
+    const sectionEls = sections.map((section) => document.getElementById(`section-${section.id}`)).filter(
       (el): el is HTMLElement => el !== null
     );
     if (sectionEls.length === 0) return;
@@ -111,6 +130,7 @@ export default function ProductEditor({
         publishedAt: result.data.publishedAt,
         updatedAt: result.data.updatedAt,
       }));
+      if (result.website) setWebsiteChange(result.website);
     } else {
       setStatusError(result.error || "Couldn't update status.");
     }
@@ -141,6 +161,7 @@ export default function ProductEditor({
     <>
       <EditorShell
         productName={draft.name}
+        designCode={draft.garland?.designCode ?? null}
         productStatus={draft.status}
         saveStatus={status}
         lastSavedAt={lastSavedAt}
@@ -151,7 +172,9 @@ export default function ProductEditor({
         onDuplicate={handleDuplicate}
         onArchive={() => changeStatus("archived")}
         onUnarchive={() => changeStatus("draft")}
+        onUnpublish={() => changeStatus("draft")}
         onDelete={() => setConfirmingDelete(true)}
+        websiteStatus={draft.garland ? <WebsiteStatus productId={draft.id} change={websiteChange} /> : null}
         sidebar={<Sidebar draft={draft} activeSectionId={activeSectionId} uncategorizedCategoryId={uncategorizedCategoryId} />}
         preview={
           <PreviewPanel draft={draft} categories={categories} refreshKey={lastSavedAt ? lastSavedAt.getTime() : null} />
@@ -164,6 +187,8 @@ export default function ProductEditor({
         <BasicInfoSection draft={draft} onChange={updateDraft} />
         <ImagesSection draft={draft} onChange={updateDraft} />
         <PricingSection draft={draft} onChange={updateDraft} />
+        {draft.garland && <GarlandDetailsSection draft={draft} onChange={updateDraft} />}
+        {draft.garland && <OptionsSection draft={draft} onChange={updateDraft} />}
         <ClassificationSection
           draft={draft}
           onChange={updateDraft}
@@ -172,9 +197,9 @@ export default function ProductEditor({
           moods={moods}
           uncategorizedCategoryId={uncategorizedCategoryId}
         />
-        <FlowerDetailsSection draft={draft} onChange={updateDraft} flowerTypes={flowerTypes} />
-        <IncludedSection draft={draft} onChange={updateDraft} />
-        <CareSection draft={draft} onChange={updateDraft} />
+        {!draft.garland && <FlowerDetailsSection draft={draft} onChange={updateDraft} flowerTypes={flowerTypes} />}
+        {!draft.garland && <IncludedSection draft={draft} onChange={updateDraft} />}
+        {!draft.garland && <CareSection draft={draft} onChange={updateDraft} />}
         <SEOSection draft={draft} onChange={updateDraft} />
         <PublishingSection
           draft={draft}
@@ -183,6 +208,7 @@ export default function ProductEditor({
           onPublish={handlePublish}
           onArchive={() => changeStatus("archived")}
           onUnarchive={() => changeStatus("draft")}
+          onUnpublish={() => changeStatus("draft")}
         />
       </EditorShell>
 

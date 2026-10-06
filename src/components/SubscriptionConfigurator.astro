@@ -89,7 +89,7 @@ const addOns = [
 ---
 
 <section
-  class="mt-6 rounded-[28px] border border-[#D8E7DD] bg-[#F6FBF8] p-5 shadow-[0_12px_34px_rgba(7,88,56,0.06)] md:p-6"
+  class="mt-6 rounded-[28px] border border-mint-line bg-mint-soft p-5 shadow-[0_12px_34px_rgba(7,88,56,0.06)] md:p-6"
   data-subscription-configurator
   data-product-id={product.id}
   data-product-slug={product.slug}
@@ -101,35 +101,35 @@ const addOns = [
 >
   <div class="flex items-start justify-between gap-4">
     <div>
-      <p class="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#075838]">
+      <p class="text-[10px] font-semibold uppercase tracking-[0.28em] text-ink">
         Subscription Plan
       </p>
 
-      <h2 class="mt-2 text-xl font-semibold text-[#171717]">
+      <h2 class="mt-2 text-xl font-semibold text-ink">
         Configure your recurring flower plan
       </h2>
     </div>
 
-    <span class="rounded-full bg-white px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#075838]">
+    <span class="rounded-full bg-paper px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-ink">
       WhatsApp confirmed
     </span>
   </div>
 
-  <p class="mt-4 text-sm leading-7 text-[#66565D]">
+  <p class="mt-4 text-sm leading-7 text-moss">
     Choose frequency, duration, preferred days, start date and delivery details.
     Final subscription price will be confirmed on WhatsApp based on flower mix, quantity,
     pincode and market availability.
   </p>
 
   <div class="mt-6">
-    <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#171717]">
+    <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink">
       Frequency
     </p>
 
     <div class="mt-3 grid gap-3 md:grid-cols-2">
       {
         frequencies.map((frequency) => (
-          <label class="cursor-pointer rounded-2xl border border-[#D8E7DD] bg-white p-4 transition hover:border-[#075838]">
+          <label class="cursor-pointer rounded-2xl border border-mint-line bg-paper p-4 transition hover:border-ink">
             <div class="flex items-start gap-3">
               <input
                 type="radio"
@@ -141,11 +141,11 @@ const addOns = [
               />
 
               <span>
-                <span class="block text-sm font-semibold text-[#171717]">
+                <span class="block text-sm font-semibold text-ink">
                   {frequency.label}
                 </span>
 
-                <span class="mt-1 block text-xs leading-5 text-[#66565D]">
+                <span class="mt-1 block text-xs leading-5 text-moss">
                   {frequency.description}
                 </span>
               </span>
@@ -157,14 +157,14 @@ const addOns = [
   </div>
 
   <div class="mt-6">
-    <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#171717]">
+    <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink">
       Duration
     </p>
 
     <div class="mt-3 grid gap-3 sm:grid-cols-3">
       {
         durations.map((duration) => (
-          <label class="cursor-pointer rounded-2xl border border-[#D8E7DD] bg-white p-4 text-sm font-semibold text-[#171717] transition hover:border-[#075838]">
+          <label class="cursor-pointer rounded-2xl border border-mint-line bg-paper p-4 text-sm font-semibold text-ink transition hover:border-ink">
             <input
               type="radio"
               name="subscription-duration"
@@ -181,14 +181,14 @@ const addOns = [
   </div>
 
   <div class="mt-6">
-    <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#171717]">
+    <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink">
       Preferred Delivery Days
     </p>
 
     <div class="mt-3 grid gap-3 sm:grid-cols-2 md:grid-cols-4">
       {
         preferredDays.map((day) => (
-          <label class="cursor-pointer rounded-2xl border border-[#D8E7DD] bg-white px-4 py-3 text-sm font-medium text-[#171717] transition hover:border-[#075838]">
+          <label class="cursor-pointer rounded-2xl border border-mint-line bg-paper px-4 py-3 text-sm font-medium text-ink transition hover:border-ink">
             <input
               type="checkbox"
               value={day}
@@ -204,37 +204,37 @@ const addOns = [
 
   <div class="mt-6 grid gap-4 md:grid-cols-2">
     <label class="block">
-      <span class="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#171717]">
+      <span class="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink">
         Start Date
       </span>
       <input
         type="date"
         data-subscription-start-date
-        class="mt-2 w-full rounded-2xl border border-[#D8E7DD] bg-white px-4 py-3 text-sm text-[#171717] outline-none transition focus:border-[#075838]"
+        class="mt-2 w-full rounded-2xl border border-mint-line bg-paper px-4 py-3 text-sm text-ink outline-none transition focus:border-ink"
       />
     </label>
 
     <label class="block">
-      <span class="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#171717]">
+      <span class="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink">
         Delivery Pincode
       </span>
       <input
         type="text"
         inputmode="numeric"
         maxlength="6"
-        placeholder="Example: 500081"
+        placeholder="6-digit pincode"
         data-subscription-pincode
-        class="mt-2 w-full rounded-2xl border border-[#D8E7DD] bg-white px-4 py-3 text-sm text-[#171717] outline-none transition focus:border-[#075838]"
+        class="mt-2 w-full rounded-2xl border border-mint-line bg-paper px-4 py-3 text-sm text-ink outline-none transition focus:border-ink"
       />
     </label>
 
     <label class="block">
-      <span class="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#171717]">
+      <span class="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink">
         Delivery Slot
       </span>
       <select
         data-subscription-delivery-slot
-        class="mt-2 w-full rounded-2xl border border-[#D8E7DD] bg-white px-4 py-3 text-sm text-[#171717] outline-none transition focus:border-[#075838]"
+        class="mt-2 w-full rounded-2xl border border-mint-line bg-paper px-4 py-3 text-sm text-ink outline-none transition focus:border-ink"
       >
         <option value="">Select slot</option>
         {deliverySlots.map((slot) => <option value={slot}>{slot}</option>)}
@@ -242,7 +242,7 @@ const addOns = [
     </label>
 
     <label class="block">
-      <span class="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#171717]">
+      <span class="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink">
         Quantity / Requirement
       </span>
       <input
@@ -250,20 +250,20 @@ const addOns = [
         min="1"
         value="1"
         data-subscription-quantity
-        class="mt-2 w-full rounded-2xl border border-[#D8E7DD] bg-white px-4 py-3 text-sm text-[#171717] outline-none transition focus:border-[#075838]"
+        class="mt-2 w-full rounded-2xl border border-mint-line bg-paper px-4 py-3 text-sm text-ink outline-none transition focus:border-ink"
       />
     </label>
   </div>
 
   <div class="mt-6">
-    <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#171717]">
+    <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink">
       Subscription Add-ons
     </p>
 
     <div class="mt-3 grid gap-3 md:grid-cols-2">
       {
         addOns.map((addOn) => (
-          <label class="flex cursor-pointer items-start gap-3 rounded-2xl border border-[#D8E7DD] bg-white p-4 transition hover:border-[#075838]">
+          <label class="flex cursor-pointer items-start gap-3 rounded-2xl border border-mint-line bg-paper p-4 transition hover:border-ink">
             <input
               type="checkbox"
               class="mt-1"
@@ -273,10 +273,10 @@ const addOns = [
               data-addon-price-label={addOn.priceLabel}
             />
             <span>
-              <span class="block text-sm font-semibold text-[#171717]">
+              <span class="block text-sm font-semibold text-ink">
                 {addOn.name}
               </span>
-              <span class="mt-1 block text-xs text-[#66565D]">
+              <span class="mt-1 block text-xs text-moss">
                 {addOn.priceLabel}
               </span>
             </span>
@@ -287,23 +287,23 @@ const addOns = [
   </div>
 
   <label class="mt-6 block">
-    <span class="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#171717]">
+    <span class="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink">
       Subscription Message / Notes
     </span>
     <textarea
       rows="4"
       placeholder="Example: Need jasmine every morning / weekly vase flowers / budget ₹800 per week..."
       data-subscription-message
-      class="mt-2 w-full rounded-2xl border border-[#D8E7DD] bg-white px-4 py-3 text-sm leading-6 text-[#171717] outline-none transition focus:border-[#075838]"
+      class="mt-2 w-full rounded-2xl border border-mint-line bg-paper px-4 py-3 text-sm leading-6 text-ink outline-none transition focus:border-ink"
     ></textarea>
   </label>
 
-  <div class="mt-6 rounded-2xl border border-[#D8E7DD] bg-white p-4">
-    <h3 class="text-sm font-semibold text-[#171717]">
+  <div class="mt-6 rounded-2xl border border-mint-line bg-paper p-4">
+    <h3 class="text-sm font-semibold text-ink">
       Estimated plan note
     </h3>
 
-    <p class="mt-2 text-sm leading-7 text-[#66565D]">
+    <p class="mt-2 text-sm leading-7 text-moss">
       This plan starts from {product.priceLabel}. Final recurring price will be confirmed on WhatsApp
       based on flower type, delivery area, frequency, quantity and market rate.
     </p>
@@ -316,8 +316,8 @@ const addOns = [
       class:list={[
         "inline-flex items-center justify-center rounded-full px-7 py-4 text-[11px] font-bold uppercase tracking-[0.22em] transition",
         product.isAvailable
-          ? "bg-[#075838] text-white hover:bg-[#111111]"
-          : "pointer-events-none bg-[#D8D1D4] text-[#7A6E73]",
+          ? "bg-ink text-white hover:bg-ink"
+          : "pointer-events-none bg-linen text-moss",
       ]}
     >
       {product.isAvailable ? "Add Subscription To Cart" : "Unavailable"}
@@ -326,14 +326,14 @@ const addOns = [
     <button
       type="button"
       data-subscription-whatsapp
-      class="inline-flex items-center justify-center rounded-full border border-[#075838] px-7 py-4 text-[11px] font-bold uppercase tracking-[0.22em] text-[#075838] transition hover:bg-[#075838] hover:text-white"
+      class="inline-flex items-center justify-center rounded-full border border-ink px-7 py-4 text-[11px] font-bold uppercase tracking-[0.22em] text-ink transition hover:bg-ink hover:text-white"
     >
       Confirm Subscription On WhatsApp
     </button>
 
     <a
       href="/cart"
-      class="inline-flex items-center justify-center rounded-full border border-[#111111] px-7 py-4 text-[11px] font-bold uppercase tracking-[0.22em] text-[#111111] transition hover:bg-[#111111] hover:text-white"
+      class="inline-flex items-center justify-center rounded-full border border-ink px-7 py-4 text-[11px] font-bold uppercase tracking-[0.22em] text-ink transition hover:bg-ink hover:text-white"
     >
       View Cart
     </a>
@@ -341,7 +341,7 @@ const addOns = [
 
   <p
     data-subscription-feedback
-    class="mt-4 hidden rounded-full bg-white px-4 py-3 text-center text-sm font-semibold text-[#075838]"
+    class="mt-4 hidden rounded-full bg-paper px-4 py-3 text-center text-sm font-semibold text-ink"
   >
     Subscription plan added to cart.
   </p>

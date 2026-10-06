@@ -36,6 +36,8 @@ export default function ClassificationSection({
           <select
             id="categoryId"
             value={draft.categoryId}
+            disabled={!!draft.garland}
+            title={draft.garland ? "Garland designs stay in the Garlands category." : undefined}
             onChange={(event) => onChange({ categoryId: Number(event.target.value) })}
             className={inputClassName}
           >

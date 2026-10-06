@@ -6,6 +6,8 @@ import type { ProductStatus } from "./types";
 
 interface Props {
   productName: string;
+  /** Garland design code — garlands can't be duplicated or deleted (permanent identity). */
+  designCode?: string | null;
   productStatus: ProductStatus;
   saveStatus: Status;
   lastSavedAt: Date | null;
@@ -16,7 +18,11 @@ interface Props {
   onDuplicate: () => void;
   onArchive: () => void;
   onUnarchive: () => void;
+  /** Garlands: take a published design off the website (back to draft). */
+  onUnpublish?: () => void;
   onDelete: () => void;
+  /** Garlands: whether the saved version is visible on the website yet. */
+  websiteStatus?: ReactNode;
   sidebar: ReactNode;
   preview: ReactNode;
   children: ReactNode;
@@ -24,6 +30,7 @@ interface Props {
 
 export default function EditorShell({
   productName,
+  designCode = null,
   productStatus,
   saveStatus,
   lastSavedAt,
@@ -34,13 +41,21 @@ export default function EditorShell({
   onDuplicate,
   onArchive,
   onUnarchive,
+  onUnpublish,
   onDelete,
+  websiteStatus = null,
   sidebar,
   preview,
   children,
 }: Props) {
-  const overflowItems =
-    productStatus === "archived"
+  const overflowItems = designCode
+    ? productStatus === "archived"
+      ? [{ label: "Restore to Draft", onClick: onUnarchive }]
+      : [
+          ...(productStatus === "published" && onUnpublish ? [{ label: "Unpublish (back to draft)", onClick: onUnpublish }] : []),
+          { label: "Archive", onClick: onArchive },
+        ]
+    : productStatus === "archived"
       ? [
           { label: "Duplicate", onClick: onDuplicate },
           { label: "Restore to Draft", onClick: onUnarchive },
@@ -65,6 +80,9 @@ export default function EditorShell({
           <h1 className="truncate text-[14px] font-medium text-[#171717]">
             {productName === "Untitled Product" ? "Untitled Product" : productName}
           </h1>
+          {designCode && (
+            <span className="shrink-0 rounded-full bg-[#F8DCE5] px-2 py-0.5 text-[10px] font-bold tracking-[0.1em] text-[#7C243E]">{designCode}</span>
+          )}
         </div>
 
         <div className="flex shrink-0 items-center gap-3">
@@ -92,6 +110,7 @@ export default function EditorShell({
           <OverflowMenu items={overflowItems} />
         </div>
       </header>
+      {websiteStatus}
 
       <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[220px_1fr_360px]">
         <aside className="hidden overflow-y-auto border-r border-[#EEE5E8] bg-white p-4 lg:block">{sidebar}</aside>

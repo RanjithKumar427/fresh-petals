@@ -5,5 +5,5 @@ export const prerender = false;
 
 export const POST: APIRoute = async ({ request, cookies, redirect }) => {
   await AuthService.logout(request, cookies);
-  return redirect("/admin/login");
+  return redirect("/admin/login?signedOut=1");
 };

@@ -1,4 +1,4 @@
-import { SECTIONS, getSectionStatus, type SectionStatus } from "./completion";
+import { getSections, getSectionStatus, type SectionStatus } from "./completion";
 import type { ProductDraft } from "./types";
 
 interface Props {
@@ -41,7 +41,7 @@ export default function Sidebar({ draft, activeSectionId, uncategorizedCategoryI
 
   return (
     <nav className="space-y-0.5">
-      {SECTIONS.map((section) => {
+      {getSections(draft).map((section) => {
         const status = getSectionStatus(section.id, draft, uncategorizedCategoryId);
         const isActive = section.id === activeSectionId;
 

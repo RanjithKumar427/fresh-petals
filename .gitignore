@@ -31,3 +31,14 @@ pnpm-debug.log*
 /data/
 /uploads/
 scripts/_tmp-*
+
+.vercel
+.env*
+
+# Garland import pack (source references, originals, approval data): local only.
+/garland-import/
+# Full garland source pack (all four catalogues; originals, index, audit inputs): local only.
+/full-garland-import/
+# Supplier-catalogue garland photos: kept out of the public repository until
+# photo-publication permission is confirmed (see docs/garlands.md).
+/public/images/garlands/

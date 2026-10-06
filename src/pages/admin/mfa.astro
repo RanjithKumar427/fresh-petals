@@ -1,0 +1,150 @@
+---
+// Two-step verification. Middleware lets an approved administrator reach
+// this page only after the password step (session aal1); a session that has
+// already finished both steps is sent to the dashboard, and anyone else to
+// the sign-in page. Three states:
+//   - has an authenticator      -> enter the current 6-digit code
+//   - no authenticator yet      -> "Set up authenticator" (POST action=enroll)
+//   - setup just started (POST) -> QR code + manual key, then the code
+// The QR code and key are produced by Supabase for this signed-in user,
+// shown once in this response (sent with Cache-Control: no-store) and
+// never stored or logged by the application.
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import { AuthService } from "../../server/services/AuthService";
+import { safeAdminPath } from "../../server/auth/safeAdminPath";
+
+export const prerender = false;
+
+const pending = Astro.locals.pendingAdmin;
+if (!pending) return Astro.redirect("/admin/login");
+
+const next = safeAdminPath(Astro.url.searchParams.get("next"));
+let error: string | null = null;
+let enrollment: { factorId: string; qrCode: string; secret: string } | null = null;
+let awaitingFirstCode: string | null = null; // factor id of an enrollment whose first code was wrong
+
+if (Astro.request.method === "POST") {
+  const form = await Astro.request.formData();
+  const action = String(form.get("action") || "");
+
+  if (action === "enroll") {
+    const result = await AuthService.startTotpEnrollment(Astro.request, Astro.cookies);
+    if (result.ok) enrollment = { factorId: result.factorId, qrCode: result.qrCode, secret: result.secret };
+    else error = result.error;
+  } else if (action === "verify") {
+    const code = String(form.get("code") || "").replace(/\s+/g, "");
+    const factorId = String(form.get("factorId") || "") || null;
+    const result = await AuthService.verifyTotp(code, factorId, Astro.request, Astro.cookies);
+    if (result.ok) return Astro.redirect(next);
+    if (result.error.startsWith("Your session has ended")) {
+      return Astro.redirect(`/admin/login?reason=ended&next=${encodeURIComponent(next)}`);
+    }
+    error = result.error;
+    if (!pending.hasVerifiedFactor && factorId) awaitingFirstCode = factorId;
+  }
+}
+
+const showCodeForm = pending.hasVerifiedFactor || enrollment !== null || awaitingFirstCode !== null;
+const factorIdForForm = enrollment?.factorId ?? awaitingFirstCode ?? "";
+const groupedSecret = enrollment?.secret.replace(/(.{4})/g, "$1 ").trim();
+---
+
+<AdminLayout title="Two-step verification">
+  <div class="flex min-h-screen items-center justify-center px-4 py-10">
+    <div class="fp-card w-full max-w-sm p-8">
+      <p class="fp-serif text-xl tracking-[0.12em] text-[#171717]">FreshPetals</p>
+      <p class="fp-label mt-1 text-[#9B6B78]">Two-step verification</p>
+
+      {error && <p class="mt-4 rounded-lg bg-[#FBEAEE] px-3 py-2 text-[12px] text-[#7C243E]" role="alert">{error}</p>}
+
+      {
+        enrollment && (
+          <div class="mt-6">
+            <h1 class="text-[15px] font-semibold text-[#171717]">Set up your authenticator</h1>
+            <ol class="mt-3 list-decimal space-y-2 pl-5 text-[13px] leading-6 text-[#4A3F44]">
+              <li>Open an authenticator app on your phone (for example Google Authenticator, Microsoft Authenticator or 1Password).</li>
+              <li>Scan this QR code, or type the key below into the app.</li>
+              <li>Enter the 6-digit code the app shows.</li>
+            </ol>
+            <img src={enrollment.qrCode} alt="QR code to add FreshPetals Admin to your authenticator app" width="200" height="200" class="mx-auto mt-4 rounded-lg border border-[#E8E1E4] bg-white p-2" />
+            <p class="mt-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#66565D]">Key (if you can't scan)</p>
+            <p class="mt-1 select-all break-all rounded-lg bg-[#F6F1F3] px-3 py-2 font-mono text-[13px] text-[#171717]">{groupedSecret}</p>
+            <p class="mt-2 text-[12px] leading-5 text-[#66565D]">This key is shown only once. Don't share it or take a screenshot that others can see.</p>
+          </div>
+        )
+      }
+
+      {
+        !showCodeForm && (
+          <div class="mt-6">
+            <h1 class="text-[15px] font-semibold text-[#171717]">Protect your admin account</h1>
+            <p class="mt-3 text-[13px] leading-6 text-[#4A3F44]">
+              Admin access needs a second step: a 6-digit code from an authenticator app on your phone. Set it up once; you'll enter a code each time you sign in.
+            </p>
+            <form method="post" class="mt-5">
+              <input type="hidden" name="action" value="enroll" />
+              <button type="submit" class="w-full rounded-full bg-[#111111] py-3 text-[11px] font-bold uppercase tracking-[0.22em] text-white transition hover:bg-[#7C243E]">
+                Set up authenticator
+              </button>
+            </form>
+          </div>
+        )
+      }
+
+      {
+        showCodeForm && (
+          <form method="post" class="mt-6 space-y-4">
+            {!enrollment && (
+              <h1 class="text-[15px] font-semibold text-[#171717]">
+                {pending.hasVerifiedFactor ? "Enter your verification code" : "Enter the code from the app you just set up"}
+              </h1>
+            )}
+            <input type="hidden" name="action" value="verify" />
+            {factorIdForForm && <input type="hidden" name="factorId" value={factorIdForForm} />}
+            <div>
+              <label class="fp-label block text-[10px] text-[#66565D]" for="code">6-digit code</label>
+              <input
+                id="code"
+                name="code"
+                type="text"
+                inputmode="numeric"
+                pattern="[0-9 ]{6,7}"
+                maxlength="7"
+                required
+                autocomplete="one-time-code"
+                autofocus
+                class="mt-1 w-full rounded-lg border border-[#D8D1D4] px-3 py-2.5 text-center font-mono text-[20px] tracking-[0.3em] text-[#171717] outline-none focus:border-[#7C243E]"
+              />
+            </div>
+            <button type="submit" class="w-full rounded-full bg-[#111111] py-3 text-[11px] font-bold uppercase tracking-[0.22em] text-white transition hover:bg-[#7C243E]">
+              Verify
+            </button>
+          </form>
+        )
+      }
+
+      {
+        !pending.hasVerifiedFactor && showCodeForm && (
+          <form method="post" class="mt-3">
+            <input type="hidden" name="action" value="enroll" />
+            <button type="submit" class="w-full text-center text-[11px] font-semibold uppercase tracking-[0.18em] text-[#66565D] hover:text-[#7C243E] hover:underline">
+              Start setup again
+            </button>
+          </form>
+        )
+      }
+
+      {
+        pending.hasVerifiedFactor && (
+          <p class="mt-4 text-[12px] leading-5 text-[#66565D]">Lost access to your authenticator? The site owner can remove it from the Supabase dashboard, then you set up a new one here (steps in docs/admin-security.md).</p>
+        )
+      }
+
+      <form method="post" action="/api/admin/auth/logout" class="mt-5 border-t border-[#EFE8EB] pt-4">
+        <button type="submit" class="w-full text-center text-[11px] font-semibold uppercase tracking-[0.18em] text-[#66565D] hover:text-[#7C243E] hover:underline">
+          Sign out
+        </button>
+      </form>
+    </div>
+  </div>
+</AdminLayout>

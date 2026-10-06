@@ -13,6 +13,8 @@ export type ProductListItem = {
   priceType: PriceType;
   sellingPrice: number | null;
   compareAtPrice: number | null;
+  /** Garland design code (FP-G…); null for other products. */
+  designCode?: string | null;
   status: ProductStatus;
   featured: boolean;
   bestseller: boolean;

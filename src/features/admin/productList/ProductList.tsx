@@ -17,6 +17,7 @@ export default function ProductList({ categories }: Props) {
   const [featuredOnly, setFeaturedOnly] = useState(false);
   const [sort, setSort] = useState<SortOption>("updated");
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const refresh = async () => {
     setLoading(true);
@@ -44,7 +45,9 @@ export default function ProductList({ categories }: Props) {
     if (featuredOnly) list = list.filter((p) => p.featured);
     if (search.trim()) {
       const term = search.trim().toLowerCase();
-      list = list.filter((p) => p.name.toLowerCase().includes(term) || p.slug.includes(term));
+      list = list.filter(
+        (p) => p.name.toLowerCase().includes(term) || p.slug.includes(term) || (p.designCode ?? "").toLowerCase().includes(term)
+      );
     }
 
     const sorted = [...list];
@@ -56,12 +59,25 @@ export default function ProductList({ categories }: Props) {
   }, [products, status, categoryId, featuredOnly, search, sort]);
 
   const setProductStatus = async (id: number, next: ProductStatus) => {
+    setActionError(null);
+    const previous = products.find((p) => p.id === id)?.status;
     setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, status: next } : p)));
-    await fetch(`/api/admin/products/${id}/status`, {
+    const response = await fetch(`/api/admin/products/${id}/status`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ status: next }),
     });
+    const result = await response.json().catch(() => ({ ok: false, error: "Couldn't update the status." }));
+    if (!result.ok) {
+      // Roll back the optimistic change and say why (e.g. publish blockers).
+      setProducts((prev) => prev.map((p) => (p.id === id && previous ? { ...p, status: previous } : p)));
+      const name = products.find((p) => p.id === id)?.name ?? "This product";
+      setActionError(`${name}: ${result.error || "couldn't update the status."}`);
+    } else if (result.website?.refresh && !result.website.refresh.ok) {
+      // Saved, but the live website wasn't refreshed: say so (retry from the editor's Website bar).
+      const name = products.find((p) => p.id === id)?.name ?? "This product";
+      setActionError(`${name}: status saved. ${result.website.refresh.message} Open the garland to retry.`);
+    }
   };
 
   const handleDuplicate = async (id: number) => {
@@ -71,7 +87,9 @@ export default function ProductList({ categories }: Props) {
 
   const handleDelete = async () => {
     if (deletingId === null) return;
-    await fetch(`/api/admin/products/${deletingId}`, { method: "DELETE" });
+    const response = await fetch(`/api/admin/products/${deletingId}`, { method: "DELETE" });
+    const result = await response.json().catch(() => ({ ok: true }));
+    if (!result.ok) setActionError(result.error || "Couldn't delete this product.");
     setDeletingId(null);
     refresh();
   };
@@ -91,6 +109,13 @@ export default function ProductList({ categories }: Props) {
           + Add Product
         </a>
       </div>
+
+      {actionError && (
+        <div role="alert" className="mb-3 flex items-start justify-between gap-3 rounded-lg bg-[#FBEAEE] px-4 py-3 text-[13px] text-[#7C243E]">
+          <span>{actionError}</span>
+          <button type="button" onClick={() => setActionError(null)} aria-label="Dismiss" className="font-bold">×</button>
+        </div>
+      )}
 
       <ProductListToolbar
         search={search}

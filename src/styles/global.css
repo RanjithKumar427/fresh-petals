@@ -1,199 +1,281 @@
 @import "tailwindcss";
 
-:root {
-  --color-white: #ffffff;
-  --color-cream: #fffdf8;
-  --color-soft-pink: #e8a7b8;
-  --color-soft-pink-light: #f8dce5;
-  --color-text: #171717;
-  --color-muted: #77706f;
-  --color-border: #eee5e8;
-  --color-green: #075838;
-  --color-black: #111111;
+/* Self-hosted type (OFL-1.1, via @fontsource-variable): Fraunces for
+   expressive editorial display, Jost (the existing FreshPetals sans) for
+   reading and interface text. unicode-range subsetting means browsers only
+   fetch the subsets a page actually uses. */
+/* Weight-axis files (latin: 36KB / 45KB italic) rather than the
+   optical-size files (66KB / 80KB): measured, the larger display font
+   competed with body text for bandwidth on first load. */
+@import "@fontsource-variable/fraunces/wght.css";
+@import "@fontsource-variable/fraunces/wght-italic.css";
+@import "@fontsource-variable/jost/wght.css";
 
-  /* Two-tier motion system.
-     --ease-micro: for reflexive feedback (hover, press, focus) — quick
-     and controlled, so response never reads as lag.
-     --ease-premium: for anything that settles or arrives (cards,
-     dropdowns, reveals) — an unhurried deceleration, no overshoot. */
+/* ---------------------------------------------------------------------
+   Floral atelier design tokens. Contrast (WCAG) on ivory: ink 10.9:1,
+   moss 5.8:1, berry 8.7:1, apricot-deep 5.0:1, rose-deep 5.5:1.
+   apricot / rose / sage are decorative or large-text only.
+   --------------------------------------------------------------------- */
+@theme {
+  --color-ivory: #f7f3eb;
+  --color-paper: #fcfaf5;
+  --color-linen: #efe8dc;
+  --color-ink: #173d2d;
+  --color-ink-deep: #0f2a1f;
+  --color-moss: #4e6358;
+  --color-sage: #7d8f84;
+  --color-line: #e2d9c9;
+  --color-line-strong: #cbbfab;
+  --color-rose: #e8b7b2;
+  --color-rose-soft: #f4dcd7;
+  --color-rose-deep: #9a4a44;
+  --color-apricot: #d97a52;
+  --color-apricot-deep: #a6502c;
+  --color-berry: #7c243e;
+  --color-mint-soft: #eef3ec;
+  --color-mint-line: #cfdecf;
+
+  --font-display: "Fraunces Variable", "Fraunces", Georgia, "Times New Roman", serif;
+  --font-sans: "Jost Variable", "Jost", "Segoe UI", Arial, Helvetica, sans-serif;
+
   --ease-micro: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-premium: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-atelier: cubic-bezier(0.65, 0.05, 0.25, 1);
+}
+
+:root {
+  /* Legacy names kept so any remaining var() references resolve to the
+     new palette instead of the retired pink/black one. */
+  --color-white: #ffffff;
+  --color-cream: var(--color-paper);
+  --color-soft-pink: var(--color-rose);
+  --color-soft-pink-light: var(--color-rose-soft);
+  --color-text: var(--color-ink);
+  --color-muted: var(--color-moss);
+  --color-border: var(--color-line);
+  --color-green: var(--color-ink);
+  --color-black: var(--color-ink);
+
+  /* Fluid type scale — one definition shared by every surface. */
+  --step--1: clamp(0.8125rem, 0.78rem + 0.15vw, 0.875rem);
+  --step-0: clamp(0.9375rem, 0.9rem + 0.2vw, 1.0625rem);
+  --step-1: clamp(1.125rem, 1.05rem + 0.4vw, 1.375rem);
+  --step-2: clamp(1.4rem, 1.2rem + 1vw, 2rem);
+  --step-3: clamp(1.9rem, 1.45rem + 2.1vw, 3.1rem);
+  --step-4: clamp(2.5rem, 1.7rem + 3.9vw, 5rem);
+  --step-5: clamp(3rem, 1.6rem + 6.4vw, 7.25rem);
+
+  --radius-soft: 14px;
+  --shadow-paper: 0 1px 0 rgba(23, 61, 45, 0.04), 0 18px 40px -22px rgba(23, 61, 45, 0.28);
+  --header-h: 64px;
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --header-h: 76px;
+  }
 }
 
 html {
   scroll-behavior: smooth;
+  background: var(--color-ivory);
+  -webkit-text-size-adjust: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
 }
 
 body {
   margin: 0;
-  background: var(--color-white);
-  color: var(--color-text);
-  font-family: "Jost", Arial, Helvetica, sans-serif;
+  background: var(--color-ivory);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: var(--step-0);
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 
-/* Premium serif heading utility */
+::selection {
+  background: var(--color-rose);
+  color: var(--color-ink);
+}
+
+/* Paper grain — a tiny inline SVG noise tile, restrained. */
+.atelier-grain {
+  position: relative;
+  isolation: isolate;
+}
+
+.atelier-grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.35;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .45 0 0 0 0 .38 0 0 0 0 .3 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ---------------------------------------------------------------------
+   Typography utilities (names kept for every existing template).
+   --------------------------------------------------------------------- */
 .fp-serif {
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--font-display);
   font-weight: 400;
-  letter-spacing: 0.08em;
+  font-optical-sizing: auto;
+  letter-spacing: -0.01em;
 }
 
-/* Thin uppercase label style */
+.fp-display {
+  font-family: var(--font-display);
+  font-weight: 380;
+  font-optical-sizing: auto;
+  font-size: var(--step-5);
+  line-height: 0.92;
+  letter-spacing: -0.035em;
+  color: var(--color-ink);
+  text-wrap: balance;
+}
+
 .fp-label {
-    font-family: "Jost", Arial, Helvetica, sans-serif;
-    font-size: 11px;
+  font-family: var(--font-sans);
+  font-size: 11px;
   font-weight: 500;
-  letter-spacing: 0.32em;
+  letter-spacing: 0.22em;
   text-transform: uppercase;
 }
 
-/* Type scale — codifies the eyebrow/H1/H2 patterns already used
-   identically across the site so new sections reuse one definition
-   instead of re-typing the same arbitrary values. */
 .fp-eyebrow {
-  font-size: 10px;
+  font-family: var(--font-sans);
+  font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.32em;
+  letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: #9b6b78;
+  color: var(--color-rose-deep);
 }
 
 .fp-h1 {
-  font-family: Georgia, "Times New Roman", serif;
-  font-weight: 400;
-  letter-spacing: 0.20em;
-  text-transform: uppercase;
-  color: #171717;
-  font-size: 1.875rem; /* text-3xl */
-  line-height: 2.25rem;
+  font-family: var(--font-display);
+  font-weight: 380;
+  font-optical-sizing: auto;
+  letter-spacing: -0.025em;
+  color: var(--color-ink);
+  font-size: var(--step-4);
+  line-height: 0.98;
+  text-wrap: balance;
 }
 
 .fp-h2 {
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--font-display);
   font-weight: 400;
-  letter-spacing: 0.24em;
-  text-transform: uppercase;
-  color: #171717;
-  font-size: 1.5rem; /* text-2xl */
-  line-height: 2rem;
+  font-optical-sizing: auto;
+  letter-spacing: -0.02em;
+  color: var(--color-ink);
+  font-size: var(--step-3);
+  line-height: 1.02;
+  text-wrap: balance;
 }
 
-@media (min-width: 768px) {
-  .fp-h1 {
-    font-size: 3rem; /* md:text-5xl */
-    line-height: 1;
-  }
-
-  .fp-h2 {
-    font-size: 1.875rem; /* md:text-3xl */
-    line-height: 2.25rem;
-  }
+.fp-lede {
+  font-size: var(--step-1);
+  line-height: 1.55;
+  color: var(--color-moss);
+  text-wrap: pretty;
 }
 
-/* Shades-style small rectangular button */
-.fp-btn-dark {
+.fp-price {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-berry);
+}
+
+/* ---------------------------------------------------------------------
+   Buttons. Every legacy class maps onto the same three atelier styles:
+   solid ink, outline ink, and a soft rose accent.
+   --------------------------------------------------------------------- */
+.fp-btn,
+.fp-btn-dark,
+.fp-btn-pill-dark,
+.fp-btn-block,
+.fp-btn-pink,
+.fp-btn-outline {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: #111111;
-  color: #ffffff;
-  padding: 10px 20px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.22em;
+  gap: 0.6em;
+  min-height: 48px;
+  padding: 0 1.6rem;
+  border-radius: 999px;
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
+  text-decoration: none;
+  transition:
+    background-color 0.18s var(--ease-micro),
+    color 0.18s var(--ease-micro),
+    border-color 0.18s var(--ease-micro),
+    transform 0.18s var(--ease-micro);
 }
 
-.fp-btn-dark:hover {
-  background: #7c243e;
+.fp-btn,
+.fp-btn-dark,
+.fp-btn-pill-dark,
+.fp-btn-block {
+  background: var(--color-ink);
+  color: var(--color-ivory);
+  border: 1px solid var(--color-ink);
+}
+
+.fp-btn:hover,
+.fp-btn-dark:hover,
+.fp-btn-pill-dark:hover,
+.fp-btn-block:hover {
+  background: var(--color-ink-deep);
+  border-color: var(--color-ink-deep);
+}
+
+.fp-btn-outline {
+  background: transparent;
+  color: var(--color-ink);
+  border: 1px solid color-mix(in srgb, var(--color-ink) 45%, transparent);
+}
+
+.fp-btn-outline:hover {
+  border-color: var(--color-ink);
+  background: color-mix(in srgb, var(--color-ink) 6%, transparent);
 }
 
 .fp-btn-pink {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: #e8a7b8;
-  color: #111111;
-  padding: 10px 20px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
+  background: var(--color-rose);
+  color: var(--color-ink);
+  border: 1px solid var(--color-rose);
 }
 
 .fp-btn-pink:hover {
-  background: #f8dce5;
+  background: var(--color-rose-soft);
 }
 
-/* Rounded-full dark CTA — used for empty-state / secondary actions
-   (e.g. "Start Shopping", "Browse Bouquets"). */
-.fp-btn-pill-dark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 9999px;
-  background: #111111;
-  color: #ffffff;
-  padding: 12px 28px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-}
-
-.fp-btn-pill-dark:hover {
-  background: #7c243e;
-}
-
-/* Flat block CTA — used for "View All" section-level actions. */
-.fp-btn-block {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: #111111;
-  color: #ffffff;
-  padding: 12px 32px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.25em;
-  text-transform: uppercase;
-}
-
-.fp-btn-block:hover {
-  background: var(--color-soft-pink);
-  color: #111111;
-}
-
-.fp-btn-dark,
-.fp-btn-pink,
-.fp-btn-pill-dark,
-.fp-btn-block {
-  /* Button feedback is Micro-tier: it must feel instantaneous, not graceful. */
-  transition:
-    background 0.15s var(--ease-micro),
-    color 0.15s var(--ease-micro),
-    transform 0.15s var(--ease-micro);
-}
-
+.fp-btn:active,
 .fp-btn-dark:active,
 .fp-btn-pink:active,
 .fp-btn-pill-dark:active,
-.fp-btn-block:active {
+.fp-btn-block:active,
+.fp-btn-outline:active {
   transform: scale(0.97);
 }
 
-/* WhatsApp / order-commit CTAs — the site's actual conversion click,
-   appearing on every product card, the PDP, cart and the mobile bar.
-   A slower, deliberate settle on the color change (vs. the 150ms
-   flick every other button uses) plus a press scale makes this one
-   read as "sending," not as an ordinary hover state. Every instance
-   previously had its own ad hoc transition string; this unifies them. */
 .fp-btn-whatsapp {
   transition:
-    background-color 0.25s var(--ease-premium),
-    color 0.25s var(--ease-premium),
+    background-color 0.22s var(--ease-premium),
+    color 0.22s var(--ease-premium),
     transform 0.15s var(--ease-micro);
 }
 
@@ -201,27 +283,37 @@ body {
   transform: scale(0.97);
 }
 
-/* Consistent, on-brand focus state for every interactive element —
-   keyboard/AT users get one predictable ring instead of relying on
-   unstyled browser defaults. */
+.fp-link {
+  color: var(--color-ink);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.25em;
+  text-decoration-color: color-mix(in srgb, var(--color-ink) 35%, transparent);
+  transition: text-decoration-color 0.18s var(--ease-micro);
+}
+
+.fp-link:hover {
+  text-decoration-color: var(--color-apricot);
+}
+
 a:focus-visible,
 button:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible,
+summary:focus-visible,
 [tabindex]:focus-visible {
-  outline: 2px solid #7c243e;
+  outline: 2px solid var(--color-apricot-deep);
   outline-offset: 3px;
-  border-radius: 2px;
+  border-radius: 4px;
 }
 
-/* Reusable elevated card surface — mirrors the shadow/border/radius
-   values already established by the product card. */
+/* Paper surface used by cards, panels and forms. */
 .fp-card {
-  border-radius: 22px;
-  border: 1px solid var(--color-border);
-  background: var(--color-white);
-  box-shadow: 0 10px 30px rgba(40, 24, 32, 0.06);
+  border-radius: var(--radius-soft);
+  border: 1px solid var(--color-line);
+  background: var(--color-paper);
+  box-shadow: var(--shadow-paper);
   transition:
     box-shadow 0.35s var(--ease-premium),
     border-color 0.35s var(--ease-premium),
@@ -229,14 +321,9 @@ textarea:focus-visible,
 }
 
 .fp-card:hover {
-  border-color: #d8b5be;
-  box-shadow: 0 18px 45px rgba(40, 24, 32, 0.1);
+  border-color: var(--color-line-strong);
 }
 
-/* Micro-tier tap feedback for icon-only controls (header, bottom bar).
-   Deliberately no hover scale-up — a growing icon on hover reads as a
-   toy bounce, not attention. Only color shifts on hover; only a
-   press-scale confirms the tap actually landed. */
 .fp-icon-tap {
   transition:
     color 0.15s var(--ease-micro),
@@ -248,9 +335,6 @@ textarea:focus-visible,
   transform: scale(0.96);
 }
 
-/* Cart badge acknowledgement pulse — plays once when an item lands,
-   via a class the cart scripts toggle. Scale settles back down rather
-   than bouncing past 1, so it reads as "received" not "boing". */
 @keyframes fp-badge-receive {
   0% {
     transform: scale(1);
@@ -267,15 +351,6 @@ textarea:focus-visible,
   animation: fp-badge-receive 0.4s var(--ease-premium);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .fp-badge-pulse {
-    animation: none;
-  }
-}
-
-/* Add-to-cart confirmation — Standard tier. Grows open and cross-fades
-   in rather than snapping into existence, then reverses the same way
-   on exit, so the reward moment reads as arriving and settling. */
 .fp-cart-toast {
   display: grid;
   grid-template-rows: 0fr;
@@ -294,13 +369,6 @@ textarea:focus-visible,
   opacity: 1;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .fp-cart-toast {
-    transition: opacity 0.2s linear;
-  }
-}
-
-/* Hide ugly horizontal scrollbar but keep scroll */
 .fp-scrollbar-hide {
   scrollbar-width: none;
 }
@@ -310,46 +378,176 @@ textarea:focus-visible,
 }
 
 .fp-nav-font {
-  font-family: "Jost", Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
   font-size: 12px;
-  font-weight: 400;
-  letter-spacing: 0.34em;
+  font-weight: 500;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
 }
 
 .fp-category-font {
-  font-family: "Jost", Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
   font-size: 13px;
   font-weight: 400;
   letter-spacing: 0;
 }
 
-/* Final homepage rhythm polish */
 .fp-section-heading {
   margin-bottom: 2rem;
 }
 
-@media (max-width: 767px) {
-  .fp-btn-dark,
-  .fp-btn-pink {
-    padding: 9px 16px;
-    font-size: 10px;
-    letter-spacing: 0.18em;
-  }
+/* Photographs presented with care: warm paper matte behind every image
+   while it loads, never a grey box. */
+.fp-photo {
+  background: var(--color-linen);
+  overflow: hidden;
+}
 
-  .fp-serif {
-    letter-spacing: 0.06em;
+.fp-photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ---------------------------------------------------------------------
+   Reveal vocabulary. Content is fully visible by default; only when the
+   early inline script adds html.motion (motion allowed, JS running) do
+   [data-reveal] blocks start masked, and an IntersectionObserver unmasks
+   them. No JS or reduced motion = everything simply shown.
+   --------------------------------------------------------------------- */
+html.motion [data-reveal] {
+  transition:
+    clip-path 0.8s var(--ease-atelier),
+    transform 0.8s var(--ease-atelier),
+    opacity 0.6s var(--ease-premium);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+
+/* Never fully clipped: an element clipped to nothing never reports an
+   intersection in Chrome, so its reveal would never fire. */
+html.motion [data-reveal="mask"]:not(.is-in) {
+  clip-path: inset(0 0 92% 0);
+  transform: translateY(18px);
+}
+
+html.motion [data-reveal="fade"]:not(.is-in) {
+  opacity: 0;
+  transform: translateY(14px);
+}
+
+html.motion [data-reveal="image"]:not(.is-in) {
+  clip-path: inset(8% 8% 8% 8% round 18px);
+  transform: scale(1.04);
+}
+
+html.motion [data-reveal].is-in {
+  clip-path: inset(0 0 0 0);
+  transform: none;
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
 
 section[id],
 footer[id] {
-  scroll-margin-top: 150px;
+  scroll-margin-top: calc(var(--header-h) + 24px);
 }
 
-@media (max-width: 767px) {
-  section[id],
-  footer[id] {
-    scroll-margin-top: 110px;
+.sr-only-focusable:not(:focus):not(:focus-within) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------------------------------------------------------------------
+   Page layering for the shared 3D stage: the fixed canvas sits behind
+   #main; 3D sections are transparent so it shows through, every other
+   section is opaque and occludes it.
+   --------------------------------------------------------------------- */
+.site-main {
+  position: relative;
+  z-index: 1;
+}
+
+.site-main:focus {
+  outline: none;
+}
+
+.atelier-stage {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.atelier-stage[data-active="false"] {
+  visibility: hidden;
+}
+
+.atelier-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* A scene box frames the sculpture. Its poster is a pre-rendered image of
+   the identical framing (plus --pad overflow on every side), so the live
+   scene replaces it without any composition jump. */
+.scene-box {
+  position: relative;
+  width: 100%;
+  aspect-ratio: var(--scene-ar, 4 / 5);
+  --pad: 0.16;
+}
+
+.scene-poster {
+  position: absolute;
+  left: calc(var(--pad) * -100%);
+  top: calc(var(--pad) * -100%);
+  width: calc((1 + 2 * var(--pad)) * 100%);
+  height: calc((1 + 2 * var(--pad)) * 100%);
+  max-width: none;
+  pointer-events: none;
+  user-select: none;
+  transition: opacity 0.5s var(--ease-premium);
+}
+
+.scene-poster img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+html.atelier-live .scene-poster {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html.motion .scene-box--settle .scene-poster img {
+    animation: atelier-settle 1.4s var(--ease-atelier) both;
+  }
+}
+
+@keyframes atelier-settle {
+  from {
+    transform: translateY(16px) scale(1.035) rotate(-0.8deg);
+  }
+  to {
+    transform: none;
   }
 }

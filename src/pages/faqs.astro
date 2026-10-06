@@ -13,9 +13,9 @@ const faqs = [
       "Some products have starting prices, while pooja flowers, jasmine, garlands, bulk flowers, and event flowers may depend on the daily flower market price. Final price is confirmed on WhatsApp before payment.",
   },
   {
-    question: "Do you deliver across Hyderabad?",
+    question: "Do you deliver across Bengaluru?",
     answer:
-      "We deliver to selected Hyderabad areas based on pincode, distance, order value, and delivery timing. If your pincode is not confirmed on the website, you can still message us on WhatsApp for manual confirmation.",
+      "Not yet. We're starting with Chamarajpet and Basavanagudi. If you're nearby, message us on WhatsApp: we confirm whether we can deliver to your address, the delivery timing and the final total including delivery before you pay.",
   },
   {
     question: "Can I order pooja flowers daily?",
@@ -35,7 +35,7 @@ const faqs = [
   {
     question: "Do you offer same-day delivery?",
     answer:
-      "Same-day delivery depends on product type, order time, pincode, and flower availability. Some areas support same-day delivery, while others may need manual confirmation.",
+      "Same-day delivery in Bengaluru is not confirmed yet. Message us on WhatsApp with your pincode, date and product, and we will tell you what is possible before you pay.",
   },
   {
     question: "Do you accept online payment?",
@@ -56,22 +56,22 @@ const faqs = [
 ---
 
 <BaseLayout
-  title="FAQs | Fresh Petals Hyderabad"
-  description="Frequently asked questions about Fresh Petals Hyderabad flower delivery, pooja flowers, bouquets, jasmine, garlands, bulk orders and WhatsApp ordering."
+  title="FAQs | Fresh Petals Bengaluru"
+  description="Frequently asked questions about Fresh Petals Bengaluru flower delivery, pooja flowers, bouquets, jasmine, garlands, bulk orders and WhatsApp ordering."
 >
-  <main class="bg-white">
+  <main class="bg-paper">
     <section class="px-5 py-12 md:px-8 md:py-16">
       <div class="mx-auto max-w-4xl">
         <div class="mb-10 text-center">
           <p class="fp-eyebrow">
-            Fresh Petals Hyderabad
+            Fresh Petals Bengaluru
           </p>
 
           <h1 class="fp-h1 mt-3">
             FAQs
           </h1>
 
-          <p class="mx-auto mt-5 max-w-2xl text-sm leading-7 text-[#66565D] md:text-base">
+          <p class="mx-auto mt-5 max-w-2xl text-sm leading-7 text-moss md:text-base">
             Answers to common questions about flower orders, delivery, pricing, customization and WhatsApp checkout.
           </p>
         </div>
@@ -79,17 +79,17 @@ const faqs = [
         <div class="space-y-4">
           {
             faqs.map((faq) => (
-              <details class="group rounded-[22px] border border-[#EEE5E8] bg-[#FFF8FA] p-5">
-                <summary class="cursor-pointer list-none text-sm font-bold uppercase tracking-[0.14em] text-[#171717]">
+              <details class="group rounded-[22px] border border-line bg-linen p-5">
+                <summary class="cursor-pointer list-none text-sm font-bold uppercase tracking-[0.14em] text-ink">
                   <span class="flex items-center justify-between gap-4">
                     {faq.question}
-                    <span class="text-xl text-[#7C243E] transition group-open:rotate-45">
+                    <span class="text-xl text-berry transition group-open:rotate-45">
                       +
                     </span>
                   </span>
                 </summary>
 
-                <p class="mt-4 text-sm leading-7 text-[#66565D]">
+                <p class="mt-4 text-sm leading-7 text-moss">
                   {faq.answer}
                 </p>
               </details>
@@ -97,12 +97,12 @@ const faqs = [
           }
         </div>
 
-        <div class="mt-10 rounded-[24px] border border-[#E8D8DE] bg-white p-6 text-center shadow-[0_10px_30px_rgba(40,24,32,0.05)]">
-          <h2 class="text-[12px] font-bold uppercase tracking-[0.24em] text-[#171717]">
+        <div class="mt-10 rounded-[24px] border border-line bg-paper p-6 text-center shadow-[0_10px_30px_rgba(40,24,32,0.05)]">
+          <h2 class="text-[12px] font-bold uppercase tracking-[0.24em] text-ink">
             Still have a question?
           </h2>
 
-          <p class="mx-auto mt-3 max-w-2xl text-sm leading-7 text-[#66565D]">
+          <p class="mx-auto mt-3 max-w-2xl text-sm leading-7 text-moss">
             Message us on WhatsApp with your flower requirement, delivery area, date and preferred budget.
           </p>
 
@@ -110,7 +110,7 @@ const faqs = [
             href="https://wa.me/919652012274?text=Hi%20Fresh%20Petals%2C%20I%20have%20a%20question%20about%20flower%20orders."
             target="_blank"
             rel="noopener noreferrer"
-            class="mt-6 inline-flex rounded-full bg-[#075838] px-7 py-4 text-[11px] font-bold uppercase tracking-[0.22em] text-white transition hover:bg-[#7C243E]"
+            class="mt-6 inline-flex rounded-full bg-ink px-7 py-4 text-[11px] font-bold uppercase tracking-[0.22em] text-white transition hover:bg-berry"
           >
             Ask on WhatsApp
           </a>

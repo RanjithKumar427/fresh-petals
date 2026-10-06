@@ -1,83 +1,20 @@
 ---
+// The launch range only (src/data/launchCatalogue.ts): bouquet types, the
+// occasions that have launch products, and custom orders. Small image
+// variants keep this strip light. Earlier departments are no longer
+// promoted here; their pages and products are unchanged.
 const categories = [
-  {
-    label: "Eid Al-Adha",
-    image: "/images/cat-under-1499.jpg",
-    href: "/categories/eid-al-adha",
-  },
-  {
-    label: "Bouquets",
-    image: "/images/cat-bouquets.jpg",
-    href: "/categories/bouquets",
-  },
-  {
-    label: "Anniversary",
-    // P0.1 content containment: cat-anniversary.jpg was a private couple's
-    // candlelit-dinner photo (identifiable hands, engagement ring, watch) —
-    // third-party personal imagery, removed from the repo. Replaced with
-    // FreshPetals' own branded red-rose bouquet photography.
-    image: "/images/bouquets/bouquet-red-affair-01.webp",
-    href: "/occasions/anniversary",
-  },
-  {
-    label: "Birthday",
-    image: "/images/cat-birthday.jpg",
-    href: "/occasions/birthday",
-  },
-  {
-    label: "Subscription",
-    image: "/images/cat-subscription.jpg",
-    href: "/categories/subscriptions",
-  },
-  {
-    label: "Flowerbox & Stems",
-    image: "/images/cat-flowerbox.jpg",
-    href: "/categories/flowerbox",
-  },
-  {
-    label: "Basket",
-    image: "/images/cat-basket.jpg",
-    href: "/categories/baskets",
-  },
-  {
-    label: "Plant",
-    image: "/images/cat-plant.jpg",
-    href: "/categories/plants-and-succulents",
-  },
-  {
-    label: "Hampers",
-    image: "/images/cat-hampers.jpg",
-    href: "/categories/hampers",
-  },
-  {
-    label: "Candles & Diffuser",
-    image: "/images/cat-candle.jpg",
-    href: "/products/candle-diffuser-addon",
-  },
-  {
-    label: "Pooja",
-    image: "/images/cat-pooja.jpg",
-    href: "/categories/pooja-flowers",
-  },
-  {
-    label: "Under 1499",
-    image: "/images/cat-under-1499.jpg",
-    href: "/products/flower-gifts-under-1499",
-  },
-  {
-    label: "Vases",
-    image: "/images/cat-vases.jpg",
-    href: "/categories/vases",
-  },
-  {
-    label: "Wedding",
-    image: "/images/cat-wedding.jpg",
-    href: "/occasions/wedding",
-  },
+  { label: "Bouquets", image: "/images/cat-bouquets-360w.webp", href: "/categories/bouquets" },
+  { label: "Rose bouquets", image: "/images/rose-bouquet-360w.webp", href: "/categories/bouquets#roses" },
+  { label: "Mixed flowers", image: "/images/bouquets/bouquet-colourful-confession-01-240w.webp", href: "/categories/bouquets#mixed" },
+  { label: "Lily bouquets", image: "/images/bouquets/bouquet-pink-lily-wish-01-240w.webp", href: "/categories/bouquets#lilies" },
+  { label: "Birthday", image: "/images/bouquets/bouquet-colour-pop-love-01-240w.webp", href: "/occasions/birthday" },
+  { label: "Anniversary", image: "/images/bouquets/bouquet-red-affair-01-240w.webp", href: "/occasions/anniversary" },
+  { label: "Custom orders", image: "/images/hero-bouquets-360w.webp", href: "/custom-orders" },
 ];
 ---
 
-<section class="border-b border-[#EEE5E8] bg-white px-4 py-4 md:px-8 md:py-5">
+<section class="border-b border-line bg-paper px-4 py-4 md:px-8 md:py-5">
   <div class="mx-auto max-w-7xl overflow-hidden">
     <div class="fp-scrollbar-hide flex gap-6 overflow-x-auto px-4 py-2 md:justify-start md:gap-7">
       {
@@ -87,17 +24,17 @@ const categories = [
             class="group w-[76px] shrink-0 text-center md:w-[86px]"
             aria-label={`View ${category.label}`}
           >
-            <div class="mx-auto h-[66px] w-[66px] overflow-hidden rounded-full border border-[#E9E2E5] bg-white p-[3px] transition-colors duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:border-[#D8B5BE] md:h-[74px] md:w-[74px]">
+            <div class="mx-auto aspect-square w-[66px] overflow-hidden rounded-2xl border border-line bg-linen transition-colors duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:border-line-strong md:w-[74px]">
               <img
                 src={category.image}
                 alt={category.label}
-                class="h-full w-full rounded-full object-cover transition duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-105"
+                class="h-full w-full object-cover transition duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-105"
                 loading="lazy"
                 decoding="async"
               />
             </div>
 
-            <p class="mt-3 min-h-[34px] text-[10px] font-medium uppercase leading-[1.35] tracking-[0.12em] text-[#171717] transition-colors duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:text-[#D98B9A] md:text-[10px]">
+            <p class="mt-3 min-h-[34px] text-[10px] font-medium uppercase leading-[1.35] tracking-[0.12em] text-ink transition-colors duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:text-rose-deep md:text-[10px]">
               {category.label}
             </p>
           </a>

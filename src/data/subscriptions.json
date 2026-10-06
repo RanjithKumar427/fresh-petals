@@ -8,7 +8,7 @@
     "rating": 5,
     "reviews": 120,
     "sale": true,
-    "image": "/images/subscription-1.jpg",
+    "image": "/images/banner-pooja.jpg",
     "whatsappText": "Hi Fresh Petals, I want to know about Daily Pooja Flower Subscription."
   },
   {
@@ -20,7 +20,7 @@
     "rating": 5,
     "reviews": 304,
     "sale": false,
-    "image": "/images/subscription-2.jpg",
+    "image": "/images/bouquet-7.jpg",
     "whatsappText": "Hi Fresh Petals, I want to know about Weekly Flowerbox Subscription."
   },
   {
@@ -32,7 +32,7 @@
     "rating": 5,
     "reviews": 353,
     "sale": false,
-    "image": "/images/subscription-3.jpg",
+    "image": "/images/jasmine.jpg",
     "whatsappText": "Hi Fresh Petals, I want to know about Jasmine/Malli Subscription."
   },
   {
@@ -44,7 +44,7 @@
     "rating": 5,
     "reviews": 304,
     "sale": true,
-    "image": "/images/subscription-4.jpg",
+    "image": "/images/bouquet-5.jpg",
     "whatsappText": "Hi Fresh Petals, I want to know about Flowerbox Fragrance Gift Subscription."
   },
   {
@@ -56,7 +56,7 @@
     "rating": 5,
     "reviews": 6,
     "sale": false,
-    "image": "/images/subscription-5.jpg",
+    "image": "/images/bouquet-10.jpg",
     "whatsappText": "Hi Fresh Petals, I want to know about Designer Bouquet Subscription."
   }
 ]

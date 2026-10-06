@@ -1,0 +1,470 @@
+---
+// A. Opening scene. The type and the buttons are static, ordinary HTML,
+// readable and clickable from the first paint. Beside them, a small 3D stage
+// (CSS perspective, one preserve-3d element) holds three planes of real
+// photography:
+//   back   — a restrained rose panel, pushed away from the viewer
+//   photo  — the wrapped tulip bouquet (bouquet-1.jpg, cropped above the
+//            flowers only), in an arched frame
+//   lens   — a detail of the same photograph's tulips, nearest the viewer
+// On entry the stage turns from a steeper angle and the planes separate;
+// during the first scroll it tilts back toward the next section and the
+// planes spread further; fine pointers add a small parallax. Reduced
+// motion (or no JS) shows the rest composition with nothing moving.
+import { HOME_LANDING } from "../../data/seoLanding";
+import { getHeroPhoto } from "../../data/atelierHome";
+
+const { main, detail } = getHeroPhoto();
+// Keep in step with the preload in pages/index.astro.
+const heroSizes = "(min-width: 1024px) 450px, 320px";
+---
+
+<section class="hero" data-hero aria-labelledby="hero-title" style={`--photo-ar: ${main.width} / ${main.height}`}>
+  <div class="hero__inner">
+    <div class="hero__copy">
+      <h1 id="hero-title" class="hero__title">
+        <span class="hero__eyebrow">Fresh flowers &amp; bouquets in Bengaluru</span>
+        <span class="hero__display">
+          <span class="hero__line">For someone.</span>
+          <span class="hero__line hero__line--italic">Or just for&nbsp;you.</span>
+        </span>
+      </h1>
+      <p class="hero__body">Choose your flowers, then confirm your order on WhatsApp.</p>
+      <div class="hero__actions">
+        <a class="fp-btn" href="/categories/bouquets">Shop bouquets</a>
+        <a class="fp-btn-outline" href="/custom-orders">Custom orders</a>
+      </div>
+      <p class="hero__note">Delivery area, timing and charges are confirmed in chat — no payment on this website.</p>
+      <p class="sr-only">{HOME_LANDING.intro[0]}</p>
+    </div>
+
+    <div class="hero__scene">
+      <div class="hero__stage" data-hero-stage>
+        <div class="hero__back" aria-hidden="true"></div>
+        <div class="hero__shade" aria-hidden="true"></div>
+        <div class="hero__photo">
+          <img
+            src={main.src}
+            srcset={main.srcset}
+            sizes={heroSizes}
+            width={main.width}
+            height={main.height}
+            alt={main.alt}
+            fetchpriority="high"
+          />
+        </div>
+        <div class="hero__lens" aria-hidden="true">
+          <img
+            src={detail.src}
+            srcset={detail.srcset}
+            sizes="(min-width: 1024px) 150px, 104px"
+            width={detail.width}
+            height={detail.height}
+            alt=""
+            decoding="async"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  // --hp: 0 at the top of the page, 1 once the hero has scrolled away.
+  // --px/--py: eased pointer position (-1..1), fine pointers only.
+  const hero = document.querySelector<HTMLElement>("[data-hero]");
+  if (hero && document.documentElement.classList.contains("motion")) {
+    // The entry plays once the photograph is ready to be seen (or after
+    // 2.5s at most), not while it is still downloading.
+    const photo = hero.querySelector<HTMLImageElement>(".hero__photo img");
+    let ready = false;
+    const go = () => {
+      if (ready) return;
+      ready = true;
+      requestAnimationFrame(() => hero.classList.add("is-ready"));
+    };
+    if (photo?.complete && photo.naturalWidth) photo.decode().then(go, go);
+    else {
+      photo?.addEventListener("load", () => photo.decode().then(go, go), { once: true });
+      photo?.addEventListener("error", go, { once: true });
+    }
+    window.setTimeout(go, 2500);
+
+    let raf = 0;
+    const update = () => {
+      raf = 0;
+      const rect = hero.getBoundingClientRect();
+      const p = Math.min(1, Math.max(0, -rect.top / Math.max(1, rect.height * 0.9)));
+      hero.style.setProperty("--hp", p.toFixed(4));
+    };
+    const schedule = () => {
+      if (!raf) raf = requestAnimationFrame(update);
+    };
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+    schedule();
+
+    if (window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
+      let tx = 0;
+      let ty = 0;
+      let x = 0;
+      let y = 0;
+      let prf = 0;
+      const step = () => {
+        x += (tx - x) * 0.08;
+        y += (ty - y) * 0.08;
+        hero.style.setProperty("--px", x.toFixed(4));
+        hero.style.setProperty("--py", y.toFixed(4));
+        prf = Math.abs(tx - x) + Math.abs(ty - y) > 0.001 ? requestAnimationFrame(step) : 0;
+      };
+      hero.addEventListener("pointermove", (event) => {
+        const r = hero.getBoundingClientRect();
+        tx = ((event.clientX - r.left) / r.width) * 2 - 1;
+        ty = ((event.clientY - r.top) / r.height) * 2 - 1;
+        if (!prf) prf = requestAnimationFrame(step);
+      });
+      hero.addEventListener("pointerleave", () => {
+        tx = 0;
+        ty = 0;
+        if (!prf) prf = requestAnimationFrame(step);
+      });
+    }
+  }
+</script>
+
+<style>
+  .hero {
+    --hp: 0;
+    --px: 0;
+    --py: 0;
+    position: relative;
+    overflow: clip;
+    background:
+      radial-gradient(90% 70% at 78% 30%, color-mix(in srgb, var(--color-rose) 26%, transparent), transparent 62%),
+      var(--color-ivory);
+  }
+
+  .hero__inner {
+    display: grid;
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 0.9rem clamp(16px, 4vw, 56px) 1.5rem;
+  }
+
+  .hero__title {
+    margin: 0;
+    font-weight: inherit;
+  }
+
+  .hero__eyebrow {
+    display: block;
+    margin-bottom: 0.6rem;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--color-rose-deep);
+  }
+
+  .hero__display {
+    display: block;
+    font-family: var(--font-display);
+    font-weight: 360;
+    font-size: clamp(2.5rem, 1.6rem + 4.6vw, 6.4rem);
+    line-height: 0.93;
+    letter-spacing: -0.04em;
+    color: var(--color-ink);
+    font-variation-settings: "opsz" 144;
+  }
+
+  .hero__line {
+    display: block;
+  }
+
+  .hero__line--italic {
+    font-style: italic;
+    font-weight: 330;
+    color: var(--color-rose-deep);
+    padding-left: 0.04em;
+  }
+
+  .hero__body {
+    margin: 0;
+    max-width: 30ch;
+    font-size: var(--step-1);
+    line-height: 1.45;
+    color: var(--color-moss);
+  }
+
+  .hero__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+  }
+
+  .hero__note {
+    margin: 0;
+    max-width: 38ch;
+    font-size: var(--step--1);
+    color: var(--color-moss);
+  }
+
+  /* ---- The 3D stage ---------------------------------------------------- */
+  .hero__scene {
+    --mask-h: 420px;
+    position: relative;
+    display: grid;
+    place-items: center;
+    perspective: 1300px;
+    perspective-origin: 50% 35%;
+  }
+
+  /* --sep: how far apart the planes are (entry → rest → scrolled). */
+  .hero__stage {
+    --sep: calc(1 + var(--hp) * 0.9);
+    position: relative;
+    height: var(--mask-h);
+    aspect-ratio: var(--photo-ar);
+    transform-style: preserve-3d;
+    transform:
+      translateY(calc(var(--hp) * -36px))
+      rotateX(calc(3deg + var(--hp) * 16deg - var(--py) * 4deg))
+      rotateY(calc(-9deg + var(--hp) * 8deg + var(--px) * 6deg));
+    will-change: transform;
+  }
+
+  .hero__back,
+  .hero__shade,
+  .hero__photo,
+  .hero__lens {
+    position: absolute;
+  }
+
+  /* Backing: a quiet rose panel, offset up and right, set well behind. */
+  .hero__back {
+    inset: -7% -16% 12% 22%;
+    border-radius: 999px 999px 10px 10px / 46% 46% 10px 10px;
+    background: linear-gradient(170deg, color-mix(in srgb, var(--color-rose) 55%, var(--color-ivory)), color-mix(in srgb, var(--color-rose) 80%, var(--color-ivory)));
+    border: 1px solid color-mix(in srgb, var(--color-rose-deep) 18%, transparent);
+    transform: translateZ(calc(-150px * var(--sep)));
+  }
+
+  /* Contact shadow between the back panel and the photograph. */
+  .hero__shade {
+    inset: 10% 4% -4% 6%;
+    border-radius: 50% 50% 18px 18px / 37% 37% 18px 18px;
+    background: rgba(23, 61, 45, 0.32);
+    filter: blur(22px);
+    transform: translateZ(calc(-40px * var(--sep))) translateY(calc(14px + var(--hp) * 30px));
+  }
+
+  /* The photograph, in an arch: rounded corners rather than clip-path so
+     the edge stays crisp and the stage keeps its depth. */
+  .hero__photo {
+    inset: 0;
+    overflow: hidden;
+    border-radius: 50% 50% 14px 14px / 37% 37% 14px 14px;
+    background: var(--color-linen);
+    transform: translateZ(0);
+  }
+
+  .hero__photo img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* Foreground detail: the same photograph's tulips, nearest the viewer. */
+  .hero__lens {
+    left: -14%;
+    bottom: 9%;
+    width: 34%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 5px solid var(--color-paper);
+    background: var(--color-linen);
+    box-shadow:
+      0 18px 34px -14px rgba(23, 61, 45, 0.5),
+      0 2px 6px rgba(23, 61, 45, 0.18);
+    transform: translateZ(calc(110px * var(--sep)));
+  }
+
+  .hero__lens img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* Entry: held at a steeper angle with the planes pressed together until
+     the photograph is ready, then the stage turns and the planes separate.
+     Only the individual rotate/translate properties are animated (not the
+     scroll-driven transform), so the browser can run it off the main
+     thread. Type and buttons never move. */
+  :global(html.motion) .hero:not(.is-ready) .hero__stage {
+    rotate: 9 -14 0 16deg;
+  }
+  :global(html.motion) .hero:not(.is-ready) .hero__back {
+    translate: 0 0 150px;
+  }
+  :global(html.motion) .hero:not(.is-ready) .hero__shade {
+    translate: 0 0 40px;
+  }
+  :global(html.motion) .hero:not(.is-ready) .hero__lens {
+    translate: 0 0 -110px;
+  }
+
+  :global(html.motion) .hero.is-ready .hero__stage {
+    animation: hero-turn 1.8s var(--ease-premium) both;
+  }
+  :global(html.motion) .hero.is-ready .hero__back {
+    animation: hero-back 1.8s var(--ease-premium) both;
+  }
+  :global(html.motion) .hero.is-ready .hero__shade {
+    animation: hero-shade 1.8s var(--ease-premium) both;
+  }
+  :global(html.motion) .hero.is-ready .hero__lens {
+    animation: hero-lens 1.8s var(--ease-premium) both;
+  }
+
+  @keyframes hero-turn {
+    from {
+      rotate: 9 -14 0 16deg;
+    }
+    to {
+      rotate: 9 -14 0 0deg;
+    }
+  }
+  @keyframes hero-back {
+    from {
+      translate: 0 0 150px;
+    }
+    to {
+      translate: 0 0 0;
+    }
+  }
+  @keyframes hero-shade {
+    from {
+      translate: 0 0 40px;
+    }
+    to {
+      translate: 0 0 0;
+    }
+  }
+  @keyframes hero-lens {
+    from {
+      translate: 0 0 -110px;
+    }
+    to {
+      translate: 0 0 0;
+    }
+  }
+
+  /* ---- Narrow screens: one composition — headline, photograph, actions.
+     The copy wrapper dissolves so its children join the hero grid. ---- */
+  @media (max-width: 1023px) {
+    .hero__inner {
+      grid-template-areas: "title" "scene" "actions" "body" "note";
+      row-gap: 0.85rem;
+    }
+
+    .hero__copy {
+      display: contents;
+    }
+
+    .hero__title {
+      grid-area: title;
+    }
+
+    .hero__scene {
+      grid-area: scene;
+      /* Photo height follows the space left in the first screen; the type
+         keeps its size. */
+      --mask-h: clamp(220px, calc(100svh - var(--header-h) - 17.5rem), 430px);
+      padding: 0.4rem 0 0.8rem;
+    }
+
+    .hero__actions {
+      grid-area: actions;
+      flex-wrap: nowrap;
+    }
+
+    .hero__actions > * {
+      flex: 1 1 0;
+      min-width: 0;
+      padding-inline: 0.75rem;
+    }
+
+    .hero__body {
+      grid-area: body;
+      font-size: 1rem;
+    }
+
+    /* Keep the side layers inside a phone's width. */
+    /* Perspective enlarges the nearest plane and pushes it outward, so on
+       a phone the lens starts inside the photograph's edge. */
+    .hero__lens {
+      left: 3%;
+      bottom: 5%;
+      width: 31%;
+    }
+
+    .hero__back {
+      right: -9%;
+    }
+
+    .hero__note {
+      grid-area: note;
+    }
+  }
+
+  /* Narrowest phones: tighter button padding and tracking keep both
+     labels on one line without shrinking the type. */
+  @media (max-width: 379px) {
+    .hero__actions > * {
+      padding-inline: 0.4rem;
+      letter-spacing: 0.04em;
+    }
+  }
+
+  @media (min-width: 640px) and (max-width: 1023px) {
+    .hero__inner {
+      max-width: 640px;
+    }
+    .hero__actions > * {
+      flex: 0 1 auto;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .hero__inner {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr);
+      column-gap: clamp(2rem, 4vw, 4rem);
+      align-items: center;
+      min-height: calc(100svh - var(--header-h));
+      padding-top: 1.5rem;
+      padding-bottom: 2.5rem;
+    }
+
+    .hero__copy {
+      display: grid;
+      gap: 1.3rem;
+    }
+
+    .hero__eyebrow {
+      font-size: 12px;
+      margin-bottom: 1rem;
+    }
+
+    .hero__scene {
+      --mask-h: min(calc(100svh - var(--header-h) - 10rem), 600px);
+      min-height: calc(var(--mask-h) + 6rem);
+    }
+
+    .hero__lens {
+      border-width: 6px;
+    }
+  }
+</style>

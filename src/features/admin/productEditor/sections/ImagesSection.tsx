@@ -232,8 +232,26 @@ export default function ImagesSection({ draft, onChange }: Props) {
                   ×
                 </button>
               </div>
+              <div className="px-2 pt-1.5">
+                <label className="sr-only" htmlFor={`alt-${image.mediaId}`}>Alt text for image {index + 1}</label>
+                <input
+                  id={`alt-${image.mediaId}`}
+                  type="text"
+                  maxLength={200}
+                  value={image.altText ?? ""}
+                  placeholder="Describe the photo (alt text)"
+                  onChange={(event) =>
+                    onChange({ images: draft.images.map((img, i) => (i === index ? { ...img, altText: event.target.value || null } : img)) })
+                  }
+                  className="w-full rounded border border-[#EEE5E8] px-1.5 py-1 text-[11px] text-[#171717] outline-none focus:border-[#7C243E]"
+                />
+              </div>
               <div className="flex items-center justify-between px-2 py-1.5">
-                <span className="text-[10px] text-[#9B948F]">{formatBytes(image.sizeBytes)}</span>
+                <span className="flex items-center gap-1">
+                  <button type="button" onClick={() => reorder(index, index - 1)} disabled={index === 0} aria-label={`Move image ${index + 1} earlier`} className="text-[12px] text-[#9B948F] hover:text-[#171717] disabled:opacity-30">←</button>
+                  <button type="button" onClick={() => reorder(index, index + 1)} disabled={index === draft.images.length - 1} aria-label={`Move image ${index + 1} later`} className="text-[12px] text-[#9B948F] hover:text-[#171717] disabled:opacity-30">→</button>
+                  <span className="text-[10px] text-[#9B948F]">{formatBytes(image.sizeBytes)}</span>
+                </span>
                 {!image.isPrimary && (
                   <button
                     type="button"

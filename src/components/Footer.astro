@@ -26,6 +26,9 @@ const helpLinks = [
   { label: "Contact Us", href: "/contact" },
   { label: "FAQs", href: "/faqs" },
   { label: "Shipping Policy", href: "/shipping" },
+];
+
+const legalLinks = [
   { label: "Refund Policy", href: "/refunds" },
   { label: "Privacy Policy", href: "/privacy" },
   { label: "Terms of Service", href: "/terms" },
@@ -37,27 +40,27 @@ const updateTopics = [
   "Bouquet options",
   "Festive flower prices",
   "Subscription plans",
-  "Hyderabad delivery slots",
+  "Delivery slots",
 ];
 ---
 
-<footer id="footer" class="bg-[#075838] px-5 py-14 text-white md:px-8 md:py-16">
+<footer id="footer" class="bg-ink px-5 py-14 text-white md:px-8 md:py-16">
   <div class="mx-auto max-w-7xl">
     <div class="grid gap-12 border-b border-white/20 pb-12 lg:grid-cols-[1.2fr_0.8fr_0.8fr_1.1fr]">
       <div>
-        <a href="/" class="inline-block" aria-label="Fresh Petals Hyderabad home">
-          <span class="fp-serif block text-3xl tracking-[0.04em] text-white">
+        <a href="/" class="inline-block" aria-label="Fresh Petals Bengaluru home">
+          <span class="fp-serif block text-3xl text-white">
             Fresh Petals
           </span>
 
           <span class="mt-2 block text-[10px] font-medium uppercase tracking-[0.35em] text-white/70">
-            Hyderabad
+            Bengaluru
           </span>
         </a>
 
         <p class="mt-5 max-w-sm text-sm leading-7 text-white/75">
           Fresh flowers for pooja, bouquets, jasmine, garlands, wedding flowers,
-          subscriptions and gifting across Hyderabad.
+          subscriptions and gifting in Bengaluru.
         </p>
 
         <div class="mt-6 flex items-center gap-3">
@@ -66,7 +69,7 @@ const updateTopics = [
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Fresh Petals Instagram"
-            class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/35 text-white transition hover:border-[#E8A7B8] hover:bg-[#E8A7B8] hover:text-[#075838]"
+            class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/35 text-white transition hover:border-rose hover:bg-rose hover:text-ink"
           >
             <svg
               aria-hidden="true"
@@ -89,7 +92,7 @@ const updateTopics = [
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Chat with Fresh Petals on WhatsApp"
-            class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/35 text-white transition hover:border-[#E8A7B8] hover:bg-[#E8A7B8] hover:text-[#075838]"
+            class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/35 text-white transition hover:border-rose hover:bg-rose hover:text-ink"
           >
             <svg
               aria-hidden="true"
@@ -189,10 +192,10 @@ const updateTopics = [
           festive flowers and subscription plans directly on WhatsApp.
         </p>
 
-        <div class="mt-5 grid gap-2">
+        <div class="mt-5 flex flex-wrap gap-2">
           {
             updateTopics.map((topic) => (
-              <div class="rounded-full border border-white/20 px-4 py-2 text-xs text-white/75">
+              <div class="rounded-full border border-white/15 px-3.5 py-1.5 text-[11px] text-white/60">
                 {topic}
               </div>
             ))
@@ -203,16 +206,31 @@ const updateTopics = [
           href={whatsappUrl}
           target="_blank"
           rel="noopener noreferrer"
-          class="mt-6 inline-flex border border-white/50 px-5 py-3 text-[11px] font-bold uppercase tracking-[0.22em] text-white transition hover:border-white hover:bg-white hover:text-[#075838]"
+          class="fp-btn-whatsapp mt-6 inline-flex rounded-full bg-paper px-6 py-3.5 text-[11px] font-bold uppercase tracking-[0.22em] text-ink shadow-[0_14px_30px_rgba(0,0,0,0.18)] hover:bg-rose hover:text-ink"
         >
           Chat on WhatsApp
         </a>
       </div>
     </div>
 
-    <div class="flex flex-col justify-between gap-4 pt-8 text-xs text-white/60 md:flex-row">
-      <p>© 2026 Fresh Petals Hyderabad. All rights reserved.</p>
-      <p>Fresh flower orders • Hyderabad • WhatsApp-first service</p>
+    <div class="flex flex-col gap-3 pt-8 text-xs text-white/50">
+      <div class="flex flex-col justify-between gap-2 md:flex-row md:items-center">
+        <p>© 2026 Fresh Petals Bengaluru. All rights reserved.</p>
+        <p>Fresh flower orders • Bengaluru • WhatsApp-first service</p>
+      </div>
+
+      <div class="flex flex-wrap gap-x-5 gap-y-2">
+        {
+          legalLinks.map((link) => (
+            <a
+              href={link.href}
+              class="text-white/50 transition-colors duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:text-white/80"
+            >
+              {link.label}
+            </a>
+          ))
+        }
+      </div>
     </div>
   </div>
 </footer>

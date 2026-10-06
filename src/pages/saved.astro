@@ -15,7 +15,8 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import DiscoveryPostCard from "../components/DiscoveryPostCard.astro";
 import { productCatalog } from "../data/productCatalog";
 import { loadAuthoritativePrices, withAuthoritativePrice } from "../server/services/ProductPricing";
-import imageDimensionsData from "../data/imageDimensions.json";
+// Shared manifests plus visible garland photos (src/data/photoManifest.ts).
+import { photoDimensions as imageDimensions } from "../data/photoManifest";
 import {
   ROW_UNIT_PX,
   MOBILE_COLUMN_WIDTH,
@@ -24,7 +25,6 @@ import {
   computeRowSpan,
 } from "../utils/feedLayout";
 
-const imageDimensions = imageDimensionsData as Record<string, { width: number; height: number }>;
 
 const priceMap = await loadAuthoritativePrices();
 
@@ -50,11 +50,13 @@ const products = productCatalog
 ---
 
 <BaseLayout
-  title="Saved Flowers | Fresh Petals Hyderabad"
+  title="Saved Flowers | Fresh Petals Bengaluru"
+  noindex
   description="Flowers you've saved on Fresh Petals — come back to them anytime and ask about availability on WhatsApp."
   showCategoryCarousel={false}
 >
-  <section class="bg-[#F5F5F5] px-3 pb-16 pt-8 md:px-6 md:pt-10">
+  <main>
+  <section class="bg-linen px-3 pb-16 pt-8 md:px-6 md:pt-10">
     <div class="mx-auto max-w-7xl">
       <div class="mb-5 flex flex-wrap items-end justify-between gap-3 px-0.5">
         <div>
@@ -73,21 +75,21 @@ const products = productCatalog
             href="#"
             target="_blank"
             rel="noopener noreferrer"
-            class="fp-btn-whatsapp inline-flex items-center rounded-full bg-[#075838] px-5 py-2.5 text-[11px] font-bold uppercase tracking-[0.18em] text-white shadow-[0_10px_22px_rgba(7,88,56,0.22)] transition hover:bg-[#7C243E]"
+            class="fp-btn-whatsapp inline-flex items-center rounded-full bg-ink px-5 py-2.5 text-[11px] font-bold uppercase tracking-[0.18em] text-white shadow-[0_10px_22px_rgba(7,88,56,0.22)] transition hover:bg-berry"
           >
             Ask about these on WhatsApp
           </a>
         </div>
       </div>
 
-      <div id="saved-empty-state" class="rounded-2xl border border-black/[0.08] bg-white px-6 py-16 text-center">
+      <div id="saved-empty-state" class="rounded-2xl border border-black/[0.08] bg-paper px-6 py-16 text-center">
         <p class="text-[15px] text-black/70">
           Save flowers you love and come back to them anytime.
         </p>
 
         <a
           href="/"
-          class="mt-4 inline-flex items-center gap-1 text-[13px] font-medium text-[#7C243E]"
+          class="mt-4 inline-flex items-center gap-1 text-[13px] font-medium text-berry"
         >
           Explore flowers
           <span aria-hidden="true">→</span>
@@ -119,6 +121,7 @@ const products = productCatalog
       </div>
     </div>
   </section>
+  </main>
 </BaseLayout>
 
 <script>

@@ -1,0 +1,8 @@
+---
+// The bouquet builder ("Studio") was removed on 4 Oct 2026. Any old
+// /studio/… address permanently redirects to the bouquet listing; the exact
+// /studio is redirected in astro.config.mjs.
+export const prerender = false;
+
+return Astro.redirect("/categories/bouquets", 301);
+---

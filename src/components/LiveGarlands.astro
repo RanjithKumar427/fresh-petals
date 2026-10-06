@@ -1,0 +1,32 @@
+---
+// A placeholder on a prebuilt occasion page that the browser fills with the
+// live garland designs for that occasion (src/pages/fragments/garlands.astro).
+// Nothing shows until there are public designs, and nothing shows if the
+// request fails — the rest of the page is unaffected.
+interface Props {
+  occasion: string;
+}
+
+const { occasion } = Astro.props;
+const src = `/fragments/garlands?for=occasion&occasion=${encodeURIComponent(occasion)}`;
+---
+
+<div data-live-garlands={src} hidden></div>
+
+<script>
+  for (const slot of document.querySelectorAll<HTMLElement>("[data-live-garlands]")) {
+    const src = slot.dataset.liveGarlands;
+    if (!src) continue;
+    fetch(src, { headers: { accept: "text/html" } })
+      .then((response) => (response.ok ? response.text() : ""))
+      .then((html) => {
+        if (!html.trim()) return;
+        slot.innerHTML = html;
+        if (!slot.querySelector("[data-garland-card]")) return;
+        slot.hidden = false;
+        // An occasion with no other products says its range isn't ready; it is now.
+        document.querySelectorAll<HTMLElement>("[data-occasion-empty]").forEach((el) => (el.hidden = true));
+      })
+      .catch(() => {});
+  }
+</script>

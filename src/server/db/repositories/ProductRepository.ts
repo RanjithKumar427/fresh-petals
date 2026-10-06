@@ -24,7 +24,40 @@ export type ProductImageInput = {
   isPrimary: boolean;
 };
 
-export type ProductImage = ProductImageInput & { id: number; url: string };
+export type ProductImage = ProductImageInput & { id: number; url: string; width?: number | null; height?: number | null };
+
+// Garlands — see drizzle/0011_garland_management.sql. A garland is a normal
+// product plus one garland_details row; bouquets have none (garland: null).
+export type GarlandFilter = "rose" | "tuberose" | "lotus" | "designer-mixed";
+export type GarlandUnit = "single" | "pair" | "set";
+export type GarlandSellingMode = "enquiry" | "cart";
+export type PhotoPermission = "unconfirmed" | "granted" | "refused";
+
+/** The editable garland facts. The design code is not here: it can never be changed. */
+export type GarlandDetailsInput = {
+  soldUnit: GarlandUnit | null;
+  length: string | null;
+  flowerRecipe: string | null;
+  thickness: string | null;
+  finish: string | null;
+  leadTime: string | null;
+  substitutionPolicy: string | null;
+  sellingMode: GarlandSellingMode;
+  readyForSale: boolean;
+  photoPermission: PhotoPermission;
+  sampleVerified: boolean;
+  filters: GarlandFilter[];
+};
+
+export type GarlandDetails = GarlandDetailsInput & { designCode: string };
+
+/** One selectable value of a product option, with an optional extra charge (INR). */
+export type ProductOptionInput = {
+  optionName: string;
+  valueLabel: string;
+  extraCharge: number | null;
+  sortOrder: number;
+};
 
 export type ProductCoreInput = {
   slug: string;
@@ -57,6 +90,9 @@ export type ProductRelations = {
   flowerTypeIds: number[];
   whatsIncluded: string[];
   careInstructions: string[];
+  options?: ProductOptionInput[];
+  /** Garland facts to save. Only applied when the product already is a garland; never creates one. */
+  garland?: GarlandDetailsInput | null;
 };
 
 export type Product = ProductCoreInput & {
@@ -70,6 +106,8 @@ export type Product = ProductCoreInput & {
   flowerTypeIds: number[];
   whatsIncluded: string[];
   careInstructions: string[];
+  options: ProductOptionInput[];
+  garland: GarlandDetails | null;
 };
 
 export type ProductListItem = {
@@ -86,10 +124,15 @@ export type ProductListItem = {
   featured: boolean;
   bestseller: boolean;
   updatedAt: string;
+  /** Garland design code (admin listings only; null for other products). */
+  designCode?: string | null;
 };
 
 export type ProductListFilter = {
+  /** Matches name or slug — and, with withDesignCodes, a garland design code. */
   search?: string;
+  /** Admin listings: include each garland's design code (needs migration 0011). */
+  withDesignCodes?: boolean;
   categoryId?: number;
   status?: ProductStatus;
   featured?: boolean;

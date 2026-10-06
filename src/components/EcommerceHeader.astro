@@ -8,13 +8,13 @@ const whatsappMessage = encodeURIComponent(
 const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
 ---
 
-<header class="border-b border-[#EEE5E8] bg-white">
+<header class="border-b border-line bg-paper">
   <div class="mx-auto grid max-w-7xl grid-cols-3 items-center px-4 py-3 md:px-8 md:py-4">
-    <div class="flex items-center gap-4 text-[#171717]">
+    <div class="flex items-center gap-4 text-ink">
       <a
         href="/search"
         aria-label="Search Fresh Petals flowers"
-        class="fp-icon-tap inline-flex hover:text-[#D98B9A]"
+        class="fp-icon-tap inline-flex hover:text-rose-deep"
       >
         <svg
           class="h-5 w-5"
@@ -34,31 +34,31 @@ const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
         href={whatsappUrl}
         target="_blank"
         rel="noopener noreferrer"
-        class="hidden text-[10px] font-medium uppercase tracking-[0.22em] text-[#77706f] transition hover:text-[#D98B9A] md:inline-block"
+        class="hidden text-[10px] font-medium uppercase tracking-[0.22em] text-moss transition hover:text-rose-deep md:inline-block"
       >
-        Hyderabad
+        Bengaluru
       </a>
     </div>
 
     <a
       href="/"
       class="text-center"
-      aria-label="Fresh Petals Hyderabad home"
+      aria-label="Fresh Petals Bengaluru home"
     >
-      <span class="fp-serif block text-xl normal-case tracking-[0.03em] text-[#171717] md:text-2xl">
+      <span class="fp-serif block text-xl normal-case text-ink md:text-2xl">
         Fresh Petals
       </span>
 
-      <span class="mt-1 block text-[8px] font-medium uppercase tracking-[0.34em] text-[#77706f] md:text-[9px]">
-        Hyderabad
+      <span class="mt-1 block text-[8px] font-medium uppercase tracking-[0.34em] text-moss md:text-[9px]">
+        Bengaluru
       </span>
     </a>
 
-    <div class="flex items-center justify-end gap-4 text-[#171717] md:gap-5">
+    <div class="flex items-center justify-end gap-4 text-ink md:gap-5">
       <a
         href="/saved"
         aria-label="View saved flowers"
-        class="fp-icon-tap relative inline-flex hover:text-[#D98B9A]"
+        class="fp-icon-tap relative inline-flex hover:text-rose-deep"
       >
         <svg
           class="h-5 w-5 md:h-6 md:w-6"
@@ -74,7 +74,7 @@ const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
 
         <span
           data-saved-count-badge
-          class="absolute -right-2 -top-2 hidden min-h-5 min-w-5 items-center justify-center rounded-full bg-[#7C243E] px-1.5 text-[10px] font-bold leading-none text-white"
+          class="absolute -right-2 -top-2 hidden min-h-5 min-w-5 items-center justify-center rounded-full bg-berry px-1.5 text-[10px] font-bold leading-none text-white"
         >
           0
         </span>
@@ -83,7 +83,7 @@ const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
       <a
         href="/cart"
         aria-label="View Fresh Petals cart"
-        class="fp-icon-tap relative inline-flex hover:text-[#D98B9A]"
+        class="fp-icon-tap relative inline-flex hover:text-rose-deep"
       >
         <svg
           class="h-6 w-6 md:h-7 md:w-7"
@@ -100,7 +100,7 @@ const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
 
         <span
           data-cart-count-badge
-          class="absolute -right-2 -top-2 hidden min-h-5 min-w-5 items-center justify-center rounded-full bg-[#FF5A3D] px-1.5 text-[10px] font-bold leading-none text-white"
+          class="absolute -right-2 -top-2 hidden min-h-5 min-w-5 items-center justify-center rounded-full bg-apricot-deep px-1.5 text-[10px] font-bold leading-none text-white"
         >
           0
         </span>

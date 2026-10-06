@@ -1,0 +1,64 @@
+---
+// About: only verified facts about how Fresh Petals works today. No founding
+// story, address, team, ratings or claims — those need the owner's own
+// words (listed in the launch report) before they can be added here.
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { whatsappLink } from "../config/storefront";
+
+const facts = [
+  {
+    title: "Hand-tied bouquets",
+    text: "Our launch range is rose, mixed-flower and lily bouquets, each wrapped and finished by hand. Flowers depend on what is fresh that day.",
+  },
+  {
+    title: "Ordered on WhatsApp",
+    text: "Choose online, then send your basket on WhatsApp. We confirm availability, delivery timing and the final total, including delivery, before you pay. No payment is taken on this website.",
+  },
+  {
+    title: "Starting close to home",
+    text: "Deliveries start in Chamarajpet and Basavanagudi, Bengaluru. If you're nearby, ask — we'll tell you whether we can reach your address.",
+  },
+  {
+    title: "Made for your occasion",
+    text: "For colours, flowers or a budget of your own, ask for a custom order.",
+  },
+];
+---
+
+<BaseLayout
+  title="About Fresh Petals | Flowers in Bengaluru"
+  description="Fresh Petals is a WhatsApp-first flower shop in Bengaluru making hand-tied rose, lily and mixed-flower bouquets, starting with Chamarajpet and Basavanagudi."
+  showCategoryCarousel={false}
+>
+  <main class="bg-paper">
+    <section class="px-5 py-12 md:px-8 md:py-20">
+      <div class="mx-auto max-w-5xl">
+        <div class="max-w-2xl">
+          <p class="fp-eyebrow">About Fresh Petals</p>
+          <h1 class="fp-serif mt-4 text-3xl leading-tight text-ink md:text-5xl">A small flower shop, ordered on WhatsApp</h1>
+          <p class="mt-5 text-sm leading-7 text-moss md:text-base">
+            Fresh Petals makes hand-tied bouquets in Bengaluru. You choose online, and we confirm everything with you in
+            a WhatsApp chat before you pay.
+          </p>
+        </div>
+
+        <div class="mt-10 grid gap-5 sm:grid-cols-2 md:mt-14">
+          {
+            facts.map((fact) => (
+              <section class="rounded-[24px] border border-line bg-linen p-6 md:p-7">
+                <h2 class="text-lg font-semibold text-ink">{fact.title}</h2>
+                <p class="mt-3 text-sm leading-7 text-moss">{fact.text}</p>
+              </section>
+            ))
+          }
+        </div>
+
+        <div class="mt-10 flex flex-wrap gap-3">
+          <a href="/categories/bouquets" class="inline-flex min-h-[48px] items-center rounded-full bg-ink px-6 text-[11px] font-bold uppercase tracking-[0.18em] text-white transition hover:bg-berry">Shop bouquets</a>
+          <a href="/custom-orders" class="inline-flex min-h-[48px] items-center rounded-full border border-ink px-6 text-[11px] font-bold uppercase tracking-[0.18em] text-ink transition hover:bg-ink hover:text-white">Custom orders</a>
+          <a href={whatsappLink("Hi Fresh Petals, I have a question.")} target="_blank" rel="noopener noreferrer" class="inline-flex min-h-[48px] items-center rounded-full px-4 text-[11px] font-bold uppercase tracking-[0.18em] text-ink underline underline-offset-4">Ask on WhatsApp</a>
+        </div>
+      </div>
+    </section>
+  </main>
+</BaseLayout>

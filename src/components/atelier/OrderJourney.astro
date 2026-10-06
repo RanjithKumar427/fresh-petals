@@ -1,0 +1,191 @@
+---
+// F. From flowers to WhatsApp — the actual ordering journey in three
+// steps. The order itself is always sent from the basket (cart.astro builds
+// the WhatsApp message with every item, option, quantity and price); the
+// link here only asks a question and never replaces a populated basket.
+import { HOME_LANDING } from "../../data/seoLanding";
+
+const questionUrl = `https://wa.me/919652012274?text=${encodeURIComponent("Hi Fresh Petals, I have a question before I order.")}`;
+const steps = [
+  { title: "Choose your flowers", text: "Browse our bouquets by type or occasion, or ask for a custom order. Every price shown is a starting price." },
+  { title: "Add them to your basket", text: "Add a delivery date, the recipient and a note if you like. A pincode is optional." },
+  {
+    title: "Confirm on WhatsApp",
+    text: "Your basket opens as a WhatsApp message with every item, quantity and price. We're starting with deliveries in Chamarajpet and Basavanagudi; we confirm availability, your address, delivery timing and the final total including delivery in the chat before you pay.",
+  },
+];
+---
+
+<section class="journey atelier-grain" aria-labelledby="journey-title">
+  <div class="journey__inner">
+    <div class="journey__head">
+      <p class="journey__eyebrow" data-reveal="fade">How ordering works</p>
+      <h2 id="journey-title" class="journey__title" data-reveal="mask">From flowers <em>to WhatsApp</em></h2>
+    </div>
+
+    <ol class="journey__steps">
+      {
+        steps.map((step, index) => (
+          <li class="journey__step" data-reveal="fade" style={`--reveal-delay:${index * 140}ms`}>
+            <span class="journey__num" aria-hidden="true">{index + 1}</span>
+            <h3>{step.title}</h3>
+            <p>{step.text}</p>
+          </li>
+        ))
+      }
+    </ol>
+
+    <div class="journey__foot">
+      <div class="journey__cta">
+        <a class="fp-btn" href="/cart" data-journey-basket>Go to your basket</a>
+        <a class="fp-link journey__question" href={questionUrl} target="_blank" rel="noopener noreferrer">Ask a question on WhatsApp</a>
+      </div>
+      <dl class="journey__faq">
+        {
+          HOME_LANDING.faqs.map((faq) => (
+            <div>
+              <dt>{faq.question}</dt>
+              <dd>{faq.answer}</dd>
+            </div>
+          ))
+        }
+      </dl>
+    </div>
+  </div>
+</section>
+
+<script>
+  import { getCartCount } from "../../utils/cart";
+  const link = document.querySelector<HTMLAnchorElement>("[data-journey-basket]");
+  const update = () => {
+    const count = getCartCount();
+    if (link) link.textContent = count > 0 ? `Review your basket (${count})` : "Go to your basket";
+  };
+  update();
+  window.addEventListener("fresh-petals-cart-updated", update);
+  window.addEventListener("pageshow", update);
+</script>
+
+<style>
+  .journey {
+    background: var(--color-ivory);
+    padding: clamp(4rem, 9vw, 8rem) clamp(16px, 4vw, 56px);
+    border-top: 1px solid var(--color-line);
+  }
+
+  .journey__inner {
+    max-width: 1320px;
+    margin: 0 auto;
+  }
+
+  .journey__eyebrow {
+    margin: 0 0 0.8rem;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--color-rose-deep);
+  }
+
+  .journey__title {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 360;
+    font-size: clamp(2.2rem, 1.3rem + 3.8vw, 4.6rem);
+    line-height: 0.96;
+    letter-spacing: -0.03em;
+  }
+
+  .journey__title em {
+    font-style: italic;
+    color: var(--color-rose-deep);
+  }
+
+  .journey__steps {
+    list-style: none;
+    margin: clamp(2.5rem, 5vw, 4rem) 0 0;
+    padding: 0;
+    display: grid;
+    gap: 2.2rem;
+  }
+
+  @media (min-width: 900px) {
+    .journey__steps {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 3rem;
+    }
+  }
+
+  .journey__step {
+    position: relative;
+    padding-top: 1.2rem;
+    border-top: 1px solid var(--color-ink);
+  }
+
+  .journey__num {
+    display: block;
+    font-family: var(--font-display);
+    font-style: italic;
+    font-weight: 300;
+    font-size: clamp(3.2rem, 2rem + 4vw, 5.5rem);
+    line-height: 0.9;
+    color: var(--color-apricot-deep);
+  }
+
+  .journey__step h3 {
+    margin: 0.8rem 0 0;
+    font-family: var(--font-display);
+    font-weight: 420;
+    font-size: clamp(1.35rem, 1.1rem + 0.9vw, 1.8rem);
+    letter-spacing: -0.015em;
+  }
+
+  .journey__step p {
+    margin: 0.55rem 0 0;
+    max-width: 36ch;
+    color: var(--color-moss);
+    line-height: 1.6;
+  }
+
+  .journey__foot {
+    display: grid;
+    gap: 2.5rem;
+    margin-top: clamp(3rem, 6vw, 5rem);
+  }
+
+  @media (min-width: 900px) {
+    .journey__foot {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
+      align-items: start;
+    }
+  }
+
+  .journey__cta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.8rem 1.4rem;
+  }
+
+  .journey__question {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
+  .journey__faq {
+    margin: 0;
+    display: grid;
+    gap: 1.2rem;
+  }
+
+  .journey__faq dt {
+    font-weight: 600;
+  }
+
+  .journey__faq dd {
+    margin: 0.3rem 0 0;
+    color: var(--color-moss);
+    line-height: 1.6;
+  }
+</style>

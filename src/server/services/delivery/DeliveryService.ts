@@ -12,7 +12,8 @@
 // text) lives in deliveryRules.ts as a pure function with no I/O — this
 // file's only job is fetching the zone and handing it to that function.
 // See deliveryRules.ts's header for why that split exists.
-import { DeliveryZoneRepository } from "../../db/repositories/DeliveryZoneRepository";
+import { DeliveryZoneRepository, type DeliveryZone } from "../../db/repositories/DeliveryZoneRepository";
+import { STOREFRONT_CITY_ALIASES, isStorefrontCity } from "../../../config/storefront";
 import { getBusinessNow } from "./businessTime";
 import {
   evaluateDeliveryMethod,
@@ -29,6 +30,17 @@ export type ServiceabilityResult =
   | { serviceable: true; area: string; city: string; fee: number }
   | { serviceable: false };
 
+/**
+ * The zone for this pincode, but only if it belongs to the storefront's
+ * city (src/config/storefront.ts). A zone seeded for another city is
+ * treated exactly like an unknown pincode, so it can never be quoted as a
+ * delivery area, fee or promise for this storefront.
+ */
+async function findStorefrontZone(pincode: string): Promise<DeliveryZone | null> {
+  const zone = await DeliveryZoneRepository.findByPincode(pincode);
+  return zone && isStorefrontCity(zone.city) ? zone : null;
+}
+
 export const DeliveryService = {
   /**
    * The single source of truth for one method. Every caller — the check
@@ -42,7 +54,7 @@ export const DeliveryService = {
     reference: Date = new Date()
   ): Promise<DeliveryResult> {
     const now = getBusinessNow(reference);
-    const zone = await DeliveryZoneRepository.findByPincode(input.pincode);
+    const zone = await findStorefrontZone(input.pincode);
     return evaluateDeliveryMethod(input.method, input.deliveryDate, zone, now, reference);
   },
 
@@ -57,7 +69,7 @@ export const DeliveryService = {
     reference: Date = new Date()
   ): Promise<DeliveryResult[]> {
     const now = getBusinessNow(reference);
-    const zone = await DeliveryZoneRepository.findByPincode(input.pincode);
+    const zone = await findStorefrontZone(input.pincode);
     return DELIVERY_METHODS.map((method) => evaluateDeliveryMethod(method, input.deliveryDate, zone, now, reference));
   },
 
@@ -73,7 +85,7 @@ export const DeliveryService = {
    * cutoff has passed today, which is a different fact entirely.
    */
   async checkServiceability(pincode: string): Promise<ServiceabilityResult> {
-    const zone = await DeliveryZoneRepository.findByPincode(pincode);
+    const zone = await findStorefrontZone(pincode);
     if (!zone) return { serviceable: false };
     return { serviceable: true, area: zone.area, city: zone.city, fee: zone.deliveryFee };
   },
@@ -86,6 +98,6 @@ export const DeliveryService = {
    * names.
    */
   async listAreas(): Promise<string[]> {
-    return DeliveryZoneRepository.listAreas();
+    return DeliveryZoneRepository.listAreas(STOREFRONT_CITY_ALIASES);
   },
 };

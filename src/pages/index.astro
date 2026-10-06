@@ -1,202 +1,78 @@
 ---
+// Homepage — the floral atelier, built on the shop's own photography.
+// Order: inspiration (hero) → something to buy (priced bouquets) → wider
+// browsing (collection deck) → a close look (detail study) → how ordering
+// works → a closing invitation. (The bouquet builder — /studio — was removed
+// on 4 Oct 2026; its URL redirects to /categories/bouquets.) All server-rendered HTML;
+// depth is CSS perspective plus small scripts. HeroReel.astro is kept but
+// not mounted: a second browsing carousel before the products duplicated
+// the deck and pushed the first price further down.
+// SEO title/description/structured data are unchanged from the previous
+// homepage (src/data/seoLanding.ts).
 import BaseLayout from "../layouts/BaseLayout.astro";
-import { DeliveryService } from "../server/services/delivery/DeliveryService";
+import HeroAtelier from "../components/atelier/HeroAtelier.astro";
+import OccasionDeck from "../components/atelier/OccasionDeck.astro";
+import BouquetEdit from "../components/atelier/BouquetEdit.astro";
+import InsideBouquet from "../components/atelier/InsideBouquet.astro";
+import OrderJourney from "../components/atelier/OrderJourney.astro";
+import FinalInvite from "../components/atelier/FinalInvite.astro";
+import { HOME_LANDING } from "../data/seoLanding";
+import { getBouquetEdit, getHeroPhoto } from "../data/atelierHome";
+import { loadAuthoritativePrices } from "../server/services/ProductPricing";
+import frauncesUrl from "@fontsource-variable/fraunces/files/fraunces-latin-wght-normal.woff2?url";
 
-import AreaSelector from "../components/AreaSelector.astro";
-import HomeHeroBanners from "../components/HomeHeroBanners.astro";
-import FindYourFlowersSection from "../components/FindYourFlowersSection.astro";
-import DiscoveryFeed from "../components/DiscoveryFeed.astro";
-import OccasionSection from "../components/OccasionSection.astro";
-import TrustSection from "../components/TrustSection.astro";
-import WhatsAppOrderSection from "../components/WhatsAppOrderSection.astro";
-import CustomerReviews from "../components/CustomerReviews.astro";
-import ReferEarnSection from "../components/ReferEarnSection.astro";
-import { curateDiscoveryOrder } from "../utils/feedCuration";
+const priceMap = await loadAuthoritativePrices();
+const editProducts = getBouquetEdit(priceMap);
+const hero = getHeroPhoto();
 
-const areas = await DeliveryService.listAreas();
-
-// Phase 4 (True Visual Discovery Experience) milestone — the Opus audit's
-// central finding: the homepage was "nine catalogue departments rendering
-// a beautiful tile" — eight separate rail components (ProductSection,
-// PoojaProductsSection, FlowerboxSection, BasketsSection, OffersSection,
-// HomeDecorGiftingSection, WeddingTraditionalSection, SubscriptionProducts),
-// each just a `category === X` filter with its own "Heading … View all →"
-// exit, all rendering the identical card. Measured impact at 390px: 6,706px
-// (7.9 screens) of the homepage was nine near-identical department
-// boundaries, and discovery dropped from 2.5 continuous screens to zero.
-//
-// These eight groups are folded into ONE DiscoveryFeed instead — same
-// slugs, same authoritative Postgres pricing (via ProductPricing, loaded
-// once inside DiscoveryFeed.astro exactly as before), same destination
-// product pages. What changes is that the page no longer announces "this
-// department is finished" nine times. The eight component files are left
-// on disk, unimported — not deleted — so this is a one-line revert if
-// needed, matching the precedent already set by UnboxingReels.astro.
-//
-// PopularWithFlowers (category "Add-ons": candles, greeting cards,
-// chocolates) is deliberately NOT folded in — the audit classified it as
-// cart cross-sell, not flower discovery content. It remains reachable via
-// MegaNav and the compact category row below (see
-// FindYourFlowersSection.astro).
-//
-// Discovery Architecture Hardening (Phase 5), Workstream A milestone —
-// the groups below are now passed through curateDiscoveryOrder()
-// (src/utils/feedCuration.ts) instead of the old position-based
-// interleave(). That function's own header comment has the full
-// reasoning; short version: the position-based interleave ran out of
-// small-group position-mates partway through and dumped the two large
-// pools (Bouquets, Lilies) consecutively at the tail -- measured live as
-// 16 same-category cards in a row -- and happened to place two visually
-// near-identical blue-and-white bouquets as cards 0 and 1. The new
-// function groups by each product's real category (not by which of these
-// nine hand-picked lists it came from) and always continues from
-// whichever category has the most cards left, which is what keeps a
-// large category spread across the whole feed instead of exhausted early
-// and backloaded.
-const feedGroups: string[][] = [
-  // Original curated discovery feed — Bouquets + Lilies, the two
-  // categories where every product has its own dedicated photograph.
-  [
-    "cloud-nine-blue",
-    "colour-pop-love",
-    "cotton-candy",
-    "country-love-note",
-    "dear-sunshine",
-    "lilac-garden",
-    "peach-petal-promise",
-    "wild-sunset-charm",
-    "purple-crush",
-    "white-silence",
-    "luxe-lily-bloom",
-    "stargazer-affair",
-    "blush-garden-kiss",
-    "sunshine-confession",
-    "violet-picnic",
-    "ivory-lily-grace",
-    // Phase 6 (Discovery Architecture Hardening — content-native pass) —
-    // the 23 Bouquets/Lilies that each own a dedicated photograph but were
-    // never in feedGroups, so they never reached the homepage. The audit
-    // confirmed curateDiscoveryOrder() only ever reorders whatever slugs
-    // it's given -- it can't add or remove products -- so the homepage's
-    // duplicate-image problem (10/52 cards repeating an image another card
-    // already showed) was a selection gap here, not a curation bug. Adding
-    // these is the whole fix; the function itself is untouched.
-    "cloud-white",
-    "colourful-confession",
-    "daisy-morning",
-    "first-love",
-    "lavender-whisper",
-    "lily-calm",
-    "little-lilly-prayer",
-    "love-at-first-sight",
-    "pink-lily-wish",
-    "pink-secret",
-    "pink-tulip-promise",
-    "purple-promise",
-    "purple-whisper",
-    "sweet-petal-hour",
-    "timeless-hug",
-    "winter-whisper",
-    "all-white-fragrance",
-    "blush-lily-letter",
-    "coral-lily-bloom",
-    "fragrance-festive-giftbox",
-    "mandarin-lily-glow",
-    "pink-serenity-flowerbox",
-    "sunrise-asiatic-vase",
-  ],
-  // Formerly ProductSection — hand-picked spread across colour/mood/price.
-  [
-    "blue-mountain-grace",
-    "red-affair",
-    "midnight-romance",
-    "rose-promise",
-    "sunshine-story",
-    "cotton-candy-poetry",
-    "snow-white-saga",
-    "rainbow-hug",
-  ],
-  // Formerly PoojaProductsSection.
-  ["daily-pooja-flowers", "jasmine-malli", "pooja-flower-box", "temple-bulk-flowers"],
-  // Formerly FlowerboxSection. diy-flowerbox dropped (Phase 1 discovery
-  // hardening, P0.2) -- shares addon-table-decor.jpg (mason-jar sunflowers
-  // on a dining table) with 6 other products; verified by opening the
-  // file, not by filename. No correct photograph exists in the repo.
-  // Reachable via MegaNav/categories until real photography exists.
-  ["loose-flower-box", "gift-flower-box", "pooja-flowerbox"],
-  // Formerly BasketsSection. premium-flower-basket dropped (P0.2) -- same
-  // addon-table-decor.jpg mismatch as above.
-  ["flower-basket", "gift-basket", "pooja-basket"],
-  // Formerly OffersSection.
-  ["flowers-under-499", "bouquets-under-999", "flower-gifts-under-1499", "todays-flower-offers"],
-  // Formerly HomeDecorGiftingSection. dried-flower-bunch and
-  // room-mist-flower-gift-addon were dropped here (Phase 6) -- the wrong-
-  // object image audit found both display a photo of three pillar candles,
-  // not the product. clear-glass-vase dropped here (Phase 1 discovery
-  // hardening, P0.2) -- same addon-table-decor.jpg mismatch (mason jars,
-  // not a vase). No correct photograph exists anywhere in the repo for any
-  // of the three, so rather than keep featuring a wrong photo on the
-  // homepage, all three are left reachable via MegaNav/categories until
-  // real photography exists. Not a deletion -- productCatalog.ts is
-  // unchanged.
-  ["mini-succulent-gift"],
-  // Formerly WeddingTraditionalSection.
-  ["bridal-flower-accessories", "event-garlands", "fresh-flower-toran", "jasmine-gajra"],
-  // Formerly SubscriptionProducts.
-  [
-    "daily-pooja-flower-subscription",
-    "weekly-flowerbox-subscription",
-    "jasmine-malli-subscription",
-    "custom-flower-subscription",
-  ],
+// Organization/WebSite structured data — only verified facts: the name,
+// the site URL, the WhatsApp number every order link on the site uses, and
+// the business's own Instagram account. No address, opening hours, rating
+// or logo: none are verified yet (public/favicon.* is Astro's default mark).
+const siteUrl = new URL("/", Astro.site).toString();
+const homeJsonLd = [
+  {
+    "@type": "Organization",
+    "@id": `${siteUrl}#organization`,
+    name: "Fresh Petals",
+    alternateName: "Fresh Petals Bengaluru",
+    url: siteUrl,
+    sameAs: ["https://www.instagram.com/freshpetals.hyderabad/"],
+    contactPoint: {
+      "@type": "ContactPoint",
+      telephone: "+91-96520-12274",
+      contactType: "customer service",
+    },
+  },
+  {
+    "@type": "WebSite",
+    "@id": `${siteUrl}#website`,
+    name: "Fresh Petals",
+    url: siteUrl,
+    inLanguage: "en-IN",
+    publisher: { "@id": `${siteUrl}#organization` },
+  },
 ];
-
-const feedSlugs = curateDiscoveryOrder(feedGroups.flat());
-
-// P1.2 (Phase 1 discovery hardening) -- the audit measured the homepage
-// feed at ~14.3 of the page's ~21.7 mobile screens with no cap, batch, or
-// end marker; every one of the feed's cards shipped in the initial
-// response regardless of whether a visitor ever scrolled that far. Every
-// card still renders server-side (see DiscoveryFeed's initialVisibleCount
-// handling) -- this only changes what's visible before a tap, not what's
-// crawlable or what exists. 28 sits in the plan's specified 24-30 range.
-const FEED_INITIAL_VISIBLE_COUNT = 28;
 ---
 
-<BaseLayout title="Fresh Petals Hyderabad" showCategoryCarousel={false}>
-  <main>
-    <!-- Deep Discovery Redesign milestone — RoundCategoryCarousel (a
-         second, denser icon-nav strip) is deliberately turned off only on
-         the homepage: stacked on top of CityBar + EcommerceHeader + MegaNav
-         + the hero, it was exactly the "too much navigation chrome before
-         any content" the brief's own audit called out. It still renders
-         everywhere else (category/product/search pages keep it — those are
-         wayfinding contexts, not discovery). Hero (real flower imagery)
-         still renders before the area strip — a customer should see
-         flowers before being asked anything — but is deliberately smaller
-         now; see HomeHeroBanners.astro. -->
-    <HomeHeroBanners />
-    <AreaSelector areas={areas} />
-    <FindYourFlowersSection />
-    <DiscoveryFeed slugs={feedSlugs} initialVisibleCount={FEED_INITIAL_VISIBLE_COUNT} />
-    <!-- Phase 4 milestone — OccasionSection moved from directly after the
-         feed (where it interrupted discovery at screen 3.0, measured) down
-         into the commerce zone with WhatsAppOrderSection/TrustSection,
-         where its promo/logistics framing ("Flat 10% Off", "Subscription
-         Starting At ₹299") belongs. -->
-    <OccasionSection />
-    <WhatsAppOrderSection />
-    <TrustSection />
-    <!-- Content / Integrity milestone (Phase 0) — UnboxingReels removed
-         here. Its filename promised video/unboxing content; its actual
-         markup was a stray, invalid-HTML duplicate of Footer.astro (no
-         opening <footer> tag). Rather than fabricate reels content or ship
-         broken markup, it's removed until real video content exists to
-         put in its place — see docs/architecture for the longer-term
-         content-model direction. The component file itself is left on
-         disk, unused, pending your decision on whether to delete it
-         outright. -->
-    <CustomerReviews />
-    <ReferEarnSection />
+<BaseLayout
+  title={HOME_LANDING.title}
+  description={HOME_LANDING.description}
+  showCategoryCarousel={false}
+  jsonLd={homeJsonLd}
+>
+  <!-- Homepage only: the display serif sets the hero headline in the first
+       viewport (measured: helps here, hurts listing pages, so not global). -->
+  <link slot="head" rel="preload" href={frauncesUrl} as="font" type="font/woff2" crossorigin />
+  <!-- Same srcset/sizes as the hero <img> (HeroAtelier.astro). -->
+  <link slot="head" rel="preload" as="image" imagesrcset={hero.main.srcset} imagesizes="(min-width: 1024px) 450px, 320px" fetchpriority="high" />
+
+  <main class="atelier-home">
+    <HeroAtelier />
+    <BouquetEdit products={editProducts} />
+    <OccasionDeck />
+    <InsideBouquet />
+    <OrderJourney />
+    <FinalInvite />
   </main>
 </BaseLayout>

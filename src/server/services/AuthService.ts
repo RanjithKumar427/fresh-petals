@@ -1,80 +1,211 @@
 import type { AstroCookies } from "astro";
-import { AdminUserRepository, type AdminUser } from "../db/repositories/AdminUserRepository";
+import { AdminUserRepository, isApprovedAdmin, type AdminUser } from "../db/repositories/AdminUserRepository";
 import { createSupabaseServerClient } from "../auth/supabaseServerClient";
 
 export type AuthResult = { ok: true } | { ok: false; error: string };
 
 /**
- * Everything auth-related that pages/API routes are allowed to call.
- * Pages never construct a Supabase client, never touch cookies for auth
- * purposes directly, and never touch AdminUserRepository directly — only
- * this service. Supabase Auth itself is an implementation detail behind
- * this file, same as Postgres is behind ProductRepository: every method
- * here takes the same `request`/`cookies` Astro already hands every page
- * and API route, and nothing above this file needs to know a JWT or a
- * `sb-*` cookie exists.
+ * Administrator access is one of three explicit states, decided on the
+ * server for every protected request:
+ *
+ *   none — no valid Supabase session, or a valid session whose user has no
+ *          approved admin_users row. Denied everywhere.
+ *   mfa  — an approved administrator who has only passed the first factor
+ *          (session assurance level aal1). Allowed only the two-step
+ *          verification page and logout.
+ *   full — an approved administrator whose session has been upgraded to
+ *          aal2 by verifying a TOTP code. Allowed the dashboard and APIs.
+ *
+ * Identity comes from Supabase Auth: getUser() asks the Auth server (so a
+ * revoked session is caught), and getClaims() verifies the access token
+ * before its `aal` claim is trusted. Approval comes only from an existing
+ * admin_users row for that exact auth UUID with an approved role — never
+ * from an email match, user metadata or anything the browser sends.
  */
+export type AdminAccess =
+  | { state: "none"; hadSession: boolean; unapproved: boolean }
+  | { state: "mfa"; admin: AdminUser; hasVerifiedFactor: boolean }
+  | { state: "full"; admin: AdminUser };
+
+export const PASSWORD_MIN_LENGTH = 12;
+// Supabase Auth hashes with bcrypt, which only uses the first 72 bytes.
+export const PASSWORD_MAX_LENGTH = 72;
+
+const GENERIC_LOGIN_ERROR = "Invalid email or password.";
+const CODE_PATTERN = /^\d{6}$/;
+
+type Supabase = ReturnType<typeof createSupabaseServerClient>;
+type Factor = { id: string; factor_type: string; status: string };
+
+function totpFactors(user: { factors?: Factor[] | null } | null | undefined) {
+  const all = (user?.factors ?? []).filter((f) => f.factor_type === "totp");
+  return { verified: all.filter((f) => f.status === "verified"), unverified: all.filter((f) => f.status !== "verified") };
+}
+
+/** Removes every Supabase session cookie this request carried, whatever signOut managed to do. */
+function clearSessionCookies(request: Request, cookies: AstroCookies) {
+  const header = request.headers.get("cookie") ?? "";
+  for (const part of header.split(";")) {
+    const name = part.split("=")[0]?.trim();
+    if (name && name.startsWith("sb-")) cookies.delete(name, { path: "/" });
+  }
+}
+
+async function endSession(supabase: Supabase, request: Request, cookies: AstroCookies) {
+  await supabase.auth.signOut({ scope: "local" }).catch(() => {});
+  clearSessionCookies(request, cookies);
+}
+
+/**
+ * Validated identity + assurance level for the current request, or null.
+ * The `sub` of the verified token must be the same user the Auth server
+ * returned, otherwise nothing is trusted.
+ */
+async function verifiedIdentity(supabase: Supabase) {
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData.user) return null;
+  const { data: claimsData, error: claimsError } = await supabase.auth.getClaims();
+  if (claimsError || !claimsData?.claims || claimsData.claims.sub !== userData.user.id) return null;
+  const aal = claimsData.claims.aal === "aal2" ? "aal2" : "aal1";
+  return { user: userData.user, aal } as const;
+}
+
+function hasSessionCookie(request: Request) {
+  return /(?:^|;\s*)sb-[^=]+=/.test(request.headers.get("cookie") ?? "");
+}
+
 export const AuthService = {
+  /**
+   * First factor. Succeeds only for an approved administrator; any other
+   * outcome (wrong password, unconfirmed or unknown account, or a valid
+   * account that is not an approved admin) returns the same generic error,
+   * and a session created for an unapproved account is ended immediately.
+   * Nothing is written for unapproved accounts.
+   */
   async login(email: string, password: string, request: Request, cookies: AstroCookies): Promise<AuthResult> {
     const supabase = createSupabaseServerClient(request, cookies);
     const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
+    if (error || !data.user) return { ok: false, error: GENERIC_LOGIN_ERROR };
 
-    if (error || !data.user) {
-      // Supabase's own error message ("Invalid login credentials") is
-      // already safe to show as-is — it doesn't distinguish "no such
-      // user" from "wrong password" (neither did the scrypt-based version
-      // this replaces), so nothing project-specific to translate here.
-      return { ok: false, error: error?.message ?? "Invalid email or password." };
+    const row = await AdminUserRepository.findById(data.user.id).catch(() => null);
+    if (!isApprovedAdmin(row)) {
+      await endSession(supabase, request, cookies);
+      return { ok: false, error: GENERIC_LOGIN_ERROR };
     }
 
-    // Self-healing: create the profile row on first successful login if
-    // scripts/link-admin-identity.mjs hasn't run yet for this user (e.g.
-    // an admin invited straight from the Supabase dashboard). Every
-    // subsequent login just updates last_login_at on the row that already
-    // exists.
-    const existing = await AdminUserRepository.findById(data.user.id);
-    if (!existing) {
-      await AdminUserRepository.create({ id: data.user.id, email: data.user.email! });
-    }
-    await AdminUserRepository.touchLastLogin(data.user.id);
-
+    await AdminUserRepository.touchLastLogin(row.id);
     return { ok: true };
   },
 
   async logout(request: Request, cookies: AstroCookies): Promise<void> {
     const supabase = createSupabaseServerClient(request, cookies);
-    await supabase.auth.signOut();
+    await endSession(supabase, request, cookies);
   },
 
   /**
-   * Forgot-password — asks Supabase to email a recovery link pointed back
-   * at redirectTo (the site's own /admin/reset-password). Errors are
-   * swallowed deliberately: Supabase's own resetPasswordForEmail already
-   * doesn't distinguish "no such account" from "sent" in its response,
-   * the same anti-enumeration property login()'s error message relies on
-   * — the API route above this always returns one generic message
-   * regardless of what happens here, so a thrown error has nothing useful
-   * to change about that response, only something unsafe to leak.
+   * The access state for this request (see AdminAccess). A valid session
+   * that does not belong to an approved administrator is signed out here,
+   * so it cannot linger.
    */
-  async requestPasswordReset(
-    email: string,
-    redirectTo: string,
+  async resolveAccess(request: Request, cookies: AstroCookies): Promise<AdminAccess> {
+    const hadSession = hasSessionCookie(request);
+    if (!hadSession) return { state: "none", hadSession, unapproved: false };
+
+    const supabase = createSupabaseServerClient(request, cookies);
+    const identity = await verifiedIdentity(supabase);
+    if (!identity) {
+      clearSessionCookies(request, cookies);
+      return { state: "none", hadSession, unapproved: false };
+    }
+
+    const row = await AdminUserRepository.findById(identity.user.id).catch(() => null);
+    if (!isApprovedAdmin(row)) {
+      await endSession(supabase, request, cookies);
+      return { state: "none", hadSession, unapproved: true };
+    }
+
+    if (identity.aal === "aal2") return { state: "full", admin: row };
+    return { state: "mfa", admin: row, hasVerifiedFactor: totpFactors(identity.user).verified.length > 0 };
+  },
+
+  /**
+   * Two-step setup, step 1 — for an approved administrator at aal1 who has
+   * no verified authenticator yet. Any half-finished (unverified) TOTP
+   * factor of this same user is removed first, then a new one is created.
+   * The returned QR code and secret are shown once to the signed-in owner
+   * and never stored or logged by this application.
+   */
+  async startTotpEnrollment(
     request: Request,
     cookies: AstroCookies
-  ): Promise<void> {
+  ): Promise<{ ok: true; factorId: string; qrCode: string; secret: string } | { ok: false; error: string }> {
+    const access = await AuthService.resolveAccess(request, cookies);
+    if (access.state !== "mfa") return { ok: false, error: "Please sign in again." };
+    if (access.hasVerifiedFactor) return { ok: false, error: "An authenticator is already set up for this account." };
+
     const supabase = createSupabaseServerClient(request, cookies);
-    await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), { redirectTo }).catch(() => {});
+    const { data: list } = await supabase.auth.mfa.listFactors();
+    for (const factor of list?.all ?? []) {
+      if (factor.factor_type === "totp" && factor.status !== "verified") {
+        await supabase.auth.mfa.unenroll({ factorId: factor.id }).catch(() => {});
+      }
+    }
+
+    const { data, error } = await supabase.auth.mfa.enroll({
+      factorType: "totp",
+      friendlyName: `FreshPetals admin ${new Date().toISOString().slice(0, 16)}`,
+      issuer: "FreshPetals Admin",
+    });
+    if (error || !data || data.type !== "totp") {
+      return { ok: false, error: "Two-step setup could not start. Please try again." };
+    }
+    return { ok: true, factorId: data.id, qrCode: data.totp.qr_code, secret: data.totp.secret };
   },
 
   /**
-   * Recovery link, PKCE path — the redirect Supabase sends after the
-   * emailed link is clicked carries a one-time `?code=`, exchanged here
-   * for a real session (written via the same cookie adapter login() uses).
-   * Returns false on any failure (already-used code, expired code) rather
-   * than throwing — the caller falls back to checking for an
-   * already-established session next, since a page refresh after a prior
-   * successful exchange re-sends the same now-stale code.
+   * Second factor. Verifies a 6-digit code against this session user's own
+   * TOTP factor and, on success, Supabase upgrades the session to aal2
+   * (new cookies are written through the cookie adapter). The factor is
+   * always looked up from the verified session — a posted factor id is
+   * only accepted if it is one of this user's own unverified factors,
+   * i.e. the one created a moment ago during setup.
    */
+  async verifyTotp(code: string, postedFactorId: string | null, request: Request, cookies: AstroCookies): Promise<AuthResult> {
+    if (!CODE_PATTERN.test(code)) return { ok: false, error: "Enter the 6-digit code from your authenticator app." };
+
+    const access = await AuthService.resolveAccess(request, cookies);
+    if (access.state === "none") return { ok: false, error: "Your session has ended. Please sign in again." };
+    if (access.state === "full") return { ok: true };
+
+    const supabase = createSupabaseServerClient(request, cookies);
+    const { data: userData } = await supabase.auth.getUser();
+    const { verified, unverified } = totpFactors(userData.user as { factors?: Factor[] } | null);
+
+    let factorId: string | undefined;
+    if (verified.length) factorId = verified[0].id;
+    else if (postedFactorId && unverified.some((f) => f.id === postedFactorId)) factorId = postedFactorId;
+    if (!factorId) return { ok: false, error: "Set up your authenticator first." };
+
+    const { error } = await supabase.auth.mfa.challengeAndVerify({ factorId, code });
+    if (error) return { ok: false, error: "That code didn't work. Check that your phone's time is correct and enter the current code." };
+    return { ok: true };
+  },
+
+  /**
+   * Forgot-password. Emails a recovery link only when the address belongs
+   * to an approved administrator; the response the visitor sees is
+   * identical either way (see forgot-password.ts). redirectTo must come
+   * from SITE_URL in production, never from the request's Host header.
+   */
+  async requestPasswordReset(email: string, redirectTo: string, request: Request, cookies: AstroCookies): Promise<void> {
+    const normalized = email.trim().toLowerCase();
+    const row = await AdminUserRepository.findByEmail(normalized).catch(() => null);
+    if (!isApprovedAdmin(row)) return;
+    const supabase = createSupabaseServerClient(request, cookies);
+    await supabase.auth.resetPasswordForEmail(normalized, { redirectTo }).catch(() => {});
+  },
+
+  /** Recovery link, PKCE path: exchanges the one-time ?code= for a (first-factor) session. */
   async exchangeRecoveryCode(code: string, request: Request, cookies: AstroCookies): Promise<boolean> {
     const supabase = createSupabaseServerClient(request, cookies);
     const { error } = await supabase.auth.exchangeCodeForSession(code);
@@ -82,94 +213,62 @@ export const AuthService = {
   },
 
   /**
-   * Recovery link, implicit-flow fallback — if this Supabase project's
-   * auth flow type is not PKCE, the recovery tokens arrive in the URL
-   * *fragment* instead of a `?code=` query param, which only client-side
-   * JS can read (fragments never reach the server). reset-password.astro's
-   * inline script detects that case and posts the tokens here (body, not
-   * query string, so they never land in a server access log) so the
-   * session can be established the same server-side, cookie-based way as
-   * the PKCE path above.
+   * Recovery link, token-hash form (works on any device): used when the
+   * Supabase "Reset password" email template links to
+   * /admin/reset-password?token_hash={{ .TokenHash }}&type=recovery.
    */
-  async setRecoverySession(
-    accessToken: string,
-    refreshToken: string,
-    request: Request,
-    cookies: AstroCookies
-  ): Promise<boolean> {
+  async verifyRecoveryTokenHash(tokenHash: string, request: Request, cookies: AstroCookies): Promise<boolean> {
+    const supabase = createSupabaseServerClient(request, cookies);
+    const { error } = await supabase.auth.verifyOtp({ type: "recovery", token_hash: tokenHash });
+    return !error;
+  },
+
+  /** Recovery link, implicit-flow fallback: bridges fragment tokens into the httpOnly cookies. */
+  async setRecoverySession(accessToken: string, refreshToken: string, request: Request, cookies: AstroCookies): Promise<boolean> {
     const supabase = createSupabaseServerClient(request, cookies);
     const { error } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
     return !error;
   },
 
-  /** Is there currently a valid Supabase session at all (recovery or otherwise)? Used to decide whether reset-password.astro can show the form. */
-  async hasSession(request: Request, cookies: AstroCookies): Promise<boolean> {
+  /**
+   * State of a recovery session for reset-password.astro: whether one is
+   * valid at all, and whether the account has an authenticator (in which
+   * case the new password is accepted only together with a current code).
+   */
+  async recoveryState(request: Request, cookies: AstroCookies): Promise<{ valid: boolean; needsCode: boolean }> {
     const supabase = createSupabaseServerClient(request, cookies);
-    const { data, error } = await supabase.auth.getUser();
-    return !error && !!data.user;
+    const identity = await verifiedIdentity(supabase);
+    if (!identity) return { valid: false, needsCode: false };
+    return { valid: true, needsCode: identity.aal !== "aal2" && totpFactors(identity.user).verified.length > 0 };
   },
 
   /**
-   * Sets the new password on whichever session reset-password.astro
-   * already established. Re-checks getUser() itself rather than trusting
-   * that the page's earlier render-time check is still valid — same
-   * "never trust a token just because it's well-formed" discipline
-   * verifySession() below already applies. Explicitly signs the recovery
-   * session out afterward: a password reset must not silently leave the
-   * browser authenticated. The existing login page remains the one entry
-   * point into /admin — see reset-password.astro's success state, which
-   * links there rather than forwarding straight to the dashboard.
+   * Sets a new password on the current recovery session. If the account
+   * has an authenticator, a valid current code is required first, so a
+   * reset link alone cannot change the password of an MFA-protected
+   * account. Never creates or changes admin membership, and always ends
+   * the session afterwards: the admin signs in again (both factors).
    */
-  async updatePassword(password: string, request: Request, cookies: AstroCookies): Promise<AuthResult> {
+  async updatePassword(password: string, code: string | null, request: Request, cookies: AstroCookies): Promise<AuthResult> {
     const supabase = createSupabaseServerClient(request, cookies);
-
-    const { data: userCheck } = await supabase.auth.getUser();
-    if (!userCheck.user) {
+    const identity = await verifiedIdentity(supabase);
+    if (!identity) {
       return { ok: false, error: "This password reset link is invalid or has expired. Please request a new one." };
+    }
+
+    const { verified } = totpFactors(identity.user);
+    if (identity.aal !== "aal2" && verified.length) {
+      if (!code || !CODE_PATTERN.test(code)) return { ok: false, error: "Enter the current 6-digit code from your authenticator app." };
+      const { error } = await supabase.auth.mfa.challengeAndVerify({ factorId: verified[0].id, code });
+      if (error) return { ok: false, error: "That code didn't work. Enter the current code from your authenticator app." };
     }
 
     const { error } = await supabase.auth.updateUser({ password });
     if (error) {
-      // Supabase's own message here (e.g. a configured minimum-length
-      // rule) is implementation detail, not something to surface verbatim.
       return { ok: false, error: "We couldn't set that password. Please choose a different password and try again." };
     }
 
-    await supabase.auth.signOut();
+    await endSession(supabase, request, cookies);
     return { ok: true };
-  },
-
-  /**
-   * Returns the signed-in admin for the current request's session, or
-   * null if absent/expired/invalid. Uses getUser() (which re-validates
-   * the JWT against Supabase's own auth server), not getSession() (which
-   * only decodes the locally-held token) — the same "don't trust a token
-   * just because it's well-formed" discipline this project has applied to
-   * every other trust boundary.
-   */
-  async verifySession(request: Request, cookies: AstroCookies): Promise<AdminUser | null> {
-    const supabase = createSupabaseServerClient(request, cookies);
-    const { data, error } = await supabase.auth.getUser();
-    if (error || !data.user) return null;
-
-    // Deliberately does NOT self-heal (create a missing admin_users row)
-    // here, unlike login() -- see login()'s own create-if-missing call,
-    // which already covers the legitimate "first request after a brand
-    // new admin's first successful sign-in" case synchronously, in the
-    // same request, before any redirect back to a protected page.
-    //
-    // Password-reset milestone: this used to also self-heal, on the
-    // reasoning that it was "belt-and-braces" for that same race. It
-    // wasn't load-bearing for that case (login()'s own create already
-    // finishes before the browser follows the redirect), but it silently
-    // turned "has any valid Supabase session" into "is an admin" for
-    // *any* path that can establish a session -- which used to only be
-    // /admin/login (gated by already having admin credentials someone
-    // handed out), but now also includes the password-recovery flow
-    // (AuthService.exchangeRecoveryCode / setRecoverySession), reachable
-    // by any existing Supabase Auth user, not just ones meant to be
-    // admins. Only an admin_users row that already exists is authoritative
-    // here now -- see login() if a genuinely new admin needs provisioning.
-    return AdminUserRepository.findById(data.user.id);
   },
 };

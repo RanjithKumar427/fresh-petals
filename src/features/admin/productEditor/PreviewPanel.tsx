@@ -46,6 +46,17 @@ export default function PreviewPanel({ draft, categories, refreshKey }: Props) {
         slug: draft.slug,
         priceType: draft.priceType,
         sellingPrice: draft.sellingPrice,
+        garland: draft.garland
+          ? {
+              ...draft.garland,
+              altText: primaryImage?.altText ?? null,
+              width: primaryImage?.width ?? null,
+              height: primaryImage?.height ?? null,
+              options: draft.options,
+              status: draft.status,
+              hasStoredPhoto: draft.images.length > 0,
+            }
+          : undefined,
       }),
     })
       .then((response) => response.json())
@@ -61,9 +72,10 @@ export default function PreviewPanel({ draft, categories, refreshKey }: Props) {
     };
     // Deliberately keyed on refreshKey (autosave completion), not on the
     // individual draft fields below — they're only read once refreshKey
-    // fires, not watched independently.
+    // fires, not watched independently. Status changes (publish/unpublish)
+    // don't autosave, so they refresh it too.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [refreshKey]);
+  }, [refreshKey, draft.status]);
 
   return (
     <div className="flex h-full flex-col">

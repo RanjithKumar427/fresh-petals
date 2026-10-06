@@ -25,8 +25,10 @@ export interface DeliveryZoneRepositoryContract {
    * fee or promise. Deliberately not `findAll()` — callers here have no
    * business reading zones, only display names, so the return shape
    * doesn't tempt anyone into deriving delivery decisions from it.
+   * Scoped to zones whose lower-cased city is one of `cityAliases`, so a
+   * storefront never lists another city's areas as its own.
    */
-  listAreas(): Promise<string[]>;
+  listAreas(cityAliases: string[]): Promise<string[]>;
 }
 
 export { SupabaseDeliveryZoneRepository as DeliveryZoneRepository } from "./SupabaseDeliveryZoneRepository";

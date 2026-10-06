@@ -1,0 +1,132 @@
+---
+// Custom Orders: two services, each a WhatsApp enquiry with an editable
+// draft. No upload, form, account or questionnaire — customers attach a
+// reference photo inside WhatsApp (a wa.me link cannot attach one).
+// Only capabilities that are currently offered are promised; garlands,
+// baskets and torans are described as made to order and confirmed per
+// enquiry until their launch details are confirmed (launchCatalogue.ts).
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { whatsappLink } from "../config/storefront";
+
+const services = [
+  {
+    id: "custom-flowers",
+    eyebrow: "Service 1",
+    title: "Custom Flowers",
+    lede: "A bouquet matched to your colours, occasion and budget.",
+    points: [
+      "Tell us the colours or flowers you have in mind, or send a photo you like.",
+      "Hand-tied bouquets are what we make every day. For a basket or a garland, ask — we'll tell you what we can make for your date.",
+      "Flowers depend on what is fresh that day; we confirm any substitution with you first.",
+    ],
+    cta: "Ask for custom flowers",
+    message: [
+      "Hi Fresh Petals, I'd like a custom flower order.",
+      "Service: Custom Flowers",
+      "What I'd like (colours / flowers / style): ",
+      "Occasion and date: ",
+      "Delivery area: ",
+      "Budget (optional): ",
+      "I'll attach a reference photo here if I have one.",
+    ].join("\n"),
+  },
+  {
+    id: "small-ceremony-orders",
+    eyebrow: "Service 2",
+    title: "Small Ceremony Orders",
+    lede: "Flowers for a small ceremony, coordinated and quoted together.",
+    points: [
+      "List what the ceremony needs — for example garlands, a door toran and loose flowers — with quantities.",
+      "Garlands and torans are made to order. What we can make depends on the date and the flowers available.",
+      "You get one quotation for everything before anything is prepared.",
+    ],
+    cta: "Ask for a ceremony quote",
+    message: [
+      "Hi Fresh Petals, I'd like a quote for a small ceremony order.",
+      "Service: Small Ceremony Orders",
+      "Ceremony and date: ",
+      "What we need (items and quantities): ",
+      "Delivery area: ",
+      "Budget (optional): ",
+      "I'll attach reference photos here if I have them.",
+    ].join("\n"),
+  },
+];
+---
+
+<BaseLayout
+  title="Custom Flower Orders in Bengaluru | Fresh Petals"
+  description="Custom bouquets matched to your colours, occasion and budget, and small ceremony flower orders quoted together. Ask on WhatsApp — Chamarajpet and Basavanagudi first."
+  showCategoryCarousel={false}
+>
+  <main class="bg-paper">
+    <section class="px-5 py-12 md:px-8 md:py-20">
+      <div class="mx-auto max-w-5xl">
+        <div class="max-w-2xl">
+          <p class="fp-eyebrow">Custom orders</p>
+          <h1 class="fp-serif mt-4 text-3xl leading-tight text-ink md:text-5xl">Made for your occasion</h1>
+          <p class="mt-5 text-sm leading-7 text-moss md:text-base">
+            Two ways we can make something specific for you. Both start with a WhatsApp message you can edit — no
+            form and no account.
+          </p>
+        </div>
+
+        <div class="mt-10 grid gap-6 md:mt-14 md:grid-cols-2">
+          {
+            services.map((service) => (
+              <article id={service.id} class="flex scroll-mt-28 flex-col rounded-[28px] border border-line bg-linen p-7 md:p-9" aria-labelledby={`${service.id}-title`}>
+                <p class="text-[10px] font-semibold uppercase tracking-[0.28em] text-rose-deep">{service.eyebrow}</p>
+                <h2 id={`${service.id}-title`} class="fp-serif mt-3 text-2xl text-ink md:text-3xl">
+                  {service.title}
+                </h2>
+                <p class="mt-3 text-[15px] font-medium leading-7 text-ink">{service.lede}</p>
+                <ul class="mt-5 space-y-3 text-sm leading-7 text-moss">
+                  {service.points.map((point) => (
+                    <li class="flex gap-3">
+                      <span aria-hidden="true" class="mt-[0.7rem] h-1.5 w-1.5 shrink-0 rounded-full bg-rose-deep" />
+                      <span>{point}</span>
+                    </li>
+                  ))}
+                </ul>
+                <div class="mt-auto pt-7">
+                  <a
+                    href={whatsappLink(service.message)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    data-custom-order={service.id}
+                    class="inline-flex min-h-[48px] items-center rounded-full bg-ink px-6 text-[11px] font-bold uppercase tracking-[0.18em] text-white transition hover:bg-berry"
+                  >
+                    {service.cta}
+                  </a>
+                  <p class="mt-3 text-[12px] leading-5 text-moss">Opens WhatsApp with a message you can edit before sending.</p>
+                </div>
+              </article>
+            ))
+          }
+        </div>
+
+        <section class="mt-12 rounded-[28px] border border-line bg-paper p-7 md:p-9" aria-labelledby="how-title">
+          <h2 id="how-title" class="text-[12px] font-bold uppercase tracking-[0.24em] text-ink">How it works</h2>
+          <ol class="mt-5 grid gap-5 text-sm leading-7 text-moss md:grid-cols-3">
+            <li>
+              <span class="block font-semibold text-ink">1. Send the message</span>
+              Fill in what you can — occasion, date and what you'd like. A budget is optional.
+            </li>
+            <li>
+              <span class="block font-semibold text-ink">2. Add a reference photo</span>
+              If you have one, attach it in WhatsApp after the message opens. The link can't attach it for you.
+            </li>
+            <li>
+              <span class="block font-semibold text-ink">3. Get a quotation</span>
+              We reply with what we can make and the final total, including delivery. Nothing is charged on this website.
+            </li>
+          </ol>
+          <p class="mt-6 text-sm leading-7 text-moss">
+            Deliveries start in Chamarajpet and Basavanagudi; we confirm your address and timing on WhatsApp.
+            Prefer a ready design? <a class="font-semibold text-ink underline underline-offset-4" href="/categories/bouquets">Browse bouquets</a>.
+          </p>
+        </section>
+      </div>
+    </section>
+  </main>
+</BaseLayout>

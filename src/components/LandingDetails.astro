@@ -1,0 +1,55 @@
+---
+// Visible, crawlable context for a search-landing page (see
+// src/data/seoLanding.ts): short FAQs about how ordering and delivery
+// actually work, plus links to the related pages for neighbouring
+// searches. Rendered after the product grid so shopping stays first.
+import type { LandingContent } from "../data/seoLanding";
+
+interface Props {
+  content: LandingContent;
+}
+
+const { content } = Astro.props;
+---
+
+<section class="border-t border-line bg-paper px-5 py-12 md:px-8 md:py-14">
+  <div class="mx-auto grid max-w-5xl gap-10 md:grid-cols-[1.4fr_1fr]">
+    <div>
+      <h2 class="fp-serif text-xl text-ink md:text-2xl">
+        Good to know
+      </h2>
+
+      <dl class="mt-6 space-y-5">
+        {
+          content.faqs.map((faq) => (
+            <div>
+              <dt class="text-sm font-semibold text-ink">{faq.question}</dt>
+              <dd class="mt-2 text-sm leading-7 text-moss">{faq.answer}</dd>
+            </div>
+          ))
+        }
+      </dl>
+    </div>
+
+    <nav aria-label="Related flower collections">
+      <h2 class="fp-serif text-xl text-ink md:text-2xl">
+        Also in Bengaluru
+      </h2>
+
+      <ul class="mt-6 flex flex-wrap gap-2">
+        {
+          content.links.map((link) => (
+            <li>
+              <a
+                href={link.href}
+                class="inline-flex min-h-[44px] items-center rounded-full border border-line px-4 text-sm text-moss transition hover:border-berry hover:text-berry"
+              >
+                {link.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+  </div>
+</section>

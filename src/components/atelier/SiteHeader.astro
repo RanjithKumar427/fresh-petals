@@ -1,0 +1,644 @@
+---
+// Atelier site header: wordmark, primary navigation with keyboard- and
+// touch-operable menus (hover is only a convenience on fine pointers),
+// search / saved / basket, and a full-screen mobile menu that lists every
+// existing menu entry. Menu data: src/data/navigation.ts.
+import Wordmark from "./Wordmark.astro";
+import { SITE_NAV } from "../../data/navigation";
+
+const path = Astro.url.pathname.replace(/\/+$/, "") || "/";
+const isCurrent = (href: string) => path === href || (href !== "/" && path.startsWith(href + "/"));
+---
+
+<a href="#main" class="sr-only-focusable fixed left-4 top-3 z-[80] rounded-full bg-ink px-5 py-3 text-sm text-ivory">
+  Skip to content
+</a>
+
+<header class="site-header" data-site-header>
+  <div class="site-header__bar">
+    <a href="/" class="site-header__brand" aria-label="Fresh Petals Bengaluru — home">
+      <Wordmark />
+    </a>
+
+    <nav class="site-nav" aria-label="Primary">
+      <ul class="site-nav__list">
+        {
+          SITE_NAV.map((item) =>
+            item.links ? (
+              <li class="site-nav__item" data-menu>
+                <button type="button" class="site-nav__link" aria-expanded="false" data-menu-toggle>
+                  {item.label}
+                  <svg viewBox="0 0 12 12" aria-hidden="true">
+                    <path d="M2.5 4.5 6 8l3.5-3.5" />
+                  </svg>
+                </button>
+                <div class="site-nav__panel" data-menu-panel hidden>
+                  <ul>
+                    {item.links.map((link) => (
+                      <li>
+                        <a href={link.href}>{link.label}</a>
+                      </li>
+                    ))}
+                  </ul>
+                  {item.extra && (
+                    <a class="site-nav__panel-extra" href={item.extra.href}>
+                      {item.extra.label}
+                    </a>
+                  )}
+                </div>
+              </li>
+            ) : (
+              <li class="site-nav__item">
+                <a class="site-nav__link" href={item.href} aria-current={isCurrent(item.href) ? "page" : undefined}>
+                  {item.label}
+                </a>
+              </li>
+            )
+          )
+        }
+      </ul>
+    </nav>
+
+    <div class="site-header__actions">
+      <a href="/search" class="site-icon" aria-label="Search flowers">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" /><path d="m20 20-4-4" /></svg>
+      </a>
+      <a href="/saved" class="site-icon site-icon--hide-sm" aria-label="Saved flowers">
+        <svg viewBox="0 0 24 24" aria-hidden="true"
+          ><path d="M12 20s-7-4.3-9.1-8.5C1.4 8.3 2.7 5 6 5c2 0 3.4 1.1 4 2.5C10.6 6.1 12 5 14 5c3.3 0 4.6 3.3 3.1 6.5C19 15.7 12 20 12 20Z" transform="translate(1 0)"
+          ></path></svg
+        >
+        <span data-saved-count-badge class="site-badge" hidden>0</span>
+      </a>
+      <a href="/cart" class="site-basket" aria-label="Basket">
+        <span class="site-basket__label">Basket</span>
+        <span class="site-basket__count" data-cart-count-badge>0</span>
+      </a>
+      <button type="button" class="site-menu-button" aria-expanded="false" aria-controls="mobile-menu" data-mobile-menu-open>
+        Menu
+      </button>
+    </div>
+  </div>
+</header>
+
+<dialog id="mobile-menu" class="mobile-menu" aria-label="Menu" data-mobile-menu>
+  <div class="mobile-menu__head">
+    <Wordmark />
+    <button type="button" class="site-menu-button" data-mobile-menu-close>Close</button>
+  </div>
+  <nav aria-label="All sections" class="mobile-menu__body">
+    {
+      SITE_NAV.map((item) =>
+        item.links ? (
+          <details class="mobile-menu__group">
+            <summary>{item.label}</summary>
+            <ul>
+              {item.links.map((link) => (
+                <li>
+                  <a href={link.href}>{link.label}</a>
+                </li>
+              ))}
+              {item.extra && (
+                <li>
+                  <a href={item.extra.href}>{item.extra.label}</a>
+                </li>
+              )}
+            </ul>
+          </details>
+        ) : (
+          <ul class="mobile-menu__primary">
+            <li>
+              <a href={item.href}>{item.label}</a>
+            </li>
+          </ul>
+        )
+      )
+    }
+    <ul class="mobile-menu__secondary">
+      <li><a href="/search">Search</a></li>
+      <li><a href="/saved">Saved flowers</a></li>
+      <li><a href="/cart">Basket</a></li>
+    </ul>
+  </nav>
+</dialog>
+
+<script>
+  import { getCartCount } from "../../utils/cart";
+  import { getSavedCount, SAVED_UPDATED_EVENT } from "../../utils/saved";
+
+  // Counts -------------------------------------------------------------
+  let previousCount = -1;
+  function updateCounts() {
+    const cartBadge = document.querySelector<HTMLElement>("[data-cart-count-badge]");
+    const count = getCartCount();
+    if (cartBadge) {
+      cartBadge.textContent = String(count);
+      cartBadge.closest("a")?.setAttribute("aria-label", count ? `Basket, ${count} item${count === 1 ? "" : "s"}` : "Basket, empty");
+      if (previousCount >= 0 && count > previousCount) {
+        cartBadge.classList.remove("fp-badge-pulse");
+        void cartBadge.offsetWidth;
+        cartBadge.classList.add("fp-badge-pulse");
+      }
+    }
+    previousCount = count;
+    const savedBadge = document.querySelector<HTMLElement>("[data-saved-count-badge]");
+    if (savedBadge) {
+      const saved = getSavedCount();
+      savedBadge.textContent = String(saved);
+      savedBadge.hidden = saved === 0;
+    }
+  }
+  updateCounts();
+  window.addEventListener("fresh-petals-cart-updated", updateCounts);
+  window.addEventListener(SAVED_UPDATED_EVENT, updateCounts);
+  window.addEventListener("storage", updateCounts);
+  window.addEventListener("pageshow", updateCounts);
+
+  // Desktop menus: click/tap/keyboard toggles; hover opens on fine pointers.
+  const menus = [...document.querySelectorAll<HTMLElement>("[data-menu]")];
+  const fine = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+  function setOpen(menu: HTMLElement, open: boolean) {
+    const toggle = menu.querySelector<HTMLButtonElement>("[data-menu-toggle]");
+    const panel = menu.querySelector<HTMLElement>("[data-menu-panel]");
+    if (!toggle || !panel) return;
+    toggle.setAttribute("aria-expanded", String(open));
+    panel.hidden = !open;
+  }
+  function closeAll(except?: HTMLElement) {
+    menus.forEach((menu) => menu !== except && setOpen(menu, false));
+  }
+  menus.forEach((menu) => {
+    const toggle = menu.querySelector<HTMLButtonElement>("[data-menu-toggle]");
+    let hoverTimer = 0;
+    toggle?.addEventListener("click", () => {
+      const open = toggle.getAttribute("aria-expanded") !== "true";
+      closeAll(menu);
+      setOpen(menu, open);
+    });
+    if (fine) {
+      menu.addEventListener("pointerenter", () => {
+        window.clearTimeout(hoverTimer);
+        closeAll(menu);
+        setOpen(menu, true);
+      });
+      menu.addEventListener("pointerleave", () => {
+        hoverTimer = window.setTimeout(() => setOpen(menu, false), 160);
+      });
+    }
+    menu.addEventListener("focusout", (event) => {
+      if (!menu.contains(event.relatedTarget as Node)) setOpen(menu, false);
+    });
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    const open = menus.find((menu) => menu.querySelector("[aria-expanded='true']"));
+    if (open) {
+      setOpen(open, false);
+      open.querySelector<HTMLButtonElement>("[data-menu-toggle]")?.focus();
+    }
+  });
+  document.addEventListener("click", (event) => {
+    if (!(event.target as HTMLElement).closest("[data-menu]")) closeAll();
+  });
+
+  // Mobile menu: a native modal <dialog> (focus trap, Escape, inert page).
+  const dialog = document.querySelector<HTMLDialogElement>("[data-mobile-menu]");
+  const openButton = document.querySelector<HTMLButtonElement>("[data-mobile-menu-open]");
+  const closeButton = document.querySelector<HTMLButtonElement>("[data-mobile-menu-close]");
+  openButton?.addEventListener("click", () => {
+    dialog?.showModal();
+    openButton.setAttribute("aria-expanded", "true");
+  });
+  closeButton?.addEventListener("click", () => dialog?.close());
+  dialog?.addEventListener("close", () => {
+    openButton?.setAttribute("aria-expanded", "false");
+    openButton?.focus();
+  });
+  dialog?.addEventListener("click", (event) => {
+    if ((event.target as HTMLElement).closest("a")) dialog.close();
+  });
+</script>
+
+<style>
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 60;
+    background: color-mix(in srgb, var(--color-ivory) 92%, transparent);
+    backdrop-filter: saturate(1.2) blur(10px);
+    -webkit-backdrop-filter: saturate(1.2) blur(10px);
+    border-bottom: 1px solid color-mix(in srgb, var(--color-line) 80%, transparent);
+  }
+
+  .site-header__bar {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    height: var(--header-h);
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 0 clamp(16px, 3vw, 40px);
+  }
+
+  .site-header__brand {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    color: var(--color-ink);
+    text-decoration: none;
+    flex-shrink: 0;
+  }
+
+  .site-nav {
+    display: none;
+    flex: 1;
+    justify-content: center;
+  }
+
+  @media (min-width: 1100px) {
+    .site-nav {
+      display: flex;
+    }
+  }
+
+  .site-nav__list {
+    display: flex;
+    align-items: center;
+    gap: clamp(0.75rem, 1.6vw, 1.8rem);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .site-nav__item {
+    position: relative;
+  }
+
+  .site-nav__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-height: 44px;
+    padding: 0 0.2rem;
+    border: 0;
+    background: none;
+    font: inherit;
+    font-size: 0.9375rem;
+    font-weight: 450;
+    color: var(--color-ink);
+    text-decoration: none;
+    cursor: pointer;
+    background-image: linear-gradient(var(--color-apricot), var(--color-apricot));
+    background-size: 0% 1px;
+    background-repeat: no-repeat;
+    background-position: 0 calc(100% - 10px);
+    transition: background-size 0.3s var(--ease-premium);
+  }
+
+  .site-nav__link:hover,
+  .site-nav__link[aria-expanded="true"],
+  .site-nav__link[aria-current="page"] {
+    background-size: 100% 1px;
+  }
+
+  .site-nav__link svg {
+    width: 12px;
+    height: 12px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.4;
+    transition: transform 0.2s var(--ease-micro);
+  }
+
+  .site-nav__link[aria-expanded="true"] svg {
+    transform: rotate(180deg);
+  }
+
+  .site-nav__panel {
+    position: absolute;
+    top: calc(100% + 10px);
+    left: 50%;
+    translate: -50% 0;
+    min-width: 240px;
+    padding: 1.25rem 1.4rem;
+    border: 1px solid var(--color-line);
+    border-radius: 14px;
+    background: var(--color-paper);
+    box-shadow: 0 24px 60px -30px rgba(23, 61, 45, 0.4);
+    animation: panel-in 0.22s var(--ease-premium);
+  }
+
+  .site-nav__panel--wide {
+    left: 0;
+    translate: 0 0;
+    width: min(920px, 80vw);
+  }
+
+  @keyframes panel-in {
+    from {
+      opacity: 0;
+      transform: translateY(-6px);
+    }
+  }
+
+  .site-nav__panel ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.1rem;
+  }
+
+  .site-nav__panel a {
+    display: block;
+    padding: 0.45rem 0;
+    color: var(--color-ink);
+    text-decoration: none;
+    font-size: 0.9375rem;
+  }
+
+  .site-nav__panel a:hover {
+    color: var(--color-apricot-deep);
+  }
+
+  /* Secondary link at the foot of a menu (custom orders). */
+  .site-nav__panel-extra {
+    margin-top: 0.5rem;
+    border-top: 1px solid var(--color-line);
+    padding-top: 0.7rem !important;
+    font-size: 0.875rem !important;
+    color: var(--color-rose-deep) !important;
+  }
+
+  .site-nav__panel-lead {
+    font-family: var(--font-display);
+    font-size: 1.15rem !important;
+    border-bottom: 1px solid var(--color-line);
+    margin-bottom: 0.4rem;
+  }
+
+  .site-nav__columns {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1.5rem;
+  }
+
+  .site-nav__col-title {
+    margin: 0 0 0.4rem;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--color-rose-deep);
+  }
+
+  .site-header__actions {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-left: auto;
+  }
+
+  .site-icon {
+    position: relative;
+    display: inline-grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    color: var(--color-ink);
+    border-radius: 999px;
+    transition: background-color 0.18s var(--ease-micro);
+  }
+
+  .site-icon:hover {
+    background: var(--color-linen);
+  }
+
+  .site-icon svg {
+    width: 21px;
+    height: 21px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.5;
+    stroke-linecap: round;
+  }
+
+  .site-icon--hide-sm {
+    display: none;
+  }
+
+  @media (min-width: 640px) {
+    .site-icon--hide-sm {
+      display: inline-grid;
+    }
+  }
+
+  .site-badge {
+    position: absolute;
+    top: 6px;
+    right: 4px;
+    min-width: 17px;
+    height: 17px;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: var(--color-berry);
+    color: var(--color-ivory);
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 17px;
+    text-align: center;
+  }
+
+  .site-basket {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 44px;
+    padding: 0 0.9rem 0 1rem;
+    margin-left: 0.25rem;
+    border-radius: 999px;
+    background: var(--color-ink);
+    color: var(--color-ivory);
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: background-color 0.18s var(--ease-micro);
+  }
+
+  .site-basket:hover {
+    background: var(--color-ink-deep);
+  }
+
+  .site-basket__count {
+    display: inline-grid;
+    place-items: center;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: var(--color-rose);
+    color: var(--color-ink);
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .site-menu-button {
+    min-height: 44px;
+    padding: 0 0.9rem;
+    border: 1px solid color-mix(in srgb, var(--color-ink) 30%, transparent);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--color-ink);
+    font: inherit;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    margin-left: 0.4rem;
+  }
+
+  @media (min-width: 1100px) {
+    .site-header__actions .site-menu-button {
+      display: none;
+    }
+  }
+
+  /* Search is also in the menu; below 375px the header keeps wordmark,
+     basket and menu only so nothing overflows. */
+  @media (max-width: 374px) {
+    .site-header__actions > a[href="/search"] {
+      display: none;
+    }
+  }
+
+  @media (max-width: 420px) {
+    .site-header__bar {
+      gap: 0.75rem;
+    }
+    .site-basket {
+      padding: 0 0.55rem 0 0.8rem;
+      gap: 0.35rem;
+    }
+    .site-menu-button {
+      padding: 0 0.7rem;
+      margin-left: 0.2rem;
+    }
+  }
+
+  .mobile-menu {
+    width: 100%;
+    max-width: 100%;
+    height: 100dvh;
+    max-height: 100dvh;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: var(--color-ivory);
+    color: var(--color-ink);
+    overflow-y: auto;
+  }
+
+  .mobile-menu::backdrop {
+    background: rgba(23, 61, 45, 0.3);
+  }
+
+  .mobile-menu[open] {
+    animation: sheet-in 0.32s var(--ease-premium);
+  }
+
+  @keyframes sheet-in {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+  }
+
+  .mobile-menu__head {
+    position: sticky;
+    top: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: var(--header-h);
+    padding: 0 16px;
+    background: var(--color-ivory);
+    border-bottom: 1px solid var(--color-line);
+  }
+
+  .mobile-menu__body {
+    padding: 1rem 16px 3rem;
+  }
+
+  /* The five top-level entries share one look: dropdown groups and plain
+     links use the same display type, row height and dividers. */
+  .mobile-menu__primary {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-top: 1px solid var(--color-line);
+  }
+
+  .mobile-menu__primary a {
+    display: flex;
+    align-items: center;
+    min-height: 56px;
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: var(--color-ink);
+    text-decoration: none;
+  }
+
+  .mobile-menu__group {
+    border-top: 1px solid var(--color-line);
+  }
+
+  .mobile-menu__group summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 56px;
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: var(--color-ink);
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .mobile-menu__group summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .mobile-menu__group summary::after {
+    content: "+";
+    font-size: 1.4rem;
+    font-weight: 300;
+  }
+
+  .mobile-menu__group[open] summary::after {
+    content: "–";
+  }
+
+  .mobile-menu__group ul,
+  .mobile-menu__secondary {
+    list-style: none;
+    margin: 0;
+    padding: 0 0 0.8rem;
+  }
+
+  .mobile-menu__group a,
+  .mobile-menu__secondary a {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    color: var(--color-moss);
+    text-decoration: none;
+  }
+
+  .mobile-menu__secondary {
+    border-top: 1px solid var(--color-line);
+    padding-top: 0.6rem;
+  }
+</style>

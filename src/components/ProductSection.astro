@@ -41,7 +41,7 @@ const products = sectionProductSlugs
   .map((product) => withAuthoritativePrice(product, priceMap));
 ---
 
-<section id="bouquets" class="bg-[#F5F5F5] px-3 pb-8 pt-5 md:px-6 md:pb-12">
+<section id="bouquets" class="bg-linen px-3 pb-8 pt-5 md:px-6 md:pb-12">
   <div class="mx-auto max-w-7xl">
     <div class="mb-3 flex items-baseline justify-between px-0.5">
       <h2 class="text-[15px] font-medium text-black/80">
@@ -50,7 +50,7 @@ const products = sectionProductSlugs
 
       <a
         href="/categories/bouquets"
-        class="group inline-flex items-center gap-1 text-[12px] text-black/45 transition hover:text-[#FF2442]"
+        class="group inline-flex items-center gap-1 text-[12px] text-black/45 transition hover:text-apricot-deep"
       >
         View all
         <span aria-hidden="true" class="transition group-hover:translate-x-0.5">→</span>
@@ -64,9 +64,10 @@ const products = sectionProductSlugs
             slug={product.slug}
             name={product.name}
             image={product.image}
-            description={product.description}
-            category={product.category}
             priceLabel={product.priceLabel}
+            priceType={product.priceType}
+            idealFor={product.idealFor}
+            badge={product.badge}
           />
         ))
       }

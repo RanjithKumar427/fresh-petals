@@ -1,0 +1,117 @@
+---
+// Fixed, decorative host for the shared WebGL renderer (see
+// src/features/atelier/scene/stage.ts). Three.js is only imported — as a
+// separate chunk, after the page is idle — on devices that can render it
+// well; everyone else keeps the pre-rendered posters inside each scene box.
+---
+
+<div class="atelier-stage" data-atelier-stage data-active="false" aria-hidden="true"></div>
+
+<script>
+  type Tier = "high" | "mid";
+  const container = document.querySelector<HTMLElement>("[data-atelier-stage]");
+  const root = document.documentElement;
+  let stage: { dispose: () => void } | null = null;
+  let mounting = false;
+
+  function webglAvailable(): boolean {
+    try {
+      const canvas = document.createElement("canvas");
+      const attrs = { failIfMajorPerformanceCaveat: true } as WebGLContextAttributes;
+      const gl = canvas.getContext("webgl2", attrs) ?? canvas.getContext("webgl", attrs);
+      const ok = Boolean(gl);
+      (gl as WebGLRenderingContext | null)?.getExtension("WEBGL_lose_context")?.loseContext();
+      return ok;
+    } catch {
+      return false;
+    }
+  }
+
+  function tier(): Tier | null {
+    if (import.meta.env.DEV) {
+      // Development only: force a tier (used to render posters at full quality).
+      const forced = new URLSearchParams(location.search).get("atelier-tier");
+      if (forced === "high" || forced === "mid") return forced;
+      if (forced === "off") return null;
+    }
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return null;
+    const nav = navigator as Navigator & { deviceMemory?: number; connection?: { saveData?: boolean } };
+    if (nav.connection?.saveData) return null;
+    const memory = nav.deviceMemory ?? 4;
+    const cores = nav.hardwareConcurrency ?? 4;
+    if (memory <= 2 || cores <= 2) return null;
+    if (!webglAvailable()) return null;
+    const fine = window.matchMedia("(pointer: fine)").matches;
+    return fine && cores >= 6 && window.innerWidth >= 1024 ? "high" : "mid";
+  }
+
+  async function mount() {
+    if (!container || stage || mounting) return;
+    const chosen = tier();
+    if (!chosen) {
+      root.dataset.atelier = "static";
+      return;
+    }
+    mounting = true;
+    try {
+      const { createStage } = await import("../../features/atelier/scene/stage");
+      const created = await createStage({
+        container,
+        tier: chosen,
+        onReady() {
+          // Let the poster's settle finish first so the handover is seamless.
+          const wait = Math.max(0, 1500 - performance.now());
+          window.setTimeout(() => root.classList.add("atelier-live"), wait);
+        },
+        onFail() {
+          root.classList.remove("atelier-live");
+          root.dataset.atelier = "static";
+          stage = null;
+        },
+      });
+      stage = created;
+      root.dataset.atelier = chosen;
+      if (import.meta.env.DEV) (window as unknown as { __atelierStage: unknown }).__atelierStage = created;
+    } catch (error) {
+      root.dataset.atelier = "static";
+      console.warn("[atelier] 3D scene unavailable, keeping posters.", error);
+    } finally {
+      mounting = false;
+    }
+  }
+
+  function whenIdle(run: () => void) {
+    const idle = (window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number })
+      .requestIdleCallback;
+    if (idle) idle(run, { timeout: 1200 });
+    else window.setTimeout(run, 250);
+  }
+
+  // Desktop-class devices build the live scene once the page is idle.
+  // Phones and tablets (mid tier) keep the identical poster until the
+  // visitor first scrolls or touches, so building the sculpture never
+  // competes with loading the page.
+  function start() {
+    const chosen = tier();
+    if (chosen !== "mid") return whenIdle(mount);
+    const events = ["scroll", "pointerdown", "touchstart", "keydown"] as const;
+    const go = () => {
+      events.forEach((type) => window.removeEventListener(type, go));
+      whenIdle(mount);
+    };
+    events.forEach((type) => window.addEventListener(type, go, { once: true, passive: true }));
+  }
+
+  if (document.readyState === "complete") start();
+  else window.addEventListener("load", start, { once: true });
+
+  // Release GPU memory on navigation; rebuild if restored from bfcache.
+  window.addEventListener("pagehide", () => {
+    stage?.dispose();
+    stage = null;
+    root.classList.remove("atelier-live");
+  });
+  window.addEventListener("pageshow", (event) => {
+    if ((event as PageTransitionEvent).persisted && !stage) start();
+  });
+</script>

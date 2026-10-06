@@ -1,0 +1,81 @@
+---
+// Garland product pages, rendered on request at /products/<slug>. Astro
+// serves every bouquet from the prebuilt ./[slug].astro; any other slug falls
+// through to this route. Data is read fresh from the admin database on every
+// render; the CDN caches the result briefly and an admin save purges it
+// (src/server/services/GarlandWebsite.ts), so changes appear without a
+// deployment. A garland that isn't public returns 404 — no page, no enquiry.
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import GarlandProductMain from "../../components/GarlandProductMain.astro";
+import GarlandCard from "../../components/GarlandCard.astro";
+import { isListedGarland, loadGarlands } from "../../data/garlands";
+import { TaxonomyService } from "../../server/services/TaxonomyService";
+import { garlandCacheHeaders } from "../../server/services/GarlandWebsite";
+
+export const prerender = false;
+
+for (const [name, value] of Object.entries(garlandCacheHeaders())) Astro.response.headers.set(name, value);
+
+const slug = Astro.params.garland ?? "";
+const garlands = /^[a-z0-9-]+$/.test(slug) ? await loadGarlands() : [];
+const product = garlands.find((item) => item.slug === slug) ?? null;
+if (!product) Astro.response.status = 404;
+
+const related = product
+  ? garlands
+      .filter((item) => item.slug !== product.slug && item.garland.filters.some((key) => product.garland.filters.includes(key)))
+      .slice(0, 6)
+  : [];
+const occasionOptions = product ? await TaxonomyService.listOccasions() : [];
+const noindex = !product || !isListedGarland(product.garland);
+const breadcrumbJsonLd = product
+  ? {
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Home", item: new URL("/", Astro.site).toString() },
+        { "@type": "ListItem", position: 2, name: "Garlands", item: new URL("/categories/garlands", Astro.site).toString() },
+        { "@type": "ListItem", position: 3, name: product.name, item: new URL(`/products/${product.slug}`, Astro.site).toString() },
+      ],
+    }
+  : null;
+---
+
+<BaseLayout
+  title={product ? `${product.name} (${product.garland.code}) – Garlands | Fresh Petals Bengaluru` : "Not available | Fresh Petals Bengaluru"}
+  description={product ? product.description : "This page isn't available."}
+  image={product?.image}
+  jsonLd={noindex || !breadcrumbJsonLd ? [] : [breadcrumbJsonLd]}
+  showCategoryCarousel={false}
+  noindex={noindex}
+>
+  <main>
+    {
+      product ? (
+        <>
+          <GarlandProductMain product={product} occasionOptions={occasionOptions} />
+          {related.length > 0 && (
+            <section class="border-t border-line bg-paper px-5 py-14 md:px-8 md:py-16">
+              <div class="mx-auto max-w-7xl">
+                <h2 class="fp-h2 text-center">You May Also Like</h2>
+                <div class="mt-10 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+                  {related.map((item) => <GarlandCard product={item} />)}
+                </div>
+              </div>
+            </section>
+          )}
+        </>
+      ) : (
+        <section class="px-5 py-20 text-center md:px-8" data-garland-unavailable>
+          <h1 class="fp-h1">This page isn't available</h1>
+          <p class="mx-auto mt-4 max-w-xl text-sm leading-7 text-moss">
+            This garland design isn't on sale at the moment. Browse the garlands we're making now, or ask us for a custom order.
+          </p>
+          <p class="mt-7 flex flex-wrap justify-center gap-3">
+            <a href="/categories/garlands" class="inline-flex min-h-[44px] items-center rounded-full bg-berry px-6 text-sm font-semibold text-white">See garlands</a>
+            <a href="/custom-orders" class="inline-flex min-h-[44px] items-center rounded-full border border-ink px-6 text-sm font-semibold text-ink">Custom orders</a>
+          </p>
+        </section>
+      )
+    }
+  </main>
+</BaseLayout>

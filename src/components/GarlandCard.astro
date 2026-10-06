@@ -1,0 +1,89 @@
+---
+// A garland design in a listing. The photograph is contained, never
+// cropped, so the whole garland and its tassels stay visible. The owner's
+// confirmed price is shown as set ("Price on request" only when none is).
+// Only designs switched to cart mode link through to add to cart; every
+// other design links to a WhatsApp enquiry, and no total is ever shown.
+// Imports only the rules module (no catalogue data or database loader), so
+// the admin preview endpoint can render this card without bundling drafts.
+import { GARLAND_FILTER_LABELS as GARLAND_FILTERS, formatGarlandPrice, garlandPhotoSrcset, isCartGarland, isListedGarland } from "../data/garlandRules";
+import type { GarlandProduct } from "../data/garlands";
+import { garlandEnquiryHref } from "../utils/garlandEnquiry";
+
+interface Props {
+  product: GarlandProduct;
+  /** Load the image eagerly (first row). */
+  eager?: boolean;
+}
+
+const { product, eager = false } = Astro.props;
+const design = product.garland;
+const cart = isCartGarland(design);
+const price = formatGarlandPrice(design);
+const href = `/products/${product.slug}`;
+const srcset = garlandPhotoSrcset(design.image);
+const filterLabels = design.filters
+  .map((key) => GARLAND_FILTERS.find((filter) => filter.key === key)?.label)
+  .filter(Boolean)
+  .join(" · ");
+// Through the live enquiry check, so an unpublished design can't be enquired
+// about even from a cached listing.
+const quoteHref = garlandEnquiryHref({ code: design.code, quantity: 1 });
+---
+
+<article
+  class="group relative flex flex-col overflow-hidden rounded-[18px] border border-line bg-paper"
+  data-garland-card
+  data-garland-filters={design.filters.join(" ")}
+>
+  <a href={href} class="absolute inset-0 z-10" aria-label={`${design.title}, design ${design.code}`}></a>
+
+  <div class="relative aspect-[4/5] bg-linen">
+    <img
+      src={design.image.path}
+      srcset={srcset}
+      sizes={srcset ? "(min-width: 1024px) 23vw, (min-width: 768px) 31vw, 48vw" : undefined}
+      width={design.image.width}
+      height={design.image.height}
+      alt={design.image.alt}
+      loading={eager ? "eager" : "lazy"}
+      decoding="async"
+      class="pointer-events-none absolute inset-0 h-full w-full object-contain"
+    />
+    <span class="pointer-events-none absolute left-2 top-2 rounded-full bg-paper/95 px-2.5 py-1 text-[10px] font-semibold tracking-[0.12em] text-ink">
+      {design.code}
+    </span>
+    {!isListedGarland(design) && (
+      <span class="pointer-events-none absolute right-2 top-2 rounded-full bg-ink px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-paper">
+        Draft
+      </span>
+    )}
+  </div>
+
+  <div class="flex flex-1 flex-col px-3 pb-3 pt-2.5">
+    <h3 class="text-[14px] font-semibold leading-snug text-ink group-hover:text-berry">{design.title}</h3>
+    {filterLabels && <p class="mt-1 text-[11px] text-moss">{filterLabels}</p>}
+    <p class="mt-1.5 text-[13px] font-semibold text-berry">{price ?? "Price on request"}</p>
+
+    {
+      cart ? (
+        <a
+          href={href}
+          class="relative z-20 mt-3 inline-flex min-h-[44px] items-center justify-center rounded-full border border-ink px-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-ink transition hover:bg-ink hover:text-paper"
+        >
+          Choose & add to cart
+        </a>
+      ) : (
+        <a
+          href={quoteHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          data-garland-quote={design.code}
+          class="relative z-20 mt-3 inline-flex min-h-[44px] items-center justify-center rounded-full bg-berry px-3 text-center text-[11px] font-semibold leading-tight text-white transition hover:bg-ink"
+        >
+          {price ? "Enquire on WhatsApp" : "Ask for a quote on WhatsApp"}
+        </a>
+      )
+    }
+  </div>
+</article>

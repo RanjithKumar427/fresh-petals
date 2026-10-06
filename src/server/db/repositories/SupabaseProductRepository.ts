@@ -40,6 +40,9 @@ import {
   productFlowerTypes,
   productWhatsIncluded,
   productCareInstructions,
+  garlandDetails,
+  productGarlandFilters,
+  productOptions,
 } from "../postgres/schema";
 
 type Tx = NodePgDatabase<typeof schema>;
@@ -57,9 +60,23 @@ import type {
   ProductListItem,
   ProductStatus,
   ProductImage,
+  GarlandDetails,
+  GarlandFilter,
 } from "./ProductRepository";
 
 type CoreRow = typeof products.$inferSelect;
+
+// Migration 0011 adds the garland tables. Until it is applied, every garland
+// read/write below is skipped, so deploying this code before migrating can't
+// break bouquet editing. Checked once per process; a positive answer sticks.
+let garlandTablesKnown: boolean | null = null;
+async function hasGarlandTables(db: Tx | ReturnType<typeof getDb>): Promise<boolean> {
+  if (garlandTablesKnown) return true;
+  const result = await db.execute(sql`SELECT to_regclass('public.garland_details') IS NOT NULL AND to_regclass('public.product_options') IS NOT NULL AS ok`);
+  const ok = Boolean((result.rows[0] as { ok?: boolean } | undefined)?.ok);
+  if (ok) garlandTablesKnown = true;
+  return ok;
+}
 
 function mapCoreRow(row: CoreRow): ProductCoreInput & {
   id: number;
@@ -117,7 +134,8 @@ function mapCoreRow(row: CoreRow): ProductCoreInput & {
 // "concurrent" queries); this is a genuine win from moving to a real
 // client/server database, not something ported over unchanged.
 async function loadRelations(db: Tx | ReturnType<typeof getDb>, productId: number) {
-  const [imageRows, occasionRows, moodRows, flowerTypeRows, includedRows, careRows] = await Promise.all([
+  const garlandTables = await hasGarlandTables(db);
+  const [imageRows, occasionRows, moodRows, flowerTypeRows, includedRows, careRows, optionRows, garlandRows, filterRows] = await Promise.all([
     db
       .select({
         id: productImages.id,
@@ -126,6 +144,8 @@ async function loadRelations(db: Tx | ReturnType<typeof getDb>, productId: numbe
         sortOrder: productImages.sortOrder,
         isPrimary: productImages.isPrimary,
         url: media.url,
+        width: media.width,
+        height: media.height,
       })
       .from(productImages)
       .innerJoin(media, eq(media.id, productImages.mediaId))
@@ -147,6 +167,22 @@ async function loadRelations(db: Tx | ReturnType<typeof getDb>, productId: numbe
       .from(productCareInstructions)
       .where(eq(productCareInstructions.productId, productId))
       .orderBy(productCareInstructions.sortOrder),
+    garlandTables
+      ? db
+          .select({
+            optionName: productOptions.optionName,
+            valueLabel: productOptions.valueLabel,
+            extraCharge: productOptions.extraCharge,
+            sortOrder: productOptions.sortOrder,
+          })
+          .from(productOptions)
+          .where(eq(productOptions.productId, productId))
+          .orderBy(productOptions.sortOrder, productOptions.id)
+      : Promise.resolve([]),
+    garlandTables ? db.select().from(garlandDetails).where(eq(garlandDetails.productId, productId)) : Promise.resolve([]),
+    garlandTables
+      ? db.select({ filter: productGarlandFilters.filter }).from(productGarlandFilters).where(eq(productGarlandFilters.productId, productId))
+      : Promise.resolve([]),
   ]);
 
   const images: ProductImage[] = imageRows.map((row) => ({
@@ -156,7 +192,29 @@ async function loadRelations(db: Tx | ReturnType<typeof getDb>, productId: numbe
     sortOrder: row.sortOrder,
     isPrimary: row.isPrimary,
     url: row.url,
+    width: row.width,
+    height: row.height,
   }));
+
+  const FILTER_ORDER: GarlandFilter[] = ["rose", "tuberose", "lotus", "designer-mixed"];
+  const garlandRow = garlandRows[0];
+  const garland: GarlandDetails | null = garlandRow
+    ? {
+        designCode: garlandRow.designCode,
+        soldUnit: garlandRow.soldUnit,
+        length: garlandRow.length,
+        flowerRecipe: garlandRow.flowerRecipe,
+        thickness: garlandRow.thickness,
+        finish: garlandRow.finish,
+        leadTime: garlandRow.leadTime,
+        substitutionPolicy: garlandRow.substitutionPolicy,
+        sellingMode: garlandRow.sellingMode,
+        readyForSale: garlandRow.readyForSale,
+        photoPermission: garlandRow.photoPermission,
+        sampleVerified: garlandRow.sampleVerified,
+        filters: FILTER_ORDER.filter((key) => filterRows.some((row) => row.filter === key)),
+      }
+    : null;
 
   return {
     images,
@@ -165,6 +223,8 @@ async function loadRelations(db: Tx | ReturnType<typeof getDb>, productId: numbe
     flowerTypeIds: flowerTypeRows.map((r) => r.flowerTypeId),
     whatsIncluded: includedRows.map((r) => r.value),
     careInstructions: careRows.map((r) => r.value),
+    options: optionRows,
+    garland,
   };
 }
 
@@ -212,6 +272,56 @@ async function writeRelations(tx: Tx, productId: number, relations: ProductRelat
     await tx
       .insert(productCareInstructions)
       .values(relations.careInstructions.map((value, index) => ({ productId, value, sortOrder: index })));
+  }
+
+  if (!(await hasGarlandTables(tx))) return;
+
+  // Options: only touched when the caller sends them (every editor save
+  // does), so older callers that omit the field never wipe existing rows.
+  if (relations.options) {
+    await tx.delete(productOptions).where(eq(productOptions.productId, productId));
+    if (relations.options.length > 0) {
+      await tx.insert(productOptions).values(
+        relations.options.map((option, index) => ({
+          productId,
+          optionName: option.optionName,
+          valueLabel: option.valueLabel,
+          extraCharge: option.extraCharge ?? null,
+          sortOrder: index,
+        }))
+      );
+    }
+  }
+
+  // Garland facts: updates the existing garland_details row only — the
+  // editor can never create a garland or touch its design code (an
+  // immutability trigger in migration 0011 enforces the latter too).
+  if (relations.garland) {
+    const g = relations.garland;
+    const updated = await tx
+      .update(garlandDetails)
+      .set({
+        soldUnit: g.soldUnit,
+        length: g.length,
+        flowerRecipe: g.flowerRecipe,
+        thickness: g.thickness,
+        finish: g.finish,
+        leadTime: g.leadTime,
+        substitutionPolicy: g.substitutionPolicy,
+        sellingMode: g.sellingMode,
+        readyForSale: g.readyForSale,
+        photoPermission: g.photoPermission,
+        sampleVerified: g.sampleVerified,
+        updatedAt: new Date(),
+      })
+      .where(eq(garlandDetails.productId, productId))
+      .returning({ productId: garlandDetails.productId });
+    if (updated.length > 0) {
+      await tx.delete(productGarlandFilters).where(eq(productGarlandFilters.productId, productId));
+      if (g.filters.length > 0) {
+        await tx.insert(productGarlandFilters).values(g.filters.map((filter) => ({ productId, filter })));
+      }
+    }
   }
 }
 
@@ -262,6 +372,7 @@ export const SupabaseProductRepository = {
 
   async list(filter?: ProductListFilter): Promise<ProductListItem[]> {
     return withErrorTranslation("SupabaseProductRepository.list", async () => {
+      if (filter?.withDesignCodes && !(await hasGarlandTables(getDb()))) filter = { ...filter, withDesignCodes: false };
       const conditions = [];
       if (filter?.search) {
         // ILIKE, not LIKE: case-insensitive by default in Postgres, unlike
@@ -269,7 +380,12 @@ export const SupabaseProductRepository = {
         // for the wrong reason — SQLite's default collation, not an
         // explicit choice). Same user-visible behavior, more correct
         // reasoning.
-        conditions.push(sql`(${products.name} ILIKE ${`%${filter.search}%`} OR ${products.slug} ILIKE ${`%${filter.search}%`})`);
+        const term = `%${filter.search}%`;
+        conditions.push(
+          filter.withDesignCodes
+            ? sql`(${products.name} ILIKE ${term} OR ${products.slug} ILIKE ${term} OR EXISTS (SELECT 1 FROM ${garlandDetails} WHERE ${garlandDetails.productId} = ${products.id} AND ${garlandDetails.designCode} ILIKE ${term}))`
+            : sql`(${products.name} ILIKE ${term} OR ${products.slug} ILIKE ${term})`
+        );
       }
       if (filter?.categoryId) conditions.push(eq(products.categoryId, filter.categoryId));
       if (filter?.status) conditions.push(eq(products.status, filter.status));
@@ -282,6 +398,13 @@ export const SupabaseProductRepository = {
         ORDER BY ${productImages.isPrimary} DESC, ${productImages.sortOrder} ASC
         LIMIT 1
       )`.as("primary_image_url");
+
+      // Only admin listings ask for design codes. The storefront's price
+      // query (ProductPricing.loadAuthoritativePrices) calls list() without
+      // it, so storefront builds never depend on migration 0011.
+      const designCode = filter?.withDesignCodes
+        ? sql<string | null>`(SELECT ${garlandDetails.designCode} FROM ${garlandDetails} WHERE ${garlandDetails.productId} = ${products.id})`.as("design_code")
+        : sql<string | null>`NULL::text`.as("design_code");
 
       // Verified via toSQL() during Phase 2B.2's investigation of a real bug
       // in the analogous Media query (see SupabaseMediaRepository.list()):
@@ -308,6 +431,7 @@ export const SupabaseProductRepository = {
           bestseller: products.bestseller,
           updatedAt: products.updatedAt,
           primaryImageUrl,
+          designCode,
         })
         .from(products)
         .innerJoin(categories, eq(categories.id, products.categoryId))
@@ -328,6 +452,7 @@ export const SupabaseProductRepository = {
         bestseller: row.bestseller,
         status: row.status,
         updatedAt: row.updatedAt.toISOString(),
+        designCode: row.designCode,
       }));
     });
   },

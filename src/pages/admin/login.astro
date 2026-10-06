@@ -1,14 +1,14 @@
 ---
 import AdminLayout from "../../layouts/AdminLayout.astro";
+import { safeAdminPath } from "../../server/auth/safeAdminPath";
 
 export const prerender = false;
 
-if (Astro.locals.admin) {
-  return Astro.redirect("/admin/dashboard");
-}
-
 const error = Astro.url.searchParams.get("error");
-const next = Astro.url.searchParams.get("next") || "/admin/dashboard";
+const reason = Astro.url.searchParams.get("reason");
+const signedOut = Astro.url.searchParams.get("signedOut") === "1";
+const next = safeAdminPath(Astro.url.searchParams.get("next"));
+const notice = signedOut ? "You've been signed out." : reason === "ended" ? "Your session has ended. Please sign in again." : null;
 ---
 
 <AdminLayout title="Sign in">
@@ -19,9 +19,10 @@ const next = Astro.url.searchParams.get("next") || "/admin/dashboard";
 
       {
         error && (
-          <p class="mt-4 rounded-lg bg-[#FBEAEE] px-3 py-2 text-[12px] text-[#7C243E]">{error}</p>
+          <p class="mt-4 rounded-lg bg-[#FBEAEE] px-3 py-2 text-[12px] text-[#7C243E]" role="alert">{error}</p>
         )
       }
+      {notice && !error && <p class="mt-4 rounded-lg bg-[#F6F1F3] px-3 py-2 text-[12px] text-[#4A3F44]" role="status">{notice}</p>}
 
       <form method="post" action="/api/admin/auth/login" class="mt-6 space-y-4">
         <input type="hidden" name="next" value={next} />

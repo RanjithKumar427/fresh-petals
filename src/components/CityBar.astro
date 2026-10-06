@@ -2,7 +2,7 @@
 const whatsappNumber = "919652012274";
 
 const deliveryMessage = encodeURIComponent(
-  "Hi Fresh Petals, do you deliver to my area in Hyderabad?"
+  "Hi Fresh Petals, do you deliver to my area in Bengaluru?"
 );
 
 const instagramUrl = "https://www.instagram.com/freshpetals.hyderabad/";
@@ -10,11 +10,11 @@ const instagramUrl = "https://www.instagram.com/freshpetals.hyderabad/";
 const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${deliveryMessage}`;
 ---
 
-<section class="border-b border-[#EEE5E8] bg-white px-4 py-2 text-xs text-[#171717] md:px-8">
+<section class="border-b border-line bg-paper px-4 py-2 text-xs text-ink md:px-8">
   <div class="mx-auto flex max-w-7xl items-center justify-between gap-3">
     <div class="flex min-w-0 items-center gap-2">
       <svg
-        class="h-4 w-4 shrink-0 text-[#77706f]"
+        class="h-4 w-4 shrink-0 text-moss"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
@@ -27,15 +27,15 @@ const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${deliveryMessage}`;
         <circle cx="12" cy="9" r="2.4"></circle>
       </svg>
 
-      <p class="truncate text-[11px] text-[#77706f]">
-        Delivering fresh flowers in <span class="font-semibold text-[#171717]">Hyderabad</span>
+      <p class="truncate text-[11px] text-moss">
+        Delivering fresh flowers in <span class="font-semibold text-ink">Bengaluru</span>
       </p>
 
       <a
         href={whatsappUrl}
         target="_blank"
         rel="noopener noreferrer"
-        class="shrink-0 text-[11px] font-semibold text-[#171717] underline-offset-4 transition hover:text-[#D98B9A] hover:underline"
+        class="shrink-0 text-[11px] font-semibold text-ink underline-offset-4 transition hover:text-rose-deep hover:underline"
       >
         Check area
       </a>
@@ -43,20 +43,20 @@ const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${deliveryMessage}`;
       <a
         href="/"
         data-selected-area-badge
-        class="hidden shrink-0 items-center gap-1 text-[11px] font-semibold text-[#171717] underline-offset-4 transition hover:text-[#D98B9A] hover:underline"
+        class="hidden shrink-0 items-center gap-1 text-[11px] font-semibold text-ink underline-offset-4 transition hover:text-rose-deep hover:underline"
         title="Change your area"
       >
         📍 <span data-selected-area-name></span>
       </a>
     </div>
 
-    <div class="hidden items-center gap-4 text-[#171717] md:flex">
+    <div class="hidden items-center gap-4 text-ink md:flex">
       <a
         href={instagramUrl}
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Fresh Petals Instagram"
-        class="transition hover:text-[#D98B9A]"
+        class="transition hover:text-rose-deep"
       >
         <svg
           class="h-4 w-4"
@@ -79,7 +79,7 @@ const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${deliveryMessage}`;
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Fresh Petals WhatsApp"
-        class="transition hover:text-[#D98B9A]"
+        class="transition hover:text-rose-deep"
       >
         <svg
           class="h-4 w-4"

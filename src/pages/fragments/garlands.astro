@@ -1,0 +1,61 @@
+---
+// Live garland cards for pages that are otherwise prebuilt: the search page
+// (?for=search) and the wedding / engagement occasion pages
+// (?for=occasion&occasion=wedding). Those pages fetch this HTML in the
+// browser (src/components/LiveGarlands.astro, src/pages/search.astro), so a
+// garland published, edited or unpublished in the admin shows up there
+// without a deployment. Cached and purged like the other garland pages.
+import GarlandCard from "../../components/GarlandCard.astro";
+import { GARLAND_FILTERS, loadGarlands } from "../../data/garlands";
+import { GARLAND_OCCASION_ROUTES } from "../../data/launchCatalogue";
+import { garlandCacheHeaders } from "../../server/services/GarlandWebsite";
+
+export const partial = true;
+export const prerender = false;
+
+for (const [name, value] of Object.entries(garlandCacheHeaders())) Astro.response.headers.set(name, value);
+Astro.response.headers.set("X-Robots-Tag", "noindex");
+
+const view = Astro.url.searchParams.get("for");
+const occasion = Astro.url.searchParams.get("occasion") ?? "";
+const valid = view === "search" || (view === "occasion" && GARLAND_OCCASION_ROUTES.has(occasion));
+if (!valid) Astro.response.status = 400;
+
+const all = valid ? await loadGarlands() : [];
+const garlands = view === "occasion" ? all.filter((product) => product.occasionTags?.includes(occasion)) : all;
+const filterLabels = (keys: string[]) =>
+  keys.map((key) => GARLAND_FILTERS.find((filter) => filter.key === key)?.label ?? key).join(" ");
+---
+
+{
+  view === "search" &&
+    garlands.map((product) => (
+      <div
+        data-product-result
+        data-product-name={product.name.toLowerCase()}
+        data-product-category={product.category}
+        data-product-description={product.description.toLowerCase()}
+        data-product-long-description={product.longDescription.toLowerCase()}
+        data-product-tags={[product.garland.code, "garland", "poola mala", filterLabels(product.garland.filters), ...(product.occasionTags ?? [])]
+          .join(" ")
+          .toLowerCase()}
+      >
+        <GarlandCard product={product} />
+      </div>
+    ))
+}
+{
+  view === "occasion" && garlands.length > 0 && (
+    <section class="px-5 pb-14 pt-10 md:px-8 md:pt-14" aria-labelledby="occasion-garlands-title" data-occasion-garlands={garlands.length}>
+      <div class="mx-auto max-w-7xl">
+        <div class="mb-6 flex flex-wrap items-end justify-between gap-3">
+          <h2 id="occasion-garlands-title" class="fp-serif text-2xl text-ink md:text-3xl">Garlands / Poola Mala</h2>
+          <a href="/categories/garlands" class="text-sm font-semibold text-ink underline underline-offset-4">See all garlands</a>
+        </div>
+        <div class="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-4">
+          {garlands.map((product) => <GarlandCard product={product} />)}
+        </div>
+      </div>
+    </section>
+  )
+}

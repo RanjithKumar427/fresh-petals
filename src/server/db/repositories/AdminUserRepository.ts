@@ -13,12 +13,28 @@ export type AdminUser = {
   lastLoginAt: string | null;
 };
 
-/** The contract every AdminUserRepository implementation must satisfy. */
+/**
+ * Roles that grant access to /admin. A row only counts as an approved
+ * administrator when its role is in this set; any other value (or no row
+ * at all) is denied. Rows are created only by a trusted operator
+ * (scripts/link-admin-identity.mjs) -- never by login, session checks,
+ * password recovery or MFA handling.
+ */
+export const APPROVED_ADMIN_ROLES: ReadonlySet<string> = new Set(["admin"]);
+
+export function isApprovedAdmin(row: AdminUser | null): row is AdminUser {
+  return !!row && APPROVED_ADMIN_ROLES.has(row.role);
+}
+
+/**
+ * The contract every AdminUserRepository implementation must satisfy.
+ * Deliberately read-only apart from touchLastLogin: the web application
+ * cannot create, upsert, relink or elevate administrators.
+ */
 export interface AdminUserRepositoryContract {
   findByEmail(email: string): Promise<AdminUser | null>;
   findById(id: string): Promise<AdminUser | null>;
   count(): Promise<number>;
-  create(input: { id: string; email: string; role?: string }): Promise<AdminUser>;
   touchLastLogin(id: string): Promise<void>;
 }
 

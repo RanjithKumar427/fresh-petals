@@ -60,7 +60,7 @@ export default function ProductListToolbar({
           type="search"
           value={search}
           onChange={(event) => onSearchChange(event.target.value)}
-          placeholder="Search products…"
+          placeholder="Search by name or design code…"
           className="w-full max-w-xs rounded-full border border-[#D8D1D4] px-4 py-2 text-[13px] text-[#171717] outline-none focus:border-[#7C243E]"
         />
 

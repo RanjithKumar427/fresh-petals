@@ -14,20 +14,20 @@ const whatsappMessage = encodeURIComponent(
 );
 ---
 
-<header class="sticky top-0 z-50 border-b border-[#eadde2] bg-[#FFFDF7]/95 backdrop-blur">
+<header class="sticky top-0 z-50 border-b border-line bg-paper/95 backdrop-blur">
   <div class="mx-auto flex max-w-7xl items-center justify-between px-5 py-4">
     <a href="/" class="flex flex-col leading-none">
-      <span class="text-xl font-black tracking-wide text-[#7C243E]">
+      <span class="text-xl font-black tracking-wide text-berry">
         Fresh Petals
       </span>
-      <span class="mt-1 text-xs font-semibold uppercase tracking-[0.25em] text-[#476B4D]">
-        Hyderabad
+      <span class="mt-1 text-xs font-semibold uppercase tracking-[0.25em] text-ink">
+        Bengaluru
       </span>
     </a>
 
-    <nav class="hidden items-center gap-7 text-sm font-semibold text-[#2A2025] md:flex">
+    <nav class="hidden items-center gap-7 text-sm font-semibold text-ink md:flex">
       {navItems.map((item) => (
-        <a href={item.href} class="transition hover:text-[#7C243E]">
+        <a href={item.href} class="transition hover:text-berry">
           {item.label}
         </a>
       ))}
@@ -35,7 +35,7 @@ const whatsappMessage = encodeURIComponent(
 
     <a
       href={`https://wa.me/${whatsappNumber}?text=${whatsappMessage}`}
-      class="rounded-full bg-[#7C243E] px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#642036]"
+      class="rounded-full bg-berry px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-berry"
     >
       WhatsApp Order
     </a>

@@ -6,7 +6,7 @@
 // pattern is looking up a zone by exact pincode; `listAreas()` (Simple
 // Area Selection milestone) is the only other read this table needs —
 // still no create()/update()/delete(), still no admin UI for this table.
-import { asc, eq } from "drizzle-orm";
+import { asc, eq, inArray, sql } from "drizzle-orm";
 import { getDb } from "../postgres/client";
 import { deliveryZones } from "../postgres/schema";
 import { withRepositoryCall } from "../postgres/repository";
@@ -34,11 +34,13 @@ export const SupabaseDeliveryZoneRepository = {
     });
   },
 
-  async listAreas(): Promise<string[]> {
+  async listAreas(cityAliases: string[]): Promise<string[]> {
+    if (cityAliases.length === 0) return [];
     return withRepositoryCall("SupabaseDeliveryZoneRepository.listAreas", async () => {
       const rows = await getDb()
         .selectDistinct({ area: deliveryZones.area })
         .from(deliveryZones)
+        .where(inArray(sql`lower(${deliveryZones.city})`, cityAliases))
         .orderBy(asc(deliveryZones.area));
       return rows.map((row) => row.area);
     });

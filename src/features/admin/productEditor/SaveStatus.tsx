@@ -21,6 +21,10 @@ export default function SaveStatus({ status, lastSavedAt, error, onRetry }: Prop
   // Ticks so "Saved just now" keeps advancing to "Saved 45s ago" etc.
   // without needing another edit to trigger a re-render.
   const [, forceTick] = useState(0);
+  // The relative time ("12s ago") depends on the clock, so it's only shown
+  // after hydration; the server and first client render agree on "Saved".
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   useEffect(() => {
     if (status !== "saved") return;
     const interval = setInterval(() => forceTick((n) => n + 1), 15_000);
@@ -56,7 +60,7 @@ export default function SaveStatus({ status, lastSavedAt, error, onRetry }: Prop
     return (
       <span className="inline-flex items-center gap-1.5 text-[12px] text-[#075838]">
         <span className="h-1.5 w-1.5 rounded-full bg-[#075838]" />
-        Saved {timeAgoLabel(lastSavedAt)}
+        Saved{mounted ? ` ${timeAgoLabel(lastSavedAt)}` : ""}
       </span>
     );
   }
