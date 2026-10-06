@@ -1,6 +1,6 @@
 # Garlands / Poola Mala
 
-**156 draft garland designs, FP-G001–FP-G156,** sit in the shared product catalogue. None of them is public yet.
+**156 draft garland designs, FP-G001–FP-G156,** are in the production database and managed in the admin (released 6 October 2026 — see "Production rollout record"). None of them is public yet: none has photo permission or a verified sample.
 
 - **FP-G001–FP-G025** are the original shortlist. Their records were not changed by the full-catalogue expansion.
 - **FP-G026–FP-G156** (131 designs) were added on 5 October 2026 from a review of every photo in the four supplier catalogues (197 photo entries, 183 distinct photos).
@@ -119,7 +119,7 @@ The product list's Publish / Unpublish / Archive actions also report a failed re
 
 ## What migration 0011 does
 
-Verified on local copies of the schema (not on production): applied after 0000–0010 by the project's own migrator (`npm run db:migrate`), on a database holding the bouquet catalogue.
+Verified on local copies of the schema, then confirmed on production on 6 October 2026 (see "Production rollout record"): applied after 0000–0010 by the project's own migrator (`npm run db:migrate`), on a database holding the bouquet catalogue.
 
 - **Adds only:** 4 enum types (`garland_filter`, `garland_unit`, `garland_selling_mode`, `photo_permission`); 3 tables (`garland_details` with a unique, format-checked `design_code`; `product_garland_filters`; `product_options` with a non-negative `extra_charge` check), each linked to `products(id)` with `ON DELETE CASCADE`; 1 index; the `garland_design_code_is_immutable()` function and its trigger; row-level security on the 3 new tables with read policies for published products only.
 - **Changes nothing that exists:** a schema-only dump before and after differs only by those additions, and every existing table's contents were byte-identical before and after (row-by-row checksums of all 16 tables). It inserts no rows — the 3 new tables are empty until the seed runs.
@@ -127,29 +127,35 @@ Verified on local copies of the schema (not on production): applied after 0000�
 
 ## Rollout (production)
 
-Nothing below has been run against production. Run the steps in this order, with the production environment's `DATABASE_URL` (and, for photos, the Supabase keys):
+This is the procedure used on 6 October 2026 (see the record below). Use it again for a fresh environment.
 
-1. **Back up the database** (Supabase dashboard → Database → Backups, or `pg_dump`).
-2. **Check the migration history:** `select count(*), max(created_at) from drizzle.__drizzle_migrations;` should return 11. If it doesn't, stop and review which migrations `npm run db:migrate` would apply.
-3. **Dry-run the seed — before the migration.** `npm run db:seed-garlands`. It runs in a read-only transaction and works without migration 0011, saying "migration 0011 is NOT applied". Expect:
-   - `catalogue designs: 156 | already in the database (kept as is): 0 | to add: 156` — or fewer to add, if some designs are already there; never assume 156;
-   - the other-product count matching the bouquet catalogue in the admin;
-   - whether the `garlands` category and the Wedding / Engagement occasions exist or would be added;
-   - **no** "Nothing was written" list. A slug already used by another product stops the run; resolve it first.
-4. **Apply the migration:** `npm run db:migrate` (additive only, see above).
-5. **Seed:** `npm run db:seed-garlands -- --apply`, then run the dry run again: it should say `to add: 0`. Re-running never changes an existing row.
-6. **Photos:** choose one.
-   - **Recommended:** upload your own photographs in the admin editor (same storage as bouquets).
-   - Or, for designs whose photo permission you have recorded as granted in the admin: dry run `npm run db:migrate-garland-images`, then `npm run db:migrate-garland-images -- --apply`.
-   - `--include-unapproved` would upload supplier photos without permission to the public bucket. Don't use it unless that permission exists.
-7. **Deploy this code — once.** No new settings are needed on Vercel. (The code is also safe to deploy before step 4: without the garland tables the garland pages show no designs, `/categories/garlands` shows the event-garland order, and the admin skips the garland sections.) After this deployment, garland changes never need another one.
-8. **Verify on production** (first time only):
-   - `/categories/garlands` loads; repeat the request and its `x-vercel-cache` response header goes from `MISS` to `HIT` (the CDN is caching).
-   - In the admin, publish one approved garland. The Website bar should reach "Visible on the website" within seconds. If it says the refresh failed (for example "the Vercel cache-purge API isn't available"), the purge isn't working on this account: changes still appear within 3 minutes, but report it.
-   - Open the design page and press Enquire: WhatsApp opens with the design code and price.
-   - Unpublish it: the Website bar says "Not on the website"; the page shows "This page isn't available" and the Enquire link returns to the garlands page.
-   - `/sitemap-garlands.xml` lists the published design; `robots.txt` names both sitemaps.
-9. **Promote in the menus (optional, one code change):** set `ready: true` on the garlands entry in `src/data/launchCatalogue.ts` and deploy. This adds Garlands to the Shop menu and builds the Engagement occasion page. Designs are public without it — reachable at `/categories/garlands`, from search, the wedding page and the sitemap.
+**Before any write (read-only):**
+
+1. Confirm the targets: the Supabase project ref in `SUPABASE_URL`, the Vercel project (`vercel project inspect fresh-petals`), the domain (`vercel domains ls`), and that every variable the code reads exists in Vercel Production (`vercel env ls production` — names only).
+2. Migration history, compared by **hash** with `drizzle/*.sql`: `select id, hash, created_at from drizzle.__drizzle_migrations order by id;`. Only the migrations newer than the last recorded `created_at` will run. Stop if anything other than the intended one is pending, or a recorded hash doesn't match a local file.
+3. Seed dry run (`npm run db:seed-garlands`, read-only transaction; works before migration 0011). Read the actual numbers — to add / already present / slug conflicts / other products / category and occasions — rather than assuming 156.
+4. **Back up and prove the backup restores.** Supabase's own backups depend on the plan, so take a logical dump of the app schemas with a Postgres 17 `pg_dump` (session port 5432 of the pooler, TLS verified with `src/server/db/postgres/supabase-ca.pem`):
+   `pg_dump --schema=public --schema=drizzle --format=custom --no-owner --no-privileges --file=public-drizzle.dump`
+   Restore it into a throwaway Postgres 17 (`drop schema public cascade` first, then `pg_restore --no-owner --exit-on-error`) and compare every table's row count with production. Keep the dump outside the repository; it contains customer enquiries.
+5. **Storage images are not in that dump.** Check what is in the `media` bucket (`select bucket_id, count(*) from storage.objects group by 1`). See "Protecting images" below.
+6. Build and test the exact release file set (tracked + untracked-not-ignored files) against a local database before pushing.
+
+**Writes, in this order:**
+
+7. `npm run db:migrate` with the production `DATABASE_URL`. Check afterwards: the migration is recorded with a matching hash; the 3 tables, 4 enum types, trigger and RLS policies exist; and a per-table checksum of every pre-existing table is identical to one taken just before.
+8. `npm run db:seed-garlands -- --apply`, then the dry run again (`to add: 0`). Check that the pre-existing products, categories, occasions and occasion links still hash identically.
+9. Photos: `npm run db:migrate-garland-images` (dry run). Upload (`-- --apply`) only for designs whose photo permission is recorded as **granted**; never `--include-unapproved` without that permission. Or upload your own photos in the admin.
+10. **Deploy through GitHub, not the CLI.** The project's Git integration builds production from `main`, so a push deploys exactly the committed files. Don't run `vercel deploy` from a working folder: the Vercel CLI does **not** honour `.gitignore`, so it would upload the git-ignored supplier packs (`garland-import/`, `full-garland-import/`, `public/images/garlands/`). The repository is public — check the release for secrets and personal details before pushing.
+11. Verify on the live site (below), then publish approved designs in the admin.
+12. Promote in the menus only once at least one design is public: `ready: true` on the garlands entry in `src/data/launchCatalogue.ts` (adds Garlands to the Shop menu and builds the Engagement page), then push.
+
+**Verify on the live site:**
+
+- Routes: `/categories/garlands` 200; a draft design's `/products/<slug>` 404 "This page isn't available"; `/garland-enquiry?code=<draft code>` 303 back to `/categories/garlands?unavailable=…` with `cache-control: no-store`; `/sitemap-garlands.xml` valid; `robots.txt` names both sitemaps on the real domain; `/occasions/engagement` 404 until garlands are promoted.
+- CDN: request a garland route twice — `x-vercel-cache` MISS then HIT, no `set-cookie`, browsers see `cache-control: public, max-age=0` (Vercel strips `s-maxage`) and no cache-tag header. Watch the `age` header: HIT up to ~120 s, one STALE, then fresh.
+- Admin endpoints refuse anonymous calls (401) and `/admin/*` redirects to sign-in.
+- Bouquet ordering through to the WhatsApp hand-off, with `/api/inquiries` blocked in the test browser so no enquiry is sent; confirm the `inquiries` row count is unchanged.
+- **Owner, signed in:** open a garland — the Website bar should say "Not on the website — draft". When a design is approved and published, the bar must reach "Visible on the website" (it checks the live page's version, not just the purge result); time it. Then Unpublish: the enquiry link must refuse at once, and the page must disappear within seconds (≤ 3 minutes if the purge failed).
 
 ### Configuration
 
@@ -171,16 +177,18 @@ No new service or subscription. What changes is usage on the existing Vercel and
 - **Supabase:** a few extra reads per render; no new tables beyond migration 0011, no new storage unless photos are uploaded.
 - **Deployments:** one for this rollout (and one if you promote garlands in the menu); none afterwards for garland edits.
 
-Also note Vercel's Hobby plan is for non-commercial use; a shop normally needs Pro. Which plan this project is on could not be checked from here.
+**Plan:** this project's Vercel team is on the **Hobby** plan (checked 6 October 2026). Vercel's fair-use guidelines restrict Hobby to non-commercial personal use and count selling or advertising products as commercial, so the shop needs Pro (see vercel.com/pricing) to comply. This was already true before the garland release; changing the plan is the owner's decision. Tag purging itself is available on all plans.
 
 ### Rollback
 
-Use the smallest step that fixes the problem.
+Prefer reverting the deployment over touching the database. The database changes are additive and the previous code works with them (tested: production's previous code, `4136266`, built and ran against a database with migration 0011 and the 156 seeded drafts — storefront, sitemap and admin all normal, no draft shown).
 
-1. **One design:** Unpublish or Archive it in the admin. It leaves the website within seconds (at most 3 minutes if the refresh fails) and enquiries close immediately.
-2. **All garlands, keep the code:** unpublish or archive the published designs. `/categories/garlands` returns to the event-garland order only.
-3. **The code:** Vercel → Deployments → the deployment before this one → **Instant Rollback** (or Promote). The previous code never reads the garland tables, so it works with migration 0011 applied. Bouquets are unaffected either way.
-4. **The data (rarely needed; only after step 3):** the garland rows and tables can simply stay. To remove them, restore the step-1 backup, or — after testing on a copy — in one transaction:
+1. **One design:** Unpublish or Archive it in the admin. Enquiries close immediately; the page goes within seconds (≤ 3 minutes if the refresh fails).
+2. **The release (code):** Vercel → the project → Production Deployment → **Instant Rollback**, or `vercel rollback <deployment id or url>`.
+   - **Hobby plan limit:** Instant Rollback only reaches the **immediately previous** production deployment. Once any newer deployment exists (any push to `main`), use the git route instead: `git revert` the release commits on `main` and push — Vercel builds the previous code from git.
+   - After an Instant Rollback, Vercel stops assigning new pushes to the domain until you **Undo Rollback** (dashboard) or `vercel promote <deployment>`.
+   - While the previous code is live, don't **Delete** garlands in its admin (it doesn't know about garland details and would remove them); edits there leave the garland details untouched.
+3. **Data:** keep it. Admin edits and uploaded photos made after the release stay in the database and storage either way. Only if the garland data itself must go: restore the pre-release backup (this loses everything written since), or — after testing on a copy — in one transaction:
    ```sql
    BEGIN;
    DELETE FROM products WHERE id IN (SELECT product_id FROM garland_details); -- the seeded garlands; options/filters/details cascade
@@ -191,6 +199,30 @@ Use the smallest step that fixes the problem.
    COMMIT;
    ```
    Tested on a local copy: afterwards every other table is identical to before the migration, and the migration can be applied again. What stays: the seed's `Garlands` category and `Engagement` occasion, and any photos uploaded for garlands (media library and storage).
+
+### Protecting images
+
+- Database backups contain the `media` rows (file addresses), **not the image files**.
+- At the release, production's `media` bucket held **0 objects**: all 89 product images are files under `public/images/`, kept in git and in every deployment.
+- Garland photos uploaded later live only in the Supabase `media` bucket. Protect them separately: keep the originals (your own photos; the supplier packs stay in the owner's local backup, outside the repository) and, after uploads, download the bucket's `products/` folder (Supabase dashboard → Storage, or the Storage API with the service key) alongside each database backup.
+- No rollback step here deletes storage objects.
+- Two `media` rows (`/images/addon-card.jpg`, `/images/addon-chocolates.jpg`) point at images deliberately removed for privacy/trademark reasons (commit `8e19241`); their admin thumbnails show as missing. The storefront doesn't use them.
+
+## Production rollout record (6 October 2026)
+
+| Step | Result |
+|---|---|
+| Targets | Supabase project `hjhmetomcaskrrwkgrbp` (ap-northeast-2, Postgres 17.6); Vercel project `fresh-petals` (Hobby plan), domain `onlyfreshpetals.in` + `www`; all variables the code reads present in Production; `PUBLIC_FP_PREVIEW_DRAFTS` not set. |
+| Before | Live deployment `dpl_GHNr1EdxX4RgFhzKGTDfir3pyNjZ` (CLI deploy of `4136266`, 14 Aug). Migrations 0000–0010 recorded, hashes matching; only 0011 pending. 89 products (82 published, 7 archived), `media` bucket empty. |
+| Seed dry run | 156 to add, 0 present, no slug conflicts, 89 other products untouched; would add the Garlands category and Engagement occasion. |
+| Backup | `pg_dump` of `public` + `drizzle` (owner's local backup folder, with SHA-256); restored into a throwaway Postgres 17 — all 16 tables matched production's row counts. |
+| Migration 0011 | Applied; recorded with matching hash. Added 3 empty tables (RLS on, 3 read policies), 4 enum types, trigger. All 16 existing tables byte-identical (per-table checksums before/after). |
+| Seed | 156 garlands added (FP-G001–FP-G156): all **draft**, ₹5,000 fixed, enquiry mode, photo permission unconfirmed, sample not verified, no images; 192 filter rows, 312 occasion links; category Garlands and occasion Engagement added. Re-run: `to add: 0`. Pre-existing products, categories, occasions and occasion links byte-identical. |
+| Images | None uploaded: 0 designs have photo permission granted. |
+| Release | Commit `a6ce916` (with the 20 previously unpushed commits since `4136266`) pushed to `main`; Vercel built production from git: deployment `dpl_FddGE5iYUoiKXr6HL5EmU6QWBdxP` (`fresh-petals-6b3g6g6fb-ranjiths-projects-1491695d.vercel.app`), function region iad1. Garlands menu entry left off (`ready: false`) — nothing public yet. |
+| Verified live | 58/58 route, header, admin-refusal and mobile/desktop page checks; bouquet journey 15/15, quote/cart 5/5, options 4/4 with enquiries blocked (enquiry count unchanged at 7). CDN: garland routes MISS → HIT (40–60 ms), uncached renders ~1 s (functions in iad1, database in Seoul; first cold render ~4 s). Expiry observed on `/categories/garlands`: HIT until age 119 s, STALE at 122 s, fresh copy (age 12 s) on the next request. |
+| Not yet verified | The purge path and the editor's Website bar on production (needs the owner signed in with two-step verification, and a published design), and therefore the observed refresh time after an admin save. |
+| Type check | 20 errors, all type-only and outside garland code: 15 already in production's code (`SubscriptionConfigurator`, which had 53 errors in total), 4 from the earlier unpushed commits (`DiscoveryPostCard`), 1 from the earlier admin pass (`MobileBottomBar`). |
 
 ## Bouquets: known limitation (unchanged)
 
