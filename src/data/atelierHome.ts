@@ -8,7 +8,7 @@ import imageVariants from "./imageVariants.json";
 import imageDimensions from "./imageDimensions.json";
 import homePhotoVariants from "./homePhotoVariants.json";
 import { withAuthoritativePrice, type AuthoritativePrice } from "../server/services/ProductPricing";
-import { launchGroups, populatedOccasions } from "./launchCatalogue";
+import { launchGroups, occasionCarousel } from "./launchCatalogue";
 
 type Variants = Record<string, Record<string, string>>;
 type Dimensions = Record<string, { width: number; height: number }>;
@@ -34,12 +34,6 @@ export function responsiveImage(image: string): ResponsiveImage {
     height: dims?.height,
   };
 }
-
-const bySlug = (slug: string) => {
-  const product = productCatalog.find((item) => item.slug === slug);
-  if (!product) throw new Error(`atelierHome: product "${slug}" not found in productCatalog`);
-  return product;
-};
 
 // ---------------------------------------------------------------------
 // The owner's own photographs (public/images/*.jpg). WebP variants are
@@ -120,37 +114,26 @@ export function getHeroReel(): ReelSlide[] {
 }
 
 // ---------------------------------------------------------------------
-// B. Collection deck — the launch range only: bouquet types, the occasions
-// that have launch products, and custom orders. Category cards use the
-// owner's category photographs; the others use the photograph of a real
-// launch product from that group.
+// B. Occasion carousel — the occasions that have eligible launch bouquets
+// (launchCatalogue.occasionCarousel), each with its design count and the
+// photograph of one of its own bouquets. No photograph is used twice while
+// an occasion still has an unused one.
 // ---------------------------------------------------------------------
-export type OccasionPanel = {
+export type OccasionCard = {
   title: string;
   href: string;
-  note: string;
-  image: Photo;
+  count: number;
+  image: ResponsiveImage;
 };
 
-function productPhoto(slug: string): Photo {
-  const product = bySlug(slug);
-  const img = responsiveImage(product.image);
-  return { ...img, width: img.width ?? 1200, height: img.height ?? 1200, alt: product.name };
-}
-
-export function getOccasionDeck(): OccasionPanel[] {
-  const groups = Object.fromEntries(launchGroups("bouquets").map(({ group, products }) => [group.id, products]));
-  const occasions = Object.fromEntries(populatedOccasions().map((item) => [item.href, item]));
-  const panels: (OccasionPanel | null)[] = [
-    { title: "All bouquets", href: "/categories/bouquets", note: "Our launch range of hand-tied bouquets.", image: photo("cat-bouquets", "A large bouquet of sunflowers and white roses") },
-    groups.roses ? { title: "Rose bouquets", href: "/categories/bouquets#roses", note: "Red, pink and peach roses.", image: photo("rose-bouquet", "A bouquet of red roses tied with a red ribbon") } : null,
-    groups.mixed ? { title: "Mixed flowers", href: "/categories/bouquets#mixed", note: "Gerberas, sunflowers, daisies and more.", image: productPhoto(groups.mixed[0].slug) } : null,
-    groups.lilies ? { title: "Lily bouquets", href: "/categories/bouquets#lilies", note: "Blush and pink lilies.", image: productPhoto(groups.lilies[groups.lilies.length - 1].slug) } : null,
-    occasions["/occasions/birthday"] ? { title: "Birthday", href: "/occasions/birthday", note: "Bright bouquets for the day.", image: productPhoto("colour-pop-love") } : null,
-    occasions["/occasions/anniversary"] ? { title: "Anniversary", href: "/occasions/anniversary", note: "Roses and lilies for two.", image: productPhoto("timeless-hug") } : null,
-    { title: "Custom orders", href: "/custom-orders", note: "Your colours, occasion and budget.", image: photo("hero-bouquets", "Long-stemmed pink and cream flowers laid in a gift box lined with white tissue, beside a small card") },
-  ];
-  return panels.filter((panel): panel is OccasionPanel => panel !== null);
+export function getOccasionCarousel(): OccasionCard[] {
+  const used = new Set<string>();
+  return occasionCarousel().map(({ label, href, count, products, feature }) => {
+    const featured = products.find((product) => product.slug === feature);
+    const lead = featured && !used.has(featured.image) ? featured : (products.find((product) => !used.has(product.image)) ?? products[0]);
+    used.add(lead.image);
+    return { title: label, href, count, image: responsiveImage(lead.image) };
+  });
 }
 
 // ---------------------------------------------------------------------

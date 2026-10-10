@@ -1,7 +1,8 @@
 // The launch range: which categories are public, which existing products
 // belong to them, and which occasions are promoted. Navigation (header,
-// mobile menu, footer, category strip), the homepage bouquet grid and deck,
-// /categories/bouquets and the launch occasion pages all read from here.
+// mobile menu, footer, category strip), the homepage bouquet grid and
+// occasion carousel, /categories/bouquets and the launch occasion pages all
+// read from here.
 //
 // This file only controls what is promoted. It never deletes products,
 // changes prices or touches database publication: every product keeps its
@@ -128,6 +129,36 @@ export const garlandsPromoted = () => LAUNCH_CATEGORIES.some((category) => categ
 
 /** Occasion routes whose pages are restricted to the launch range. */
 export const LAUNCH_OCCASION_ROUTES = new Set(LAUNCH_OCCASIONS.map((item) => item.route).filter((route): route is string => !!route));
+
+/**
+ * The homepage occasion carousel, in the owner's preferred order. `route` is
+ * the existing occasion page each card links to; `feature` optionally names
+ * the launch product whose photograph leads the card. A card is shown only
+ * while its route has eligible launch bouquets (see occasionCarousel()).
+ */
+export const OCCASION_CAROUSEL: { label: string; route: string; feature?: string }[] = [
+  { label: "Birthday", route: "birthday", feature: "colour-pop-love" },
+  { label: "Anniversary", route: "anniversary", feature: "timeless-hug" },
+  { label: "Wedding", route: "wedding" },
+  { label: "Engagement", route: "engagement" },
+  { label: "Housewarming & Pooja", route: "housewarming" },
+  { label: "Condolence", route: "sympathy" },
+];
+
+/**
+ * Carousel entries with eligible public bouquets: the launch range (ready
+ * categories, every product priced from the database) genuinely tagged for
+ * the route — the same rule and count the launch occasion pages list. Each
+ * occasion appears once; none is padded or repeated. ("sympathy" is not a
+ * launch route: its page also lists tagged non-launch items and fallbacks,
+ * so its option count can exceed the bouquet count shown here.)
+ */
+export function occasionCarousel(): { label: string; href: string; count: number; products: Product[]; feature?: string }[] {
+  return OCCASION_CAROUSEL.flatMap((item) => {
+    const products = launchProductsForOccasion(item.route);
+    return products.length > 0 ? [{ label: item.label, href: `/occasions/${item.route}`, count: products.length, products, feature: item.feature }] : [];
+  });
+}
 
 /** Shop by Occasion entries that currently have launch products. */
 export function populatedOccasions(): { label: string; href: string; count: number }[] {

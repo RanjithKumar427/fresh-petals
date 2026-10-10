@@ -1,0 +1,735 @@
+---
+// B. Every occasion — the homepage occasion carousel. The occasions with
+// eligible launch bouquets (launchCatalogue.occasionCarousel, via
+// atelierHome.getOccasionCarousel), in the owner's order, each card a link to
+// its occasion page with the same design count that page shows.
+//
+// Server-rendered as a plain, centred row of linked cards: that is the whole
+// presentation for one card, a balanced pair, no JavaScript, or reduced
+// motion. With three or more occasions the script below turns it into a
+// looping cinematic carousel: every card's transform is a continuous function
+// of one position value (never duplicated cards), so swipe, drag, keyboard,
+// buttons and autoplay all move the same position. No occasions, no section.
+import { getOccasionCarousel } from "../../data/atelierHome";
+
+const cards = getOccasionCarousel();
+const total = cards.length;
+const mode = total >= 3 ? "carousel" : total === 2 ? "pair" : "single";
+const sizes = "(min-width: 1440px) 360px, (min-width: 1024px) 340px, (min-width: 768px) 300px, 70vw";
+const pad = (value: number) => String(value).padStart(2, "0");
+---
+
+{
+  total > 0 && (
+    <section
+      class="occ"
+      data-occ
+      data-mode={mode}
+      aria-labelledby="occ-title"
+      aria-roledescription={mode === "carousel" ? "carousel" : undefined}
+    >
+      <div class="occ__head">
+        <h2 id="occ-title" class="occ__title" data-reveal="mask">Every occasion deserves flowers.</h2>
+        <p class="occ__subtitle" data-reveal="fade">Find something beautiful for their moment.</p>
+      </div>
+
+      <div class="occ__viewport" data-occ-viewport>
+        <ul class="occ__track">
+          {cards.map((card, index) => (
+            <li
+              class="occ__slide"
+              data-occ-slide
+              role={mode === "carousel" ? "group" : undefined}
+              aria-roledescription={mode === "carousel" ? "slide" : undefined}
+              aria-label={mode === "carousel" ? `${card.title}, ${index + 1} of ${total}` : undefined}
+            >
+              <a class="occ__card" href={card.href} draggable="false">
+                <img
+                  class="occ__img"
+                  src={card.image.src}
+                  srcset={card.image.srcset}
+                  sizes={sizes}
+                  width={card.image.width}
+                  height={card.image.height}
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                  draggable="false"
+                />
+                <span class="occ__shade" aria-hidden="true" />
+                <span class="occ__dim" aria-hidden="true" />
+                <span class="occ__body">
+                  <span class="occ__name">{card.title}</span>
+                  <span class="occ__count">{`${card.count} ${card.count === 1 ? "design" : "designs"}`}</span>
+                  <span class="occ__cta">
+                    Explore designs
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" /></svg>
+                  </span>
+                </span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {mode === "carousel" && (
+        <div class="occ__controls" data-occ-controls hidden>
+          <button type="button" class="occ__btn" data-occ-prev aria-label="Previous occasion">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg>
+          </button>
+          <div class="occ__position" aria-hidden="true">
+            <span class="occ__dots">
+              {cards.map(() => (
+                <span class="occ__dot" data-occ-dot />
+              ))}
+            </span>
+            <span class="occ__counter">
+              <span data-occ-current>01</span> / {pad(total)}
+            </span>
+          </div>
+          <button type="button" class="occ__btn" data-occ-next aria-label="Next occasion">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" /></svg>
+          </button>
+          <button type="button" class="occ__btn occ__btn--toggle" data-occ-toggle aria-label="Pause autoplay">
+            <svg class="occ__icon-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6v12M15 6v12" /></svg>
+            <svg class="occ__icon-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10-6.5z" /></svg>
+          </button>
+        </div>
+      )}
+      {mode === "carousel" && <p class="sr-only" aria-live="polite" data-occ-live />}
+    </section>
+  )
+}
+
+<script>
+  const section = document.querySelector<HTMLElement>("[data-occ][data-mode='carousel']");
+  const viewport = section?.querySelector<HTMLElement>("[data-occ-viewport]");
+  const controls = section?.querySelector<HTMLElement>("[data-occ-controls]");
+
+  if (section && viewport && controls) {
+    const slides = [...section.querySelectorAll<HTMLElement>("[data-occ-slide]")];
+    const links = slides.map((slide) => slide.querySelector<HTMLAnchorElement>("a")!);
+    const dots = [...section.querySelectorAll<HTMLElement>("[data-occ-dot]")];
+    const current = section.querySelector<HTMLElement>("[data-occ-current]");
+    const live = section.querySelector<HTMLElement>("[data-occ-live]");
+    const toggle = section.querySelector<HTMLButtonElement>("[data-occ-toggle]")!;
+    const count = slides.length;
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const wide = window.matchMedia("(min-width: 1024px)");
+
+    const DURATION = 800;
+    const INTERVAL = 4500;
+    // Offsets from the centre card, in card widths, by distance 0, 1, 2, 3:
+    // centre 100%, immediate neighbours ~80%, outer cards ~65%. Below 1024px
+    // only the neighbours show, as peeks at the edges.
+    const LAYOUTS = {
+      wide: { x: [0, 0.78, 1.36, 1.8], scale: [1, 0.8, 0.65, 0.55], dim: [0, 0.32, 0.55, 0.7], reach: 2 },
+      compact: { x: [0, 0.84, 1.5, 1.9], scale: [1, 0.8, 0.65, 0.55], dim: [0, 0.35, 0.55, 0.7], reach: 1 },
+    };
+
+    let enabled = false;
+    let pos = 0; // continuous; card i is centred when pos ≡ i (mod count)
+    let from = 0;
+    let to = 0;
+    let start = 0;
+    let duration = DURATION;
+    let raf = 0;
+    let width = 300;
+    let layout = LAYOUTS.compact;
+    let announce = false;
+    let timer = 0;
+    let userPaused = false;
+    const holds = new Set<string>();
+
+    const mod = (value: number) => ((value % count) + count) % count;
+    const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
+    const lerp = (table: number[], distance: number) => {
+      const i = Math.min(Math.floor(distance), table.length - 2);
+      const t = Math.min(distance - i, 1);
+      return table[i] + (table[i + 1] - table[i]) * t;
+    };
+    const ease = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+    const activeIndex = () => mod(Math.round(to));
+
+    // Side cards keep their captions only while a whole neighbour fits on
+    // screen; mobile peeks show the photograph alone, never clipped text.
+    let sideText = false;
+
+    const measure = () => {
+      layout = wide.matches ? LAYOUTS.wide : LAYOUTS.compact;
+      width = slides[0].offsetWidth || 300;
+      sideText = (layout.x[1] + layout.scale[1] / 2) * width <= window.innerWidth / 2 + 1;
+    };
+
+    const render = () => {
+      const active = activeIndex();
+      slides.forEach((slide, i) => {
+        // Signed distance on the loop, in (-count/2, count/2].
+        let d = mod(i - pos);
+        if (d > count / 2) d -= count;
+        const a = Math.abs(d);
+        const x = Math.sign(d) * lerp(layout.x, a) * width;
+        const scale = lerp(layout.scale, a);
+        // Fade out past the visible reach, and before the loop wraps a card
+        // from one side to the other (at count / 2), so it is fully
+        // transparent when it changes sides and never jumps in view.
+        const opacity = Math.min(clamp01((layout.reach + 0.6 - a) / 0.6), clamp01((count / 2 - 0.1 - a) / 0.4));
+        slide.style.transform = `translate3d(${x.toFixed(1)}px, 0, 0) scale(${scale.toFixed(4)})`;
+        slide.style.opacity = opacity.toFixed(3);
+        slide.style.zIndex = String(100 - Math.round(a * 10));
+        slide.style.setProperty("--dim", lerp(layout.dim, a).toFixed(3));
+        // Captions dip to nothing halfway between centre and side, where a
+        // right-hand card switches its caption to the uncovered right edge.
+        const text = sideText ? (a < 1 ? Math.abs(1 - 2 * a) : 1 - (a - 1)) : 1 - 2 * a;
+        slide.style.setProperty("--text", clamp01(text).toFixed(3));
+        slide.classList.toggle("is-after", d > 0.5);
+        slide.style.setProperty("--cta", clamp01(1 - a).toFixed(3));
+        const hidden = opacity < 0.02;
+        if (slide.inert !== hidden) slide.inert = hidden;
+        // One keyboard stop: the centre card. The others are reached with
+        // the arrow keys or buttons, and stay clickable while visible.
+        links[i].tabIndex = i === active ? 0 : -1;
+      });
+      if (current) current.textContent = String(active + 1).padStart(2, "0");
+      dots.forEach((dot, i) => dot.classList.toggle("is-active", i === active));
+    };
+
+    const settled = () => {
+      if (announce && live) live.textContent = slides[activeIndex()].getAttribute("aria-label") ?? "";
+      announce = false;
+    };
+
+    const step = (now: number) => {
+      const t = clamp01((now - start) / duration);
+      pos = from + (to - from) * ease(t);
+      render();
+      if (t < 1) raf = requestAnimationFrame(step);
+      else {
+        raf = 0;
+        pos = to;
+        settled();
+      }
+    };
+
+    const tweenTo = (target: number, ms = DURATION) => {
+      from = pos;
+      to = target;
+      start = performance.now();
+      duration = ms;
+      render();
+      if (!raf) raf = requestAnimationFrame(step);
+    };
+
+    // --- Autoplay ---------------------------------------------------------
+    const schedule = () => {
+      clearTimeout(timer);
+      if (!enabled || userPaused || holds.size) return;
+      timer = window.setTimeout(() => {
+        tweenTo(Math.round(to) + 1);
+        schedule();
+      }, INTERVAL);
+    };
+    const hold = (reason: string) => {
+      holds.add(reason);
+      clearTimeout(timer);
+    };
+    const release = (reason: string) => {
+      if (holds.delete(reason)) schedule();
+    };
+    const setUserPaused = (paused: boolean) => {
+      userPaused = paused;
+      toggle.setAttribute("aria-label", paused ? "Play autoplay" : "Pause autoplay");
+      toggle.classList.toggle("is-paused", paused);
+      schedule();
+    };
+
+    // A user move: announce the new card and restart the autoplay countdown.
+    const go = (delta: number) => {
+      announce = true;
+      tweenTo(Math.round(to) + delta);
+      schedule();
+    };
+
+    const focusActiveSoon = () => {
+      if (!links.includes(document.activeElement as HTMLAnchorElement)) return;
+      requestAnimationFrame(() => links[activeIndex()].focus({ preventScroll: true }));
+    };
+
+    controls.querySelector("[data-occ-prev]")?.addEventListener("click", () => go(-1));
+    controls.querySelector("[data-occ-next]")?.addEventListener("click", () => go(1));
+    toggle.addEventListener("click", () => setUserPaused(!userPaused));
+
+    section.addEventListener("keydown", (event) => {
+      if (!enabled || (event.key !== "ArrowLeft" && event.key !== "ArrowRight")) return;
+      if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+      event.preventDefault();
+      go(event.key === "ArrowRight" ? 1 : -1);
+      focusActiveSoon();
+    });
+
+    // Hover (mouse only), keyboard focus, a pressed pointer, a hidden tab and
+    // an off-screen section each hold autoplay until they end.
+    section.addEventListener("pointerenter", (event) => event.pointerType === "mouse" && hold("hover"));
+    section.addEventListener("pointerleave", (event) => event.pointerType === "mouse" && release("hover"));
+    section.addEventListener("focusin", (event) => {
+      if ((event.target as HTMLElement).matches(":focus-visible")) hold("focus");
+    });
+    section.addEventListener("focusout", (event) => {
+      if (!section.contains(event.relatedTarget as Node | null)) release("focus");
+    });
+    document.addEventListener("visibilitychange", () => (document.hidden ? hold("hidden") : release("hidden")));
+    new IntersectionObserver(
+      ([entry]) => (entry.isIntersecting ? release("offscreen") : hold("offscreen")),
+      { threshold: 0.35 }
+    ).observe(section);
+
+    // --- Swipe and drag ---------------------------------------------------
+    // Vertical page scrolling stays native (touch-action: pan-y); a gesture
+    // becomes a drag only once it is clearly horizontal, and a drag never
+    // follows the link it started on.
+    let pointerId = -1;
+    let startX = 0;
+    let startY = 0;
+    let startPos = 0;
+    let dragging = false;
+    let dragged = false;
+    let lastX = 0;
+    let lastT = 0;
+    let velocity = 0;
+
+    viewport.addEventListener("pointerdown", (event) => {
+      if (!enabled || event.button !== 0) return;
+      pointerId = event.pointerId;
+      startX = lastX = event.clientX;
+      startY = event.clientY;
+      lastT = performance.now();
+      velocity = 0;
+      dragging = false;
+      dragged = false;
+      hold("pointer");
+    });
+
+    viewport.addEventListener("pointermove", (event) => {
+      if (event.pointerId !== pointerId) return;
+      const dx = event.clientX - startX;
+      if (!dragging) {
+        if (Math.abs(dx) < 8 || Math.abs(dx) < Math.abs(event.clientY - startY) * 1.2) return;
+        dragging = dragged = true;
+        viewport.setPointerCapture(event.pointerId);
+        viewport.classList.add("is-dragging");
+        cancelAnimationFrame(raf);
+        raf = 0;
+        startPos = pos;
+      }
+      const now = performance.now();
+      velocity = (event.clientX - lastX) / Math.max(1, now - lastT);
+      lastX = event.clientX;
+      lastT = now;
+      pos = to = startPos - dx / (width * layout.x[1]);
+      render();
+    });
+
+    const endPointer = (event: PointerEvent) => {
+      if (event.pointerId !== pointerId) return;
+      pointerId = -1;
+      if (dragging) {
+        dragging = false;
+        viewport.classList.remove("is-dragging");
+        // Distance decides; a short flick still moves exactly one card.
+        const moved = pos - startPos;
+        let target = Math.round(pos);
+        if (target === Math.round(startPos) && (Math.abs(moved) > 0.12 || Math.abs(velocity) > 0.35)) {
+          target += Math.sign(moved || -velocity);
+        }
+        announce = true;
+        tweenTo(target, Math.max(320, DURATION * Math.min(1, Math.abs(target - pos))));
+      }
+      release("pointer");
+    };
+    viewport.addEventListener("pointerup", endPointer);
+    viewport.addEventListener("pointercancel", endPointer);
+    viewport.addEventListener("dragstart", (event) => event.preventDefault());
+    viewport.addEventListener(
+      "click",
+      (event) => {
+        if (!dragged) return;
+        event.preventDefault();
+        event.stopPropagation();
+        dragged = false;
+      },
+      true
+    );
+
+    window.addEventListener("resize", () => {
+      if (!enabled) return;
+      measure();
+      render();
+    });
+    wide.addEventListener("change", () => {
+      if (!enabled) return;
+      measure();
+      render();
+    });
+
+    // --- Enhance / restore ------------------------------------------------
+    const enable = () => {
+      enabled = true;
+      section.classList.add("is-cinema");
+      controls.hidden = false;
+      measure();
+      render();
+      schedule();
+    };
+    const disable = () => {
+      enabled = false;
+      clearTimeout(timer);
+      cancelAnimationFrame(raf);
+      raf = 0;
+      pos = from = to = Math.round(to);
+      section.classList.remove("is-cinema");
+      controls.hidden = true;
+      slides.forEach((slide, i) => {
+        slide.removeAttribute("style");
+        slide.classList.remove("is-after");
+        slide.inert = false;
+        links[i].removeAttribute("tabindex");
+      });
+    };
+
+    // Reduced motion keeps the static, server-rendered layout: no autoplay.
+    reducedMotion.addEventListener("change", () => (reducedMotion.matches ? disable() : enable()));
+    if (!reducedMotion.matches) enable();
+  }
+</script>
+
+<style>
+  .occ {
+    --occ-bg: #3b1121;
+    --occ-bg-deep: #250913;
+    --occ-w: min(70vw, 300px);
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    overflow: clip;
+    background:
+      radial-gradient(58% 52% at 50% 60%, rgba(232, 183, 178, 0.16), rgba(232, 183, 178, 0) 72%),
+      linear-gradient(180deg, var(--occ-bg), var(--occ-bg-deep));
+    color: var(--color-ivory);
+    padding: clamp(3rem, 6vw, 5.5rem) 0 clamp(2.75rem, 5vw, 4.5rem);
+  }
+
+  .occ__head {
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: 0 clamp(16px, 4vw, 48px);
+    text-align: center;
+  }
+
+  .occ__title {
+    margin: 0 auto;
+    max-width: 18ch;
+    font-family: var(--font-display);
+    font-weight: 360;
+    font-size: clamp(2.1rem, 1.3rem + 3vw, 3.8rem);
+    line-height: 1;
+    letter-spacing: -0.03em;
+  }
+
+  .occ__subtitle {
+    margin: 0.9rem auto 0;
+    max-width: 36ch;
+    font-size: var(--step-0);
+    line-height: 1.5;
+    color: color-mix(in srgb, var(--color-ivory) 82%, transparent);
+  }
+
+  /* Static layout: a centred row of cards. One card, a balanced pair, no
+     JavaScript and reduced motion all stay here. */
+  .occ__viewport {
+    margin-top: clamp(2rem, 4vw, 3rem);
+    padding: 0 16px;
+  }
+
+  .occ__track {
+    list-style: none;
+    margin: 0 auto;
+    padding: 0;
+    max-width: 1160px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: clamp(12px, 2vw, 24px);
+  }
+
+  .occ__slide {
+    flex: 0 1 clamp(150px, calc(50% - 8px), 260px);
+    min-width: 0;
+  }
+
+  .occ[data-mode="single"] .occ__slide {
+    flex-basis: min(100%, 340px);
+  }
+
+  .occ[data-mode="pair"] .occ__slide {
+    flex-basis: calc(50% - 8px);
+    max-width: 320px;
+  }
+
+  .occ__card {
+    position: relative;
+    display: block;
+    aspect-ratio: 5 / 7;
+    border-radius: 20px;
+    overflow: hidden;
+    background: #1c060d;
+    color: var(--color-ivory);
+    text-decoration: none;
+    container-type: inline-size;
+    box-shadow: 0 26px 50px -28px rgba(0, 0, 0, 0.75);
+    user-select: none;
+    -webkit-user-drag: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .occ__card:focus-visible {
+    outline: 3px solid var(--color-rose);
+    outline-offset: 4px;
+  }
+
+  .occ__img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.8s var(--ease-premium);
+  }
+
+  .occ__card:hover .occ__img {
+    transform: scale(1.04);
+  }
+
+  .occ__shade {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(28, 6, 13, 0.9), rgba(28, 6, 13, 0.5) 38%, rgba(28, 6, 13, 0) 66%);
+  }
+
+  .occ__dim {
+    position: absolute;
+    inset: 0;
+    background: #14040a;
+    opacity: var(--dim, 0);
+    pointer-events: none;
+  }
+
+  .occ__body {
+    position: absolute;
+    inset: auto 0 0 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0 8cqi 8cqi;
+    opacity: var(--text, 1);
+  }
+
+  .occ__name {
+    font-family: var(--font-display);
+    font-size: clamp(1.15rem, 10.5cqi, 2.2rem);
+    line-height: 1.02;
+    letter-spacing: -0.02em;
+  }
+
+  .occ__count {
+    margin-top: 0.45em;
+    font-size: clamp(0.75rem, 4.6cqi, 0.95rem);
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-rose-soft);
+  }
+
+  .occ__cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+    margin-top: 0.9em;
+    padding-bottom: 0.2em;
+    font-size: clamp(0.8rem, 4.8cqi, 1rem);
+    font-weight: 600;
+    border-bottom: 1px solid var(--color-apricot);
+    opacity: var(--cta, 1);
+  }
+
+  .occ__cta svg {
+    width: 1.1em;
+    height: 1.1em;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    transition: transform 0.3s var(--ease-micro);
+  }
+
+  .occ__card:hover .occ__cta svg {
+    transform: translateX(3px);
+  }
+
+  /* Enhanced: the cinematic carousel (3+ occasions, motion allowed). */
+  .occ.is-cinema .occ__viewport {
+    position: relative;
+    height: calc(var(--occ-w) * 1.4 + 2rem);
+    padding: 0;
+    touch-action: pan-y;
+    cursor: grab;
+  }
+
+  .occ.is-cinema .occ__viewport.is-dragging {
+    cursor: grabbing;
+  }
+
+  .occ.is-cinema .occ__track {
+    position: relative;
+    display: block;
+    height: 100%;
+    max-width: none;
+  }
+
+  .occ.is-cinema .occ__slide.is-after .occ__body {
+    align-items: flex-end;
+    text-align: right;
+  }
+
+  .occ.is-cinema .occ__slide {
+    position: absolute;
+    top: 1rem;
+    left: 50%;
+    width: var(--occ-w);
+    margin-left: calc(var(--occ-w) / -2);
+    will-change: transform, opacity;
+  }
+
+  .occ__controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    margin-top: clamp(1.25rem, 3vw, 2rem);
+    padding: 0 16px;
+  }
+
+  .occ__controls[hidden] {
+    display: none;
+  }
+
+  .occ__btn {
+    display: inline-grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--color-ivory) 42%, transparent);
+    background: transparent;
+    color: var(--color-ivory);
+    cursor: pointer;
+    transition: background-color 0.18s var(--ease-micro), border-color 0.18s var(--ease-micro);
+  }
+
+  .occ__btn:hover {
+    background: color-mix(in srgb, var(--color-ivory) 10%, transparent);
+    border-color: var(--color-ivory);
+  }
+
+  .occ__btn:focus-visible {
+    outline: 3px solid var(--color-rose);
+    outline-offset: 3px;
+  }
+
+  .occ__btn svg {
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.6;
+    stroke-linejoin: round;
+  }
+
+  .occ__btn--toggle {
+    margin-left: 0.4rem;
+  }
+
+  .occ__icon-play,
+  .occ__btn--toggle.is-paused .occ__icon-pause {
+    display: none;
+  }
+
+  .occ__btn--toggle.is-paused .occ__icon-play {
+    display: block;
+  }
+
+  .occ__icon-play path {
+    fill: currentColor;
+  }
+
+  .occ__position {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.45rem;
+    min-width: 5.5rem;
+  }
+
+  .occ__dots {
+    display: flex;
+    gap: 6px;
+  }
+
+  .occ__dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--color-ivory) 35%, transparent);
+    transition: width 0.4s var(--ease-premium), background-color 0.4s var(--ease-premium);
+  }
+
+  .occ__dot.is-active {
+    width: 18px;
+    background: var(--color-ivory);
+  }
+
+  .occ__counter {
+    font-variant-numeric: tabular-nums;
+    font-size: 0.8125rem;
+    letter-spacing: 0.12em;
+    color: color-mix(in srgb, var(--color-ivory) 78%, transparent);
+  }
+
+  @media (min-width: 768px) {
+    .occ {
+      --occ-w: 300px;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .occ {
+      --occ-w: 340px;
+    }
+  }
+
+  @media (min-width: 1440px) {
+    .occ {
+      --occ-w: 360px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .occ__img,
+    .occ__cta svg,
+    .occ__dot {
+      transition: none;
+    }
+    .occ__card:hover .occ__img {
+      transform: none;
+    }
+  }
+</style>

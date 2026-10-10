@@ -1,17 +1,17 @@
 ---
 // Homepage — the floral atelier, built on the shop's own photography.
 // Order: inspiration (hero) → something to buy (priced bouquets) → wider
-// browsing (collection deck) → a close look (detail study) → how ordering
+// browsing (occasion carousel) → a close look (detail study) → how ordering
 // works → a closing invitation. (The bouquet builder — /studio — was removed
 // on 4 Oct 2026; its URL redirects to /categories/bouquets.) All server-rendered HTML;
 // depth is CSS perspective plus small scripts. HeroReel.astro is kept but
 // not mounted: a second browsing carousel before the products duplicated
-// the deck and pushed the first price further down.
+// the occasion carousel and pushed the first price further down.
 // SEO title/description/structured data are unchanged from the previous
 // homepage (src/data/seoLanding.ts).
 import BaseLayout from "../layouts/BaseLayout.astro";
 import HeroAtelier from "../components/atelier/HeroAtelier.astro";
-import OccasionDeck from "../components/atelier/OccasionDeck.astro";
+import OccasionCarousel from "../components/atelier/OccasionCarousel.astro";
 import BouquetEdit from "../components/atelier/BouquetEdit.astro";
 import InsideBouquet from "../components/atelier/InsideBouquet.astro";
 import OrderJourney from "../components/atelier/OrderJourney.astro";
@@ -70,7 +70,7 @@ const homeJsonLd = [
   <main class="atelier-home">
     <HeroAtelier />
     <BouquetEdit products={editProducts} />
-    <OccasionDeck />
+    <OccasionCarousel />
     <InsideBouquet />
     <OrderJourney />
     <FinalInvite />
