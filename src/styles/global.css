@@ -424,16 +424,15 @@ html.motion [data-reveal] {
   transition-delay: var(--reveal-delay, 0ms);
 }
 
-/* Never fully clipped: an element clipped to nothing never reports an
-   intersection in Chrome, so its reveal would never fire. */
+/* Headings and copy stay readable before their entrance runs: the reveal
+   is a small settle into place, never a hidden-until-animated state (no
+   clipping the text away, no zero opacity). */
 html.motion [data-reveal="mask"]:not(.is-in) {
-  clip-path: inset(0 0 92% 0);
-  transform: translateY(18px);
+  transform: translateY(12px);
 }
 
 html.motion [data-reveal="fade"]:not(.is-in) {
-  opacity: 0;
-  transform: translateY(14px);
+  transform: translateY(10px);
 }
 
 html.motion [data-reveal="image"]:not(.is-in) {

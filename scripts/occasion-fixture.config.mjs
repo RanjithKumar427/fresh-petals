@@ -1,14 +1,16 @@
 // Local preview of the homepage occasion carousel with all six occasions,
 // for design review. Run: npm run preview:occasions
 //
-// Development server only. Nothing is written to the database, to
-// productCatalog.ts or to any build output: occasion tags are rewritten in
-// memory while the dev server loads the catalogue. `astro build` with this
-// config is refused, so fixture assignments can never be deployed.
+// Development server only. Nothing is written to the database or to any
+// file: the admin's occasion assignments (OccasionMembership.ts) are read as
+// usual and then adjusted in memory for this dev server. `astro build` with
+// this config is refused, so fixture assignments can never be deployed.
 //
-// FP_OCCASION_FIXTURE overrides the assignment ("route=slug,slug;route=" —
-// an empty list removes a route's tags, e.g. "birthday=;anniversary=" for the
-// empty state). Prices are still read from DATABASE_URL (read-only).
+// FP_OCCASION_FIXTURE adjusts the assignments ("route=slug,slug;route=" —
+// the listed products gain the route and every other product loses it; an
+// empty list clears a route, e.g. "birthday=;anniversary=;sympathy=" for the
+// empty state). Prices and real assignments are read from DATABASE_URL
+// (read-only).
 // FP_LOCAL_PG=1 connects to a plain local Postgres without the Supabase TLS
 // certificate (see docs/occasion-carousel.md).
 import base from "../astro.config.mjs";
@@ -24,19 +26,24 @@ const rules = spec
     return [route.trim(), slugs.split(",").map((slug) => slug.trim()).filter(Boolean)];
   });
 
-const fixtureTags = {
+const fixtureMembership = {
   name: "fresh-petals:occasion-fixture",
   enforce: "pre",
   transform(code, id) {
-    if (!id.endsWith("/src/data/productCatalog.ts")) return;
+    if (!id.endsWith("/src/server/services/OccasionMembership.ts")) return;
     return `${code}
-for (const [route, slugs] of ${JSON.stringify(rules)}) {
-  for (const product of productCatalog) {
-    const tags = (product.occasionTags ?? []).filter((tag) => tag !== route);
-    if (slugs.includes(product.slug)) tags.push(route);
-    product.occasionTags = tags;
+const __readOccasionMembership = loadOccasionMembership;
+loadOccasionMembership = async (slugs) => {
+  const membership = await __readOccasionMembership(slugs);
+  for (const [route, chosen] of ${JSON.stringify(rules)}) {
+    for (const [slug, list] of membership) {
+      const next = list.filter((occasion) => occasion !== route);
+      if (chosen.includes(slug)) next.push(route);
+      membership.set(slug, next.sort());
+    }
   }
-}
+  return membership;
+};
 `;
   },
 };
@@ -68,6 +75,6 @@ export default {
   integrations: [...(base.integrations ?? []), devOnly],
   vite: {
     ...base.vite,
-    plugins: [fixtureTags, ...(process.env.FP_LOCAL_PG === "1" ? [localPostgres] : []), ...(base.vite?.plugins ?? [])],
+    plugins: [fixtureMembership, ...(process.env.FP_LOCAL_PG === "1" ? [localPostgres] : []), ...(base.vite?.plugins ?? [])],
   },
 };

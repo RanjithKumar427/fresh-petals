@@ -24,8 +24,24 @@ const src = `/fragments/garlands?for=occasion&occasion=${encodeURIComponent(occa
         slot.innerHTML = html;
         if (!slot.querySelector("[data-garland-card]")) return;
         slot.hidden = false;
-        // An occasion with no other products says its range isn't ready; it is now.
+        // The ceremony section's "not online yet" note gives way to the designs.
         document.querySelectorAll<HTMLElement>("[data-occasion-empty]").forEach((el) => (el.hidden = true));
+        // Carry the occasion into the live enquiry check and the product page.
+        const occasion = new URL(src, location.href).searchParams.get("occasion") ?? "";
+        slot.querySelectorAll<HTMLAnchorElement>("a[data-garland-quote]").forEach((a) => {
+          const url = new URL(a.href, location.href);
+          url.searchParams.set("occ", occasion);
+          url.searchParams.set("for", "ceremony");
+          a.href = url.pathname + url.search;
+        });
+        slot.querySelectorAll<HTMLAnchorElement>("a[href^='/products/']").forEach((a) => {
+          const url = new URL(a.href, location.href);
+          url.searchParams.set("occ", occasion);
+          url.searchParams.set("for", "ceremony");
+          a.href = url.pathname + url.search;
+          a.setAttribute("data-journey-link", "");
+        });
+        document.dispatchEvent(new Event("fresh-petals-shop-items-updated"));
       })
       .catch(() => {});
   }

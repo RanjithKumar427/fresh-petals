@@ -1,0 +1,36 @@
+---
+// /categories/bouquets (the launch bouquet range), rendered on request. Each
+// bouquet's occasions come from the admin's "Suitable occasions", so the
+// occasion filter, its counts and ?occasion=… links are current in the HTML
+// itself; the CDN keeps a copy (occasion index tag) that a save changing an
+// assignment purges (src/server/services/OccasionWebsite.ts). Every other
+// category page is still built by ./[slug].astro, which leaves this slug out.
+import CategoryPage from "../../components/category/CategoryPage.astro";
+import { launchGroups } from "../../data/launchCatalogue";
+import { productCatalog } from "../../data/productCatalog";
+import { launchSlugs } from "../../data/occasionJourneys";
+import { loadOccasionMembership } from "../../server/services/OccasionMembership";
+import { loadAuthoritativePrices, withAuthoritativePrice } from "../../server/services/ProductPricing";
+import { OCCASION_INDEX_TAG, occasionCacheHeaders } from "../../server/services/GarlandWebsite";
+
+export const prerender = false;
+
+for (const [name, value] of Object.entries(occasionCacheHeaders([OCCASION_INDEX_TAG]))) Astro.response.headers.set(name, value);
+
+const [priceMap, membership] = await Promise.all([loadAuthoritativePrices(), loadOccasionMembership(launchSlugs())]);
+const groups = launchGroups("bouquets").map(({ group, products }) => ({
+  ...group,
+  products: products.map((product) => withAuthoritativePrice(product, priceMap)),
+}));
+// What the card prices cover, with the vase add-on's published price.
+const vase = productCatalog.find((product) => product.slug === "clear-glass-vase");
+const vasePrice = vase ? withAuthoritativePrice(vase, priceMap).priceLabel.replace(/^From /, "from ") : null;
+const priceNote = `Each price is the bouquet's starting price; add-ons${vasePrice ? ` (a vase, ${vasePrice})` : ""} and delivery are quoted separately.`;
+const category = {
+  name: "Bouquets",
+  slug: "bouquets",
+  description: "Fresh hand-arranged bouquets for gifting, celebrations and custom flower orders.",
+};
+---
+
+<CategoryPage category={category} products={groups.flatMap((group) => group.products)} groups={groups} membership={membership} priceNote={priceNote} />

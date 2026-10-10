@@ -8,7 +8,8 @@ import imageVariants from "./imageVariants.json";
 import imageDimensions from "./imageDimensions.json";
 import homePhotoVariants from "./homePhotoVariants.json";
 import { withAuthoritativePrice, type AuthoritativePrice } from "../server/services/ProductPricing";
-import { launchGroups, occasionCarousel } from "./launchCatalogue";
+import { launchGroups, launchProducts } from "./launchCatalogue";
+import { budgetBand, carouselOccasions, type Membership } from "./occasionJourneys";
 
 type Variants = Record<string, Record<string, string>>;
 type Dimensions = Record<string, { width: number; height: number }>;
@@ -34,6 +35,12 @@ export function responsiveImage(image: string): ResponsiveImage {
     height: dims?.height,
   };
 }
+
+const bySlug = (slug: string) => {
+  const product = productCatalog.find((item) => item.slug === slug);
+  if (!product) throw new Error(`atelierHome: product "${slug}" not found in productCatalog`);
+  return product;
+};
 
 // ---------------------------------------------------------------------
 // The owner's own photographs (public/images/*.jpg). WebP variants are
@@ -64,10 +71,23 @@ export function photo(name: string, alt: string): Photo {
 // own photo for its gift range), cropped to drop the window above it, plus
 // a detail of the same photograph for the hero's foreground layer.
 // Editorial only: no product name or price is attached to it.
+// The hero shows one identifiable public bouquet — its own product
+// photograph, linked to its page — rather than a generic photograph. The
+// foreground "lens" is a magnified detail of the same file (CSS crop, no
+// extra image). Falls back to the first launch bouquet if this one leaves
+// the range.
+const HERO_PRODUCT_SLUG = "timeless-hug";
+/** The hero photograph's display width (the lens uses the same, so both load one file); the preload in pages/index.astro uses it too. */
+export const HERO_SIZES = "(min-width: 1024px) 560px, calc(100vw - 4rem)";
+
 export function getHeroPhoto() {
+  const product = launchProducts().find((item) => item.slug === HERO_PRODUCT_SLUG) ?? launchProducts()[0];
+  const main = productPhoto(product.slug);
   return {
-    main: photo("bouquet-1#hero", "A bouquet of pink and white tulips with baby's breath, wrapped in pink paper and tied with a pink satin ribbon"),
-    detail: photo("bouquet-1#tulips", ""),
+    slug: product.slug,
+    main: { ...main, alt: `${product.name}: ${product.description}` },
+    name: product.name,
+    detail: { ...main, alt: "" },
   };
 }
 
@@ -114,26 +134,75 @@ export function getHeroReel(): ReelSlide[] {
 }
 
 // ---------------------------------------------------------------------
-// B. Occasion carousel — the occasions that have eligible launch bouquets
-// (launchCatalogue.occasionCarousel), each with its design count and the
-// photograph of one of its own bouquets. No photograph is used twice while
-// an occasion still has an unused one.
+// B. Occasion carousel — the occasions with eligible public bouquets, in
+// the owner's order (occasionJourneys.carouselOccasions), from the admin's
+// current assignments (the homepage is rendered on request). Each card's
+// count is the number of products its occasion page lists, and its photo is
+// one of those bouquets; no photograph repeats while an occasion still has
+// an unused one.
 // ---------------------------------------------------------------------
 export type OccasionCard = {
+  /** Occasion slug (admin assignment). */
+  key: string;
   title: string;
   href: string;
+  /** Eligible public bouquets: exactly the products the occasion page lists. */
   count: number;
+  /** "1 design" / "8 designs". */
+  countLabel: string;
   image: ResponsiveImage;
+  /** object-position for the card's 5:7 crop, so the flowers stay in frame. */
+  focus: string;
 };
 
-export function getOccasionCarousel(): OccasionCard[] {
+function productPhoto(slug: string): Photo {
+  const product = bySlug(slug);
+  const img = responsiveImage(product.image);
+  return { ...img, width: img.width ?? 1200, height: img.height ?? 1200, alt: product.name };
+}
+
+// Where each bouquet photograph's flowers sit, for the 5:7 portrait crop
+// (object-position, measured on the photographs); anything not listed is
+// centred.
+const OCCASION_FOCUS: Record<string, string> = {
+  "/images/bouquets/bouquet-timeless-hug-01.webp": "54% 50%",
+  "/images/bouquets/bouquet-rose-promise-01.webp": "53% 50%",
+  "/images/lilies/lily-blush-lily-letter-01.webp": "42% 50%",
+};
+
+export const designCountLabel = (count: number) => `${count} ${count === 1 ? "design" : "designs"}`;
+
+export function getOccasionCarousel(membership: Membership): OccasionCard[] {
   const used = new Set<string>();
-  return occasionCarousel().map(({ label, href, count, products, feature }) => {
+  return carouselOccasions(membership).map(({ key, label, href, products, feature }) => {
     const featured = products.find((product) => product.slug === feature);
     const lead = featured && !used.has(featured.image) ? featured : (products.find((product) => !used.has(product.image)) ?? products[0]);
     used.add(lead.image);
-    return { title: label, href, count, image: responsiveImage(lead.image) };
+    return {
+      key,
+      title: label,
+      href,
+      count: products.length,
+      countLabel: designCountLabel(products.length),
+      image: responsiveImage(lead.image),
+      focus: OCCASION_FOCUS[lead.image] ?? "50% 50%",
+    };
   });
+}
+
+/** Bouquet types, shown with the homepage bouquets ("See all bouquets"). */
+export function getBouquetBrowse(): { label: string; href: string }[] {
+  return launchGroups("bouquets").map(({ group }) => ({ label: group.label, href: `/categories/bouquets#${group.id}` }));
+}
+
+/**
+ * The budget shortcut beside the homepage bouquet heading: bouquets whose
+ * displayed (starting) price is under ₹1,500 — the bouquet price, not an
+ * all-in order total. Counted from the same published prices the cards show.
+ */
+export function getBudgetShortcut(priceMap: Map<string, AuthoritativePrice>): { label: string; href: string; count: number } | null {
+  const count = launchProducts().filter((product) => budgetBand(withAuthoritativePrice(product, priceMap)) === "under-1500").length;
+  return count > 0 ? { label: `Bouquets under ₹1,500 (${count})`, href: "/categories/bouquets?budget=under-1500", count } : null;
 }
 
 // ---------------------------------------------------------------------
@@ -156,63 +225,52 @@ export function getBouquetEdit(priceMap: Map<string, AuthoritativePrice>): EditP
 }
 
 // ---------------------------------------------------------------------
-// D. Inside the bouquet — composition facts counted from the 37 products
-// in the Bouquets category.
-// ---------------------------------------------------------------------
-export type BouquetFacts = {
-  total: number;
-  roses: number;
-  gerberas: number;
-  chrysanthemums: number;
-  softeners: number;
-  greenery: number;
-  ribbon: number;
-  wrapped: number;
-  messageNote: number;
-  topCareNotes: string[];
+// D. What will arrive — one public launch bouquet, its own photograph (linked
+// to its page) and two close-ups cropped from that same file in CSS, with
+// the specification its catalogue entry records. Crop boxes are fractions
+// of the (square) photograph, measured on it; a bouquet without boxes shows
+// the photograph alone.
+type Crop = { x: number; y: number; w: number; h: number; caption: string; alt: string };
+const ARRIVAL_PRODUCT_SLUG = "colourful-confession";
+const ARRIVAL_CROPS: Record<string, { flowers: Crop; wrap: Crop }> = {
+  "colourful-confession": {
+    flowers: { x: 0.3, y: 0.3, w: 0.44, h: 0.36, caption: "The flowers", alt: "Close view of the centre: gerberas, a peach rose, daisies and purple fillers" },
+    wrap: { x: 0.34, y: 0.74, w: 0.34, h: 0.24, caption: "Wrap and ribbon", alt: "Close view of the kraft wrapping gathered with a ribbon at the stems" },
+  },
 };
 
-export function getBouquetFacts(): BouquetFacts {
-  const bouquets = productCatalog.filter((product) => product.category === "Bouquets");
-  const withFlower = (pattern: RegExp) =>
-    bouquets.filter((product) => (product.flowerTypes ?? []).some((type) => pattern.test(type))).length;
-  const withIncluded = (pattern: RegExp) =>
-    bouquets.filter((product) => (product.whatsIncluded ?? []).some((item) => pattern.test(item))).length;
+export type ArrivalBouquet = {
+  slug: string;
+  name: string;
+  priceLabel: string;
+  photo: Photo;
+  flowers: string[];
+  stems: string | null;
+  included: string[];
+  crops: { flowers: Crop; wrap: Crop } | null;
+};
 
-  const careCounts = new Map<string, number>();
-  for (const product of bouquets) {
-    for (const note of product.careNotes ?? []) careCounts.set(note, (careCounts.get(note) ?? 0) + 1);
-  }
-
+export function getArrivalBouquet(priceMap: Map<string, AuthoritativePrice>): ArrivalBouquet {
+  const product = launchProducts().find((item) => item.slug === ARRIVAL_PRODUCT_SLUG) ?? launchProducts()[0];
   return {
-    total: bouquets.length,
-    roses: withFlower(/\brose/i),
-    gerberas: withFlower(/gerbera/i),
-    chrysanthemums: withFlower(/chrysanth/i),
-    softeners: withFlower(/gypsophila|baby/i),
-    greenery: withFlower(/greenery|filler|fern/i),
-    ribbon: withIncluded(/ribbon/i),
-    wrapped: withIncluded(/wrap/i),
-    messageNote: withIncluded(/message note/i),
-    topCareNotes: [...careCounts.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 3)
-      .map(([note]) => note.replace(/\.$/, "")),
-  };
-}
-
-// D. The detail study: the kraft-wrapped bouquet (banner-bouquet.jpg) and
-// two details cropped from that same photograph.
-export function getDetailPhoto() {
-  return {
-    whole: photo("banner-bouquet", "A large hand-tied bouquet of mixed flowers wrapped in kraft paper and tied with red twine"),
-    centre: photo("banner-bouquet#centre", "Close view of the centre of the bouquet: large coral and red blooms with cream, yellow and white flowers around them"),
-    tie: photo("banner-bouquet#tie", "Close view of the kraft paper wrap gathered at the stems and tied with red twine"),
+    slug: product.slug,
+    name: product.name,
+    priceLabel: withAuthoritativePrice(product, priceMap).priceLabel,
+    photo: { ...productPhoto(product.slug), alt: `${product.name}: ${product.description}` },
+    flowers: product.flowerTypes ?? [],
+    stems: product.stemCount ?? null,
+    included: product.whatsIncluded ?? [],
+    crops: ARRIVAL_CROPS[product.slug] ?? null,
   };
 }
 
 // G. Final invitation photograph — flowers being held out, cropped to the
 // hand and flowers.
-export function getFinalPhoto() {
-  return photo("bouquet-6#closing", "A hand holding out a bouquet of daisies, a peach rose, lavender and wildflowers in a meadow");
+// A public launch bouquet's own photograph (linked to its page), not an
+// editorial photograph of flowers we don't sell.
+const ASSIST_PRODUCT_SLUG = "pink-lily-wish";
+
+export function getFinalPhoto(): Photo & { slug: string; name: string } {
+  const product = launchProducts().find((item) => item.slug === ASSIST_PRODUCT_SLUG) ?? launchProducts()[0];
+  return { ...productPhoto(product.slug), alt: `${product.name}: ${product.description}`, slug: product.slug, name: product.name };
 }

@@ -1,0 +1,265 @@
+---
+// Progressive URL filters: identical selection rules in HTML and JavaScript.
+import type { FilterGroup, Intent } from "../../data/occasionJourneys";
+import { parseShopFilters, shopFilterUrl, toggleShopFilter } from "../../utils/shopFilters";
+interface Props { groups: FilterGroup[]; intents?: Record<Intent, string>; noun?: string; total: number; shown?: number; }
+const { groups, intents, noun = "bouquets", total, shown = total } = Astro.props;
+const state = parseShopFilters(Astro.url.searchParams);
+const active = groups.flatMap((group) => group.options.filter((option) => state[group.id].includes(option.key)).map((option) => ({ ...option, group: group.id })));
+const clearHref = shopFilterUrl(Astro.url.pathname, { occasion: [], budget: [], colour: [], intent: intents ? state.intent : null });
+---
+<div class="shop-controls" data-shop-controls>
+  {intents && <div class="intent" role="group" aria-label="What are the flowers for?" data-intent-switch>
+    {(["ceremony", "gift"] as Intent[]).map((key) => <a href={shopFilterUrl(Astro.url.pathname, { ...state, intent: key })} role="button" class="intent__btn" data-intent-choice={key} aria-pressed={(state.intent ?? "ceremony") === key}>{intents[key]}</a>)}
+  </div>}
+  {groups.length > 0 && <div class="filters" data-filters>
+    <div class="filters__row" role="group" aria-label="Filter the list">
+      {groups.map((group) => <div class="filters__group" role="group" aria-label={group.label} hidden={group.options.every((option) => option.count === 0 && !state[group.id].includes(option.key))}>
+        <span class="filters__label" aria-hidden="true">{group.label}</span>
+        {group.options.map((option) => <a href={shopFilterUrl(Astro.url.pathname, toggleShopFilter(state, group.id, option.key))} role="button" class="chip" aria-pressed={state[group.id].includes(option.key)} data-filter-group={group.id} data-filter-value={option.key} aria-label={group.label + ": " + option.label} hidden={option.count === 0 && !state[group.id].includes(option.key)}>
+          {option.label} <span class="chip__count" data-chip-count>({option.count})</span>
+        </a>)}
+      </div>)}
+    </div>
+    <p class="filters__status" aria-live="polite">
+      <span data-shop-count>{active.length ? "Showing " + shown + " of " + total : shown} {noun}</span>
+      <span data-active-list class="filters__active">{active.map((option) => <a class="active-pill" href={shopFilterUrl(Astro.url.pathname, toggleShopFilter(state, option.group, option.key))} data-active-remove={option.key} data-active-group={option.group} aria-label={"Remove filter " + option.label}>{option.label} ✕</a>)}</span>
+      <a href={clearHref} class="filters__clear" data-filters-clear hidden={!active.length && (!state.intent || !!intents)}>Clear filters</a>
+    </p>
+  </div>}
+</div>
+<script>
+  import { FILTER_GROUPS, parseShopFilters, matchesShopFilters, shopFilterUrl, toggleShopFilter, type FilterKey } from "../../utils/shopFilters";
+  import { makeJourney, journeyHref } from "../../utils/journey";
+  import { OCCASION_FILTER_LABELS, BUDGET_LABELS, COLOUR_LABELS } from "../../data/shoppingTaxonomy";
+  import { whatsappLink } from "../../config/storefront";
+  const labels: Record<string, Record<string, string>> = { occasion: OCCASION_FILTER_LABELS, budget: BUDGET_LABELS, colour: COLOUR_LABELS };
+  for (const root of document.querySelectorAll<HTMLElement>("[data-shop]")) {
+    let state = parseShopFilters(new URLSearchParams(location.search));
+    const intents = [...root.querySelectorAll<HTMLAnchorElement>("[data-intent-choice]")];
+    const chips = [...root.querySelectorAll<HTMLAnchorElement>("[data-filter-value]")];
+    const sections = [...root.querySelectorAll<HTMLElement>("[data-intent-section]")];
+    const defaultIntent = root.dataset.defaultIntent === "ceremony" ? "ceremony" : "gift";
+    const itemData = (item: HTMLElement) => ({ occasions: (item.dataset.occasions ?? "").split(" "), colours: (item.dataset.colours ?? "").split(" ") as (keyof typeof COLOUR_LABELS)[], budget: (item.dataset.budget || null) as "under-1500" | "1500-plus" | null, intent: (item.dataset.intent ?? "gift") as "gift" | "ceremony" });
+    const render = () => {
+      const selectedIntent = state.intent ?? (intents.length ? defaultIntent : null);
+      intents.forEach((link) => { link.setAttribute("aria-pressed", String(link.dataset.intentChoice === selectedIntent)); link.href = shopFilterUrl(location.pathname, { ...state, intent: link.dataset.intentChoice as "gift" | "ceremony" }); });
+      sections.forEach((section) => { section.hidden = !!selectedIntent && section.dataset.intentSection !== selectedIntent; section.removeAttribute("data-start-hidden"); });
+      const items = [...root.querySelectorAll<HTMLElement>("[data-shop-item]")];
+      const scoped = items.filter((item) => !item.closest<HTMLElement>("[data-intent-section]")?.hidden);
+      for (const item of items) item.hidden = !matchesShopFilters(itemData(item), state);
+      const shown = scoped.filter((item) => !item.hidden).length;
+      root.querySelectorAll<HTMLElement>("[data-shop-group]").forEach((group) => { group.hidden = ![...group.querySelectorAll<HTMLElement>("[data-shop-item]")].some((item) => !item.hidden); });
+      root.querySelectorAll<HTMLElement>("[data-shop-empty]").forEach((empty) => { empty.hidden = shown !== 0; });
+      for (const chip of chips) {
+        const group = chip.dataset.filterGroup as FilterKey, value = chip.dataset.filterValue!;
+        const selected = state[group].includes(value);
+        const n = scoped.filter((item) => matchesShopFilters(itemData(item), state, group) && (group === "occasion" ? itemData(item).occasions : group === "colour" ? itemData(item).colours : [itemData(item).budget]).includes(value as never)).length;
+        chip.setAttribute("aria-pressed", String(selected));
+        chip.querySelector("[data-chip-count]")!.textContent = "(" + n + ")";
+        // A selected zero-count chip remains visible and removable.
+        chip.hidden = !selected && n === 0;
+        chip.href = shopFilterUrl(location.pathname, toggleShopFilter(state, group, value));
+      }
+      root.querySelectorAll<HTMLElement>(".filters__group").forEach((group) => { group.hidden = ![...group.querySelectorAll<HTMLElement>("[data-filter-value]")].some((chip) => !chip.hidden); });
+      const selected = FILTER_GROUPS.flatMap((group) => state[group].map((value) => ({ group, value })));
+      const count = root.querySelector<HTMLElement>("[data-shop-count]");
+      if (count) { const noun = root.dataset.shopNoun ?? "bouquets"; count.textContent = selected.length ? "Showing " + shown + " of " + scoped.length + " " + noun : shown + " " + noun; }
+      const activeList = root.querySelector("[data-active-list]");
+      activeList?.replaceChildren(...selected.map(({ group, value }) => {
+        const link = document.createElement("a"); link.className = "active-pill"; link.textContent = labels[group][value] + " ✕";
+        link.href = shopFilterUrl(location.pathname, toggleShopFilter(state, group, value)); link.dataset.activeRemove = value; link.dataset.activeGroup = group; link.setAttribute("aria-label", "Remove filter " + labels[group][value]); return link;
+      }));
+      root.querySelectorAll<HTMLAnchorElement>("[data-filters-clear]").forEach((link) => { link.href = shopFilterUrl(location.pathname, { occasion: [], budget: [], colour: [], intent: intents.length ? state.intent : null }); if (link.closest("[data-filters]")) link.hidden = !selected.length && (!state.intent || !!intents.length); });
+      const from = shopFilterUrl(location.pathname, state);
+      const context = makeJourney(root.dataset.shopOccasion ? [root.dataset.shopOccasion] : state.occasion, selectedIntent ?? "gift", from);
+      root.querySelectorAll<HTMLAnchorElement>("[data-filter-help]").forEach((link) => { link.href = whatsappLink("Hi Fresh Petals, please help me choose flowers.\nOccasions: " + (context?.occasionLabel ?? "Please advise") + "\nPlease confirm availability, delivery and the complete price before I accept the order."); });
+      root.querySelectorAll<HTMLAnchorElement>("[data-journey-link]").forEach((link) => {
+        const canonical = link.dataset.productHref ?? new URL(link.href, location.href).pathname;
+        link.dataset.productHref = canonical;
+        const purpose = link.closest<HTMLElement>("[data-intent-section]")?.dataset.intentSection === "ceremony" ? "ceremony" : "gift";
+        link.href = journeyHref(canonical, context ? { ...context, intent: purpose, intentLabel: purpose === "gift" ? "A gift" : "For the ceremony" } : null);
+      });
+      document.dispatchEvent(new Event("fresh-petals-shop-updated"));
+    };
+    root.addEventListener("click", (event) => {
+      if ((event as MouseEvent).button || (event as MouseEvent).ctrlKey || (event as MouseEvent).metaKey || (event as MouseEvent).shiftKey || (event as MouseEvent).altKey) return;
+      const link = (event.target as Element).closest<HTMLAnchorElement>("[data-filter-value], [data-intent-choice], [data-filters-clear], [data-active-remove]");
+      if (!link) return;
+      event.preventDefault();
+      state = parseShopFilters(new URL(link.href).searchParams);
+      history.pushState(history.state, "", shopFilterUrl(location.pathname, state)); render();
+    });
+    root.addEventListener("keydown", (event) => { if (event.key === " " && (event.target as Element).matches("a[role=button]")) { event.preventDefault(); (event.target as HTMLElement).click(); } });
+    addEventListener("popstate", () => { state = parseShopFilters(new URLSearchParams(location.search)); render(); });
+    document.addEventListener("fresh-petals-shop-items-updated", render);
+    render();
+  }
+</script>
+<style>
+  .chip[hidden], .filters__group[hidden] { display: none; }
+  .chip, .intent__btn, .active-pill { text-decoration: none; }
+  .intent__btn { display: inline-flex; align-items: center; justify-content: center; }
+  .shop-controls {
+    display: grid;
+    gap: 0.6rem;
+    min-width: 0;
+  }
+
+  .filters {
+    min-width: 0;
+  }
+
+  .intent {
+    display: inline-grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    gap: 0.25rem;
+    padding: 0.25rem;
+    border: 1px solid var(--color-line-strong);
+    border-radius: 999px;
+    background: var(--color-paper);
+    justify-self: start;
+    width: min(100%, 26rem);
+  }
+
+  .intent__btn {
+    min-height: 44px;
+    padding: 0 1rem;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    font: inherit;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-ink);
+    cursor: pointer;
+  }
+
+  .intent__btn[aria-pressed="true"] {
+    background: var(--color-ink);
+    color: var(--color-paper);
+  }
+
+  .intent__btn:focus-visible,
+  .chip:focus-visible,
+  .filters__clear:focus-visible,
+  :global(.active-pill:focus-visible) {
+    outline: 3px solid var(--color-ink);
+    outline-offset: 2px;
+  }
+
+  /* Shown from the first paint when scripts can run (html.js, set in the
+     document head), so the list doesn't jump; never shown without them. */
+  .needs-js {
+    display: none;
+  }
+  :global(html.js) .intent.needs-js {
+    display: inline-grid;
+  }
+  :global(html.js) .filters.needs-js {
+    display: block;
+  }
+
+  .filters__row {
+    display: flex;
+    gap: 0.9rem;
+    overflow-x: auto;
+    padding: 0.1rem 0 0.25rem;
+    scrollbar-width: none;
+    overscroll-behavior-x: contain;
+  }
+
+  .filters__group {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-shrink: 0;
+  }
+
+  .filters__label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-moss);
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    min-height: 44px;
+    padding: 0 0.9rem;
+    border: 1px solid var(--color-line-strong);
+    border-radius: 999px;
+    background: var(--color-paper);
+    font: inherit;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--color-ink);
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  .chip[aria-pressed="true"] {
+    background: var(--color-ink);
+    border-color: var(--color-ink);
+    color: var(--color-paper);
+  }
+
+  .chip:disabled {
+    opacity: 0.45;
+    cursor: default;
+  }
+
+  .chip__count {
+    font-weight: 500;
+    opacity: 0.8;
+  }
+
+  .filters__status {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem 0.6rem;
+    margin: 0;
+    font-size: 0.8125rem;
+    color: var(--color-moss);
+  }
+
+  .filters__active {
+    display: contents;
+  }
+
+  :global(.active-pill) {
+    min-height: 32px;
+    padding: 0 0.7rem;
+    border: 1px solid var(--color-line-strong);
+    border-radius: 999px;
+    background: var(--color-linen);
+    font: inherit;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-ink);
+    cursor: pointer;
+  }
+
+  .filters__clear {
+    min-height: 32px;
+    padding: 0 0.2rem;
+    border: 0;
+    background: none;
+    font: inherit;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--color-ink);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+    cursor: pointer;
+  }
+
+  .filters__clear[hidden] {
+    display: none;
+  }
+</style>

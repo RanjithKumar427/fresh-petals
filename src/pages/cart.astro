@@ -2,6 +2,8 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { TaxonomyService } from "../server/services/TaxonomyService";
 import { DELIVERY_METHOD_OPTIONS } from "../server/services/delivery/DeliveryService";
+import { productCatalog } from "../data/productCatalog";
+import { loadAuthoritativePrices, withAuthoritativePrice } from "../server/services/ProductPricing";
 
 // Commerce Foundation Phase 3, Milestone 2 — Delivery Details' Occasion
 // field reuses the real, admin-managed taxonomy instead of a hardcoded
@@ -17,6 +19,13 @@ const occasionOptions = await TaxonomyService.listOccasions();
 // so there's exactly one place these four options are defined — see
 // deliveryRules.ts's DELIVERY_METHOD_OPTIONS.
 const timeSlots = DELIVERY_METHOD_OPTIONS;
+
+// The price label every catalogue product (and add-on) is published with in
+// this deployment — the same snapshot the product pages and listings show.
+// A basket saved earlier is brought up to date against it before it is shown
+// or sent, so WhatsApp never receives an outdated price.
+const priceMap = await loadAuthoritativePrices();
+const publishedPrices = Object.fromEntries(productCatalog.map((product) => [product.slug, withAuthoritativePrice(product, priceMap).priceLabel]));
 ---
 
 <BaseLayout
@@ -34,7 +43,7 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
           </p>
 
           <h1 class="fp-h1 mt-3">
-            Your Cart
+            Your basket
           </h1>
 
           <p class="mx-auto mt-5 max-w-2xl text-sm leading-7 text-moss md:text-base">
@@ -47,7 +56,7 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
           class="hidden rounded-[24px] border border-line bg-linen p-8 text-center"
         >
           <h2 class="text-lg font-semibold text-ink">
-            Your cart is empty
+            Your basket is empty
           </h2>
 
           <p class="mt-3 text-sm leading-7 text-moss">
@@ -58,11 +67,12 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
             href="/categories/bouquets"
             class="mt-6 inline-flex fp-btn-pill-dark"
           >
-            Start Shopping
+            Browse bouquets
           </a>
         </div>
 
         <div data-cart-content class="hidden">
+          <p data-cart-price-notice role="status" class="mb-5 rounded-2xl border border-line bg-linen px-4 py-3 text-sm leading-6 text-ink" hidden></p>
           <div data-cart-items class="space-y-5"></div>
 
           <div class="mt-8 rounded-[24px] border border-line bg-linen p-5">
@@ -73,7 +83,7 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
             <div class="mt-5 grid gap-3 md:grid-cols-2">
               <div>
                 <label class="mb-2 block text-[10px] font-bold uppercase tracking-[0.22em] text-berry">
-                  Name
+                  Your name (sender)
                 </label>
 
                 <input
@@ -294,7 +304,7 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
                 data-send-cart-whatsapp
                 class="fp-btn-whatsapp inline-flex items-center justify-center rounded-full bg-ink px-7 py-4 text-[11px] font-bold uppercase tracking-[0.22em] text-white hover:bg-berry"
               >
-                Send Cart on WhatsApp
+                Send basket on WhatsApp
               </button>
 
               <button
@@ -315,6 +325,7 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
     </section>
   </main>
 
+  <script is:inline type="application/json" id="published-prices" set:html={JSON.stringify(publishedPrices)}></script>
   <script is:inline>
     const whatsappNumber = "919652012274";
     const CART_KEY = "fresh_petals_cart";
@@ -433,6 +444,8 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
       if (!occasionOtherWrapper) return;
       occasionOtherWrapper.classList.toggle("hidden", occasionInput.value !== "Other");
     });
+
+    // Occasion choices belong to each basket item. The optional order field is never populated from another item.
 
     // Business-timezone "today", not the browser's local/UTC date — the
     // server's authoritative /api/delivery/check (see businessTime.ts)
@@ -554,6 +567,14 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
       }
     }
 
+    function itemProductHref(item) {
+      const pathname = `/products/${encodeURIComponent(item.slug)}`;
+      if (!item.journey?.occasion) return pathname;
+      const params = new URLSearchParams({ occ: item.journey.occasion, for: item.journey.intent });
+      if (item.journey.from) params.set("from", item.journey.from);
+      return pathname + "?" + params;
+    }
+
     function hasConfiguredDetails(item) {
       return Boolean(
         item.deliveryDate ||
@@ -563,8 +584,13 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
           item.message ||
           item.note ||
           (item.addOns && item.addOns.length > 0) ||
-          item.subscription
+          item.subscription || item.journey
       );
+    }
+
+    // Older persisted baskets may contain the withdrawn express promise.
+    function requestedSlotText(slot) {
+      return /within 4\s*[-–]\s*6 hours/i.test(slot) ? "Express request — timing to be confirmed on WhatsApp" : slot;
     }
 
     function renderAddOnsHtml(addOns) {
@@ -623,9 +649,10 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
       if (!hasConfiguredDetails(item)) return "";
 
       const deliveryRows = [
+        item.journey?.occasionLabel ? `Chosen for: ${item.journey.occasionLabel} · ${item.journey.intentLabel}` : "",
         item.pincode ? `Item Pincode: ${item.pincode}` : "",
         item.deliveryDate ? `Item Delivery Date: ${item.deliveryDate}` : "",
-        item.deliverySlot ? `Item Delivery Slot: ${item.deliverySlot}` : "",
+        item.deliverySlot ? `Item Delivery Slot: ${requestedSlotText(item.deliverySlot)}` : "",
         item.greetingCard ? `Greeting Card: ${item.greetingCard}` : "",
         item.message ? `Message: ${item.message}` : "",
         item.note ? `Item Note: ${item.note}` : "",
@@ -654,10 +681,11 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
 
     function buildConfiguredDetailsText(item) {
       const lines = [];
+      if (item.journey?.occasionLabel) { lines.push(`Occasion: ${item.journey.occasionLabel}`); lines.push(`For: ${item.journey.intentLabel}`); }
 
       if (item.pincode) lines.push(`Item Pincode: ${item.pincode}`);
       if (item.deliveryDate) lines.push(`Item Delivery Date: ${item.deliveryDate}`);
-      if (item.deliverySlot) lines.push(`Item Delivery Slot: ${item.deliverySlot}`);
+      if (item.deliverySlot) lines.push(`Item Delivery Slot: ${requestedSlotText(item.deliverySlot)}`);
       if (item.greetingCard) lines.push(`Greeting Card: ${item.greetingCard}`);
       if (item.message) lines.push(`Message: ${item.message}`);
       if (item.note) lines.push(`Item Note: ${item.note}`);
@@ -732,7 +760,7 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
           "grid gap-4 rounded-[24px] border border-line bg-paper p-4 shadow-[0_10px_30px_rgba(40,24,32,0.05)] md:grid-cols-[110px_1fr_auto] md:items-start";
 
         itemElement.innerHTML = `
-          <a href="/products/${escapeHtml(item.slug)}" class="block overflow-hidden rounded-2xl bg-linen">
+          <a href="${escapeHtml(itemProductHref(item))}" class="block overflow-hidden rounded-2xl bg-linen">
             <img
               src="${escapeHtml(item.image)}"
               alt="${escapeHtml(item.name)}"
@@ -745,7 +773,7 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
               ${escapeHtml(item.category)}
             </p>
 
-            <a href="/products/${escapeHtml(item.slug)}" class="mt-2 block">
+            <a href="${escapeHtml(itemProductHref(item))}" class="mt-2 block">
               <h2 class="text-base font-semibold text-ink">
                 ${escapeHtml(item.name)}
               </h2>
@@ -1159,7 +1187,7 @@ Delivery Fee: ${deliveryFeeText}
 Service Status: ${serviceStatusText}
 Date: ${deliveryDate}
 Landmark: ${landmark}
-Occasion: ${occasion}
+Order occasion (optional): ${occasion || "Not specified"}
 
 PRODUCTS
 ${cartLines}
@@ -1284,6 +1312,45 @@ Please confirm availability, final price, delivery fee and payment details.
       renderCart();
     });
 
+    // A basket saved before a price change is brought up to this deployment's
+    // published prices (products and add-ons) before it is shown or sent, and
+    // the customer is told what changed. Items that aren't catalogue
+    // products (none can be added today) are left as they are.
+    function reconcilePrices() {
+      let published = {};
+      try {
+        published = JSON.parse(document.getElementById("published-prices")?.textContent || "{}");
+      } catch {}
+      const has = (slug) => typeof slug === "string" && Object.prototype.hasOwnProperty.call(published, slug);
+      const changes = [];
+      const items = getCartItems().map((item) => {
+        let next = item;
+        if (has(item.slug) && published[item.slug] !== item.priceLabel) {
+          changes.push(`${item.name}: ${item.priceLabel || "no price"} → ${published[item.slug]}`);
+          next = { ...next, priceLabel: published[item.slug] };
+        }
+        if (Array.isArray(next.addOns)) {
+          next = {
+            ...next,
+            addOns: next.addOns.map((addOn) => {
+              if (!has(addOn.id) || published[addOn.id] === addOn.priceLabel) return addOn;
+              changes.push(`${addOn.name}: ${addOn.priceLabel || "no price"} → ${published[addOn.id]}`);
+              return { ...addOn, priceLabel: published[addOn.id] };
+            }),
+          };
+        }
+        return next;
+      });
+      if (changes.length === 0) return;
+      saveCartItems(items);
+      const notice = document.querySelector("[data-cart-price-notice]");
+      if (notice) {
+        notice.textContent = `Prices updated to the current listed prices: ${changes.join("; ")}.`;
+        notice.hidden = false;
+      }
+    }
+
+    reconcilePrices();
     renderCart();
   </script>
 </BaseLayout>

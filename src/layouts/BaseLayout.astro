@@ -64,8 +64,12 @@ const absoluteImageUrl = new URL(image, Astro.site);
 
     <!-- Motion is opt-in: reveal masks only apply when the visitor allows
          motion and this script ran, so content is never hidden otherwise. -->
+    <!-- "js": controls that only work with scripts (listing filters) are laid
+         out from the first paint instead of appearing later and pushing
+         the products down. -->
     <script is:inline>
       (function () {
+        document.documentElement.classList.add("js");
         if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
           document.documentElement.classList.add("motion");
         }

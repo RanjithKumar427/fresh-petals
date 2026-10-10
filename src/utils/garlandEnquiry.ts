@@ -18,11 +18,15 @@ export type GarlandEnquiry = {
   options?: string[];
   /** Absolute URL of the design page. */
   url?: string;
+  /** The occasion the shopper came from, e.g. "Wedding" (optional). */
+  occasion?: string | null;
+  /** What it's for, e.g. "For the ceremony" (optional). */
+  purpose?: string | null;
 };
 
 const UNIT_WORDS = { single: ["garland", "garlands"], pair: ["pair", "pairs"], set: ["set", "sets"] } as const;
 
-export function garlandEnquiryText({ code, title, quantity, price, unit = null, options = [], url }: GarlandEnquiry): string {
+export function garlandEnquiryText({ code, title, quantity, price, unit = null, options = [], url, occasion = null, purpose = null }: GarlandEnquiry): string {
   const count = Math.max(1, Math.floor(quantity) || 1);
   const unitWord = unit ? ` ${UNIT_WORDS[unit][count === 1 ? 0 : 1]}` : "";
   const lines = [
@@ -35,7 +39,8 @@ export function garlandEnquiryText({ code, title, quantity, price, unit = null, 
     `Options: ${options.length > 0 ? options.join("; ") : "none chosen — please advise"}`
   );
   if (url) lines.push(`Link: ${url}`);
-  lines.push("Occasion and date: ", "Delivery area: ");
+  if (purpose) lines.push(`For: ${purpose}`);
+  lines.push(occasion ? `Occasion: ${occasion}` : "Occasion: ", "Date (optional): ", "Delivery area (optional): ");
   return lines.join("\n");
 }
 
@@ -48,8 +53,23 @@ export const GARLAND_ENQUIRY_PATH = "/garland-enquiry";
  * WhatsApp message from the saved details — so an unpublished garland can't
  * be enquired about, even from a page still held in a cache.
  */
-export function garlandEnquiryHref({ code, quantity = 1, options = [] }: { code: string; quantity?: number; options?: { name: string; value: string }[] }): string {
+export function garlandEnquiryHref({
+  code,
+  quantity = 1,
+  options = [],
+  occasion,
+  purpose,
+}: {
+  code: string;
+  quantity?: number;
+  options?: { name: string; value: string }[];
+  /** Occasion route the shopper came from (validated by the enquiry check). */
+  occasion?: string | null;
+  purpose?: "ceremony" | "gift" | null;
+}): string {
   const params = new URLSearchParams({ code, qty: String(Math.max(1, Math.floor(quantity) || 1)) });
   for (const option of options) params.append("opt", `${option.name}::${option.value}`);
+  if (occasion) params.set("occ", occasion);
+  if (purpose) params.set("for", purpose);
   return `${GARLAND_ENQUIRY_PATH}?${params.toString()}`;
 }

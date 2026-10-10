@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import UploadZone from "./UploadZone";
+import AdminImage from "../shared/AdminImage";
 import { FOLDER_LABELS, MEDIA_FOLDERS, type Media, type MediaFolder, type MediaListItem } from "./types";
 
 interface Props {
@@ -149,7 +150,7 @@ export default function MediaPickerModal({ open, onClose, onChoose }: Props) {
                           isSelected ? "border-[#7C243E]" : "border-transparent hover:border-[#D8D1D4]"
                         }`}
                       >
-                        <img src={item.url} alt="" className="h-full w-full object-cover" />
+                        <AdminImage src={item.url} alt="" className="h-full w-full object-cover" />
                         {isSelected && (
                           <span className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#7C243E] text-[11px] text-white">
                             ✓

@@ -1,6 +1,7 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import ProductOptions from "../../components/ProductOptions.astro";
+import JourneyNote from "../../components/occasion/JourneyNote.astro";
 import ProductCard from "../../components/ProductCard.astro";
 import { productCatalog } from "../../data/productCatalog";
 import type { Product } from "../../data/productCatalog";
@@ -37,6 +38,9 @@ type Props = {
 };
 
 const { product } = Astro.props;
+// Offer ranges ("Budget picks", "Fresh deals") carry a merchandising label,
+// not an amount, so there is no starting or set price to describe.
+const pricedAs = /\d/.test(product.priceLabel) ? product.priceType : null;
 
 // Customer UX milestone — same admin-managed taxonomy cart.astro's
 // Delivery Details section already uses for its Occasion field; reused
@@ -51,7 +55,7 @@ const idealFor = product.idealFor?.length
   ? product.idealFor.join(", ")
   : product.occasionTags?.join(", ");
 
-const stemCount = product.stemCount || "As shown";
+const stemCount = product.stemCount || "Not recorded — please confirm on WhatsApp";
 const careLevel = product.careLevel || "Occasional";
 
 const trustIndicators = [
@@ -310,7 +314,7 @@ const breadcrumbJsonLd = {
              detail, not as decisions of equal weight to the above. -->
         <div class="mt-4 flex flex-wrap gap-x-8 gap-y-2 border-t border-line pt-4">
           <p class="text-xs text-moss">
-            <span class="font-semibold text-ink">Stems</span> — {stemCount}
+            <span class="font-semibold text-ink">Listed stems</span> — {stemCount}. Confirm the final arrangement on WhatsApp.
           </p>
           <p class="text-xs text-moss">
             <span class="font-semibold text-ink">Care</span> — {careLevel}
@@ -337,10 +341,22 @@ const breadcrumbJsonLd = {
           </div>
         </dl>
 
-        <p class="mt-7 rounded-2xl border border-rose-soft bg-linen px-5 py-4 text-sm font-semibold text-berry">
-          Final price, availability and delivery are confirmed on WhatsApp before payment.
-        </p>
-
+        <JourneyNote />
+        {/* What the price covers, beside the buying actions — restating the
+            terms page: starting vs set price, add-ons and delivery charged
+            separately and agreed before payment. (Substitutions are in the
+            facts list just above; not repeated here.) */}
+        {product.isAvailable && (
+          <div class="mt-6 rounded-[18px] border border-line bg-paper px-4 py-3 text-sm leading-6 text-moss" data-price-basis>
+            {pricedAs === "from" && (
+              <p><strong class="text-ink">{product.priceLabel} is the starting price.</strong> The final price can vary with that day's flowers and any change you ask for — we confirm it before you pay.</p>
+            )}
+            {pricedAs === "fixed" && (
+              <p><strong class="text-ink">{product.priceLabel} is the price of this {product.category === "Bouquets" || product.category === "Lilies" ? "bouquet" : "item"}.</strong></p>
+            )}
+            <p class={pricedAs === "from" || pricedAs === "fixed" ? "mt-1" : ""}>Add-ons are priced separately (shown with each one). Delivery is charged separately; availability, delivery and the final price are confirmed on WhatsApp before you pay. <a href="/terms" class="inline-flex min-h-[44px] items-center font-semibold text-ink underline underline-offset-2">Terms</a></p>
+          </div>
+        )}
         <ProductOptions product={product} occasionOptions={occasionOptions} />
 
         <p class="mt-5 text-sm leading-6 text-moss">

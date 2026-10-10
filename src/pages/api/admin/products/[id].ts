@@ -2,6 +2,7 @@ import type { APIRoute } from "astro";
 import { ProductService } from "../../../../server/services/ProductService";
 import { json } from "../../../../server/http/json";
 import { garlandWebsiteChange } from "../../../../server/services/GarlandWebsite";
+import { occasionWebsiteChange } from "../../../../server/services/OccasionWebsite";
 
 export const prerender = false;
 
@@ -26,7 +27,10 @@ export const PATCH: APIRoute = async ({ params, request }) => {
   // Garlands: refresh the live website when the save can be seen there, and
   // tell the editor (saved is not the same as visible on the website).
   const website = await garlandWebsiteChange(before, result.data);
-  return json(website ? { ...result, website } : result, 200);
+  // Bouquets: when "Suitable occasions" changed, refresh the affected live
+  // occasion pages (old and new memberships) and say so.
+  const occasions = await occasionWebsiteChange(before, result.data);
+  return json({ ...result, ...(website ? { website } : {}), ...(occasions ? { occasions } : {}) }, 200);
 };
 
 export const DELETE: APIRoute = async ({ params }) => {

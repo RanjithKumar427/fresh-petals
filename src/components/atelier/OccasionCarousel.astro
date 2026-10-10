@@ -1,8 +1,10 @@
 ---
 // B. Every occasion — the homepage occasion carousel. The occasions with
-// eligible launch bouquets (launchCatalogue.occasionCarousel, via
-// atelierHome.getOccasionCarousel), in the owner's order, each card a link to
-// its occasion page with the same design count that page shows.
+// eligible public bouquets (occasionJourneys.carouselOccasions, via
+// atelierHome.getOccasionCarousel), in the owner's order, from the admin's
+// current occasion assignments: the homepage is rendered on request and
+// purged when an assignment changes (OccasionWebsite.ts). Each card links to
+// its occasion page and shows the number of products that page lists.
 //
 // Server-rendered as a plain, centred row of linked cards: that is the whole
 // presentation for one card, a balanced pair, no JavaScript, or reduced
@@ -11,8 +13,13 @@
 // of one position value (never duplicated cards), so swipe, drag, keyboard,
 // buttons and autoplay all move the same position. No occasions, no section.
 import { getOccasionCarousel } from "../../data/atelierHome";
+import type { Membership } from "../../data/occasionJourneys";
 
-const cards = getOccasionCarousel();
+interface Props {
+  membership: Membership;
+}
+
+const cards = getOccasionCarousel(Astro.props.membership);
 const total = cards.length;
 const mode = total >= 3 ? "carousel" : total === 2 ? "pair" : "single";
 const sizes = "(min-width: 1440px) 360px, (min-width: 1024px) 340px, (min-width: 768px) 300px, 70vw";
@@ -55,12 +62,13 @@ const pad = (value: number) => String(value).padStart(2, "0");
                   loading="lazy"
                   decoding="async"
                   draggable="false"
+                  style={`object-position: ${card.focus}`}
                 />
                 <span class="occ__shade" aria-hidden="true" />
                 <span class="occ__dim" aria-hidden="true" />
                 <span class="occ__body">
                   <span class="occ__name">{card.title}</span>
-                  <span class="occ__count">{`${card.count} ${card.count === 1 ? "design" : "designs"}`}</span>
+                  <span class="occ__count">{card.countLabel}</span>
                   <span class="occ__cta">
                     Explore designs
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" /></svg>

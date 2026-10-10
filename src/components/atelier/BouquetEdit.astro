@@ -4,11 +4,21 @@
 // editorial spread rather than a uniform grid. Add-to-basket uses the
 // site's existing cart module.
 import type { EditProduct } from "../../data/atelierHome";
+import { whatsappLink } from "../../config/storefront";
 
 interface Props {
   products: EditProduct[];
+  /** Bouquet types — kept here with the bouquets, not in the occasion deck. */
+  browse?: { label: string; href: string }[];
+  /** Bouquets priced under ₹1,500 (displayed price), beside the heading. */
+  budget?: { label: string; href: string } | null;
 }
-const { products } = Astro.props;
+const { products, browse = [], budget = null } = Astro.props;
+// The one availability helper near the selection: a date/area question,
+// never a promise (the answer comes on WhatsApp).
+const availabilityHref = whatsappLink(
+  ["Hi Fresh Petals, can you deliver flowers on a particular date?", "Date: ", "Delivery area: ", "Bouquet (if you've chosen one): "].join("\n")
+);
 const shape = ["feature", "tall", "square", "wide", "tall", "portrait", "landscape", "square"];
 const sizes = [
   "(min-width: 1024px) 40vw, 100vw",
@@ -32,9 +42,15 @@ const flowerLine = (product: EditProduct) =>
     <p class="edit__eyebrow" data-reveal="fade">Bouquets</p>
     <h2 id="edit-title" class="edit__title" data-reveal="mask">Bouquets to <em>choose from</em></h2>
     <p class="edit__lede" data-reveal="fade">
-      Our launch range of hand-tied rose, mixed-flower and lily bouquets. Prices shown are starting prices — the
-      final total, including delivery, is confirmed on WhatsApp before you pay.
+      Our launch range of hand-tied rose, mixed-flower and lily bouquets. Each price is the bouquet's starting
+      price; delivery is quoted separately on WhatsApp before you pay.
     </p>
+    <div class="edit__tools">
+      {budget && <a class="edit__budget" href={budget.href}>{budget.label}</a>}
+      <a class="edit__availability" href={availabilityHref} target="_blank" rel="noopener noreferrer">
+        Need flowers for a particular date? <span>Check availability</span>
+      </a>
+    </div>
   </div>
 
   <ul class="edit__grid">
@@ -63,6 +79,7 @@ const flowerLine = (product: EditProduct) =>
             <p class="edit__price fp-price">{product.priceLabel}</p>
           </div>
           <div class="edit__actions">
+            <a class="edit__view" href={`/products/${product.slug}`}>View bouquet</a>
             <button
               type="button"
               class="edit__add"
@@ -86,6 +103,15 @@ const flowerLine = (product: EditProduct) =>
         <span class="edit__more-kicker">Rose, mixed-flower and lily bouquets, grouped by type</span>
         <span class="edit__more-title">See all bouquets <span aria-hidden="true">→</span></span>
       </a>
+      {
+        browse.length > 0 && (
+          <nav class="edit__browse" aria-label="Browse bouquets">
+            {browse.map((link) => (
+              <a href={link.href}>{link.label}</a>
+            ))}
+          </nav>
+        )
+      }
     </li>
   </ul>
 </section>
@@ -287,6 +313,67 @@ const flowerLine = (product: EditProduct) =>
     margin-top: 0.7rem;
   }
 
+  /* Beside the heading: the budget shortcut and the one availability helper. */
+  .edit__tools {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 1.2rem;
+  }
+
+  .edit__budget {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 1.1rem;
+    border-radius: 999px;
+    background: var(--color-ink);
+    color: var(--color-ivory);
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .edit__budget:hover {
+    background: color-mix(in srgb, var(--color-ink) 85%, var(--color-rose));
+  }
+
+  .edit__availability {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0 0.35rem;
+    min-height: 44px;
+    font-size: 0.9375rem;
+    color: var(--color-moss);
+    text-decoration: none;
+  }
+
+  .edit__availability span {
+    font-weight: 700;
+    color: var(--color-ink);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+
+  .edit__budget:focus-visible,
+  .edit__availability:focus-visible,
+  .edit__view:focus-visible {
+    outline: 3px solid var(--color-ink);
+    outline-offset: 2px;
+  }
+
+  .edit__view {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--color-ink);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+
   .edit__add {
     min-height: 44px;
     padding: 0 1.1rem;
@@ -336,7 +423,8 @@ const flowerLine = (product: EditProduct) =>
     flex-direction: column;
     justify-content: flex-end;
     gap: 0.6rem;
-    min-height: 100%;
+    /* Fills the item without claiming all of it, so the browse links below stay inside. */
+    flex: 1 1 auto;
     padding: 1.6rem 0 0.4rem;
     border-top: 1px solid var(--color-ink);
     color: var(--color-ink);
@@ -364,6 +452,35 @@ const flowerLine = (product: EditProduct) =>
 
   .edit__more-link:hover .edit__more-title span {
     transform: translateX(8px);
+  }
+
+  .edit__browse {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
+
+  .edit__browse a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 1rem;
+    border: 1px solid var(--color-line-strong);
+    border-radius: 999px;
+    color: var(--color-ink);
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .edit__browse a:hover {
+    border-color: var(--color-ink);
+  }
+
+  .edit__browse a:focus-visible {
+    outline: 3px solid var(--color-ink);
+    outline-offset: 2px;
   }
 
   @media (min-width: 1024px) {

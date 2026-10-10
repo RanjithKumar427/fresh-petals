@@ -20,6 +20,8 @@ export const GET: APIRoute = ({ site }) => {
   const sitemapUrl = new URL("sitemap.xml", site).toString();
   // Garland product pages change without a deployment; their sitemap is live.
   const garlandSitemapUrl = new URL("sitemap-garlands.xml", site).toString();
+  // Occasion pages follow the admin's occasion assignments; listed by a live sitemap too.
+  const occasionSitemapUrl = new URL("sitemap-occasions.xml", site).toString();
 
   const body = `User-agent: *
 Allow: /
@@ -28,6 +30,7 @@ Disallow: /api
 
 Sitemap: ${sitemapUrl}
 Sitemap: ${garlandSitemapUrl}
+Sitemap: ${occasionSitemapUrl}
 `;
 
   return new Response(body, {

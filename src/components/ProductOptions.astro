@@ -13,44 +13,32 @@
 // /api/delivery/check, same DELIVERY_METHOD_OPTIONS, same fail-closed
 // behavior. See src/utils/deliveryCheck.ts for the shared fetch helper.
 import { DELIVERY_METHOD_OPTIONS } from "../server/services/delivery/DeliveryService";
-import type { Product } from "../data/productCatalog";
+import { productCatalog, type Product } from "../data/productCatalog";
+import { loadAuthoritativePrices, withAuthoritativePrice } from "../server/services/ProductPricing";
 
 type Props = {
   product: Product;
-  occasionOptions?: { name: string }[];
+  occasionOptions?: { name: string; slug: string }[];
 };
 
 const { product, occasionOptions = [] } = Astro.props;
 
 const whatsappNumber = "919652012274";
 
-const addOns = [
-  {
-    id: "chocolates-addon",
-    name: "Chocolates",
-    priceLabel: "Add-on item",
-  },
-  {
-    id: "premium-card-addon",
-    name: "Premium Card",
-    priceLabel: "Add-on item",
-  },
-  {
-    id: "candle-diffuser-addon",
-    name: "Candle / Diffuser",
-    priceLabel: "Add-on item",
-  },
-  {
-    id: "clear-glass-vase",
-    name: "Clear Glass Vase",
-    priceLabel: "From ₹399",
-  },
-  {
-    id: "room-mist-flower-gift-addon",
-    name: "Room Mist Gift Add-on",
-    priceLabel: "Add-on item",
-  },
+// Add-ons are catalogue products; each shows its published price (or the
+// catalogue's own wording where the price is quoted), like its own page.
+const ADD_ON_SLUGS: [string, string][] = [
+  ["chocolates-addon", "Chocolates"],
+  ["premium-card-addon", "Premium Card"],
+  ["candle-diffuser-addon", "Candle / Diffuser"],
+  ["clear-glass-vase", "Clear Glass Vase"],
+  ["room-mist-flower-gift-addon", "Room Mist Gift Add-on"],
 ];
+const addOnPrices = await loadAuthoritativePrices();
+const addOns = ADD_ON_SLUGS.flatMap(([id, name]) => {
+  const item = productCatalog.find((entry) => entry.slug === id);
+  return item ? [{ id, name, priceLabel: withAuthoritativePrice(item, addOnPrices).priceLabel }] : [];
+});
 
 // P0.1 content containment: two of the four card options were removed
 // because their photographs were not ours to publish, not because the
@@ -113,7 +101,7 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
       product.isAvailable ? "hover:bg-berry" : "pointer-events-none bg-linen text-moss",
     ]}
   >
-    {product.isAvailable ? "Order on WhatsApp" : "Unavailable"}
+    {product.isAvailable ? "Enquire on WhatsApp" : "Unavailable"}
   </button>
 
   <!-- Journey C entry point — adds one unconfigured unit; full
@@ -127,11 +115,11 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
       !product.isAvailable && "pointer-events-none border-line text-sage",
     ]}
   >
-    {product.isAvailable ? "+ Add to cart" : "Unavailable"}
+    {product.isAvailable ? "Add to basket" : "Unavailable"}
   </button>
 
   <p data-simple-feedback class="mt-3 hidden rounded-full bg-mint-soft px-3 py-2 text-center text-[11px] font-semibold text-ink">
-    Added to cart
+    Added to basket
   </p>
 
   <!-- Journey B — Gift Order: collapsed by default, progressive
@@ -321,7 +309,7 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
       <!-- Greeting Card -->
       <div class="mt-6">
         <p class="text-[10px] font-semibold uppercase tracking-[0.28em] text-ink">
-          Select Greeting Card
+          Request a Greeting Card
         </p>
 
         <div class="mt-4 grid grid-cols-3 gap-3">
@@ -355,6 +343,7 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
               ))
           }
         </div>
+        <p class="mt-2 text-xs leading-6 text-moss">A printed card is a quoted extra. Availability and any charge are agreed on WhatsApp before order acceptance; a listed message note is separate.</p>
 
         <label class="mt-3 flex items-center gap-2 text-sm text-moss">
           <input
@@ -384,7 +373,7 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
           <option value="">Select occasion</option>
           {
             occasionOptions.map((occasion) => (
-              <option value={occasion.name}>{occasion.name}</option>
+              <option value={occasion.name} data-occasion-slug={occasion.slug}>{occasion.name}</option>
             ))
           }
         </select>
@@ -414,7 +403,7 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
         data-delivery-details-whatsapp
         class="fp-btn-whatsapp mt-6 w-full rounded-full bg-ink px-7 py-4 text-[12px] font-bold uppercase tracking-[0.28em] text-white shadow-[0_14px_30px_rgba(7,88,56,0.28)] hover:bg-berry"
       >
-        Send on WhatsApp
+        Enquire on WhatsApp with these details
       </button>
 
       <!-- Preserves the pre-existing ability to add a fully configured
@@ -431,11 +420,11 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
           !product.isAvailable && "pointer-events-none border-line text-sage",
         ]}
       >
-        {product.isAvailable ? "Add to cart with these details" : "Unavailable"}
+        {product.isAvailable ? "Add to basket with these details" : "Unavailable"}
       </button>
 
       <p data-configured-feedback class="mt-4 hidden bg-mint-soft px-4 py-3 text-center text-sm font-semibold text-ink">
-        Product added to cart.
+        Added to basket.
       </p>
 
       <p class="mt-4 text-center text-xs leading-6 text-moss">
@@ -451,6 +440,43 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
   import { addToCart } from "../utils/cart";
   import { getSelectedArea, AREA_UPDATED_EVENT } from "../utils/area";
   import { checkDeliveryMethod } from "../utils/deliveryCheck";
+  import { journeyLines, readJourney, makeJourney, journeyHref } from "../utils/journey";
+
+  // Occasion page → product: the occasion and gift/ceremony intent ride
+  // along in the product URL and into messages. An explicit occasion
+  // chosen below always wins, including after a reload.
+  const journey = readJourney();
+  let occasionChanged = false;
+  const occasionSelect = document.querySelector<HTMLSelectElement>("[data-option-occasion]");
+  const currentJourney = () => {
+    if (!occasionChanged) return journey;
+    if (!occasionSelect?.value) return null;
+    const selected = occasionSelect.value.toLowerCase();
+    const key = [...occasionSelect.options].find((option) => option.value.toLowerCase() === selected)?.dataset.occasionSlug;
+    return key ? makeJourney([key], journey?.intent ?? "gift", journey?.from) : null;
+  };
+  occasionSelect?.addEventListener("change", () => {
+    occasionChanged = true;
+    const choice = currentJourney();
+    history.replaceState(history.state, "", journeyHref(location.pathname, choice));
+    const note = document.querySelector<HTMLElement>("[data-journey-note]");
+    if (note) {
+      note.hidden = !choice;
+      const text = note.querySelector("[data-journey-text]");
+      if (text && choice) text.textContent = `${choice.occasionLabel} · ${choice.intentLabel}`;
+    }
+  });
+  const productUrl = (slug: string) => `${location.origin}/products/${slug}`;
+
+  // Pre-select the optional occasion field from the journey when it has a
+  // matching taxonomy entry; never overwrite a choice already made.
+  (() => {
+    const select = document.querySelector<HTMLSelectElement>("[data-option-occasion]");
+    if (!journey || !select || select.value) return;
+    const wanted = [journey.occasionLabel, journey.occasion.replace(/-/g, " ")].map((v) => v.toLowerCase());
+    const match = [...select.options].find((option) => option.value && wanted.includes(option.value.toLowerCase()));
+    if (match) select.value = match.value;
+  })();
 
   const optionsSection = document.querySelector("[data-product-options]");
 
@@ -568,13 +594,22 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
           "",
           "Price:",
           meta.priceLabel,
+          "Quantity: 1",
+          `Link: ${productUrl(meta.slug)}`,
+          ...journeyLines(currentJourney()),
           "",
           "Delivery area:",
           area,
           "",
           "Please confirm availability, final price and delivery details.",
         ].join("\n")
-      : `Hi Fresh Petals, I want to order ${meta.name}. Please confirm today's availability and price.`;
+        : [
+            `Hi Fresh Petals, I want to order ${meta.name} (${meta.priceLabel}).`,
+            "Quantity: 1",
+          `Link: ${productUrl(meta.slug)}`,
+          ...journeyLines(currentJourney()),
+          "Please confirm today's availability and price.",
+        ].join("\n");
 
     window.open(`https://wa.me/${meta.whatsappNumber}?text=${encodeURIComponent(message)}`, "_blank");
 
@@ -611,6 +646,7 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
         image: meta.image,
         priceLabel: meta.priceLabel,
         category: meta.category,
+        journey: currentJourney(),
       },
       1
     );
@@ -744,6 +780,7 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
         image: meta.image,
         priceLabel: meta.priceLabel,
         category: meta.category,
+        journey: currentJourney(),
         deliveryDate: getInputValue("[data-option-delivery-date]"),
         deliverySlot: getRadioValue("[data-option-delivery-slot]"),
         pincode: getInputValue("[data-option-pincode]"),
@@ -877,6 +914,7 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
       "PRODUCT",
       meta.name,
       `Price: ${meta.priceLabel}`,
+      `Link: ${productUrl(meta.slug)}`,
       "",
       "DELIVERY",
       `Pincode: ${pincode}`,
@@ -887,7 +925,8 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
       `Name: ${recipientName}`,
       `Phone: ${recipientPhoneLocal}`,
       `Landmark: ${landmark}`,
-      `Occasion: ${occasion || "Not specified"}`,
+      `Occasion: ${occasion || currentJourney()?.occasionLabel || "Not specified"}`,
+      ...(currentJourney() ? [`For: ${currentJourney()!.intentLabel}`] : []),
       "",
       `Greeting Card: ${greetingCard}`,
       "Add-ons:",

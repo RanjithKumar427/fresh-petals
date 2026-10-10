@@ -10,10 +10,11 @@
 import ProductOptions from "./ProductOptions.astro";
 import { GARLAND_FILTERS, GARLAND_PREVIEW, formatGarlandPrice, garlandPhotoSrcset, isCartGarland, isListedGarland, optionValues, type GarlandProduct } from "../data/garlands";
 import { garlandEnquiryHref } from "../utils/garlandEnquiry";
+import JourneyNote from "./occasion/JourneyNote.astro";
 
 interface Props {
   product: GarlandProduct;
-  occasionOptions?: { name: string }[];
+  occasionOptions?: { name: string; slug: string }[];
 }
 
 const { product, occasionOptions } = Astro.props;
@@ -145,6 +146,7 @@ const quoteLabel = price ? "Enquire on WhatsApp" : "Ask for a quote on WhatsApp"
         cart ? (
           <ProductOptions product={product} occasionOptions={occasionOptions} />
         ) : (
+          <JourneyNote />
           <div class="mt-7 rounded-[22px] border border-line bg-linen p-5" data-garland-quote-panel data-code={design.code} data-title={design.title} data-price={price ?? undefined} data-unit={design.soldUnit ?? undefined} data-url={pageUrl}>
             <h2 class="text-sm font-bold text-ink">{price ? "Enquire about this design" : "Ask for a quotation"}</h2>
             <div class="mt-4 flex items-center gap-3">
@@ -223,6 +225,10 @@ const quoteLabel = price ? "Enquire on WhatsApp" : "Ask for a quote on WhatsApp"
 
 <script>
   import { garlandEnquiryHref } from "../utils/garlandEnquiry";
+  import { readJourney } from "../utils/journey";
+
+  // Came from an occasion page this session: the enquiry carries it.
+  const journey = readJourney();
 
   document.querySelectorAll<HTMLElement>("[data-garland-quote-panel]").forEach((panel) => {
     const qty = panel.querySelector<HTMLInputElement>("[data-garland-qty]");
@@ -232,7 +238,13 @@ const quoteLabel = price ? "Enquire on WhatsApp" : "Ask for a quote on WhatsApp"
     const clamp = (value: number) => Math.min(500, Math.max(1, Math.floor(value) || 1));
     const update = () => {
       const options = selects.filter((select) => select.value).map((select) => ({ name: select.dataset.garlandOption ?? "", value: select.value }));
-      link.href = garlandEnquiryHref({ code: panel.dataset.code ?? "", quantity: clamp(Number(qty.value)), options });
+      link.href = garlandEnquiryHref({
+        code: panel.dataset.code ?? "",
+        quantity: clamp(Number(qty.value)),
+        options,
+        occasion: journey?.occasion ?? null,
+        purpose: journey?.intent ?? null,
+      });
     };
     panel.querySelectorAll<HTMLButtonElement>("[data-qty-step]").forEach((button) =>
       button.addEventListener("click", () => {

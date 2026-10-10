@@ -1,0 +1,250 @@
+---
+// Compact occasion heading with the homepage's depth treatment: a small CSS
+// perspective stage (back plane in the occasion's colour, contact shadow,
+// arched photograph). The heading, question and controls are ordinary HTML
+// and never wait for the photograph (it loads lazily, after the styles, so
+// it never competes with them on a slow connection). On a phone the stage sits beside the
+// heading so the first products start inside the first screen.
+// - "gift"/"ceremony" journeys: the stage settles from a slight turn on entry
+//   (html.motion only) and fine pointers add a small parallax.
+// - "calm" (condolence): the same layered depth, completely still.
+import type { OccasionJourney } from "../../data/occasionJourneys";
+import type { Photo } from "../../data/atelierHome";
+
+interface Props {
+  journey: OccasionJourney;
+  heading: string;
+  eyebrow: string;
+  /** One short line under the heading. */
+  lede: string;
+  photo: Photo | null;
+  /** WhatsApp link for "Needed today?" — availability is checked, never promised. */
+  todayHref?: string | null;
+}
+
+const { journey, heading, eyebrow, lede, photo, todayHref = null } = Astro.props;
+const calm = journey.kind === "calm";
+---
+
+<header
+  class:list={["occ-head", { "occ-head--calm": calm }]}
+  data-occ-head={calm ? "calm" : "motion"}
+  style={`--band:${journey.palette.band};--plane:${journey.palette.plane};--accent:${journey.palette.accent};${photo ? `--photo-ar:${photo.width}/${photo.height}` : ""}`}
+>
+  <div class="occ-head__inner">
+    <div class="occ-head__copy">
+      <p class="occ-head__eyebrow">{eyebrow}</p>
+      <h1 class="occ-head__title">{heading}</h1>
+      <p class="occ-head__lede">{lede}</p>
+      {
+        todayHref && (
+          <p class="occ-head__today">
+            <a href={todayHref} target="_blank" rel="noopener noreferrer" data-whatsapp-enquiry data-today-enquiry>
+              Needed today? Ask on WhatsApp
+            </a>
+          </p>
+        )
+      }
+    </div>
+    {
+      photo && (
+        <div class="occ-head__scene" aria-hidden="true">
+          <div class="occ-head__stage">
+            <div class="occ-head__plane" />
+            <div class="occ-head__shade" />
+            <div class="occ-head__photo">
+              <img src={photo.src} srcset={photo.srcset} sizes="(min-width: 1024px) 220px, 104px" width={photo.width} height={photo.height} alt="" loading="lazy" decoding="async" />
+            </div>
+          </div>
+        </div>
+      )
+    }
+  </div>
+</header>
+
+<script>
+  // Fine-pointer parallax for the non-calm header (desktop only, motion on).
+  const head = document.querySelector<HTMLElement>("[data-occ-head='motion']");
+  if (head && document.documentElement.classList.contains("motion") && window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
+    let raf = 0;
+    let tx = 0, ty = 0, x = 0, y = 0;
+    const step = () => {
+      x += (tx - x) * 0.1;
+      y += (ty - y) * 0.1;
+      head.style.setProperty("--px", x.toFixed(3));
+      head.style.setProperty("--py", y.toFixed(3));
+      raf = Math.abs(tx - x) + Math.abs(ty - y) > 0.002 ? requestAnimationFrame(step) : 0;
+    };
+    head.addEventListener("pointermove", (e) => {
+      const r = head.getBoundingClientRect();
+      tx = ((e.clientX - r.left) / r.width) * 2 - 1;
+      ty = ((e.clientY - r.top) / r.height) * 2 - 1;
+      if (!raf) raf = requestAnimationFrame(step);
+    });
+    head.addEventListener("pointerleave", () => {
+      tx = ty = 0;
+      if (!raf) raf = requestAnimationFrame(step);
+    });
+  }
+</script>
+
+<style>
+  .occ-head {
+    --px: 0;
+    --py: 0;
+    background:
+      radial-gradient(70% 90% at 85% 30%, color-mix(in srgb, var(--plane) 55%, transparent), transparent 70%),
+      var(--band);
+    overflow: clip;
+  }
+
+  .occ-head__inner {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: 0.75rem;
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0.9rem clamp(16px, 4vw, 48px) 0.85rem;
+  }
+
+  .occ-head__eyebrow {
+    margin: 0 0 0.3rem;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .occ-head__title {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 380;
+    font-size: clamp(1.7rem, 1.2rem + 2.2vw, 3.3rem);
+    line-height: 1;
+    letter-spacing: -0.03em;
+    color: var(--color-ink);
+  }
+
+  .occ-head__lede {
+    margin: 0.45rem 0 0;
+    max-width: 46ch;
+    font-size: 0.9375rem;
+    line-height: 1.45;
+    color: var(--color-moss);
+  }
+
+  .occ-head__today {
+    margin: 0.2rem 0 0;
+    font-size: 0.875rem;
+  }
+
+  .occ-head__today a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    font-weight: 700;
+    color: var(--color-ink);
+    text-underline-offset: 0.2em;
+  }
+
+  .occ-head__today a:focus-visible {
+    outline: 3px solid var(--color-ink);
+    outline-offset: 2px;
+  }
+
+  /* ---- Depth stage --------------------------------------------------- */
+  .occ-head__scene {
+    perspective: 700px;
+    perspective-origin: 40% 40%;
+    padding: 0.4rem 0.6rem 0.4rem 0;
+  }
+
+  .occ-head__stage {
+    position: relative;
+    width: 92px;
+    aspect-ratio: var(--photo-ar, 4 / 5);
+    max-height: 132px;
+    transform-style: preserve-3d;
+    transform: rotateX(calc(4deg - var(--py) * 3deg)) rotateY(calc(-12deg + var(--px) * 6deg));
+  }
+
+  .occ-head__plane,
+  .occ-head__shade,
+  .occ-head__photo {
+    position: absolute;
+  }
+
+  .occ-head__plane {
+    inset: -8% -18% 14% 24%;
+    border-radius: 999px 999px 8px 8px / 46% 46% 8px 8px;
+    background: linear-gradient(165deg, color-mix(in srgb, var(--plane) 70%, white), var(--plane));
+    transform: translateZ(-60px);
+  }
+
+  .occ-head__shade {
+    inset: 12% 6% -5% 8%;
+    border-radius: 50% 50% 12px 12px / 36% 36% 12px 12px;
+    background: rgba(23, 61, 45, 0.28);
+    filter: blur(12px);
+    transform: translateZ(-20px) translateY(8px);
+  }
+
+  .occ-head__photo {
+    inset: 0;
+    overflow: hidden;
+    border-radius: 50% 50% 10px 10px / 34% 34% 10px 10px;
+    background: var(--color-linen);
+    transform: translateZ(0);
+  }
+
+  .occ-head__photo img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  :global(html.motion) .occ-head:not(.occ-head--calm) .occ-head__stage {
+    animation: occ-turn 1.4s var(--ease-premium) both;
+  }
+
+  @keyframes occ-turn {
+    from {
+      rotate: 6 -12 0 14deg;
+    }
+    to {
+      rotate: 6 -12 0 0deg;
+    }
+  }
+
+  /* Calm: the same layers, closer together and perfectly still. */
+  .occ-head--calm .occ-head__stage {
+    transform: rotateY(-6deg);
+  }
+  .occ-head--calm .occ-head__plane {
+    transform: translateZ(-36px);
+  }
+
+  @media (min-width: 768px) {
+    .occ-head__inner {
+      padding-block: 1.6rem 1.4rem;
+      column-gap: 2rem;
+    }
+    .occ-head__stage {
+      width: 150px;
+      max-height: 210px;
+    }
+    .occ-head__lede {
+      font-size: 1.0625rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .occ-head__stage {
+      width: 190px;
+      max-height: 260px;
+    }
+  }
+</style>

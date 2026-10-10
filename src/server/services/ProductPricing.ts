@@ -21,6 +21,7 @@
 // this migration is actually about: one number, one source, everywhere a
 // customer can see it.
 import { ProductRepository } from "../db/repositories/ProductRepository";
+import { productCatalog } from "../../data/productCatalog";
 import { isExemptFromDatabasePrice, type GarlandDesign } from "../../data/garlandRules";
 
 export type AuthoritativePrice = {
@@ -53,10 +54,34 @@ function formatPriceLabel(
   return null;
 }
 
-async function loadPriceMap(): Promise<Map<string, AuthoritativePrice>> {
+// Offer ranges ("Under ₹499 Flowers", "Under ₹999 Bouquets", "Under ₹1499
+// Gifts") are not priced products: the catalogue gives them a merchandising
+// label ("Budget picks", "Fresh deals", "Popular range") instead of an
+// amount, and what a customer pays is agreed on WhatsApp for whichever
+// flowers are available that day. Their database rows are typed "from" with
+// no selling price recorded, so there is no amount to be authoritative
+// about -- and no static rupee figure that could be shown in its place.
+// Only that exact case is let through below: an Offers entry whose own
+// catalogue label carries no number, with nothing recorded in the database.
+// It keeps its merchandising label (formatPriceLabel returns null). Every
+// other fixed/from row, and an offer row holding 0 or a negative amount,
+// still needs a positive confirmed amount.
+const unpricedOfferSlugs = new Set(
+  productCatalog
+    .filter((product) => product.category === "Offers" && !/\d/.test(product.priceLabel))
+    .map((product) => product.slug)
+);
+
+/** One read of every product's price from the database (no caching). */
+export async function readPriceMapFromDatabase(): Promise<Map<string, AuthoritativePrice>> {
   const rows = await ProductRepository.list();
   const map = new Map<string, AuthoritativePrice>();
   for (const row of rows) {
+    const unpricedOffer = row.sellingPrice == null && unpricedOfferSlugs.has(row.slug);
+    if ((row.priceType === "fixed" || row.priceType === "from") && !unpricedOffer &&
+        (row.sellingPrice == null || !Number.isFinite(row.sellingPrice) || row.sellingPrice <= 0)) {
+      throw new Error(`Invalid authoritative price for "${row.slug}": ${row.priceType} pricing requires a positive confirmed amount.`);
+    }
     map.set(row.slug, {
       priceLabel: formatPriceLabel(row.priceType, row.sellingPrice),
       sellingPrice: row.sellingPrice,
@@ -67,15 +92,21 @@ async function loadPriceMap(): Promise<Map<string, AuthoritativePrice>> {
 }
 
 /**
- * Fetches (and caches for the remainder of this build/process) the
- * authoritative price for every product, keyed by slug. Call this once per
+ * The published price of every product, keyed by slug. Call this once per
  * page/component, before mapping over productCatalog entries.
+ *
+ * Catalogue (bouquet) prices reach the website with a deployment: a build
+ * reads the database once into a snapshot (src/content.config.ts,
+ * "publishedPrices"), and every surface — prebuilt product pages, the
+ * basket, saved items, and the pages rendered on request (homepage, bouquet
+ * list, occasion pages) — reads that same snapshot, so a customer never sees
+ * two different prices for one bouquet. In development the database is
+ * read directly. `fresh` is only for live garland designs, whose prices
+ * reach the website without a deployment.
  */
 export function loadAuthoritativePrices({ fresh = false }: { fresh?: boolean } = {}): Promise<Map<string, AuthoritativePrice>> {
-  // Static builds share one read; on-demand pages (garlands) ask for a fresh
-  // one so a warm server never shows an outdated price.
-  if (fresh) return loadPriceMap();
-  if (!cache) cache = loadPriceMap();
+  if (fresh || import.meta.env.DEV) return readPriceMapFromDatabase();
+  if (!cache) cache = import("./PublishedPrices").then((m) => m.publishedPriceMap());
   return cache;
 }
 

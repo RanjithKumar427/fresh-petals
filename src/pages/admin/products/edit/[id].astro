@@ -4,6 +4,7 @@ import ProductEditor from "../../../../features/admin/productEditor/ProductEdito
 import { ProductService } from "../../../../server/services/ProductService";
 import { CategoryService } from "../../../../server/services/CategoryService";
 import { TaxonomyService } from "../../../../server/services/TaxonomyService";
+import { catalogueSlugs, launchSlugs } from "../../../../data/occasionJourneys";
 
 export const prerender = false;
 
@@ -62,5 +63,6 @@ const productDraft = {
     moods={moods}
     flowerTypes={flowerTypes}
     uncategorizedCategoryId={uncategorizedCategoryId}
+    liveOccasions={product.garland ? null : launchSlugs().includes(product.slug) ? "launch" : catalogueSlugs().includes(product.slug) ? "catalogue" : null}
   />
 </AdminLayout>

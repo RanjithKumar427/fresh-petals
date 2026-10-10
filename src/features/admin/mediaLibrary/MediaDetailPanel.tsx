@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import ConfirmDialog from "../shared/ConfirmDialog";
+import AdminImage from "../shared/AdminImage";
 import { FOLDER_LABELS, MEDIA_FOLDERS, formatBytes, formatDate, usageCount, type MediaFolder, type MediaWithUsage } from "./types";
 
 interface Props {
@@ -96,7 +97,7 @@ export default function MediaDetailPanel({ mediaId, onClose, onChanged, onDelete
             {error && <div className="mb-4 rounded-lg bg-[#FBEAEE] px-3 py-2 text-[12px] text-[#7C243E]">{error}</div>}
 
             <div className="overflow-hidden rounded-xl bg-[#F8F1F3]">
-              <img src={media.url} alt={media.altText ?? ""} className="max-h-80 w-full object-contain" />
+              <AdminImage src={media.url} alt={media.altText ?? ""} className="max-h-80 w-full object-contain" />
             </div>
 
             <div className="mt-5 space-y-4">

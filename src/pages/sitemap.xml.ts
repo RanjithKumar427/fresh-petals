@@ -1,8 +1,7 @@
 import type { APIRoute } from "astro";
 import { productCatalog, type Product } from "../data/productCatalog";
 import { getStaticPaths as getCategoryStaticPaths } from "./categories/[slug].astro";
-import { getStaticPaths as getOccasionStaticPaths } from "./occasions/[slug].astro";
-import { NOINDEX_CATEGORY_SLUGS, NOINDEX_OCCASION_SLUGS } from "../data/seoLanding";
+import { NOINDEX_CATEGORY_SLUGS } from "../data/seoLanding";
 
 // Prerendered — built once at build time from the exact same real data
 // every other page already uses, not a second, parallel catalogue.
@@ -21,9 +20,10 @@ import { NOINDEX_CATEGORY_SLUGS, NOINDEX_OCCASION_SLUGS } from "../data/seoLandi
 //
 // Only indexable pages are listed, in the same slash-less form the
 // canonical tags use: /search (a noindexed full-catalogue list), empty
-// categories/occasions and the NOINDEX_* slugs in src/data/seoLanding.ts
-// are left out; occasion pages (birthday, anniversary, …) were previously
-// missing entirely and are now included.
+// categories and the NOINDEX_* slugs in src/data/seoLanding.ts are left
+// out. Occasion pages are rendered on request from the admin's occasion
+// assignments, so the live sitemap-occasions.xml lists the ones that
+// currently have products (also named in robots.txt).
 //
 // Garland designs are managed in the admin and change without a deployment,
 // so their product pages are listed by the live sitemap-garlands.xml
@@ -35,6 +35,7 @@ const staticPages = [
   "/",
   "/custom-orders",
   "/about",
+  "/occasions",
   "/shipping",
   "/faqs",
   "/contact",
@@ -57,12 +58,12 @@ export const GET: APIRoute = async ({ site }) => {
   const categoryPaths = (await getCategoryStaticPaths())
     .filter((entry) => hasPublicProducts(entry.props.products) && !NOINDEX_CATEGORY_SLUGS.has(entry.params.slug))
     .map((entry) => `/categories/${entry.params.slug}`);
-  const occasionPaths = (await getOccasionStaticPaths())
-    .filter((entry) => hasPublicProducts(entry.props.products) && !NOINDEX_OCCASION_SLUGS.has(entry.params.slug))
-    .map((entry) => `/occasions/${entry.params.slug}`);
   const productPaths = productCatalog.map((product) => `/products/${product.slug}`);
 
-  const paths = [...staticPages, ...categoryPaths, "/categories/garlands", ...occasionPaths, ...productPaths];
+  // /categories/bouquets and /categories/garlands are rendered on request
+  // and always list products; the occasion pages follow the admin's
+  // assignments and are listed by the live sitemap-occasions.xml.
+  const paths = [...staticPages, "/categories/bouquets", ...categoryPaths, "/categories/garlands", ...productPaths];
 
   const urlEntries = paths
     .map((path) => `  <url><loc>${new URL(path, site).toString()}</loc></url>`)

@@ -39,7 +39,7 @@ What the price covers (single garland or pair, length) is not recorded, so it is
 | Completed coverage audit for all 197 entries, with source/page references and resulting codes | `full-garland-import/coverage-audit.json` (written by the import) |
 | Review key → public code map (keeps codes stable) | `full-garland-import/design-ids.json` |
 
-Wedding and engagement pages show the garlands the admin tagged with that occasion, loaded live into the prebuilt page. They do not use copies. The Engagement page exists once it has launch products or garlands are promoted in the menu (`ready: true`, below).
+Wedding and engagement pages show the garlands the admin tagged with that occasion, loaded live into the prebuilt page. They do not use copies. On those pages they sit under **For the ceremony** (the occasion page's "For the ceremony / Send a gift" choice), and their WhatsApp enquiry carries the occasion and intent through the live enquiry check. The admin's **Suitable occasions** decide which occasion pages show a design; designs still carrying the import default (Wedding + Engagement) are flagged for review in the editor. See `docs/occasion-journeys.md`. The Engagement page is always reachable; until a bouquet is assigned to Engagement in the admin (bouquet occasions are live too) or garlands are promoted in the menu (`ready: true`, below), it is `noindex` and offers WhatsApp.
 
 Source references, review notes and the coverage audit stay in the git-ignored packs. The repository keeps only the public design codes, the titles, descriptive alt text and the publication flags.
 
@@ -333,3 +333,8 @@ Codes are never renumbered or reused. Both modes merge by design code:
   - which designs suit groom, wedding and engagement use;
   - the delivery area and lead time for garlands.
 - **Trial set:** the first eight trial samples are FP-G001, G002, G003, G004, G008, G009, G014 and G021.
+
+
+### Focused local audit — 7 October 2026
+
+See [handoff-audit-2026-10-07.md](handoff-audit-2026-10-07.md) and [audit-regressions.md](audit-regressions.md). The 156 bundled draft records, permissions, publication safeguards and photo files are unchanged. Local fixture tests use a separate synthetic FP-G900 to verify live prices/options, ceremony eligibility and uncached refusal after unpublication; they publish none of the owner drafts. Wedding/Engagement pages render only suitable public designs in HTML and carry the garland cache tag. Production MFA, actual CDN purges and publication remain later owner-assisted checks.

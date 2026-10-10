@@ -1,5 +1,6 @@
 ---
 import imageVariants from "../data/imageVariants.json";
+import { journeyHref, journeyLines, type Journey } from "../utils/journey";
 
 type PriceType = "fixed" | "from" | "market" | "quote";
 
@@ -14,6 +15,7 @@ interface Props {
   priceType?: PriceType;
   isAvailable?: boolean;
   whatsappText?: string;
+  journey?: Journey | null;
 }
 
 const {
@@ -27,11 +29,14 @@ const {
   priceType = "market",
   isAvailable = true,
   whatsappText,
+  journey = null,
 } = Astro.props;
 
 const whatsappNumber = "919652012274";
 
-const productUrl = slug ? `/products/${slug}` : "#";
+const productUrl = slug ? journeyHref(`/products/${slug}`, journey) : "#";
+// Literal link text: what the link opens.
+const viewLabel = /^(bouquets|lilies)$/i.test(category) ? "View bouquet" : "View details";
 
 const cartId = id || slug || name.toLowerCase().replaceAll(" ", "-");
 
@@ -46,7 +51,7 @@ const srcset = variants
 
 const defaultMessage = `Hi Fresh Petals, I want to order ${name}. Please confirm today's availability and price.`;
 
-const finalMessage = whatsappText || defaultMessage;
+const finalMessage = whatsappText || [defaultMessage, `Price: ${priceLabel}`, "Quantity: 1", slug ? `Link: ${Astro.site ? new URL(`/products/${slug}`, Astro.site) : `/products/${slug}`}` : "", ...journeyLines(journey)].filter(Boolean).join("\n");
 
 const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(finalMessage)}`;
 
@@ -76,7 +81,7 @@ const priceBadgeShort =
        and the price badge + new save button are its siblings. Purely
        structural -- no visual change to the existing elements. -->
   <div class="relative aspect-square overflow-hidden bg-linen">
-    <a href={productUrl} class="block h-full w-full" aria-label={`View ${name}`}>
+    <a href={productUrl} data-journey-link class="block h-full w-full" aria-label={`View ${name}`}>
       <img
         src={image}
         srcset={srcset}
@@ -146,7 +151,7 @@ const priceBadgeShort =
       {category}
     </p>
 
-    <a href={productUrl} class="mt-2 block">
+    <a href={productUrl} data-journey-link class="mt-2 block">
       <h3 class="line-clamp-2 min-h-[42px] text-[15px] font-semibold leading-snug text-ink transition group-hover:text-berry">
         {name}
       </h3>
@@ -160,13 +165,9 @@ const priceBadgeShort =
       {priceLabel}
     </p>
 
-    <div class="mt-4 grid grid-cols-2 gap-2">
-      <a
-        href={productUrl}
-        class="inline-flex items-center justify-center rounded-full border border-ink px-4 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-ink transition active:scale-95 hover:bg-ink hover:text-white"
-      >
-        View
-      </a>
+    <a href={productUrl} data-journey-link class="mt-2 inline-flex min-h-[44px] items-center text-[12px] font-semibold text-ink underline underline-offset-2 hover:text-berry">
+      {viewLabel}
+    </a>
 
       <button
         type="button"
@@ -178,19 +179,18 @@ const priceBadgeShort =
         data-cart-price-label={priceLabel}
         data-cart-category={category}
         class:list={[
-          "inline-flex items-center justify-center rounded-full border px-4 py-2 text-[10px] font-bold uppercase tracking-[0.16em] transition active:scale-95",
+          "mt-1 inline-flex min-h-[44px] w-full items-center justify-center rounded-full border px-2 py-2 text-center text-[10px] font-bold uppercase leading-tight tracking-[0.06em] transition active:scale-95",
           isAvailable
             ? "border-line-strong text-ink hover:border-berry hover:text-berry"
             : "pointer-events-none border-line text-sage",
         ]}
       >
-        {isAvailable ? "Add" : "Closed"}
+        {isAvailable ? "Add to basket" : "Closed"}
       </button>
-    </div>
 
-    <!-- Order on WhatsApp is the site's primary conversion path, so it
-         stays the one solid-filled button on the card; View/Add above
-         are outline-only and read as secondary by comparison. -->
+    <!-- "Enquire on WhatsApp" is the direct single-bouquet enquiry, so it
+         stays the one solid-filled button on the card; "Add to basket"
+         (for several bouquets) is outline-only. -->
     <a
       href={whatsappUrl}
       target="_blank"
@@ -201,19 +201,19 @@ const priceBadgeShort =
       data-whatsapp-product-name={name}
       data-whatsapp-price-label={priceLabel}
       class:list={[
-        "fp-btn-whatsapp mt-3 inline-flex w-full items-center justify-center rounded-full px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.18em] shadow-[0_10px_22px_rgba(7,88,56,0.22)]",
+        "fp-btn-whatsapp mt-2 inline-flex min-h-[44px] w-full items-center justify-center rounded-full px-2 py-2 text-center text-[10px] font-bold uppercase leading-tight tracking-[0.06em] shadow-[0_10px_22px_rgba(7,88,56,0.22)]",
         isAvailable
           ? "bg-ink text-white hover:bg-berry"
           : "pointer-events-none bg-linen text-moss",
       ]}
     >
-      {isAvailable ? "Order on WhatsApp" : "Unavailable"}
+      {isAvailable ? "Enquire on WhatsApp" : "Unavailable"}
     </a>
 
     <div data-cart-feedback={cartId} class="fp-cart-toast mt-3">
       <div>
         <p class="rounded-full bg-mint-soft px-3 py-2 text-center text-[11px] font-semibold text-ink">
-          Added to cart
+          Added to basket
         </p>
       </div>
     </div>
@@ -222,6 +222,8 @@ const priceBadgeShort =
 
 <script>
   import { addToCart } from "../utils/cart";
+  import { journeyFromParams, journeyLines } from "../utils/journey";
+  const contextFor = (element: Element) => { const link = element.closest("article")?.querySelector<HTMLAnchorElement>("[data-journey-link]"); return link ? journeyFromParams(new URL(link.href).searchParams) : null; };
   import { getSelectedArea, AREA_UPDATED_EVENT } from "../utils/area";
   // P1.5 (Phase 1 discovery hardening) -- same pattern DiscoveryPostCard.astro
   // and products/[slug].astro already use: a delegated listener plus a
@@ -297,15 +299,14 @@ const priceBadgeShort =
       const productName = link.dataset.whatsappProductName || "";
       const priceLabel = link.dataset.whatsappPriceLabel || "";
 
-      const message = area
+      const journey = contextFor(link);
+      const productLink = link.closest("article")?.querySelector<HTMLAnchorElement>("[data-journey-link]");
+      const base = area
         ? [
             "FreshPetals Order Request 🌸",
             "",
             "Product:",
             productName,
-            "",
-            "Price:",
-            priceLabel,
             "",
             "Delivery area:",
             area,
@@ -314,11 +315,13 @@ const priceBadgeShort =
           ].join("\n")
         : `Hi Fresh Petals, I want to order ${productName}. Please confirm today's availability and price.`;
 
+      const message = [base, `Price: ${priceLabel}`, "Quantity: 1", productLink ? `Link: ${location.origin}${new URL(productLink.href).pathname}` : "", ...journeyLines(journey)].filter(Boolean).join("\n");
       link.href = `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
     });
   }
 
   updateWhatsappLinks(getSelectedArea());
+  document.addEventListener("fresh-petals-shop-updated", () => updateWhatsappLinks(getSelectedArea()));
 
   window.addEventListener(AREA_UPDATED_EVENT, ((event: CustomEvent<{ area: string }>) => {
     updateWhatsappLinks(event.detail.area);
@@ -345,6 +348,7 @@ const priceBadgeShort =
           image,
           priceLabel,
           category,
+          journey: contextFor(htmlButton),
         },
         1
       );
@@ -385,4 +389,4 @@ const priceBadgeShort =
       transform: scale(1);
     }
   }
-</style>   
+</style>

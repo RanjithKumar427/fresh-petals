@@ -19,7 +19,7 @@
 // FreshPetals has never actually offered. If the business defines real
 // configuration for either later, they're a straightforward METHOD_META
 // entry away — nothing else here needs to change shape to add one.
-import { getBusinessNow, formatMinuteOfDay, type BusinessNow } from "./businessTime";
+import type { BusinessNow } from "./businessTime";
 
 export type DeliveryMethod = "MORNING" | "AFTERNOON" | "EVENING" | "EXPRESS";
 
@@ -55,12 +55,12 @@ export type DeliveryResult =
 
 type MethodMeta = {
   label: string;
-  /** Minutes since local midnight. Fixed slots only — EXPRESS is relative to "now", not a fixed window. */
+  /** Existing configured windows; EXPRESS has no confirmed time window. */
   window: { startMinute: number; endMinute: number } | null;
 };
 
-// Labels match the real, already-shipped copy in shipping.astro's policy
-// text. This is the ONE place they're defined — cart.astro and
+// These labels describe delivery requests, not accepted arrangements.
+// This is the ONE place they're defined — cart.astro and
 // DeliveryChecker.astro both import DELIVERY_METHOD_OPTIONS below to
 // populate their slot `<select>` instead of hand-writing their own copy
 // of this list, so there's exactly one source of truth for what a
@@ -69,7 +69,7 @@ const METHOD_META: Record<DeliveryMethod, MethodMeta> = {
   MORNING: { label: "Morning Slot: 7 AM - 10 AM", window: { startMinute: 7 * 60, endMinute: 10 * 60 } },
   AFTERNOON: { label: "Afternoon Slot: 12 PM - 3 PM", window: { startMinute: 12 * 60, endMinute: 15 * 60 } },
   EVENING: { label: "Evening Slot: 5 PM - 8 PM", window: { startMinute: 17 * 60, endMinute: 20 * 60 } },
-  EXPRESS: { label: "Express Delivery: Within 4-6 Hours", window: null },
+  EXPRESS: { label: "Express request: timing to be confirmed", window: null },
 };
 
 /** `{ value, label, method }` for each of the four real methods — what cart.astro/DeliveryChecker.astro render as `<option>`s. `value` matches `label`: the existing WhatsApp message builders use the select's own value as the display text, so keeping them identical preserves that behavior exactly. */
@@ -87,20 +87,6 @@ function windowPromiseText(label: string): string {
 }
 
 /**
- * EXPRESS has no fixed slot to quote, only a relative "within 4-6 hours"
- * — so the promise is computed from the actual request time, not a fixed
- * string. This is a presentation derivation of the real "4-6 hours"
- * copy, not new business data: it never claims anything the business
- * hasn't already committed to (shipping.astro), it just states the
- * specific clock window that promise resolves to right now.
- */
-function buildExpressPromise(reference: Date): string {
-  const from = getBusinessNow(new Date(reference.getTime() + 4 * 60 * 60 * 1000));
-  const to = getBusinessNow(new Date(reference.getTime() + 6 * 60 * 60 * 1000));
-  return `Within 4-6 hours (estimated ${formatMinuteOfDay(from.minuteOfDay)}-${formatMinuteOfDay(to.minuteOfDay)})`;
-}
-
-/**
  * The one decision function — every method's availability, fee and
  * promise text flows through this. `checkMethod`/`listMethods` in
  * DeliveryService.ts are thin I/O wrappers (fetch the zone, call this);
@@ -111,7 +97,7 @@ export function evaluateDeliveryMethod(
   deliveryDate: string,
   zone: DeliveryZoneLike | null,
   now: BusinessNow,
-  reference: Date
+  _reference: Date
 ): DeliveryResult {
   const meta = METHOD_META[method];
   const unavailable = (reason: string): DeliveryResult => ({ available: false, method, label: meta.label, reason });
@@ -145,9 +131,8 @@ export function evaluateDeliveryMethod(
       );
     }
   } else if (method === "EXPRESS") {
-    // Definitional, not an invented business rule: "within 4-6 hours"
-    // only means something relative to right now — a future-dated
-    // Express request isn't a coherent promise to make.
+    // Preserve the existing same-day configuration gates. Whether an
+    // express request can be accepted is agreed on WhatsApp; no speed is promised.
     if (!isToday) {
       return unavailable("Express delivery is only available for today's date.");
     }
@@ -160,7 +145,7 @@ export function evaluateDeliveryMethod(
     available: true,
     method,
     label: meta.label,
-    promise: method === "EXPRESS" ? buildExpressPromise(reference) : windowPromiseText(meta.label),
+    promise: method === "EXPRESS" ? "Availability and timing agreed on WhatsApp before order acceptance" : `Requested ${windowPromiseText(meta.label)} — confirmed on WhatsApp before order acceptance`,
     deliveryDate,
     fee: zone.deliveryFee,
     area: zone.area,

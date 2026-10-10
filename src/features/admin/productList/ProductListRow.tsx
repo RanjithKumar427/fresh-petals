@@ -1,5 +1,6 @@
 import StatusPill from "../shared/StatusPill";
 import OverflowMenu, { type OverflowMenuItem } from "../shared/OverflowMenu";
+import AdminImage from "../shared/AdminImage";
 import { formatPrice, type ProductListItem } from "./types";
 
 interface Props {
@@ -36,7 +37,7 @@ export default function ProductListRow({ product, onPublish, onArchive, onUnarch
 
   return (
     <div className="flex items-center gap-4 border-b border-[#EEE5E8] px-4 py-3 last:border-b-0 hover:bg-[#FBF7F5]">
-      <img
+      <AdminImage
         src={product.primaryImageUrl || "/images/product-placeholder.svg"}
         alt=""
         className="h-14 w-14 shrink-0 rounded-lg border border-[#EEE5E8] object-cover"
