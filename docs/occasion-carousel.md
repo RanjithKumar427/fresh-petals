@@ -49,15 +49,32 @@ carousel in the same position (`src/pages/index.astro`, after the bouquet edit).
   and 1–2 occasions all show the server-rendered static layout with no
   autoplay.
 
-## Known limitation
+## Occasion source and Condolence
 
-`/occasions/sympathy` is not a launch-restricted page. It also lists tagged
-non-launch items and a fallback add-on, so if a launch bouquet is ever tagged
-`sympathy`, the Condolence card shows the bouquet count ("1 design") while
-that page shows more options ("2 options"). This case is hidden today
-(0 eligible bouquets). Making it exact means either restricting
-`/occasions/sympathy` to the launch range or counting what that page lists.
-That is the owner's decision.
+- Source of truth: `launchCatalogue.ts` + catalogue `occasionTags`, as for
+  the menus and occasion pages. Every carousel route's page is
+  launch-restricted (`LAUNCH_OCCASION_ROUTES`), so card and page list the
+  same eligible bouquets, never add-ons or fallbacks.
+- Effect today: `/occasions/sympathy` previously listed 7 white/lily bouquets
+  outside the launch range plus the card add-on. It now shows the "not ready"
+  state, `noindex`, and leaves the sitemap until a launch bouquet is tagged
+  `sympathy`. Owner decision: keep that, or add those bouquets to the launch
+  range in `LAUNCH_CATEGORIES`.
+- `OccasionMembership.ts` / `OccasionWebsite.ts` (admin-driven occasions) are
+  not on this branch, `main` or any pushed branch. When that work lands, it
+  should replace `occasionCarousel()`'s source rather than run beside it.
+
+## Previewing all six occasions
+
+```sh
+npm run preview:occasions   # astro dev with an in-memory six-occasion fixture
+```
+
+Open http://localhost:4321/. Tags are rewritten in memory only: no database
+write, no file change, and `astro build` with this config is refused. Prices
+are read (read-only) from `DATABASE_URL`; `FP_LOCAL_PG=1` uses a plain local
+Postgres instead. `FP_OCCASION_FIXTURE="route=slug,slug;route="` sets another
+assignment (e.g. `"birthday=;anniversary="` for the empty state).
 
 ## Verification (10 Oct 2026)
 
@@ -70,7 +87,10 @@ memory at build time.
   covered links and counts, order, scales, overflow, looping, transition
   timing, autoplay timing, the pause conditions, keyboard use, swipe and drag,
   clicks, reduced motion and no-JS.
-- The only failure was the Condolence count case above.
+- Follow-up (same day): after the Condolence rule change, card counts equal
+  page counts for all six fixture occasions and today's real data, and
+  keyboard checks pass at 390/1440 including Alt/Ctrl/Meta/Shift+Arrow being
+  ignored.
 - `astro check` reports the existing 20 errors in `DiscoveryPostCard`,
   `MobileBottomBar` and `SubscriptionConfigurator`. There are no new errors.
 - Not verified: real iOS/Android devices or a Safari/WebKit engine (only

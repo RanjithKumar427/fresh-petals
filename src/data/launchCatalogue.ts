@@ -127,9 +127,6 @@ export const GARLAND_OCCASION_ROUTES = new Set(["wedding", "engagement"]);
 /** Whether the owner has switched garlands on in the menus (the garlands entry's `ready`). */
 export const garlandsPromoted = () => LAUNCH_CATEGORIES.some((category) => category.id === "garlands" && category.ready);
 
-/** Occasion routes whose pages are restricted to the launch range. */
-export const LAUNCH_OCCASION_ROUTES = new Set(LAUNCH_OCCASIONS.map((item) => item.route).filter((route): route is string => !!route));
-
 /**
  * The homepage occasion carousel, in the owner's preferred order. `route` is
  * the existing occasion page each card links to; `feature` optionally names
@@ -146,12 +143,22 @@ export const OCCASION_CAROUSEL: { label: string; route: string; feature?: string
 ];
 
 /**
+ * Occasion routes whose pages are restricted to the launch range: the menu's
+ * launch occasions and every homepage carousel route, so a carousel card and
+ * the page it opens list exactly the same eligible bouquets (no add-ons or
+ * fallbacks).
+ */
+export const LAUNCH_OCCASION_ROUTES = new Set([
+  ...LAUNCH_OCCASIONS.map((item) => item.route).filter((route): route is string => !!route),
+  ...OCCASION_CAROUSEL.map((item) => item.route),
+]);
+
+/**
  * Carousel entries with eligible public bouquets: the launch range (ready
  * categories, every product priced from the database) genuinely tagged for
- * the route — the same rule and count the launch occasion pages list. Each
- * occasion appears once; none is padded or repeated. ("sympathy" is not a
- * launch route: its page also lists tagged non-launch items and fallbacks,
- * so its option count can exceed the bouquet count shown here.)
+ * the route — the same rule and count its occasion page lists (see
+ * LAUNCH_OCCASION_ROUTES). Each occasion appears once; none is padded or
+ * repeated.
  */
 export function occasionCarousel(): { label: string; href: string; count: number; products: Product[]; feature?: string }[] {
   return OCCASION_CAROUSEL.flatMap((item) => {

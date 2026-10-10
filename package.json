@@ -9,6 +9,7 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
+    "preview:occasions": "astro dev --config scripts/occasion-fixture.config.mjs",
     "astro": "astro",
     "db:seed": "node --experimental-strip-types scripts/seed-products.mjs",
     "db:seed-delivery-zones": "node --experimental-strip-types scripts/seed-delivery-zones.mjs",
