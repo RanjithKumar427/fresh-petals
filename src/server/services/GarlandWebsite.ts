@@ -32,6 +32,40 @@ export function garlandCacheHeaders(): Record<string, string> {
   };
 }
 
+// ---------------------------------------------------------------------------
+// Occasion pages (bouquet occasion assignments) use the same mechanism: each
+// occasion page is tagged with its own `occasion:<slug>` tag; pages that list
+// several occasions (the homepage, /occasions, the bouquet list, the occasion
+// sitemap) carry OCCASION_INDEX_TAG. Saving a product whose occasions changed
+// purges the tags of every occasion added or removed, plus the index.
+//
+// They use the same freshness limit as garlands: a purge takes effect at
+// once, and if one fails nothing is served stale for longer than
+// OCCASION_MAX_STALE_SECONDS. The cost (not hidden by a longer stale
+// window): a cache miss renders the page in the function region against the
+// database — about 1.1–1.4 s to first byte, measured on uncached garland
+// pages on 6 Oct 2026 — where prebuilt pages answered in about 0.2 s.
+// ---------------------------------------------------------------------------
+export const OCCASION_INDEX_TAG = "occasion-index";
+export const occasionTag = (slug: string) => `occasion:${slug}`;
+/** Upper bound on how long a visitor can see an outdated occasion listing if a purge fails. */
+export const OCCASION_MAX_STALE_SECONDS = S_MAXAGE + STALE_WHILE_REVALIDATE;
+
+/** Cache headers for on-demand occasion responses; `tags` from occasionTag()/OCCASION_INDEX_TAG. */
+export function occasionCacheHeaders(tags: string[]): Record<string, string> {
+  return {
+    "Cache-Control": `public, max-age=0, s-maxage=${S_MAXAGE}, stale-while-revalidate=${STALE_WHILE_REVALIDATE}`,
+    "Vercel-Cache-Tag": tags.join(","),
+  };
+}
+
+/** The live occasion pages a change to these occasion slugs can affect (housewarming also lists pooja). */
+export function occasionTagsFor(changed: string[]): string[] {
+  const pages = new Set(changed);
+  if (pages.has("pooja")) pages.add("housewarming");
+  return [OCCASION_INDEX_TAG, ...[...pages].sort().map(occasionTag)];
+}
+
 export type RefreshResult = {
   ok: boolean;
   method: "vercel" | "purge-url" | "none";
@@ -47,11 +81,17 @@ function vercelPurgeAvailable(): boolean {
 }
 
 /** Purges every cached garland page/section so the next visitor sees the saved version. */
-export async function refreshGarlandPages(): Promise<RefreshResult> {
+export function refreshGarlandPages(): Promise<RefreshResult> {
+  return refreshWebsite([GARLAND_CACHE_TAG]);
+}
+
+/** Purges the cached responses carrying any of these tags. Never reports success it can't confirm. */
+export async function refreshWebsite(tags: string[]): Promise<RefreshResult> {
   const at = new Date().toISOString();
   try {
     if (vercelPurgeAvailable()) {
-      await dangerouslyDeleteByTag(GARLAND_CACHE_TAG);
+      // Vercel accepts at most 16 tags per purge call.
+      for (let i = 0; i < tags.length; i += 16) await dangerouslyDeleteByTag(tags.slice(i, i + 16));
       return { ok: true, method: "vercel", at, message: "Website cache cleared — the next visitor gets the saved version." };
     }
     const purgeUrl = process.env.SITE_CACHE_PURGE_URL;
@@ -59,7 +99,7 @@ export async function refreshGarlandPages(): Promise<RefreshResult> {
       const response = await fetch(purgeUrl, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ tags: [GARLAND_CACHE_TAG] }),
+        body: JSON.stringify({ tags }),
         signal: AbortSignal.timeout(8000),
       });
       if (!response.ok) throw new Error(`purge request returned ${response.status}`);

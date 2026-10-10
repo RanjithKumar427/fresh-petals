@@ -9,18 +9,20 @@
 import { GARLAND_FILTER_LABELS as GARLAND_FILTERS, formatGarlandPrice, garlandPhotoSrcset, isCartGarland, isListedGarland } from "../data/garlandRules";
 import type { GarlandProduct } from "../data/garlands";
 import { garlandEnquiryHref } from "../utils/garlandEnquiry";
+import { journeyHref, type Journey } from "../utils/journey";
 
 interface Props {
   product: GarlandProduct;
   /** Load the image eagerly (first row). */
   eager?: boolean;
+  journey?: Journey | null;
 }
 
-const { product, eager = false } = Astro.props;
+const { product, eager = false, journey = null } = Astro.props;
 const design = product.garland;
 const cart = isCartGarland(design);
 const price = formatGarlandPrice(design);
-const href = `/products/${product.slug}`;
+const href = journeyHref(`/products/${product.slug}`, journey);
 const srcset = garlandPhotoSrcset(design.image);
 const filterLabels = design.filters
   .map((key) => GARLAND_FILTERS.find((filter) => filter.key === key)?.label)
@@ -28,7 +30,7 @@ const filterLabels = design.filters
   .join(" · ");
 // Through the live enquiry check, so an unpublished design can't be enquired
 // about even from a cached listing.
-const quoteHref = garlandEnquiryHref({ code: design.code, quantity: 1 });
+const quoteHref = garlandEnquiryHref({ code: design.code, quantity: 1, occasion: journey?.occasion, purpose: journey?.intent });
 ---
 
 <article
@@ -36,7 +38,7 @@ const quoteHref = garlandEnquiryHref({ code: design.code, quantity: 1 });
   data-garland-card
   data-garland-filters={design.filters.join(" ")}
 >
-  <a href={href} class="absolute inset-0 z-10" aria-label={`${design.title}, design ${design.code}`}></a>
+  <a href={href} data-journey-link class="absolute inset-0 z-10" aria-label={`${design.title}, design ${design.code}`}></a>
 
   <div class="relative aspect-[4/5] bg-linen">
     <img
@@ -69,6 +71,7 @@ const quoteHref = garlandEnquiryHref({ code: design.code, quantity: 1 });
       cart ? (
         <a
           href={href}
+          data-journey-link
           class="relative z-20 mt-3 inline-flex min-h-[44px] items-center justify-center rounded-full border border-ink px-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-ink transition hover:bg-ink hover:text-paper"
         >
           Choose & add to cart

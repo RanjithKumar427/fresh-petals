@@ -1,3 +1,5 @@
+import type { Journey } from "./journey";
+
 export type CartAddOn = {
   id: string;
   name: string;
@@ -25,6 +27,7 @@ export type CartItem = {
   category: string;
   quantity: number;
 
+  journey?: Journey | null;
   deliveryDate?: string;
   deliverySlot?: string;
   pincode?: string;
@@ -60,7 +63,9 @@ export function saveCartItems(items: CartItem[]) {
   window.dispatchEvent(new Event("fresh-petals-cart-updated"));
 }
 
+let configuredSequence = 0;
 function createConfiguredItemId(item: Omit<CartItem, "quantity">) {
+  const contextId = item.journey ? `${item.id}:journey:${encodeURIComponent(item.journey.occasion)}:${item.journey.intent}` : item.id;
   const hasConfiguration =
     Boolean(item.deliveryDate) ||
     Boolean(item.deliverySlot) ||
@@ -72,10 +77,10 @@ function createConfiguredItemId(item: Omit<CartItem, "quantity">) {
     Boolean(item.addOns && item.addOns.length > 0);
 
   if (!hasConfiguration) {
-    return item.id;
+    return contextId;
   }
 
-  return `${item.id}-${Date.now()}`;
+  return `${contextId}-${Date.now()}-${configuredSequence++}`;
 }
 
 export function addToCart(item: Omit<CartItem, "quantity">, quantity = 1) {
@@ -101,11 +106,11 @@ export function addToCart(item: Omit<CartItem, "quantity">, quantity = 1) {
     Boolean(cartItemToAdd.addOns && cartItemToAdd.addOns.length > 0);
 
   if (!hasConfiguration) {
-    const existingItem = currentItems.find((cartItem) => cartItem.id === item.id);
+    const existingItem = currentItems.find((cartItem) => cartItem.id === finalItemId);
 
     if (existingItem) {
       const updatedItems = currentItems.map((cartItem) =>
-        cartItem.id === item.id
+        cartItem.id === finalItemId
           ? {
               ...cartItem,
               quantity: cartItem.quantity + quantity,

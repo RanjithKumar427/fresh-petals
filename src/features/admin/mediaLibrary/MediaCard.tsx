@@ -1,3 +1,4 @@
+import AdminImage from "../shared/AdminImage";
 import { FOLDER_LABELS, formatBytes, formatDate, type MediaListItem } from "./types";
 
 interface Props {
@@ -16,7 +17,7 @@ export default function MediaCard({ media, view, onClick }: Props) {
         onClick={onClick}
         className="flex w-full items-center gap-4 border-b border-[#EEE5E8] px-4 py-3 text-left last:border-b-0 hover:bg-[#FBF7F5]"
       >
-        <img src={media.url} alt="" className="h-12 w-12 shrink-0 rounded-lg border border-[#EEE5E8] object-cover" />
+        <AdminImage src={media.url} alt="" className="h-12 w-12 shrink-0 rounded-lg border border-[#EEE5E8] object-cover" />
         <div className="min-w-0 flex-1">
           <p className="truncate text-[13px] font-medium text-[#171717]">{media.filename}</p>
           <p className="text-[11px] text-[#9B948F]">
@@ -39,7 +40,7 @@ export default function MediaCard({ media, view, onClick }: Props) {
   return (
     <button type="button" onClick={onClick} className="group overflow-hidden rounded-xl border border-[#EEE5E8] bg-white text-left transition hover:shadow-md">
       <div className="relative aspect-square bg-[#F8F1F3]">
-        <img
+        <AdminImage
           src={media.url}
           alt={media.altText ?? ""}
           loading="lazy"

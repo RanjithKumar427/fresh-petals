@@ -3,6 +3,7 @@ import { findGarlandByCode } from "../data/garlands";
 import { formatGarlandPrice, optionValues } from "../data/garlandRules";
 import { whatsappLink } from "../config/storefront";
 import { garlandEnquiryText } from "../utils/garlandEnquiry";
+import { OCCASION_JOURNEYS } from "../data/occasionJourneys";
 
 // The live enquiry check behind every garland "Enquire / Ask for a quote on
 // WhatsApp" button. Never cached: it reads the database at the moment of the
@@ -36,6 +37,11 @@ export const GET: APIRoute = async ({ url, site, redirect }) => {
     .map(({ option, value }) => `${option}: ${value.label}${value.extraCharge ? ` (+₹${value.extraCharge.toLocaleString("en-IN")})` : ""}`);
 
   const pageUrl = new URL(`/products/${garland.slug}`, site ?? url).toString();
+  // Occasion and intent from the page the shopper came from — only known
+  // values are used; anything else is ignored.
+  const journey = OCCASION_JOURNEYS[url.searchParams.get("occ") ?? ""];
+  const intent = url.searchParams.get("for");
+  const purpose = intent === "ceremony" || intent === "gift" ? (journey?.intents?.[intent] ?? (intent === "gift" ? "A gift" : "The ceremony")) : null;
   const text = garlandEnquiryText({
     code: design.code,
     title: design.title,
@@ -44,6 +50,8 @@ export const GET: APIRoute = async ({ url, site, redirect }) => {
     quantity,
     options: [...new Set(chosen)],
     url: pageUrl,
+    occasion: journey?.label ?? null,
+    purpose,
   });
   const response = redirect(whatsappLink(text), 302);
   for (const [k, v] of Object.entries(NO_STORE)) response.headers.set(k, v);

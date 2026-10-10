@@ -1,8 +1,11 @@
 ---
-// Homepage — the floral atelier, built on the shop's own photography.
-// Order: inspiration (hero) → something to buy (priced bouquets) → wider
-// browsing (collection deck) → a close look (detail study) → how ordering
-// works → a closing invitation. (The bouquet builder — /studio — was removed
+// Homepage — the floral atelier, built around the questions a shopper has
+// (docs/occasion-journeys.md, "Homepage structure"): hero with an
+// identifiable public bouquet → bouquets to choose from (budget shortcut,
+// availability helper) → the 3D occasion deck → what will arrive → how
+// ordering works → focused questions → assisted choice → footer. No
+// announcement bar: there is no confirmed operational notice or approved
+// promotion to show. (The bouquet builder — /studio — was removed
 // on 4 Oct 2026; its URL redirects to /categories/bouquets.) All server-rendered HTML;
 // depth is CSS perspective plus small scripts. HeroReel.astro is kept but
 // not mounted: a second browsing carousel before the products duplicated
@@ -16,14 +19,30 @@ import BouquetEdit from "../components/atelier/BouquetEdit.astro";
 import InsideBouquet from "../components/atelier/InsideBouquet.astro";
 import OrderJourney from "../components/atelier/OrderJourney.astro";
 import FinalInvite from "../components/atelier/FinalInvite.astro";
+import HomeFaq from "../components/atelier/HomeFaq.astro";
 import { HOME_LANDING } from "../data/seoLanding";
-import { getBouquetEdit, getHeroPhoto } from "../data/atelierHome";
+import { HERO_SIZES, getArrivalBouquet, getBouquetBrowse, getBouquetEdit, getBudgetShortcut, getHeroPhoto } from "../data/atelierHome";
+import { launchSlugs } from "../data/occasionJourneys";
+import { garlandsPromoted } from "../data/launchCatalogue";
+import { loadGarlands, isListedGarland } from "../data/garlands";
+import { loadOccasionMembership } from "../server/services/OccasionMembership";
 import { loadAuthoritativePrices } from "../server/services/ProductPricing";
+import { OCCASION_INDEX_TAG, occasionCacheHeaders } from "../server/services/GarlandWebsite";
 import frauncesUrl from "@fontsource-variable/fraunces/files/fraunces-latin-wght-normal.woff2?url";
 
-const priceMap = await loadAuthoritativePrices();
+// Rendered on request and CDN-cached with the occasion index tag, so the
+// occasion deck and the hero's shortcuts follow the admin's occasion
+// assignments from the first byte (no script needed); saving a changed
+// assignment purges the copy (src/server/services/OccasionWebsite.ts).
+export const prerender = false;
+for (const [name, value] of Object.entries(occasionCacheHeaders([OCCASION_INDEX_TAG]))) Astro.response.headers.set(name, value);
+
+const [priceMap, membership] = await Promise.all([loadAuthoritativePrices(), loadOccasionMembership(launchSlugs())]);
 const editProducts = getBouquetEdit(priceMap);
+const publicGarlands = garlandsPromoted() ? (await loadGarlands()).map((product) => product.garland).filter(isListedGarland) : [];
 const hero = getHeroPhoto();
+// The hero bouquet's published price, exactly as its card and page show it.
+const heroPrice = editProducts.find((product) => product.slug === hero.slug)?.priceLabel;
 
 // Organization/WebSite structured data — only verified facts: the name,
 // the site URL, the WhatsApp number every order link on the site uses, and
@@ -65,14 +84,15 @@ const homeJsonLd = [
        viewport (measured: helps here, hurts listing pages, so not global). -->
   <link slot="head" rel="preload" href={frauncesUrl} as="font" type="font/woff2" crossorigin />
   <!-- Same srcset/sizes as the hero <img> (HeroAtelier.astro). -->
-  <link slot="head" rel="preload" as="image" imagesrcset={hero.main.srcset} imagesizes="(min-width: 1024px) 450px, 320px" fetchpriority="high" />
+  <link slot="head" rel="preload" as="image" imagesrcset={hero.main.srcset} imagesizes={HERO_SIZES} fetchpriority="high" />
 
   <main class="atelier-home">
-    <HeroAtelier />
-    <BouquetEdit products={editProducts} />
-    <OccasionDeck />
-    <InsideBouquet />
+    <HeroAtelier membership={membership} heroPrice={heroPrice} publicGarlands={publicGarlands} />
+    <BouquetEdit products={editProducts} browse={getBouquetBrowse()} budget={getBudgetShortcut(priceMap)} />
+    <OccasionDeck membership={membership} />
+    <InsideBouquet bouquet={getArrivalBouquet(priceMap)} />
     <OrderJourney />
+    <HomeFaq />
     <FinalInvite />
   </main>
 </BaseLayout>

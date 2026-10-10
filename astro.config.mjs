@@ -167,5 +167,12 @@ export default defineConfig({
     plugins: [tailwindcss()],
   },
 
-  integrations: [react(), garlandDraftPhotos],
+  integrations: [react(), garlandDraftPhotos, {
+    name: 'published-price-build-context',
+    hooks: {
+      // Astro sync/check uses production mode too. The actual command is
+      // the distinction: only builds capture database prices for release.
+      'astro:config:setup': ({ command }) => { process.env.FP_ASTRO_COMMAND = command; },
+    },
+  }],
 });

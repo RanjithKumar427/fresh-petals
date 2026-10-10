@@ -1,0 +1,72 @@
+---
+// "Choosing for: Birthday · A gift — Back to your list" on a product page the
+// shopper opened through an explicitly contextual product URL. Hidden
+// otherwise and without JavaScript. The link returns to the listing with the
+// same filters; "Not for this occasion" forgets it, so the WhatsApp message
+// no longer mentions it.
+---
+
+<p class="journey-note" data-journey-note hidden>
+  <span>Choosing for: <strong data-journey-text></strong></span>
+  <a href="/occasions" data-journey-back>Back to your list</a>
+  <button type="button" data-journey-clear>Not for this occasion</button>
+</p>
+
+<script>
+  import { clearJourney, readJourney } from "../../utils/journey";
+
+  const note = document.querySelector<HTMLElement>("[data-journey-note]");
+  const journey = readJourney();
+  if (note && journey) {
+    note.querySelector("[data-journey-text]")!.textContent = `${journey.occasionLabel} · ${journey.intentLabel}`;
+    const back = note.querySelector<HTMLAnchorElement>("[data-journey-back]");
+    if (back && journey.from.startsWith("/")) back.href = journey.from;
+    note.querySelector("[data-journey-clear]")?.addEventListener("click", () => {
+      clearJourney();
+      note.hidden = true;
+      // The option field and messages read the journey on load.
+      location.reload();
+    });
+    note.hidden = false;
+  }
+</script>
+
+<style>
+  .journey-note {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.3rem 0.9rem;
+    margin: 1rem 0 0;
+    padding: 0.55rem 0.9rem;
+    border: 1px solid var(--color-line);
+    border-radius: 14px;
+    background: var(--color-linen);
+    font-size: 0.8125rem;
+    color: var(--color-moss);
+  }
+
+  .journey-note[hidden] {
+    display: none;
+  }
+
+  .journey-note strong {
+    color: var(--color-ink);
+  }
+
+  .journey-note a,
+  .journey-note button {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    font-weight: 700;
+    color: var(--color-ink);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+    cursor: pointer;
+  }
+</style>

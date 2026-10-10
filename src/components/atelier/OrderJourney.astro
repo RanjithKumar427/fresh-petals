@@ -1,18 +1,22 @@
 ---
-// F. From flowers to WhatsApp — the actual ordering journey in three
-// steps. The order itself is always sent from the basket (cart.astro builds
-// the WhatsApp message with every item, option, quantity and price); the
-// link here only asks a question and never replaces a populated basket.
-import { HOME_LANDING } from "../../data/seoLanding";
-
-const questionUrl = `https://wa.me/919652012274?text=${encodeURIComponent("Hi Fresh Petals, I have a question before I order.")}`;
+// F. How ordering works — the actual process, as the terms describe it:
+// choosing, the WhatsApp enquiry (one bouquet from its page, or several from
+// the basket — cart.astro builds that message with every item, option,
+// quantity and price), our confirmation of availability, delivery and the
+// complete price, then acceptance and payment. Opening WhatsApp is an
+// enquiry, not an order. The questions that follow are in HomeFaq.astro;
+// the WhatsApp invitation is in the closing section, not repeated here.
 const steps = [
-  { title: "Choose your flowers", text: "Browse our bouquets by type or occasion, or ask for a custom order. Every price shown is a starting price." },
-  { title: "Add them to your basket", text: "Add a delivery date, the recipient and a note if you like. A pincode is optional." },
+  { title: "Choose", text: "Pick a bouquet — or tell us the occasion and your budget and we'll suggest some." },
   {
-    title: "Confirm on WhatsApp",
-    text: "Your basket opens as a WhatsApp message with every item, quantity and price. We're starting with deliveries in Chamarajpet and Basavanagudi; we confirm availability, your address, delivery timing and the final total including delivery in the chat before you pay.",
+    title: "Enquire on WhatsApp",
+    text: "From a bouquet's page, “Enquire on WhatsApp” sends that bouquet straight away. For several, add them to your basket and “Send basket on WhatsApp”. Opening WhatsApp doesn't place an order.",
   },
+  {
+    title: "We confirm the details",
+    text: "We reply with availability for your date and address, any change to the flowers, and the complete price including delivery.",
+  },
+  { title: "You accept, then pay", text: "When you accept, we confirm the order and share payment details. Nothing is paid on this website." },
 ];
 ---
 
@@ -20,7 +24,7 @@ const steps = [
   <div class="journey__inner">
     <div class="journey__head">
       <p class="journey__eyebrow" data-reveal="fade">How ordering works</p>
-      <h2 id="journey-title" class="journey__title" data-reveal="mask">From flowers <em>to WhatsApp</em></h2>
+      <h2 id="journey-title" class="journey__title" data-reveal="mask">From flowers <em>to a confirmed order</em></h2>
     </div>
 
     <ol class="journey__steps">
@@ -38,18 +42,7 @@ const steps = [
     <div class="journey__foot">
       <div class="journey__cta">
         <a class="fp-btn" href="/cart" data-journey-basket>Go to your basket</a>
-        <a class="fp-link journey__question" href={questionUrl} target="_blank" rel="noopener noreferrer">Ask a question on WhatsApp</a>
       </div>
-      <dl class="journey__faq">
-        {
-          HOME_LANDING.faqs.map((faq) => (
-            <div>
-              <dt>{faq.question}</dt>
-              <dd>{faq.answer}</dd>
-            </div>
-          ))
-        }
-      </dl>
     </div>
   </div>
 </section>
@@ -109,10 +102,17 @@ const steps = [
     gap: 2.2rem;
   }
 
-  @media (min-width: 900px) {
+  @media (min-width: 640px) {
     .journey__steps {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 3rem;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 2.5rem;
+    }
+  }
+
+  @media (min-width: 1100px) {
+    .journey__steps {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 2.5rem;
     }
   }
 
@@ -148,16 +148,7 @@ const steps = [
   }
 
   .journey__foot {
-    display: grid;
-    gap: 2.5rem;
-    margin-top: clamp(3rem, 6vw, 5rem);
-  }
-
-  @media (min-width: 900px) {
-    .journey__foot {
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
-      align-items: start;
-    }
+    margin-top: clamp(2.5rem, 5vw, 4rem);
   }
 
   .journey__cta {
@@ -165,27 +156,5 @@ const steps = [
     flex-wrap: wrap;
     align-items: center;
     gap: 0.8rem 1.4rem;
-  }
-
-  .journey__question {
-    display: inline-flex;
-    align-items: center;
-    min-height: 44px;
-  }
-
-  .journey__faq {
-    margin: 0;
-    display: grid;
-    gap: 1.2rem;
-  }
-
-  .journey__faq dt {
-    font-weight: 600;
-  }
-
-  .journey__faq dd {
-    margin: 0.3rem 0 0;
-    color: var(--color-moss);
-    line-height: 1.6;
   }
 </style>

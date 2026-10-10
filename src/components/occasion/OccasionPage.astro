@@ -1,0 +1,383 @@
+---
+// One occasion landing page (docs/occasion-journeys.md). Rendered by the
+// prebuilt route for the older occasion pages and by the live route for
+// launch occasions, whose products come from the admin's assignments.
+import { parseShopFilters, matchesShopFilters, shopFilterUrl, countShopFacets } from "../../utils/shopFilters";
+import { makeJourney } from "../../utils/journey";
+import { shopItemData } from "../../data/occasionJourneys";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import LandingDetails from "../LandingDetails.astro";
+import OccasionHeader from "./OccasionHeader.astro";
+import OccasionCard from "./OccasionCard.astro";
+import ShopFilters from "./ShopFilters.astro";
+import GarlandCard from "../GarlandCard.astro";
+import { loadGarlands, isListedGarland } from "../../data/garlands";
+import type { Product } from "../../data/productCatalog";
+import type { OccasionMeta } from "../../data/occasionPages";
+import { photo, responsiveImage, type Photo } from "../../data/atelierHome";
+import { SERVICE_AREA_LINE, filterGroups, journeyEnquiryText, journeyFor } from "../../data/occasionJourneys";
+import { whatsappLink } from "../../config/storefront";
+import { OCCASION_LANDING, NOINDEX_OCCASION_SLUGS, lowestPrice } from "../../data/seoLanding";
+import { GARLAND_OCCASION_ROUTES } from "../../data/launchCatalogue";
+
+interface Props {
+  occasion: OccasionMeta;
+  products: Product[];
+}
+
+const { occasion, products } = Astro.props;
+
+// Occasion-led landing (docs/occasion-journeys.md). The route decides which
+// products a page lists (launch occasions: launch products the admin has
+// assigned to the occasion; the older occasion pages: tagged catalogue
+// products with current database assignments). This template decides how they are
+// presented:
+// - a compact heading in the occasion's colours with the site's depth
+//   treatment, so on a phone the first products start in the first screen;
+// - filters derived from the products themselves (budget, colour) — shown
+//   only when they can change the list;
+// - on ceremony occasions, a visible "For the ceremony / Send a gift" choice.
+//   Ceremony flowers are the live public garlands (none yet), otherwise an
+//   honest WhatsApp enquiry — never a substitute product;
+// - condolence: a still, quiet page that leads with "Check availability on
+//   WhatsApp".
+// Every product card links to its canonical product page; the search-landing
+// copy and FAQs follow the products.
+const journey = journeyFor(occasion.slug);
+const landing = OCCASION_LANDING[occasion.slug];
+const pageTitle = landing?.title ?? `${occasion.name} Flowers | Fresh Petals Bengaluru`;
+const pageDescription =
+  products.length === 0
+    ? `Our ${journey.label.toLowerCase()} range isn't online yet. Ask Fresh Petals on WhatsApp.`
+    : (landing?.description ?? occasion.description);
+const pageHeading = landing?.h1 ?? (journey.kind === "calm" ? "Condolence & Sympathy Flowers" : `${occasion.name} Flowers`);
+const fromPrice = lowestPrice(products);
+const noindex = products.length === 0 || NOINDEX_OCCASION_SLUGS.has(occasion.slug);
+const ceremony = journey.kind === "ceremony" && journey.intents;
+// Live public ceremony designs are rendered in HTML too, with the same
+// suitability routes and gates used by shortcuts. Drafts stay private.
+const ceremonyDesigns = GARLAND_OCCASION_ROUTES.has(occasion.slug) ? (await loadGarlands()).filter((product) => isListedGarland(product.garland) && product.occasionTags?.includes(occasion.slug)) : [];
+const filters = parseShopFilters(Astro.url.searchParams);
+const giftSelected = !ceremony || filters.intent === "gift";
+const selectedProducts = giftSelected ? products : ceremonyDesigns;
+const selectedPurpose = giftSelected ? "gift" : "ceremony";
+const shown = selectedProducts.filter((product) => matchesShopFilters(shopItemData(product, selectedPurpose), filters)).length;
+const cardJourney = makeJourney([occasion.slug], "gift", shopFilterUrl(Astro.url.pathname, filters));
+const ceremonyJourney = makeJourney([occasion.slug], "ceremony", shopFilterUrl(Astro.url.pathname, filters));
+const groups = journey.kind === "calm" ? [] : countShopFacets(filterGroups([...products, ...ceremonyDesigns], ["budget", "colour"], { selected: filters }), selectedProducts.map((product) => shopItemData(product, selectedPurpose)), filters);
+
+// Heading photograph: the owner's own occasion photographs where they exist,
+// otherwise the photograph of a product actually listed here.
+const OCCASION_PHOTOS: Record<string, [string, string]> = {
+  wedding: ["occasion-wedding", "A doorway framed with strings of jasmine and roses"],
+  housewarming: ["cat-pooja", "A pooja set-up with marigold and jasmine strings"],
+  pooja: ["cat-pooja", "A pooja set-up with marigold and jasmine strings"],
+  sympathy: ["jasmine", "White jasmine buds"],
+  "mom-to-be": ["hero-bouquets", "Pink and cream flowers in a gift box"],
+};
+const ownPhoto = OCCASION_PHOTOS[occasion.slug];
+const firstWithPhoto = products.find((product) => product.image && !product.image.endsWith(".svg"));
+const headerPhoto: Photo | null = ownPhoto
+  ? photo(ownPhoto[0], ownPhoto[1])
+  : firstWithPhoto
+    ? (() => {
+        const img = responsiveImage(firstWithPhoto.image);
+        return { ...img, width: img.width ?? 800, height: img.height ?? 800, alt: "" };
+      })()
+    : null;
+
+const lede =
+  journey.kind === "calm"
+    ? "Quiet, simple flowers. Tell us when and where they're needed — we'll check timing and delivery with you first."
+    : products.length > 0 && fromPrice !== null
+      ? `${journey.question} ${ceremony ? "Gift bouquet prices" : "Prices"} start from ₹${fromPrice.toLocaleString("en-IN")}.`
+      : journey.question;
+
+const ceremonyEnquiry = whatsappLink(journeyEnquiryText(journey.enquiryNoun, ceremony ? journey.intents!.ceremony : undefined));
+const giftEnquiry = whatsappLink(journeyEnquiryText(journey.enquiryNoun, ceremony ? journey.intents!.gift : "A gift"));
+const calmEnquiry = whatsappLink(
+  [
+    "Hi Fresh Petals, I'd like to check availability of condolence flowers.",
+    "Needed by (date/time): ",
+    "Delivery area: ",
+    "Message on the card (optional): ",
+  ].join("\n")
+);
+// "Needed today?": an availability question, never a delivery promise.
+const todayEnquiry =
+  journey.kind === "gift" && products.length > 0
+    ? whatsappLink(
+        [
+          `Hi Fresh Petals, I need ${journey.enquiryNoun} today.`,
+          "Which bouquets can you make and deliver today, and by what time?",
+          "Delivery area: ",
+        ].join("\n")
+      )
+    : null;
+const helpEnquiry = whatsappLink(`Hi Fresh Petals, I'm looking for ${journey.enquiryNoun}. Please help me choose and confirm availability.`);
+const breadcrumbJsonLd = {
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Home", item: new URL("/", Astro.site).toString() },
+    { "@type": "ListItem", position: 2, name: "Occasions", item: new URL("/occasions", Astro.site).toString() },
+    { "@type": "ListItem", position: 3, name: pageHeading, item: new URL(`/occasions/${occasion.slug}`, Astro.site).toString() },
+  ],
+};
+---
+
+<BaseLayout title={pageTitle} description={pageDescription} noindex={noindex} jsonLd={noindex ? [] : [breadcrumbJsonLd]} showCategoryCarousel={false}>
+  <main class="occ" style={`--band:${journey.palette.band};--accent:${journey.palette.accent}`}>
+    <OccasionHeader journey={journey} heading={pageHeading} eyebrow={journey.kind === "calm" ? "With sympathy" : `${journey.label} · Bengaluru`} lede={lede} photo={headerPhoto} todayHref={todayEnquiry} />
+
+    <div
+      class="occ__shop"
+      data-shop
+      data-shop-key={`occasion:${occasion.slug}`}
+      data-shop-occasion={occasion.slug}
+      data-shop-noun="designs"
+      data-shop-occasion-label={journey.label}
+      data-default-intent={ceremony ? "ceremony" : "gift"}
+    >
+      {
+        journey.kind === "calm" && (
+          <p class="occ__calm-cta">
+            <a class="fp-btn" href={calmEnquiry} target="_blank" rel="noopener noreferrer" data-whatsapp-enquiry>
+              Check availability on WhatsApp
+            </a>
+            <span>We reply with what's possible for your date and area before anything is prepared.</span>
+          </p>
+        )
+      }
+
+      {(groups.length > 0 || ceremony) && <ShopFilters groups={groups} intents={ceremony ? journey.intents : undefined} total={selectedProducts.length} shown={shown} noun="designs" />}
+
+      {
+        ceremony && (
+          <section class="occ__section" data-intent-section="ceremony" hidden={filters.intent === "gift"} aria-label={journey.intents!.ceremony}>
+            {ceremonyDesigns.length > 0 && <div class="occ__grid">{ceremonyDesigns.map((product) => {
+              const data = shopItemData(product, "ceremony");
+              return <div data-shop-item hidden={!matchesShopFilters(data, filters)} data-occasions={data.occasions.join(" ")} data-colours={data.colours.join(" ")} data-budget={data.budget ?? ""} data-intent="ceremony"><GarlandCard product={product} journey={ceremonyJourney} /></div>;
+            })}</div>}
+            <div class="occ__empty" data-occasion-empty hidden={ceremonyDesigns.length > 0}>
+              <h2>{journey.intents!.ceremony}</h2>
+              <p>
+                Our {journey.label.toLowerCase()} ceremony flowers aren't online yet. Tell us the date, the ceremony and what you need — we reply with what we can make and the price.
+              </p>
+              <a class="fp-btn" href={ceremonyEnquiry} target="_blank" rel="noopener noreferrer" data-whatsapp-enquiry>
+                Ask about ceremony flowers on WhatsApp
+              </a>
+            </div>
+          </section>
+        )
+      }
+
+      <section class="occ__section" data-intent-section={ceremony ? "gift" : undefined} hidden={ceremony && filters.intent !== "gift"} aria-label={ceremony ? journey.intents!.gift : `${journey.label} flowers`}>
+        {
+          products.length > 0 ? (
+            <>
+              <ul class="occ__grid" role="list">
+                {products.map((product, index) => (
+                  // Only the first card's photo is fetched straight away: on a
+                  // phone it is the largest thing in the first screen (measured
+                  // LCP element). Not on ceremony pages, where this list starts
+                  // hidden behind "For the ceremony".
+                  <OccasionCard product={product} journey={cardJourney} priority={index === 0 && !ceremony} />
+                ))}
+              </ul>
+              <div class="occ__empty" data-shop-empty hidden={shown > 0}>
+                <h2>Nothing matches all of those filters</h2>
+                <p>Try fewer filters, or tell us your colours and budget on WhatsApp.</p>
+                <p class="occ__empty-actions">
+                  <a href={shopFilterUrl(Astro.url.pathname, { occasion: [], budget: [], colour: [], intent: ceremony ? filters.intent : null })} class="fp-btn-outline" data-filters-clear>
+                    Clear filters
+                  </a>
+                  <a class="fp-btn" href={helpEnquiry} target="_blank" rel="noopener noreferrer" data-whatsapp-enquiry>
+                    Ask on WhatsApp
+                  </a>
+                </p>
+              </div>
+            </>
+          ) : (
+            <div class="occ__empty">
+              <h2>{ceremony ? journey.intents!.gift : `Our ${journey.label.toLowerCase()} range isn't online yet`}</h2>
+              <p>
+                {ceremony
+                  ? `We haven't listed ${journey.label.toLowerCase()} gift bouquets yet. Tell us who it's for and your budget — or browse our bouquets.`
+                  : "Tell us what you need and we'll let you know what we can make."}
+              </p>
+              <p class="occ__empty-actions">
+                <a class="fp-btn" href={giftEnquiry} target="_blank" rel="noopener noreferrer" data-whatsapp-enquiry>
+                  Ask on WhatsApp
+                </a>
+                {ceremony && (
+                  <a class="fp-btn-outline" href="/categories/bouquets">
+                    Browse all bouquets
+                  </a>
+                )}
+              </p>
+            </div>
+          )
+        }
+      </section>
+    </div>
+
+    <section class="occ__about" aria-label={`About ${journey.label.toLowerCase()} orders`}>
+      <div class="occ__about-inner">
+        {landing ? landing.intro.map((paragraph) => <p>{paragraph}</p>) : <p>{occasion.description}</p>}
+        <p>{occasion.heroNote}</p>
+        <p class="occ__area">{SERVICE_AREA_LINE}</p>
+        {
+          journey.kind !== "calm" && (
+            <p>
+              <a class="occ__help" href={helpEnquiry} target="_blank" rel="noopener noreferrer" data-whatsapp-enquiry>
+                Not sure? Ask us on WhatsApp
+              </a>
+              {" · "}
+              <a class="occ__help" href="/occasions">
+                All occasions
+              </a>
+              {" · "}
+              <a class="occ__help" href="/custom-orders">
+                Custom orders
+              </a>
+            </p>
+          )
+        }
+      </div>
+    </section>
+
+    {landing && <LandingDetails content={landing} />}
+  </main>
+</BaseLayout>
+
+<style>
+  .occ {
+    background: var(--color-paper);
+  }
+
+  .occ__shop {
+    display: grid;
+    gap: 0.9rem;
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0.9rem clamp(16px, 4vw, 48px) 2.5rem;
+  }
+
+  .occ__shop > * {
+    min-width: 0;
+  }
+
+  .occ__calm-cta {
+    display: grid;
+    gap: 0.5rem;
+    margin: 0;
+    font-size: 0.875rem;
+    color: var(--color-moss);
+  }
+
+  .occ__calm-cta .fp-btn {
+    justify-self: start;
+  }
+
+  .occ__section[hidden] {
+    display: none;
+  }
+
+  /* The ceremony choice starts on "For the ceremony"; with scripts, the gift
+     section is hidden from the first paint (without them, both show). */
+  :global(html.js) .occ__section[data-start-hidden] {
+    display: none;
+  }
+
+  .occ__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin: 0;
+    padding: 0;
+  }
+
+  @media (min-width: 768px) {
+    .occ__grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1rem;
+    }
+  }
+
+  @media (min-width: 1100px) {
+    .occ__grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  .occ__empty {
+    display: grid;
+    gap: 0.6rem;
+    justify-items: start;
+    padding: 1.4rem;
+    border: 1px solid var(--color-line);
+    border-radius: 20px;
+    background: color-mix(in srgb, var(--band) 60%, var(--color-paper));
+  }
+
+  .occ__empty[hidden] {
+    display: none;
+  }
+
+  .occ__empty h2 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 1.5rem;
+    line-height: 1.1;
+    color: var(--color-ink);
+  }
+
+  .occ__empty p {
+    margin: 0;
+    max-width: 58ch;
+    font-size: 0.9375rem;
+    line-height: 1.55;
+    color: var(--color-moss);
+  }
+
+  .occ__empty-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+  }
+
+  .occ__about {
+    border-top: 1px solid var(--color-line);
+    background: var(--color-ivory);
+  }
+
+  .occ__about-inner {
+    display: grid;
+    gap: 0.75rem;
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 2rem clamp(16px, 4vw, 48px);
+    font-size: 0.9375rem;
+    line-height: 1.65;
+    color: var(--color-moss);
+  }
+
+  .occ__about-inner p {
+    margin: 0;
+  }
+
+  .occ__area {
+    font-weight: 600;
+    color: var(--color-ink);
+  }
+
+  .occ__help {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    font-weight: 700;
+    color: var(--color-ink);
+    text-underline-offset: 0.2em;
+  }
+</style>

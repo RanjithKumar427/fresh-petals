@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { uploadFile } from "../../shared/uploadFile";
 import MediaPickerModal from "../../mediaLibrary/MediaPickerModal";
 import type { MediaListItem } from "../../mediaLibrary/types";
+import AdminImage from "../../shared/AdminImage";
 import type { ProductDraft, ProductImageDraft } from "../types";
 
 interface Props {
@@ -217,7 +218,7 @@ export default function ImagesSection({ draft, onChange }: Props) {
               className="group relative cursor-grab overflow-hidden rounded-xl border border-[#EEE5E8] bg-white active:cursor-grabbing"
             >
               <div className="relative aspect-square bg-[#F8F1F3]">
-                <img src={image.url} alt={image.altText ?? ""} className="h-full w-full object-cover" />
+                <AdminImage src={image.url} alt={image.altText ?? ""} className="h-full w-full object-cover" />
                 {image.isPrimary && (
                   <span className="absolute left-2 top-2 rounded-full bg-white/95 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-[#7C243E] shadow-sm">
                     Primary

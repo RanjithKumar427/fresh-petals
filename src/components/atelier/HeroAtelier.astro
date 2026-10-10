@@ -4,19 +4,33 @@
 // (CSS perspective, one preserve-3d element) holds three planes of real
 // photography:
 //   back   — a restrained rose panel, pushed away from the viewer
-//   photo  — the wrapped tulip bouquet (bouquet-1.jpg, cropped above the
-//            flowers only), in an arched frame
-//   lens   — a detail of the same photograph's tulips, nearest the viewer
+//   photo  — a public launch bouquet's own photograph (atelierHome
+//            getHeroPhoto), in an arched frame, linked to its product page
+//   lens   — a magnified detail of the same photograph, nearest the viewer
 // On entry the stage turns from a steeper angle and the planes separate;
 // during the first scroll it tilts back toward the next section and the
 // planes spread further; fine pointers add a small parallax. Reduced
 // motion (or no JS) shows the rest composition with nothing moving.
 import { HOME_LANDING } from "../../data/seoLanding";
-import { getHeroPhoto } from "../../data/atelierHome";
+import { HERO_SIZES, getHeroPhoto } from "../../data/atelierHome";
+import { SERVICE_AREA_SHORT, heroOccasionLinks, homeShortcuts, type Membership } from "../../data/occasionJourneys";
+import type { GarlandDesign } from "../../data/garlandRules";
 
-const { main, detail } = getHeroPhoto();
-// Keep in step with the preload in pages/index.astro.
-const heroSizes = "(min-width: 1024px) 450px, 320px";
+interface Props {
+  membership: Membership;
+  /** The hero bouquet's published price label (same as its card and page). */
+  heroPrice?: string;
+  publicGarlands?: GarlandDesign[];
+}
+
+const { slug, name, main, detail } = getHeroPhoto();
+// Buying shortcuts (docs/occasion-journeys.md). Each appears only when its
+// destination has public products: today "Browse bouquets" and "Help me
+// choose"; "Choose garlands" and "Flowers for a ceremony" join once garlands
+// are public and promoted. Exact-design shoppers skip straight to search.
+const shortcuts = homeShortcuts(Astro.props.membership, Astro.props.publicGarlands);
+const occasionLinks = heroOccasionLinks(Astro.props.membership);
+const productHref = `/products/${slug}`;
 ---
 
 <section class="hero" data-hero aria-labelledby="hero-title" style={`--photo-ar: ${main.width} / ${main.height}`}>
@@ -30,11 +44,18 @@ const heroSizes = "(min-width: 1024px) 450px, 320px";
         </span>
       </h1>
       <p class="hero__body">Choose your flowers, then confirm your order on WhatsApp.</p>
-      <div class="hero__actions">
-        <a class="fp-btn" href="/categories/bouquets">Shop bouquets</a>
-        <a class="fp-btn-outline" href="/custom-orders">Custom orders</a>
-      </div>
-      <p class="hero__note">Delivery area, timing and charges are confirmed in chat — no payment on this website.</p>
+      <nav class="hero__actions" aria-label="Shop by what you need" data-count={shortcuts.length}>
+        {shortcuts.map((shortcut) => (
+          <a class={shortcut.primary ? "fp-btn" : "fp-btn-outline"} href={shortcut.href}>
+            {shortcut.label}
+          </a>
+        ))}
+      </nav>
+      <nav class="hero__occasions" aria-label="Flowers by occasion">
+        {occasionLinks.map((link) => <a href={link.href}>{link.label}</a>)}
+      </nav>
+      <p class="hero__note">{SERVICE_AREA_SHORT}</p>
+      <p class="hero__note hero__links"><a href="/search">Search by name or code</a> · <a href="/custom-orders">Custom orders</a></p>
       <p class="sr-only">{HOME_LANDING.intro[0]}</p>
     </div>
 
@@ -42,22 +63,22 @@ const heroSizes = "(min-width: 1024px) 450px, 320px";
       <div class="hero__stage" data-hero-stage>
         <div class="hero__back" aria-hidden="true"></div>
         <div class="hero__shade" aria-hidden="true"></div>
-        <div class="hero__photo">
+        <a class="hero__photo" href={productHref} tabindex="-1" aria-hidden="true">
           <img
             src={main.src}
             srcset={main.srcset}
-            sizes={heroSizes}
+            sizes={HERO_SIZES}
             width={main.width}
             height={main.height}
-            alt={main.alt}
+            alt=""
             fetchpriority="high"
           />
-        </div>
+        </a>
         <div class="hero__lens" aria-hidden="true">
           <img
             src={detail.src}
             srcset={detail.srcset}
-            sizes="(min-width: 1024px) 150px, 104px"
+            sizes={HERO_SIZES}
             width={detail.width}
             height={detail.height}
             alt=""
@@ -65,6 +86,15 @@ const heroSizes = "(min-width: 1024px) 450px, 320px";
           />
         </div>
       </div>
+      <!-- The photograph is this bouquet: a plain, focusable link with its
+           name and published price (the photo plane above is the same link,
+           for pointer users). -->
+      <a class="hero__caption" href={productHref}>
+        <span class="hero__caption-name">{name}</span>
+        {Astro.props.heroPrice && <span class="hero__caption-price">{Astro.props.heroPrice}</span>}
+        <span class="hero__caption-cta">View bouquet <span aria-hidden="true">→</span></span>
+        <span class="sr-only">{main.alt}</span>
+      </a>
     </div>
   </div>
 </section>
@@ -209,6 +239,84 @@ const heroSizes = "(min-width: 1024px) 450px, 320px";
     color: var(--color-moss);
   }
 
+  /* Birthday · Anniversary · More occasions: plain links, not buttons. */
+  .hero__occasions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0 1.1rem;
+    font-size: var(--step--1);
+  }
+
+  .hero__occasions a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    font-weight: 700;
+    color: var(--color-ink);
+    text-decoration: underline;
+    text-decoration-color: color-mix(in srgb, var(--color-ink) 35%, transparent);
+    text-underline-offset: 0.25em;
+  }
+
+  .hero__occasions a:hover {
+    text-decoration-color: currentColor;
+  }
+
+  /* The bouquet in the photograph: name, published price, a plain link. */
+  .hero__caption {
+    position: relative;
+    z-index: 2;
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: center;
+    gap: 0.15rem 0.6rem;
+    min-height: 44px;
+    margin-top: 1rem;
+    padding: 0.55rem 1rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--color-paper) 88%, transparent);
+    color: var(--color-ink);
+    font-size: var(--step--1);
+    text-decoration: none;
+    box-shadow: 0 6px 18px -10px rgba(23, 61, 45, 0.45);
+  }
+
+  .hero__caption-name {
+    font-weight: 700;
+  }
+
+  .hero__caption-price {
+    color: var(--color-berry);
+    font-weight: 700;
+  }
+
+  .hero__caption-cta {
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+
+  .hero__caption:focus-visible {
+    outline: 3px solid var(--color-ink);
+    outline-offset: 3px;
+  }
+
+  .hero__note a {
+    display: inline-block;
+    padding-block: 0.35rem;
+    font-weight: 700;
+    color: var(--color-ink);
+    text-underline-offset: 0.2em;
+  }
+
+  /* Three or four shortcuts: two per row. */
+  .hero__actions[data-count="3"],
+  .hero__actions[data-count="4"] {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   /* ---- The 3D stage ---------------------------------------------------- */
   .hero__scene {
     --mask-h: 420px;
@@ -291,11 +399,14 @@ const heroSizes = "(min-width: 1024px) 450px, 320px";
     transform: translateZ(calc(110px * var(--sep)));
   }
 
+  /* The lens magnifies the flowers of the same photograph (same file). */
   .hero__lens img {
     display: block;
     width: 100%;
     height: 100%;
     object-fit: cover;
+    transform: scale(2.3);
+    transform-origin: 46% 36%;
   }
 
   /* Entry: held at a steeper angle with the planes pressed together until
@@ -366,7 +477,7 @@ const heroSizes = "(min-width: 1024px) 450px, 320px";
      The copy wrapper dissolves so its children join the hero grid. ---- */
   @media (max-width: 1023px) {
     .hero__inner {
-      grid-template-areas: "title" "scene" "actions" "body" "note";
+      grid-template-areas: "title" "scene" "actions" "occasions" "body" "note" "links";
       row-gap: 0.85rem;
     }
 
@@ -382,7 +493,7 @@ const heroSizes = "(min-width: 1024px) 450px, 320px";
       grid-area: scene;
       /* Photo height follows the space left in the first screen; the type
          keeps its size. */
-      --mask-h: clamp(220px, calc(100svh - var(--header-h) - 17.5rem), 430px);
+      --mask-h: min(clamp(220px, calc(100svh - var(--header-h) - 20rem), 430px), calc(100vw - 4rem));
       padding: 0.4rem 0 0.8rem;
     }
 
@@ -417,6 +528,19 @@ const heroSizes = "(min-width: 1024px) 450px, 320px";
 
     .hero__note {
       grid-area: note;
+    }
+
+    .hero__occasions {
+      grid-area: occasions;
+      margin-top: -0.35rem;
+    }
+
+    .hero__caption {
+      margin-top: 0.7rem;
+    }
+
+    .hero__links {
+      grid-area: links;
     }
   }
 

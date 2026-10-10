@@ -3,6 +3,7 @@ import EditorShell from "./EditorShell";
 import Sidebar from "./Sidebar";
 import PreviewPanel from "./PreviewPanel";
 import WebsiteStatus, { type WebsiteChange } from "./WebsiteStatus";
+import type { OccasionChange } from "./OccasionWebsiteStatus";
 import { useAutosave } from "./useAutosave";
 import { getSections } from "./completion";
 import { getPublishBlockers } from "./publishReadiness";
@@ -27,16 +28,18 @@ interface Props {
   moods: TagOption[];
   flowerTypes: TagOption[];
   uncategorizedCategoryId: number;
+  /** Which occasion pages list this product (see ClassificationSection). */
+  liveOccasions?: "launch" | "catalogue" | null;
 }
 
-async function saveProduct(draft: ProductDraft): Promise<{ ok: boolean; error?: string; website?: WebsiteChange }> {
+async function saveProduct(draft: ProductDraft): Promise<{ ok: boolean; error?: string; website?: WebsiteChange; occasions?: OccasionChange }> {
   const response = await fetch(`/api/admin/products/${draft.id}`, {
     method: "PATCH",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(toProductInput(draft)),
   });
   const result = await response.json();
-  if (result.ok) return { ok: true, website: result.website };
+  if (result.ok) return { ok: true, website: result.website, occasions: result.occasions };
   // Name the actual problems (e.g. "garland.length: Keep this under 60
   // characters.") rather than only "Please fix the highlighted fields."
   const details: string[] = Object.entries((result.fieldErrors ?? {}) as Record<string, string>).map(([field, message]) => {
@@ -54,6 +57,7 @@ export default function ProductEditor({
   moods,
   flowerTypes,
   uncategorizedCategoryId,
+  liveOccasions = null,
 }: Props) {
   const [draft, setDraft] = useState<ProductDraft>(product);
   const sections = getSections(product);
@@ -62,9 +66,12 @@ export default function ProductEditor({
   const [statusError, setStatusError] = useState<string | null>(null);
   // Garlands only: what the latest save did to the live website.
   const [websiteChange, setWebsiteChange] = useState<WebsiteChange | null>(null);
+  // Bouquets: what the last save did to the live occasion pages.
+  const [occasionChange, setOccasionChange] = useState<OccasionChange | null>(null);
   const save = useCallback(async (data: ProductDraft) => {
     const result = await saveProduct(data);
     if (result.website) setWebsiteChange(result.website);
+    if (result.occasions) setOccasionChange(result.occasions);
     return result;
   }, []);
 
@@ -196,6 +203,8 @@ export default function ProductEditor({
           occasions={occasions}
           moods={moods}
           uncategorizedCategoryId={uncategorizedCategoryId}
+          liveOccasions={liveOccasions}
+          occasionChange={occasionChange}
         />
         {!draft.garland && <FlowerDetailsSection draft={draft} onChange={updateDraft} flowerTypes={flowerTypes} />}
         {!draft.garland && <IncludedSection draft={draft} onChange={updateDraft} />}

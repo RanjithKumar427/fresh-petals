@@ -1,0 +1,206 @@
+---
+// /occasions — "View all occasions" and the homepage's "Help me choose".
+// One honest answer for each of the ten buying needs in
+// docs/occasion-journeys.md: a page with products when we have them,
+// otherwise a WhatsApp enquiry that already says what it's for. Plus the
+// two shortcuts that skip occasions altogether (budget, exact design).
+// Rendered on request: the counts follow the admin's occasion assignments
+// (cached briefly, purged when an assignment changes).
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { loadOccasionMembership } from "../../server/services/OccasionMembership";
+import { OCCASION_INDEX_TAG, occasionCacheHeaders } from "../../server/services/GarlandWebsite";
+import { launchSlugs } from "../../data/occasionJourneys";
+import { needDestinations, journeyEnquiryText, SERVICE_AREA_LINE } from "../../data/occasionJourneys";
+import { launchProducts, garlandsPromoted } from "../../data/launchCatalogue";
+import { loadGarlands, isListedGarland } from "../../data/garlands";
+import { budgetBand } from "../../data/occasionJourneys";
+import { whatsappLink } from "../../config/storefront";
+import { loadAuthoritativePrices, withAuthoritativePrice } from "../../server/services/ProductPricing";
+
+export const prerender = false;
+
+for (const [name, value] of Object.entries(occasionCacheHeaders([OCCASION_INDEX_TAG]))) Astro.response.headers.set(name, value);
+
+const [membership, priceMap] = await Promise.all([loadOccasionMembership(launchSlugs()), loadAuthoritativePrices()]);
+const publicGarlands = garlandsPromoted() ? (await loadGarlands()).map((product) => product.garland).filter(isListedGarland) : [];
+const needs = needDestinations(membership, publicGarlands);
+// Availability for today is asked, never promised.
+const todayHref = whatsappLink(["Hi Fresh Petals, I need flowers today.", "What can you make and deliver today, and by what time?", "Occasion: ", "Delivery area: "].join("\n"));
+// Counted from the published prices the bouquet cards show.
+const underBudget = launchProducts().filter((product) => budgetBand(withAuthoritativePrice(product, priceMap)) === "under-1500").length;
+const breadcrumbJsonLd = {
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Home", item: new URL("/", Astro.site).toString() },
+    { "@type": "ListItem", position: 2, name: "Occasions", item: new URL("/occasions", Astro.site).toString() },
+  ],
+};
+---
+
+<BaseLayout
+  title="Flowers by Occasion in Bangalore | Fresh Petals Bengaluru"
+  description="Birthday, anniversary, wedding, housewarming, condolence and more: find the right flowers for the occasion, or ask us on WhatsApp."
+  jsonLd={[breadcrumbJsonLd]}
+  showCategoryCarousel={false}
+>
+  <main class="occ-index">
+    <header class="occ-index__head">
+      <p class="occ-index__eyebrow">Occasions · Bengaluru</p>
+      <h1 class="occ-index__title">What are the flowers for?</h1>
+      <p class="occ-index__lede">Pick the occasion. Where we have flowers listed you'll see them with prices; otherwise tell us on WhatsApp and we'll reply with options.</p>
+      <p class="occ-index__skip">
+        <a href="/search">Know the design or code? Search</a>
+        {underBudget > 0 && <a href="/categories/bouquets?budget=under-1500">Bouquets under ₹1,500 ({underBudget})</a>}
+        <a href={todayHref} target="_blank" rel="noopener noreferrer" data-whatsapp-enquiry>Needed today? Ask on WhatsApp</a>
+      </p>
+    </header>
+
+    <ul class="occ-index__list" role="list">
+      {
+        needs.map((need) => (
+          <li class="need">
+            {need.href ? (
+              <a class="need__link" href={need.href}>
+                <span class="need__name">{need.need}</span>
+                <span class="need__note">{need.note}</span>
+                {need.count > 0 && <span class="need__count">{need.count} {need.count === 1 ? "bouquet" : "bouquets"} with prices</span>}
+              </a>
+            ) : (
+              <a class="need__link need__link--ask" href={whatsappLink(journeyEnquiryText(need.enquiry))} target="_blank" rel="noopener noreferrer" data-whatsapp-enquiry>
+                <span class="need__name">{need.need}</span>
+                <span class="need__note">{need.note}</span>
+                <span class="need__count">Ask on WhatsApp</span>
+              </a>
+            )}
+          </li>
+        ))
+      }
+    </ul>
+
+    <p class="occ-index__area">{SERVICE_AREA_LINE}</p>
+  </main>
+</BaseLayout>
+
+<style>
+  .occ-index {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 1.2rem clamp(16px, 4vw, 48px) 3rem;
+  }
+
+  .occ-index__eyebrow {
+    margin: 0 0 0.3rem;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--color-rose-deep);
+  }
+
+  .occ-index__title {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 380;
+    font-size: clamp(1.9rem, 1.3rem + 2.4vw, 3.4rem);
+    line-height: 1;
+    letter-spacing: -0.03em;
+    color: var(--color-ink);
+  }
+
+  .occ-index__lede {
+    margin: 0.6rem 0 0;
+    max-width: 52ch;
+    color: var(--color-moss);
+    line-height: 1.55;
+  }
+
+  .occ-index__skip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1.2rem;
+    margin: 0.8rem 0 0;
+  }
+
+  .occ-index__skip a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    font-weight: 700;
+    color: var(--color-ink);
+    text-underline-offset: 0.2em;
+  }
+
+  .occ-index__list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 0.75rem;
+    margin: 1.4rem 0 0;
+    padding: 0;
+  }
+
+  .need {
+    list-style: none;
+  }
+
+  .need__link {
+    display: grid;
+    gap: 0.3rem;
+    height: 100%;
+    padding: 1rem 1.1rem;
+    border: 1px solid var(--color-line);
+    border-radius: 16px;
+    background: var(--color-paper);
+    color: var(--color-ink);
+    text-decoration: none;
+    transition: transform 0.2s var(--ease-micro), box-shadow 0.2s var(--ease-micro);
+  }
+
+  @media (hover: hover) {
+    .need__link:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 14px 28px -18px rgba(23, 61, 45, 0.45);
+    }
+  }
+
+  .need__link:focus-visible {
+    outline: 3px solid var(--color-ink);
+    outline-offset: 3px;
+  }
+
+  .need__link--ask {
+    background: var(--color-linen);
+  }
+
+  .need__name {
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    line-height: 1.1;
+  }
+
+  .need__note {
+    font-size: 0.875rem;
+    line-height: 1.45;
+    color: var(--color-moss);
+  }
+
+  .need__count {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--color-berry);
+  }
+
+  .occ-index__area {
+    margin: 1.6rem 0 0;
+    font-size: 0.875rem;
+    color: var(--color-moss);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .need__link {
+      transition: none;
+    }
+    .need__link:hover {
+      transform: none;
+    }
+  }
+</style>

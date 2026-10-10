@@ -1,0 +1,147 @@
+---
+// Focused questions before ordering: coverage, dates, delivery charges,
+// substitutions, greeting messages, cancellation, problems and payment.
+// Answers restate the published policy pages only (src/data/seoLanding.ts
+// HOME_FAQS). Plain <details>: readable and operable without JavaScript.
+import { HOME_FAQS } from "../../data/seoLanding";
+---
+
+<section class="faq" aria-labelledby="faq-title">
+  <div class="faq__inner">
+    <div class="faq__head">
+      <p class="faq__eyebrow">Before you order</p>
+      <h2 id="faq-title" class="faq__title">Questions <em>people ask us</em></h2>
+      <p class="faq__more"><a href="/faqs">All questions</a> · <a href="/shipping">Delivery</a> · <a href="/refunds">Refunds</a></p>
+    </div>
+    <div class="faq__list">
+      {
+        HOME_FAQS.map((faq) => (
+          <details class="faq__item">
+            <summary>{faq.question}</summary>
+            <p>
+              {faq.answer}
+              {faq.link && (
+                <>
+                  {" "}
+                  <a href={faq.link.href}>{faq.link.label}</a>
+                </>
+              )}
+            </p>
+          </details>
+        ))
+      }
+    </div>
+  </div>
+</section>
+
+<style>
+  .faq {
+    background: var(--color-paper);
+    padding: clamp(3.5rem, 8vw, 6rem) clamp(16px, 4vw, 56px);
+    border-top: 1px solid var(--color-line);
+  }
+
+  .faq__inner {
+    display: grid;
+    gap: 2rem;
+    max-width: 1320px;
+    margin: 0 auto;
+  }
+
+  .faq__eyebrow {
+    margin: 0 0 0.8rem;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--color-rose-deep);
+  }
+
+  .faq__title {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 360;
+    font-size: clamp(2rem, 1.3rem + 2.6vw, 3.4rem);
+    line-height: 1;
+    letter-spacing: -0.03em;
+  }
+
+  .faq__title em {
+    font-style: italic;
+    color: var(--color-rose-deep);
+  }
+
+  .faq__more {
+    margin: 1rem 0 0;
+    font-size: 0.9375rem;
+    color: var(--color-moss);
+  }
+
+  .faq__more a,
+  .faq__item a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    font-weight: 700;
+    color: var(--color-ink);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+
+  .faq__list {
+    border-top: 1px solid var(--color-line);
+  }
+
+  .faq__item {
+    border-bottom: 1px solid var(--color-line);
+  }
+
+  .faq__item summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    min-height: 56px;
+    padding: 0.75rem 0;
+    font-weight: 600;
+    color: var(--color-ink);
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .faq__item summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .faq__item summary::after {
+    content: "+";
+    flex: none;
+    font-size: 1.4rem;
+    line-height: 1;
+    color: var(--color-rose-deep);
+  }
+
+  .faq__item[open] summary::after {
+    content: "−";
+  }
+
+  .faq__item summary:focus-visible {
+    outline: 3px solid var(--color-ink);
+    outline-offset: 2px;
+  }
+
+  .faq__item p {
+    margin: 0 0 1.1rem;
+    max-width: 62ch;
+    line-height: 1.6;
+    color: var(--color-moss);
+  }
+
+  @media (min-width: 1024px) {
+    .faq__inner {
+      grid-template-columns: minmax(0, 4fr) minmax(0, 7fr);
+      gap: 4rem;
+      align-items: start;
+    }
+  }
+</style>

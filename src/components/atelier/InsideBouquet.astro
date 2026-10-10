@@ -1,168 +1,103 @@
 ---
-// D. A close look — one real photograph (banner-bouquet.jpg) shown whole,
-// at a size its 736px source can carry, with two details cropped from that
-// same file (scripts/home-photo-variants.mjs): the centre of the bouquet,
-// and the wrap and tie. On desktop the section pins for about one extra
-// viewport while the details come forward out of their places in the
-// photograph and return — whole → centre → wrap → whole — driven by
-// scroll position alone, so reverse scrolling replays it exactly. On
-// mobile, and with reduced motion, it is an unpinned composition with
-// everything visible. Captions describe what is visible in the photograph;
-// figures are counted from the catalogue and labelled as such.
-import { getBouquetFacts, getDetailPhoto } from "../../data/atelierHome";
-import homePhotoVariants from "../../data/homePhotoVariants.json";
+// D. What will arrive — evidence about an actual design rather than a
+// generic photograph: one public launch bouquet (atelierHome
+// getArrivalBouquet), its own photograph linked to its page, two close-ups
+// cropped from that same file in CSS (the flowers; the wrap and ribbon), and
+// the specification its catalogue entry records (flowers, stem count, what
+// is included). What happens when a flower isn't available follows the
+// published refund and terms pages. No sizes are claimed: none are recorded.
+//
+// Depth is kept, motion is not: the close-ups float in front of the
+// photograph on wider screens (CSS perspective, static), always visible —
+// no pinning or scroll-driven reveal.
+import type { ArrivalBouquet } from "../../data/atelierHome";
 
-const facts = getBouquetFacts();
-const { whole, centre, tie } = getDetailPhoto();
+interface Props {
+  bouquet: ArrivalBouquet;
+}
 
-// Where each detail sits inside the whole photograph (fractions), from the
-// crop boxes in the variant manifest.
-type Crop = { left: number; top: number; width: number; height: number };
-const manifest = homePhotoVariants as Record<string, { crop?: Crop }>;
-const region = (key: string) => {
-  const c = manifest[key].crop!;
-  return `--rx:${(c.left / whole.width).toFixed(4)};--ry:${(c.top / whole.height).toFixed(4)};--rw:${(c.width / whole.width).toFixed(4)};--rh:${(c.height / whole.height).toFixed(4)}`;
-};
-
-const steps = [
-  {
-    title: "The whole arrangement",
-    text: "Tall purple spires at the back, the largest blooms at the centre, and small flowers and sprigs filling every gap.",
-  },
-  {
-    title: "At the centre",
-    text: "The biggest, warmest blooms — coral, red and cream — sit together, with yellow and white flowers around them.",
-    fact: `In our catalogue, roses appear in ${facts.roses} of ${facts.total} bouquets and gerberas in ${facts.gerberas}.`,
-  },
-  {
-    title: "The wrap and tie",
-    text: "Kraft paper folded around the stems and gathered with red twine.",
-    fact: `${facts.wrapped} of our ${facts.total} bouquets are paper-wrapped, and ${facts.ribbon} are finished with ribbon.`,
-  },
-];
+const { bouquet } = Astro.props;
+const href = `/products/${bouquet.slug}`;
+// One file for the photograph and both close-ups (same srcset and sizes).
+const sizes = "(min-width: 1024px) 640px, 100vw";
+const lower = (items: string[]) => items.map((item, index) => (index === 0 ? item : item.charAt(0).toLowerCase() + item.slice(1)));
+const flowerText = lower(bouquet.flowers).join(", ");
+const includedText = lower(bouquet.included.filter((item) => !/^fresh /i.test(item))).join(", ");
+const crops = bouquet.crops ? [bouquet.crops.flowers, bouquet.crops.wrap] : [];
+const cropStyle = (c: { x: number; y: number; w: number; h: number }) =>
+  `--cw:${c.w};--ch:${c.h};--cx:${c.x};--cy:${c.y}`;
 ---
 
-<section class="inside" data-inside aria-labelledby="inside-title">
+<section class="inside" aria-labelledby="inside-title">
   <div class="inside__pin">
     <div class="inside__copy">
-      <p class="inside__eyebrow" data-reveal="fade">A closer look</p>
-      <h2 id="inside-title" class="inside__title" data-reveal="mask">What goes into <em>a hand-tied bouquet</em></h2>
+      <p class="inside__eyebrow" data-reveal="fade">What will arrive</p>
+      <h2 id="inside-title" class="inside__title" data-reveal="mask">A closer look at <em>one of our bouquets</em></h2>
       <ol class="inside__steps">
-        {
-          steps.map((step, index) => (
-            <li class="inside__step" data-step={index}>
-              <span class="inside__num" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
-              <span>
-                <strong>{step.title}</strong>
-                <span class="inside__text">{step.text}</span>
-                {step.fact && <span class="inside__fact">{step.fact}</span>}
-              </span>
-            </li>
-          ))
-        }
+        <li class="inside__step">
+          <span class="inside__num" aria-hidden="true">01</span>
+          <span>
+            <strong><a href={href}>{bouquet.name}</a> · {bouquet.priceLabel}</strong>
+            <span class="inside__text">
+              {bouquet.stems ? `Listed as ${bouquet.stems} stems: ` : ""}{flowerText}. Confirm the final arrangement with us on WhatsApp.
+            </span>
+          </span>
+        </li>
+        <li class="inside__step">
+          <span class="inside__num" aria-hidden="true">02</span>
+          <span>
+            <strong>If a flower isn't available</strong>
+            <span class="inside__text">
+              Flowers vary naturally in shade, size and bloom stage. If one in your bouquet isn't available on your date,
+              we tell you before you pay and suggest an alternative — or you can cancel.
+            </span>
+          </span>
+        </li>
+        <li class="inside__step">
+          <span class="inside__num" aria-hidden="true">03</span>
+          <span>
+            <strong>Wrap and finish</strong>
+            <span class="inside__text">{includedText ? `${includedText.charAt(0).toUpperCase()}${includedText.slice(1)}.` : "As shown on the bouquet's page."}</span>
+          </span>
+        </li>
       </ol>
-      <p class="inside__source">The photograph is for illustration; flowers vary with each order.</p>
+      <p class="inside__source">
+        Every bouquet page lists its flowers, stem count and what's included. <a href={href}>View {bouquet.name}</a>
+      </p>
     </div>
 
     <div class="inside__scene">
       <div class="inside__stage">
-        <figure class="inside__whole">
+        <a class="inside__whole" href={href} tabindex="-1" aria-hidden="true">
           <img
-            src={whole.src}
-            srcset={whole.srcset}
-            sizes="(min-width: 1024px) 360px, 62vw"
-            width={whole.width}
-            height={whole.height}
-            alt={whole.alt}
+            src={bouquet.photo.src}
+            srcset={bouquet.photo.srcset}
+            sizes={sizes}
+            width={bouquet.photo.width}
+            height={bouquet.photo.height}
+            alt=""
             loading="lazy"
             decoding="async"
           />
-          <span class="inside__ring inside__ring--a" style={region("/images/banner-bouquet#centre")} aria-hidden="true"></span>
-          <span class="inside__ring inside__ring--b" style={region("/images/banner-bouquet#tie")} aria-hidden="true"></span>
-        </figure>
-        <figure class="inside__detail inside__detail--a">
-          <img
-            src={centre.src}
-            srcset={centre.srcset}
-            sizes="(min-width: 1024px) 270px, 44vw"
-            width={centre.width}
-            height={centre.height}
-            alt={centre.alt}
-            loading="lazy"
-            decoding="async"
-          />
-          <figcaption>At the centre</figcaption>
-        </figure>
-        <figure class="inside__detail inside__detail--b">
-          <img
-            src={tie.src}
-            srcset={tie.srcset}
-            sizes="(min-width: 1024px) 250px, 44vw"
-            width={tie.width}
-            height={tie.height}
-            alt={tie.alt}
-            loading="lazy"
-            decoding="async"
-          />
-          <figcaption>The wrap and tie</figcaption>
-        </figure>
+          {crops.map((c) => <span class="inside__ring" style={cropStyle(c)} aria-hidden="true"></span>)}
+        </a>
+        {
+          crops.map((c, index) => (
+            <figure class={`inside__detail inside__detail--${index === 0 ? "a" : "b"}`}>
+              <span class="inside__crop" style={cropStyle(c)}>
+                <img src={bouquet.photo.src} srcset={bouquet.photo.srcset} sizes={sizes} width={bouquet.photo.width} height={bouquet.photo.height} alt={c.alt} loading="lazy" decoding="async" />
+              </span>
+              <figcaption>{c.caption}</figcaption>
+            </figure>
+          ))
+        }
       </div>
     </div>
   </div>
 </section>
 
-<script>
-  const section = document.querySelector<HTMLElement>("[data-inside]");
-  const steps = [...(section?.querySelectorAll<HTMLElement>("[data-step]") ?? [])];
-  const desktop = window.matchMedia("(min-width: 1024px)");
-
-  if (section && steps.length && document.documentElement.classList.contains("motion")) {
-    const smooth = (a: number, b: number, x: number) => {
-      const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
-      return t * t * (3 - 2 * t);
-    };
-    let raf = 0;
-    const update = () => {
-      raf = 0;
-      if (!section.classList.contains("is-pinned")) return;
-      const rect = section.getBoundingClientRect();
-      const travel = Math.max(1, rect.height - window.innerHeight);
-      const p = Math.min(1, Math.max(0, -rect.top / travel));
-      // Whole → centre → wrap → whole.
-      // Each detail holds for about a fifth of the pinned scroll.
-      const a = smooth(0.06, 0.2, p) * (1 - smooth(0.4, 0.5, p));
-      const b = smooth(0.48, 0.6, p) * (1 - smooth(0.8, 0.92, p));
-      section.style.setProperty("--a", a.toFixed(4));
-      section.style.setProperty("--b", b.toFixed(4));
-      const index = a > 0.5 ? 1 : b > 0.5 ? 2 : 0;
-      steps.forEach((step, i) => step.classList.toggle("is-active", i === index));
-    };
-    const schedule = () => {
-      if (!raf) raf = requestAnimationFrame(update);
-    };
-    const sync = () => {
-      section.classList.toggle("is-pinned", desktop.matches);
-      if (!desktop.matches) {
-        section.style.removeProperty("--a");
-        section.style.removeProperty("--b");
-        steps.forEach((step) => step.classList.remove("is-active"));
-      }
-      schedule();
-    };
-    desktop.addEventListener("change", sync);
-    window.addEventListener("scroll", schedule, { passive: true });
-    window.addEventListener("resize", schedule);
-    sync();
-  }
-</script>
-
 <style>
-  /* --a / --b: how far each detail has come forward (0 = resting inside
-     the photograph, 1 = out beside it). Without the pinned script both
-     are 1: the complete composition. */
   .inside {
-    --a: 1;
-    --b: 1;
     position: relative;
     overflow-x: clip;
     background: var(--color-ivory);
@@ -214,7 +149,6 @@ const steps = [
     gap: 0.6rem;
     padding-top: 1rem;
     border-top: 1px solid var(--color-line);
-    transition: opacity 0.45s var(--ease-premium);
   }
 
   .inside__num {
@@ -230,8 +164,14 @@ const steps = [
     font-weight: 600;
   }
 
-  .inside__text,
-  .inside__fact {
+  .inside__step strong a,
+  .inside__source a {
+    color: var(--color-ink);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+
+  .inside__text {
     display: block;
     margin-top: 0.25rem;
     color: var(--color-moss);
@@ -239,15 +179,18 @@ const steps = [
     font-size: 0.9375rem;
   }
 
-  .inside__fact {
-    font-size: 0.8125rem;
-    color: color-mix(in srgb, var(--color-moss) 85%, var(--color-ink));
-  }
-
   .inside__source {
     margin: 1.2rem 0 0;
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
+    line-height: 1.6;
     color: var(--color-moss);
+  }
+
+  .inside__source a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    font-weight: 700;
   }
 
   /* ---- The photographs ---- */
@@ -256,7 +199,7 @@ const steps = [
     perspective-origin: 40% 45%;
   }
 
-  /* Mobile: the whole photograph, then its two details side by side. */
+  /* Mobile: the whole photograph, then its two close-ups side by side. */
   .inside__stage {
     position: relative;
     display: grid;
@@ -267,10 +210,10 @@ const steps = [
 
   .inside__whole {
     position: relative;
+    display: block;
     grid-column: 1 / -1;
     justify-self: center;
-    width: min(64vw, 300px);
-    margin: 0;
+    width: min(78vw, 360px);
     border-radius: 6px;
     background: var(--color-linen);
     box-shadow: 0 30px 50px -30px rgba(23, 61, 45, 0.5);
@@ -283,17 +226,16 @@ const steps = [
     border-radius: 6px;
   }
 
-  /* Outline of where each detail comes from in the whole photograph. */
+  /* Where each close-up comes from in the photograph. */
   .inside__ring {
     position: absolute;
-    left: calc(var(--rx) * 100%);
-    top: calc(var(--ry) * 100%);
-    width: calc(var(--rw) * 100%);
-    height: calc(var(--rh) * 100%);
+    left: calc(var(--cx) * 100%);
+    top: calc(var(--cy) * 100%);
+    width: calc(var(--cw) * 100%);
+    height: calc(var(--ch) * 100%);
     border: 1.5px solid var(--color-paper);
     border-radius: 6px;
     box-shadow: 0 0 0 1px rgba(23, 61, 45, 0.2);
-    opacity: 0;
     pointer-events: none;
   }
 
@@ -308,11 +250,24 @@ const steps = [
       0 2px 6px rgba(23, 61, 45, 0.12);
   }
 
-  .inside__detail img {
+  /* A window onto one region of the square photograph (CSS crop of the
+     same file): the frame has the region's shape; the image is scaled so
+     the region fills it. */
+  .inside__crop {
+    position: relative;
     display: block;
-    width: 100%;
-    height: auto;
+    overflow: hidden;
+    aspect-ratio: calc(var(--cw) / var(--ch));
     border-radius: 3px;
+  }
+
+  .inside__crop img {
+    position: absolute;
+    left: calc(var(--cx) / var(--cw) * -100%);
+    top: calc(var(--cy) / var(--ch) * -100%);
+    width: calc(100% / var(--cw));
+    height: auto;
+    max-width: none;
   }
 
   .inside__detail figcaption {
@@ -330,22 +285,28 @@ const steps = [
       grid-template-areas: "eyebrow" "title" "scene" "steps" "source";
       gap: 0;
     }
+
     .inside__copy {
       display: contents;
     }
+
     .inside__eyebrow {
       grid-area: eyebrow;
     }
+
     .inside__title {
       grid-area: title;
     }
+
     .inside__scene {
       grid-area: scene;
       margin-top: 1.75rem;
     }
+
     .inside__steps {
       grid-area: steps;
     }
+
     .inside__source {
       grid-area: source;
     }
@@ -358,13 +319,15 @@ const steps = [
       gap: 4rem;
     }
 
-    /* Desktop stage: the whole photograph, with the two details floating
-       beside it in front of the picture plane. */
+    /* The photograph, turned slightly, with the two close-ups floating
+       beside it in front of the picture plane (static depth). */
     .inside__stage {
-      --photo-h: min(calc(100svh - var(--header-h) - 7rem), 640px);
+      /* Fits the 7fr column (about 660px at 1440px wide): the close-ups
+         overlap the photograph's right edge rather than overflow. */
+      --photo-h: min(calc(100svh - var(--header-h) - 7rem), 460px);
       display: block;
       height: var(--photo-h);
-      width: calc(var(--photo-h) * 0.5627 + 300px);
+      width: calc(var(--photo-h) + 200px);
       margin: 0 auto;
     }
 
@@ -374,9 +337,8 @@ const steps = [
       top: 0;
       width: auto;
       height: 100%;
-      aspect-ratio: 736 / 1308;
-      /* Turns slightly toward whichever detail is out. */
-      transform: rotateY(calc((var(--a) + var(--b)) * 5deg));
+      aspect-ratio: 1;
+      transform: rotateY(8deg);
       transform-origin: 0% 50%;
     }
 
@@ -388,62 +350,20 @@ const steps = [
 
     .inside__detail {
       position: absolute;
-      width: 270px;
+      width: 240px;
     }
 
     .inside__detail--a {
       right: 0;
-      top: 12%;
-      transform:
-        translate3d(calc((1 - var(--a)) * -150px), calc((1 - var(--a)) * 20px), calc(-260px + var(--a) * 330px))
-        rotateY(calc(-14deg * var(--a)))
-        scale(calc(0.7 + var(--a) * 0.3));
-      opacity: calc(var(--a) * 1.4);
+      top: 6%;
+      transform: translate3d(0, 0, 70px) rotateY(-12deg);
     }
 
     .inside__detail--b {
       right: 20px;
-      top: 58%;
-      width: 250px;
-      transform:
-        translate3d(calc((1 - var(--b)) * -170px), calc((1 - var(--b)) * 70px), calc(-260px + var(--b) * 330px))
-        rotateY(calc(-14deg * var(--b)))
-        scale(calc(0.7 + var(--b) * 0.3));
-      opacity: calc(var(--b) * 1.4);
+      top: 56%;
+      width: 220px;
+      transform: translate3d(0, 0, 70px) rotateY(-12deg);
     }
-
-    .inside__ring--a {
-      opacity: calc(var(--a) * 0.95);
-    }
-
-    .inside__ring--b {
-      opacity: calc(var(--b) * 0.95);
-    }
-
-    .inside:not(.is-pinned) .inside__whole {
-      transform: none;
-    }
-
-    /* Pinned for about one extra viewport. */
-    .inside.is-pinned {
-      height: calc(200svh - var(--header-h));
-    }
-
-    .inside.is-pinned .inside__pin {
-      position: sticky;
-      top: var(--header-h);
-      height: calc(100svh - var(--header-h));
-      padding-top: 1.5rem;
-      padding-bottom: 1.5rem;
-    }
-
-    .inside.is-pinned .inside__step:not(.is-active) {
-      opacity: 0.4;
-    }
-  }
-
-  /* Static composition (motion off) on desktop: rings stay hidden. */
-  :global(html:not(.motion)) .inside__ring {
-    opacity: 0 !important;
   }
 </style>

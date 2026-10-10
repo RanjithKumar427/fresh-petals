@@ -36,6 +36,14 @@ export default function PricingSection({ draft, onChange }: Props) {
   return (
     <section id="section-pricing" className="fp-card scroll-mt-6 p-6">
       <h2 className="fp-serif text-lg tracking-[0.08em] text-[#171717]">Pricing</h2>
+      {!isGarland && (
+        // Catalogue prices are published with each deployment
+        // (src/server/services/ProductPricing.ts): every page and basket
+        // switches together, never part-way.
+        <p className="mt-1 text-[12px] leading-5 text-[#77706F]" data-pricing-publish-note>
+          Saved here at once; the website shows a new price from the next deployment, on every page and in customers&apos; baskets at the same time. Until then it keeps showing the current price.
+        </p>
+      )}
 
       <div className="mt-5">
         <label className="fp-label block text-[10px] text-[#66565D]">Price Type</label>

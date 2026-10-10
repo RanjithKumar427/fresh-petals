@@ -1,0 +1,161 @@
+---
+// A product in an occasion or bouquet listing: the whole photograph
+// (contained, never cropped), the name and the database starting price. The
+// card links to the product's canonical page — ordering happens there, so
+// listings stay a place to choose (no per-card order buttons). Filter data
+// (occasions, colours, budget band, intent) rides on data attributes for
+// src/components/occasion/ShopFilters.astro.
+import { journeyHref, type Journey } from "../../utils/journey";
+import { parseShopFilters, matchesShopFilters } from "../../utils/shopFilters";
+import type { Product } from "../../data/productCatalog";
+import { responsiveImage } from "../../data/atelierHome";
+import { COLOUR_LABELS, shopItemData, type Intent } from "../../data/occasionJourneys";
+
+interface Props {
+  product: Product;
+  intent?: Intent;
+  /** The page's largest first-screen image: fetched at once, ahead of other images. */
+  priority?: boolean;
+  journey?: Journey | null;
+}
+
+const { product, intent = "gift", priority = false } = Astro.props;
+const img = responsiveImage(product.image);
+const data = shopItemData(product, intent);
+const colourText = data.colours.map((c) => COLOUR_LABELS[c]).join(" · ");
+// An offer range's label ("Budget picks") is not an amount: no "From" before it.
+const isFrom = product.priceType === "from" && /\d/.test(product.priceLabel);
+const price = product.priceLabel.replace(/^From\s+/i, "");
+---
+
+<li
+  class="occ-card"
+  data-shop-item
+  data-occasion-product-slug={product.slug}
+  hidden={!matchesShopFilters(data, parseShopFilters(Astro.url.searchParams))}
+  data-occasions={data.occasions.join(" ")}
+  data-colours={data.colours.join(" ")}
+  data-budget={data.budget ?? ""}
+  data-intent={data.intent}
+>
+  <a class="occ-card__link" href={journeyHref(`/products/${product.slug}`, Astro.props.journey ?? null)} data-journey-link>
+    <span class="occ-card__photo">
+      <img
+        src={img.src}
+        srcset={img.srcset}
+        sizes="(min-width: 1024px) 23vw, (min-width: 768px) 31vw, 46vw"
+        width={img.width ?? 800}
+        height={img.height ?? 800}
+        alt={product.name}
+        loading={priority ? "eager" : "lazy"}
+        fetchpriority={priority ? "high" : undefined}
+        decoding="async"
+      />
+    </span>
+    <span class="occ-card__body">
+      <span class="occ-card__name">{product.name}</span>
+      {colourText && <span class="occ-card__meta">{colourText}</span>}
+      <span class="occ-card__price">{isFrom && <span class="occ-card__from">From&nbsp;</span>}{price}</span>
+      <span class="occ-card__cta" aria-hidden="true">View bouquet →</span>
+    </span>
+  </a>
+</li>
+
+<style>
+  .occ-card {
+    list-style: none;
+  }
+
+  .occ-card[hidden] {
+    display: none;
+  }
+
+  /* The card is one link; this says where it goes. */
+  .occ-card__cta {
+    margin-top: 0.35rem;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--color-ink);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+
+  .occ-card__link {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+    border: 1px solid var(--color-line);
+    border-radius: 16px;
+    background: var(--color-paper);
+    color: var(--color-ink);
+    text-decoration: none;
+    transition:
+      transform 0.22s var(--ease-micro),
+      box-shadow 0.22s var(--ease-micro);
+  }
+
+  @media (hover: hover) {
+    .occ-card__link:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 16px 30px -18px rgba(23, 61, 45, 0.45);
+    }
+  }
+
+  .occ-card__link:focus-visible {
+    outline: 3px solid var(--color-ink);
+    outline-offset: 3px;
+  }
+
+  .occ-card__photo {
+    display: block;
+    aspect-ratio: 1;
+    background: var(--color-linen);
+  }
+
+  .occ-card__photo img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  .occ-card__body {
+    display: grid;
+    gap: 0.15rem;
+    padding: 0.6rem 0.7rem 0.75rem;
+  }
+
+  .occ-card__name {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    line-height: 1.25;
+  }
+
+  .occ-card__meta {
+    font-size: 0.75rem;
+    color: var(--color-moss);
+  }
+
+  .occ-card__price {
+    margin-top: 0.15rem;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: var(--color-berry);
+  }
+
+  .occ-card__from {
+    font-weight: 500;
+    font-size: 0.8125rem;
+    color: var(--color-moss);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .occ-card__link {
+      transition: none;
+    }
+    .occ-card__link:hover {
+      transform: none;
+    }
+  }
+</style>

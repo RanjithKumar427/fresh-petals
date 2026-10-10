@@ -1,310 +1,896 @@
 ---
-// B. Browse the collections — the page's one collection browser: a curved
-// deck of the launch range (bouquet types, occasions with launch products
-// and custom orders; data in atelierHome.getOccasionDeck), each linking to
-// a populated page. Panel transforms are a continuous function of
-// one position value, so cards glide between states (no teleporting, no
-// duplicate active state). Touch swipe, mouse drag, buttons and keyboard
-// all drive the same position. Without JS it is a plain grid of links.
+// B. Shop by occasion — a cinematic carousel of the actual occasions that
+// have public bouquets, in the owner's order (data in
+// atelierHome.getOccasionDeck), each card a link to that occasion's page,
+// followed by "View all occasions" (/occasions). Bouquet types and the
+// budget shortcut are with the bouquets (BouquetEdit).
+// Occasion membership comes from the admin's assignments, read when the
+// homepage is rendered (on request, CDN-cached and purged when an assignment
+// changes), so the cards and their counts are current without a script.
+//
+// The HTML is a plain, responsive set of linked cards — that is what shows
+// without JavaScript, with reduced motion, and for one or two occasions.
+// With three or more, the script lays the same cards out as a ring: a large
+// centre card with smaller, dimmer neighbours behind it. One element per
+// occasion; nothing is duplicated. Where each card sits is worked out in
+// src/utils/occasionCarousel.ts and applied as a data-slot attribute; CSS
+// transitions (transform and opacity only) do the moving.
 import { getOccasionDeck } from "../../data/atelierHome";
+import type { Membership } from "../../data/occasionJourneys";
 
-const panels = getOccasionDeck();
-const sizes = "(min-width: 1024px) 380px, 66vw";
+interface Props {
+  membership: Membership;
+}
+
+const panels = getOccasionDeck(Astro.props.membership);
+const shown = panels.length;
+// The centre card's width at each breakpoint (--occ-w below).
+const sizes = "(min-width: 1440px) 340px, (min-width: 1024px) 310px, (min-width: 768px) 280px, 62vw";
+const two = (value: number) => String(value).padStart(2, "0");
 ---
 
-<section class="deck-section" aria-labelledby="deck-title">
-  <div class="deck-section__head">
-    <div>
-      <p class="deck-section__eyebrow" data-reveal="fade">Collections</p>
-      <h2 id="deck-title" class="deck-section__title" data-reveal="mask">Browse by collection or occasion</h2>
-    </div>
-    <div class="deck-controls" data-deck-controls hidden>
-      <p class="deck-counter" aria-hidden="true"><span data-deck-current>02</span> / {String(panels.length).padStart(2, "0")}</p>
-      <button type="button" class="deck-btn" data-deck-prev aria-label="Previous collection">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg>
-      </button>
-      <button type="button" class="deck-btn" data-deck-next aria-label="Next collection">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" /></svg>
-      </button>
-    </div>
-  </div>
+{
+  shown > 0 && (
+    <section class="occ" id="occasions" aria-labelledby="deck-title" data-deck-section data-occ-section data-count={shown}>
+      <div class="occ__head">
+        <h2 id="deck-title" class="occ__title" data-reveal="mask">Every occasion deserves flowers.</h2>
+        <p class="occ__sub" data-reveal="fade">Find something beautiful for their moment.</p>
+      </div>
 
-  <div class="deck" data-deck role="region" aria-roledescription="carousel" aria-label="Collections and occasions">
-    <ul class="deck__track" data-deck-track>
-      {
-        panels.map((panel, index) => (
-          <li class="deck__panel" data-deck-panel aria-roledescription="slide" aria-label={`${panel.title}, ${index + 1} of ${panels.length}`}>
-            <a href={panel.href} class="deck__link" draggable="false">
-              <span class="deck__photo">
-                <img
-                  src={panel.image.src}
-                  srcset={panel.image.srcset}
-                  sizes={sizes}
-                  width={panel.image.width}
-                  height={panel.image.height}
-                  alt={panel.image.alt}
-                  loading="lazy"
-                  decoding="async"
-                  draggable="false"
-                />
-              </span>
-              <span class="deck__caption">
-                <span class="deck__name">{panel.title}</span>
-                <span class="deck__meta">
-                  {panel.note}
-                </span>
-              </span>
-            </a>
-          </li>
-        ))
-      }
-    </ul>
-    <p class="sr-only" aria-live="polite" data-deck-live></p>
-  </div>
+      <div class="occ__carousel" data-occ-carousel>
+        <div class="occ__stage" data-occ-stage>
+          <ul class="occ__track" data-occ-track>
+            {panels.map((panel) => (
+              <li class="occ__card" data-occ-card data-occasion-key={panel.key} data-occ-name={panel.title} style={`--occ-focus: ${panel.focus}`}>
+                <a href={panel.href} class="occ__link" draggable="false">
+                  <span class="occ__photo">
+                    <img
+                      src={panel.image.src}
+                      srcset={panel.image.srcset}
+                      sizes={sizes}
+                      width={panel.image.width}
+                      height={panel.image.height}
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                      draggable="false"
+                    />
+                  </span>
+                  <span class="occ__caption">
+                    <span class="occ__name">{panel.title}</span>
+                    <span class="occ__count">{panel.countLabel}</span>
+                    <span class="occ__cue">
+                      {panel.cue}
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+                    </span>
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
 
-  <p class="deck-section__more">
-    <a class="deck-section__link" href="/categories/bouquets">Not sure yet? <span>Browse all bouquets</span></a>
-  </p>
-</section>
+        {shown >= 3 && (
+          <div class="occ__controls" data-occ-controls hidden>
+            <button type="button" class="occ__btn" data-occ-prev aria-label="Previous occasion">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg>
+            </button>
+            <p class="occ__position" aria-hidden="true"><span data-occ-current>01</span> / {two(shown)}</p>
+            <button type="button" class="occ__btn" data-occ-next aria-label="Next occasion">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" /></svg>
+            </button>
+            <button type="button" class="occ__btn occ__btn--toggle" data-occ-toggle data-state="playing" aria-label="Pause automatic rotation">
+              <svg class="occ__icon-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6v12M15 6v12" /></svg>
+              <svg class="occ__icon-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 5.5v13l10-6.5z" /></svg>
+            </button>
+          </div>
+        )}
+        <p class="sr-only" aria-live="polite" data-occ-status></p>
+      </div>
+
+      <p class="occ__more">
+        <a class="occ__more-link occ__more-link--primary" href="/occasions">View all occasions</a>
+        <a class="occ__more-link" href="/categories/bouquets">Not sure yet? <span>Browse all bouquets</span></a>
+      </p>
+    </section>
+  )
+}
 
 <script>
-  const deck = document.querySelector<HTMLElement>("[data-deck]");
-  const track = deck?.querySelector<HTMLElement>("[data-deck-track]");
-  const panels = [...(deck?.querySelectorAll<HTMLElement>("[data-deck-panel]") ?? [])];
-  const controls = document.querySelector<HTMLElement>("[data-deck-controls]");
-  const current = document.querySelector<HTMLElement>("[data-deck-current]");
-  const live = document.querySelector<HTMLElement>("[data-deck-live]");
-  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  import { enqueueStep, planStep, restingSlots, visibleRadius, wrapIndex, type Direction, type Side, type Slot } from "../../utils/occasionCarousel";
 
-  if (deck && track && panels.length) {
-    deck.classList.add("is-deck");
-    if (controls) controls.hidden = false;
+  const STEP_MS = 800;
+  // A step that has another press waiting behind it.
+  const QUEUED_MS = 460;
+  const AUTOPLAY_MS = 4500;
 
-    const last = panels.length - 1;
-    // Open on the second panel so the deck reads in both directions.
-    let pos = Math.min(1, last);
-    let target = pos;
-    let raf = 0;
-    let spacing = 300;
-    let announced = -1;
+  /**
+   * Lays the section's cards out as a ring and wires its controls. Returns
+   * the function that undoes all of it (back to the plain linked cards), or
+   * null when there is nothing to enhance.
+   */
+  function enhance(section: HTMLElement): (() => void) | null {
+    const carousel = section.querySelector<HTMLElement>("[data-occ-carousel]");
+    const stage = section.querySelector<HTMLElement>("[data-occ-stage]");
+    const track = section.querySelector<HTMLElement>("[data-occ-track]");
+    const controls = section.querySelector<HTMLElement>("[data-occ-controls]");
+    const toggle = section.querySelector<HTMLButtonElement>("[data-occ-toggle]");
+    const current = section.querySelector<HTMLElement>("[data-occ-current]");
+    const status = section.querySelector<HTMLElement>("[data-occ-status]");
+    const cards = [...section.querySelectorAll<HTMLElement>("[data-occ-card]")];
+    const links = cards.map((card) => card.querySelector<HTMLAnchorElement>("a")).filter((link): link is HTMLAnchorElement => !!link);
+    const count = cards.length;
+    if (!carousel || !stage || !track || !controls || !toggle || count < 3 || links.length !== count) return null;
 
-    const measure = () => {
-      const width = panels[0].offsetWidth || 300;
-      spacing = width * (window.innerWidth < 768 ? 0.8 : 0.74);
+    const listeners = new AbortController();
+    const on = { signal: listeners.signal };
+    const wide = window.matchMedia("(min-width: 768px)");
+    const observers: IntersectionObserver[] = [];
+    // Why autoplay is not running; it runs only while this is empty.
+    const pauses = new Set<string>(["offscreen"]);
+    let alive = true;
+    let active = 0;
+    let radius = visibleRadius(count, wide.matches);
+    let moving = false;
+    let queue: Direction[] = [];
+    // Arrow keys pressed on a card: focus goes with the centre card.
+    let roving = false;
+    let stepTimer = 0;
+    let wrapTimer = 0;
+    let autoTimer = 0;
+    let clickTimer = 0;
+
+    /** Puts cards in a slot at once, with no transition (hidden cards, the first layout, tidying up). */
+    const jump = (moves: [HTMLElement, Slot][]) => {
+      if (moves.length === 0) return;
+      for (const [card, slot] of moves) {
+        card.classList.add("is-jump");
+        card.dataset.slot = slot;
+      }
+      // One style flush for the batch, so the cards are in place before transitions are allowed again.
+      void stage.offsetWidth;
+      for (const [card] of moves) card.classList.remove("is-jump");
     };
 
-    const render = () => {
-      panels.forEach((panel, i) => {
-        const d = i - pos;
-        const a = Math.abs(d);
-        const clamped = Math.max(-3, Math.min(3, d));
-        const x = d * spacing * (1 - Math.min(a, 3) * 0.05);
-        const z = -Math.min(a, 4) * 110;
-        const ry = clamped * -13;
-        const scale = 1 - Math.min(a, 3) * 0.055;
-        panel.style.transform = `translate3d(${x.toFixed(1)}px, 0, ${z.toFixed(1)}px) rotateY(${ry.toFixed(2)}deg) scale(${scale.toFixed(3)})`;
-        panel.style.zIndex = String(100 - Math.round(a * 10));
-        panel.style.opacity = String(a > 3.4 ? 0 : 1 - Math.max(0, a - 2.2) * 0.75);
-        panel.style.setProperty("--active", String(Math.max(0, 1 - a)));
-        // Neighbours keep a readable title so they read as the next choice.
-        panel.style.setProperty("--near", String(Math.max(0, 1 - Math.max(0, a - 0.6) / 1.2)));
-        // Neighbours' titles sit on the side that is not covered.
-        panel.classList.toggle("is-after", d > 0.5);
-        const isActive = Math.round(pos) === i;
-        panel.classList.toggle("is-active", isActive);
-        const link = panel.querySelector("a");
-        if (link) link.tabIndex = a < 0.5 ? 0 : -1;
+    const glide = (card: HTMLElement, slot: Slot, ms: number) => {
+      card.style.setProperty("--occ-ms", `${Math.round(ms)}ms`);
+      card.dataset.slot = slot;
+    };
+
+    const focusedCard = () => cards.findIndex((card) => card.contains(document.activeElement));
+
+    /** Every card in its resting slot. Also the recovery path: whatever a step left behind is put right here. */
+    const settle = () => {
+      const rest = restingSlots(count, active, radius);
+      const focused = focusedCard();
+      // A card must not be hidden while it holds focus.
+      if (focused >= 0 && rest[focused].startsWith("off")) links[active].focus({ preventScroll: true });
+      jump(cards.flatMap((card, index): [HTMLElement, Slot][] => (card.dataset.slot === rest[index] ? [] : [[card, rest[index]]])));
+    };
+
+    const showPosition = () => {
+      if (current) current.textContent = String(active + 1).padStart(2, "0");
+    };
+
+    const announce = () => {
+      if (status) status.textContent = `${cards[active].dataset.occName ?? ""}, ${active + 1} of ${count}`;
+    };
+
+    const syncAutoplay = () => {
+      const shouldRun = pauses.size === 0;
+      carousel.dataset.occAutoplay = shouldRun ? "running" : "paused";
+      if (shouldRun === (autoTimer !== 0)) return;
+      if (shouldRun) {
+        // Always a fresh, full interval: no catching up on time spent paused.
+        autoTimer = window.setTimeout(tick, AUTOPLAY_MS);
+      } else {
+        window.clearTimeout(autoTimer);
+        autoTimer = 0;
+      }
+    };
+
+    const setPause = (reason: string, paused: boolean) => {
+      if (paused) pauses.add(reason);
+      else pauses.delete(reason);
+      syncAutoplay();
+    };
+
+    const run = (direction: Direction, manual: boolean) => {
+      if (!section.isConnected) return teardown();
+      moving = true;
+      if (manual) setPause("moving", true);
+      const ms = queue.length > 0 ? QUEUED_MS : STEP_MS;
+      const plan = planStep(count, active, direction, radius);
+      const next = wrapIndex(active + direction, count);
+
+      const focused = focusedCard();
+      const leaving = focused >= 0 && (plan[focused].kind === "exit" || plan[focused].kind === "wrap");
+      if (focused >= 0 && (roving || leaving)) links[next].focus({ preventScroll: true });
+
+      // Hidden cards go to the side they will come in from before anything moves.
+      jump(
+        plan.flatMap((move, index): [HTMLElement, Slot][] => {
+          const target = move.kind === "enter" ? move.from : move.kind === "park" ? move.to : null;
+          return target && cards[index].dataset.slot !== target ? [[cards[index], target]] : [];
+        })
+      );
+
+      const wrapping: { card: HTMLElement; from: Side; to: Slot }[] = [];
+      plan.forEach((move, index) => {
+        const card = cards[index];
+        if (move.kind === "glide" || move.kind === "enter") glide(card, move.to, ms);
+        else if (move.kind === "exit") glide(card, move.via, ms);
+        else if (move.kind === "wrap") {
+          // Out on one side, across while hidden, back in on the other.
+          glide(card, move.via, ms * 0.42);
+          wrapping.push({ card, from: move.from, to: move.to });
+        }
       });
-      const index = Math.round(pos);
-      if (current) current.textContent = String(index + 1).padStart(2, "0");
-      if (index !== announced && Math.abs(pos - index) < 0.02) {
-        announced = index;
-        if (live) live.textContent = panels[index].getAttribute("aria-label") ?? "";
+      if (wrapping.length > 0) {
+        wrapTimer = window.setTimeout(() => {
+          wrapTimer = 0;
+          jump(wrapping.map(({ card, from }): [HTMLElement, Slot] => [card, from]));
+          for (const { card, to } of wrapping) glide(card, to, ms * 0.58);
+        }, ms * 0.42 + 20);
+      }
+
+      active = next;
+      showPosition();
+      if (manual) announce();
+      // A timer, not transitionend: a cancelled or skipped transition still ends the step.
+      stepTimer = window.setTimeout(finish, ms + 80);
+    };
+
+    const finish = () => {
+      window.clearTimeout(stepTimer);
+      window.clearTimeout(wrapTimer);
+      stepTimer = wrapTimer = 0;
+      if (!alive) return;
+      settle();
+      moving = false;
+      const queued = queue[0];
+      queue = queue.slice(1);
+      if (queued !== undefined) {
+        run(queued, true);
+      } else {
+        roving = false;
+        setPause("moving", false);
       }
     };
 
-    const animate = () => {
-      raf = 0;
-      const diff = target - pos;
-      if (reduce || Math.abs(diff) < 0.001) {
-        pos = target;
-        render();
-        return;
+    /** A press from a control, a key or a swipe. While a step runs, presses wait in a short queue. */
+    const step = (direction: Direction) => {
+      if (!moving) return run(direction, true);
+      queue = enqueueStep(queue, direction);
+      setPause("moving", true);
+    };
+
+    const tick = () => {
+      autoTimer = window.setTimeout(tick, AUTOPLAY_MS);
+      if (!section.isConnected) return teardown();
+      if (!moving) run(1, false);
+    };
+
+    const showToggle = () => {
+      const paused = pauses.has("user");
+      toggle.dataset.state = paused ? "paused" : "playing";
+      toggle.setAttribute("aria-label", paused ? "Play automatic rotation" : "Pause automatic rotation");
+    };
+
+    const teardown = () => {
+      if (!alive) return;
+      alive = false;
+      listeners.abort();
+      for (const observer of observers) observer.disconnect();
+      for (const timer of [stepTimer, wrapTimer, autoTimer, clickTimer]) window.clearTimeout(timer);
+      section.classList.remove("is-enhanced", "is-dragging");
+      for (const card of cards) {
+        card.classList.remove("is-jump");
+        card.style.removeProperty("--occ-ms");
+        delete card.dataset.slot;
       }
-      pos += diff * 0.14;
-      render();
-      raf = requestAnimationFrame(animate);
+      track.style.removeProperty("--occ-drag");
+      for (const name of ["role", "aria-roledescription", "aria-label"]) carousel.removeAttribute(name);
+      delete carousel.dataset.occAutoplay;
+      controls.hidden = true;
+      if (status) status.textContent = "";
     };
 
-    const go = (index: number) => {
-      target = Math.max(0, Math.min(last, index));
-      if (!raf) raf = requestAnimationFrame(animate);
-    };
+    try {
+      // Controls.
+      section.querySelector("[data-occ-prev]")?.addEventListener("click", () => step(-1), on);
+      section.querySelector("[data-occ-next]")?.addEventListener("click", () => step(1), on);
+      toggle.addEventListener(
+        "click",
+        () => {
+          // The visitor's own choice: stays paused until Play is pressed.
+          setPause("user", !pauses.has("user"));
+          showToggle();
+        },
+        on
+      );
 
-    // Pointer drag / swipe. Vertical page scrolling stays native
-    // (touch-action: pan-y); a horizontal gesture takes over only once it is
-    // clearly horizontal.
-    let startX = 0;
-    let startY = 0;
-    let startPos = 0;
-    let dragging = false;
-    let moved = false;
-    let pointerId = -1;
-    let lastX = 0;
-    let lastT = 0;
-    let velocity = 0;
+      // Keyboard: left/right anywhere inside the carousel.
+      carousel.addEventListener(
+        "keydown",
+        (event) => {
+          if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+          if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+          event.preventDefault();
+          if (focusedCard() >= 0) roving = true;
+          step(event.key === "ArrowRight" ? 1 : -1);
+        },
+        on
+      );
 
-    deck.addEventListener("pointerdown", (event) => {
-      if (event.button !== 0) return;
-      pointerId = event.pointerId;
-      startX = lastX = event.clientX;
-      startY = event.clientY;
-      startPos = pos;
-      lastT = performance.now();
-      velocity = 0;
-      dragging = false;
-      moved = false;
-    });
+      // Autoplay waits while the carousel is being used…
+      carousel.addEventListener("pointerenter", (event) => event.pointerType === "mouse" && setPause("hover", true), on);
+      carousel.addEventListener("pointerleave", () => setPause("hover", false), on);
+      carousel.addEventListener("focusin", (event) => (event.target as Element).matches(":focus-visible") && setPause("focus", true), on);
+      carousel.addEventListener("focusout", (event) => !carousel.contains(event.relatedTarget as Node | null) && setPause("focus", false), on);
 
-    deck.addEventListener("pointermove", (event) => {
-      if (event.pointerId !== pointerId) return;
-      const dx = event.clientX - startX;
-      const dy = event.clientY - startY;
-      if (!dragging) {
-        if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy) * 1.2) {
-          dragging = true;
-          moved = true;
-          deck.setPointerCapture(event.pointerId);
-          deck.classList.add("is-dragging");
-          cancelAnimationFrame(raf);
-          raf = 0;
-        } else return;
-      }
-      const now = performance.now();
-      velocity = (event.clientX - lastX) / Math.max(1, now - lastT);
-      lastX = event.clientX;
-      lastT = now;
-      let next = startPos - dx / spacing;
-      if (next < 0) next = next * 0.35;
-      if (next > last) next = last + (next - last) * 0.35;
-      pos = target = next;
-      render();
-    });
+      // …while the tab is hidden (a step in progress is completed at once, not replayed later)…
+      const onVisibility = () => {
+        setPause("hidden", document.hidden);
+        if (document.hidden && moving) {
+          queue = [];
+          finish();
+        }
+      };
+      document.addEventListener("visibilitychange", onVisibility, on);
+      if (document.hidden) pauses.add("hidden");
 
-    const end = (event: PointerEvent) => {
-      if (event.pointerId !== pointerId) return;
-      pointerId = -1;
-      if (!dragging) return;
-      dragging = false;
-      deck.classList.remove("is-dragging");
-      const fling = -velocity * 6;
-      go(Math.round(pos + Math.max(-1.5, Math.min(1.5, fling))));
-    };
-    deck.addEventListener("pointerup", end);
-    deck.addEventListener("pointercancel", end);
+      // …and while the stage is out of view.
+      const inView = new IntersectionObserver(([entry]) => setPause("offscreen", !(entry.isIntersecting && entry.intersectionRatio >= 0.25)), { threshold: [0.3] });
+      inView.observe(stage);
+      observers.push(inView);
 
-    // A drag must never also follow a link.
-    deck.addEventListener(
-      "click",
-      (event) => {
-        if (moved) {
+      // Cards waiting off stage are clipped, so the browser would not fetch
+      // their lazy photographs until they slid in. Fetch them all as the
+      // section approaches instead.
+      const nearby = new IntersectionObserver(
+        (entries) => {
+          if (!entries.some((entry) => entry.isIntersecting)) return;
+          for (const image of section.querySelectorAll<HTMLImageElement>("[data-occ-card] img")) image.loading = "eager";
+          nearby.disconnect();
+        },
+        { rootMargin: "900px 0px" }
+      );
+      nearby.observe(section);
+      observers.push(nearby);
+
+      // Swipe / drag. Vertical scrolling stays native (touch-action: pan-y);
+      // a gesture becomes a drag only once it is clearly horizontal.
+      let pointerId = -1;
+      let startX = 0;
+      let startY = 0;
+      let dragX = 0;
+      let dragging = false;
+      let suppressClick = false;
+
+      stage.addEventListener(
+        "pointerdown",
+        (event) => {
+          if (event.button !== 0 || !event.isPrimary) return;
+          pointerId = event.pointerId;
+          startX = event.clientX;
+          startY = event.clientY;
+          dragX = 0;
+          dragging = false;
+        },
+        on
+      );
+
+      stage.addEventListener(
+        "pointermove",
+        (event) => {
+          if (event.pointerId !== pointerId) return;
+          const dx = event.clientX - startX;
+          const dy = event.clientY - startY;
+          if (!dragging) {
+            if (Math.abs(dx) < 12 || Math.abs(dx) < Math.abs(dy) * 1.3) return;
+            dragging = true;
+            stage.setPointerCapture(pointerId);
+            section.classList.add("is-dragging");
+            setPause("drag", true);
+          }
+          dragX = dx;
+          // The ring leans a little with the finger; the step itself happens on release.
+          track.style.setProperty("--occ-drag", `${(dx * 0.28).toFixed(1)}px`);
+        },
+        on
+      );
+
+      const endDrag = (event: PointerEvent) => {
+        if (event.pointerId !== pointerId) return;
+        pointerId = -1;
+        if (!dragging) return;
+        dragging = false;
+        section.classList.remove("is-dragging");
+        track.style.removeProperty("--occ-drag");
+        setPause("drag", false);
+        if (event.type !== "pointerup") return;
+        // Only the click this drag produces is swallowed; the next tap is an ordinary one.
+        suppressClick = true;
+        window.clearTimeout(clickTimer);
+        clickTimer = window.setTimeout(() => (suppressClick = false), 60);
+        if (Math.abs(dragX) >= 44) step(dragX < 0 ? 1 : -1);
+      };
+      stage.addEventListener("pointerup", endDrag, on);
+      stage.addEventListener("pointercancel", endDrag, on);
+
+      stage.addEventListener(
+        "click",
+        (event) => {
+          if (!suppressClick) return;
+          suppressClick = false;
           event.preventDefault();
           event.stopPropagation();
-          moved = false;
-          return;
-        }
-        const panel = (event.target as HTMLElement).closest<HTMLElement>("[data-deck-panel]");
-        const index = panel ? panels.indexOf(panel) : -1;
-        if (index >= 0 && index !== Math.round(pos)) {
-          event.preventDefault();
-          go(index);
-        }
-      },
-      true
-    );
+        },
+        { capture: true, signal: listeners.signal }
+      );
+      // No ghost image of the link or photograph while dragging with a mouse.
+      stage.addEventListener("dragstart", (event) => event.preventDefault(), on);
 
-    deck.addEventListener("keydown", (event) => {
-      if (event.key === "ArrowRight") {
-        event.preventDefault();
-        go(Math.round(target) + 1);
-        requestAnimationFrame(() => panels[Math.round(target)]?.querySelector("a")?.focus({ preventScroll: true }));
-      } else if (event.key === "ArrowLeft") {
-        event.preventDefault();
-        go(Math.round(target) - 1);
-        requestAnimationFrame(() => panels[Math.round(target)]?.querySelector("a")?.focus({ preventScroll: true }));
-      }
-    });
+      // Two neighbours each side need room; below 768px only one is on stage.
+      wide.addEventListener(
+        "change",
+        () => {
+          radius = visibleRadius(count, wide.matches);
+          if (moving) {
+            queue = [];
+            finish();
+          } else settle();
+        },
+        on
+      );
 
-    document.querySelector("[data-deck-prev]")?.addEventListener("click", () => go(Math.round(target) - 1));
-    document.querySelector("[data-deck-next]")?.addEventListener("click", () => go(Math.round(target) + 1));
-
-    window.addEventListener("resize", () => {
-      measure();
-      render();
-    });
-    measure();
-    render();
+      // Everything is wired: switch from the plain cards to the ring.
+      carousel.setAttribute("role", "group");
+      carousel.setAttribute("aria-roledescription", "carousel");
+      carousel.setAttribute("aria-label", "Occasions");
+      section.classList.add("is-enhanced");
+      settle();
+      controls.hidden = false;
+      showPosition();
+      showToggle();
+      syncAutoplay();
+    } catch {
+      teardown();
+      return null;
+    }
+    return teardown;
   }
+
+  const mounted = new WeakMap<Element, () => void>();
+
+  /** The ring is for motion; with reduced motion (now or later in the session) the plain cards stay. */
+  function mount(section: HTMLElement) {
+    if (mounted.has(section)) return;
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let stop: (() => void) | null = null;
+    const sync = () => {
+      stop?.();
+      stop = reduced.matches ? null : enhance(section);
+    };
+    reduced.addEventListener("change", sync);
+    sync();
+    mounted.set(section, () => {
+      reduced.removeEventListener("change", sync);
+      stop?.();
+      stop = null;
+      mounted.delete(section);
+    });
+  }
+
+  const sections = () => document.querySelectorAll<HTMLElement>("[data-occ-section]");
+  sections().forEach(mount);
+  // Leaving for good: nothing is left running. (A page kept for back/forward
+  // is only paused, by visibilitychange above, and resumes when shown again.)
+  window.addEventListener("pagehide", (event) => {
+    if (!event.persisted) sections().forEach((section) => mounted.get(section)?.());
+  });
 </script>
 
 <style>
-  .deck-section {
+  .occ {
+    /* Deep burgundy, mixed from the site's berry. */
+    --occ-bg: color-mix(in srgb, var(--color-berry) 50%, #14050b);
+    --occ-bg-deep: color-mix(in srgb, var(--color-berry) 30%, #0e0308);
+    --occ-ease: var(--ease-atelier);
     position: relative;
-    background: var(--color-ink);
+    isolation: isolate;
+    overflow-x: clip;
+    padding: clamp(2.75rem, 4.5vw, 4rem) 0 clamp(2.25rem, 4vw, 3.5rem);
+    background: linear-gradient(180deg, var(--occ-bg-deep), var(--occ-bg) 30%, var(--occ-bg) 72%, var(--occ-bg-deep));
     color: var(--color-ivory);
-    padding: clamp(3rem, 5vw, 4.5rem) 0 clamp(2.5rem, 5vw, 4rem);
-    overflow: hidden;
   }
 
-  .deck-section__head {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 1.5rem;
+  /* A soft rose glow behind the centre card. */
+  .occ::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: radial-gradient(
+      ellipse 46% 44% at 50% 57%,
+      color-mix(in srgb, var(--color-rose) 24%, transparent),
+      color-mix(in srgb, var(--color-rose-deep) 18%, transparent) 42%,
+      transparent 72%
+    );
+  }
+
+  .occ__head {
     max-width: 1320px;
     margin: 0 auto;
     padding: 0 clamp(16px, 4vw, 48px);
+    text-align: center;
   }
 
-  .deck-section__eyebrow {
-    margin: 0 0 0.8rem;
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: var(--color-rose);
-  }
-
-  .deck-section__title {
-    margin: 0;
+  .occ__title {
+    margin: 0 auto;
+    max-width: 18ch;
     font-family: var(--font-display);
     font-weight: 360;
-    font-size: clamp(2.2rem, 1.3rem + 3vw, 4rem);
-    line-height: 0.95;
-    letter-spacing: -0.035em;
-    max-width: 16ch;
+    font-size: clamp(2.1rem, 1.3rem + 3vw, 3.5rem);
+    line-height: 1;
+    letter-spacing: -0.03em;
+    text-wrap: balance;
+    color: var(--color-ivory);
   }
 
-  .deck-controls {
+  .occ__sub {
+    margin: 0.9rem auto 0;
+    max-width: 40ch;
+    font-size: clamp(1rem, 0.95rem + 0.3vw, 1.15rem);
+    line-height: 1.5;
+    color: color-mix(in srgb, var(--color-ivory) 80%, transparent);
+  }
+
+  /* The plain layout: linked cards that wrap and stay centred. Shown without
+     JavaScript, with reduced motion, and for one or two occasions. */
+  .occ__stage {
+    margin-top: clamp(1.5rem, 3vw, 2.25rem);
+    padding: 0 clamp(16px, 4vw, 48px);
+  }
+
+  .occ__track {
+    list-style: none;
+    margin: 0 auto;
+    padding: 0;
+    max-width: 1180px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: clamp(0.75rem, 2vw, 1.25rem);
+  }
+
+  .occ__card {
+    width: clamp(148px, 42vw, 220px);
+  }
+
+  .occ[data-count="1"] .occ__card {
+    width: min(72vw, 320px);
+  }
+
+  .occ[data-count="2"] .occ__card {
+    width: min(42vw, 300px);
+  }
+
+  .occ__link {
+    position: relative;
+    display: block;
+    aspect-ratio: 5 / 7;
+    container-type: inline-size;
+    overflow: hidden;
+    isolation: isolate;
+    border: 1px solid color-mix(in srgb, var(--color-ivory) 18%, transparent);
+    border-radius: 22px;
+    background: var(--occ-bg-deep);
+    box-shadow: 0 28px 56px -30px rgba(0, 0, 0, 0.78);
+    color: var(--color-ivory);
+    text-decoration: none;
+    user-select: none;
+    -webkit-user-drag: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .occ__link:focus-visible {
+    outline: 3px solid var(--color-rose);
+    outline-offset: 4px;
+  }
+
+  .occ__photo {
+    position: absolute;
+    inset: 0;
+  }
+
+  .occ__photo img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: var(--occ-focus, 50% 50%);
+  }
+
+  /* Bottom gradient under the caption. */
+  .occ__photo::after {
+    content: "";
+    position: absolute;
+    inset: 36% 0 0 0;
+    background: linear-gradient(to top, rgba(30, 6, 14, 0.94), rgba(30, 6, 14, 0.6) 46%, rgba(30, 6, 14, 0));
+  }
+
+  /* Cards further from the centre are darker (opacity only — no filter). */
+  .occ__link::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: var(--occ-bg-deep);
+    opacity: var(--dim, 0);
+    pointer-events: none;
+    transition: opacity var(--occ-ms, 800ms) var(--occ-ease);
+  }
+
+  .occ__caption {
+    position: absolute;
+    inset: auto 0 0 0;
+    z-index: 1;
+    display: grid;
+    justify-items: center;
+    gap: 0.3rem;
+    padding: 0 0.9rem 1rem;
+    padding: 0 6cqi 7.5cqi;
+    text-align: center;
+    transform: translate3d(var(--cap, 0%), 0, 0);
+    opacity: var(--cap-o, 1);
+    transition:
+      transform var(--occ-ms, 800ms) var(--occ-ease),
+      opacity var(--occ-ms, 800ms) var(--occ-ease);
+  }
+
+  .occ__name {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 1.3rem;
+    font-size: clamp(1rem, 10.5cqi, 2.15rem);
+    line-height: 1.04;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+    overflow-wrap: anywhere;
+  }
+
+  .occ__count {
+    font-size: 0.8125rem;
+    font-size: clamp(0.75rem, 4.6cqi, 0.95rem);
+    letter-spacing: 0.06em;
+    color: color-mix(in srgb, var(--color-ivory) 88%, transparent);
+  }
+
+  .occ__cue {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45em;
+    margin-top: 0.3rem;
+    font-size: 0.75rem;
+    font-size: clamp(0.75rem, 3.7cqi, 0.8125rem);
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-rose);
+    opacity: var(--cue, 1);
+    transition: opacity var(--occ-ms, 800ms) var(--occ-ease);
+  }
+
+  .occ__cue svg {
+    flex: none;
+    width: 1.15em;
+    height: 1.15em;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  /* The narrow cards of the plain layout on a phone: keep the cue on one line. */
+  @container (max-width: 199px) {
+    .occ__cue {
+      font-size: 0.6875rem;
+      letter-spacing: 0.08em;
+      white-space: nowrap;
+    }
+  }
+
+  @media (hover: hover) {
+    .occ__photo img {
+      transition: transform 0.7s var(--ease-premium);
+    }
+
+    .occ__link:hover .occ__photo img {
+      transform: scale(1.035);
+    }
+
+    /* A neighbour lightens under the pointer: it is a link, not just scenery. */
+    .occ__link:hover::after {
+      opacity: calc(var(--dim, 0) * 0.55);
+    }
+  }
+
+  /* ---- Enhanced: the ring. Sizes are multiples of the centre card's width. ---- */
+  .occ.is-enhanced {
+    --occ-w: min(62vw, 270px);
+    --occ-pad: 28px;
+    --occ-near: 0.76;
+    --occ-far: 1.5;
+    --occ-off: 2.05;
+    --occ-turn: 6deg;
+  }
+
+  .occ.is-enhanced .occ__stage {
+    --occ-fade: clamp(14px, 5vw, 96px);
+    position: relative;
+    height: calc(var(--occ-w) * 1.4 + var(--occ-pad) * 2);
+    padding: 0;
+    overflow: hidden;
+    perspective: 1600px;
+    touch-action: pan-y;
+    cursor: grab;
+    /* Soft side edges. A mask, not an overlay: nothing sits on top of the cards to catch clicks. */
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 var(--occ-fade), #000 calc(100% - var(--occ-fade)), transparent);
+    mask-image: linear-gradient(to right, transparent, #000 var(--occ-fade), #000 calc(100% - var(--occ-fade)), transparent);
+  }
+
+  .occ.is-enhanced.is-dragging .occ__stage {
+    cursor: grabbing;
+  }
+
+  .occ.is-enhanced .occ__track {
+    position: absolute;
+    inset: 0;
+    display: block;
+    max-width: none;
+    /* Real depth, so cards pass in front of and behind one another without z-index jumps. */
+    transform-style: preserve-3d;
+    transform: translate3d(var(--occ-drag, 0px), 0, 0);
+    transition: transform 0.5s var(--ease-premium);
+    /* The track's own plane sits in front of the cards set back in depth;
+       it must not take their clicks. */
+    pointer-events: none;
+  }
+
+  .occ.is-enhanced.is-dragging .occ__track {
+    transition: none;
+  }
+
+  .occ.is-enhanced .occ__card {
+    position: absolute;
+    top: var(--occ-pad);
+    left: 50%;
+    width: var(--occ-w);
+    margin-left: calc(var(--occ-w) / -2);
+    transform: translate3d(calc(var(--occ-w) * var(--x, 0)), 0, var(--z, 0px)) rotateY(var(--r, 0deg)) scale(var(--s, 1));
+    opacity: var(--o, 1);
+    pointer-events: auto;
+    transition:
+      transform var(--occ-ms, 800ms) var(--occ-ease),
+      opacity var(--occ-ms, 800ms) var(--occ-ease),
+      visibility 0s linear 0s;
+    will-change: transform, opacity;
+  }
+
+  .occ.is-enhanced .occ__card.is-jump,
+  .occ.is-enhanced .occ__card.is-jump *,
+  .occ.is-enhanced .occ__card.is-jump *::after {
+    transition: none;
+  }
+
+  /* Scale is set against the perspective so the cards read as 100% / 80% / 65%. */
+  .occ.is-enhanced .occ__card[data-slot="0"] {
+    --x: 0;
+    --z: 0px;
+    --r: 0deg;
+    --s: 1;
+    --dim: 0;
+    --cue: 1;
+    --cap: 0%;
+  }
+
+  .occ.is-enhanced .occ__card[data-slot="1"],
+  .occ.is-enhanced .occ__card[data-slot="-1"] {
+    --z: -90px;
+    --s: 0.845;
+    --dim: 0.36;
+    --cue: 0;
+  }
+
+  .occ.is-enhanced .occ__card[data-slot="1"] {
+    --x: var(--occ-near);
+    --r: calc(var(--occ-turn) * -1);
+    /* The centre card covers a neighbour's inner edge: its caption sits a little outward. */
+    --cap: 6%;
+  }
+
+  .occ.is-enhanced .occ__card[data-slot="-1"] {
+    --x: calc(var(--occ-near) * -1);
+    --r: var(--occ-turn);
+    --cap: -6%;
+  }
+
+  .occ.is-enhanced .occ__card[data-slot="2"],
+  .occ.is-enhanced .occ__card[data-slot="-2"] {
+    --z: -180px;
+    --s: 0.723;
+    --dim: 0.58;
+    --cue: 0;
+  }
+
+  .occ.is-enhanced .occ__card[data-slot="2"] {
+    --x: var(--occ-far);
+    --r: calc(var(--occ-turn) * -1.6);
+    --cap: 8%;
+  }
+
+  .occ.is-enhanced .occ__card[data-slot="-2"] {
+    --x: calc(var(--occ-far) * -1);
+    --r: calc(var(--occ-turn) * 1.6);
+    --cap: -8%;
+  }
+
+  /* Off stage: invisible, not focusable, not clickable. Visibility flips
+     only after the fade out, and at once on the way back in. */
+  .occ.is-enhanced .occ__card[data-slot="off-right"],
+  .occ.is-enhanced .occ__card[data-slot="off-left"] {
+    --z: -260px;
+    --s: 0.6;
+    --o: 0;
+    --dim: 0.7;
+    --cue: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition-delay: 0s, 0s, var(--occ-ms, 800ms);
+  }
+
+  .occ.is-enhanced .occ__card[data-slot="off-right"] {
+    --x: var(--occ-off);
+    --r: calc(var(--occ-turn) * -2);
+  }
+
+  .occ.is-enhanced .occ__card[data-slot="off-left"] {
+    --x: calc(var(--occ-off) * -1);
+    --r: calc(var(--occ-turn) * 2);
+  }
+
+  .occ.is-enhanced .occ__link {
+    box-shadow: 0 34px 70px -34px rgba(0, 0, 0, 0.85);
+  }
+
+  /* Controls: previous, position, next, pause/play. */
+  .occ__controls {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 0.5rem;
-    flex-shrink: 0;
+    margin-top: clamp(0.5rem, 1.5vw, 1rem);
+    padding: 0 16px;
   }
 
-  .deck-controls[hidden] {
+  .occ__controls[hidden] {
     display: none;
   }
 
-  .deck-counter {
-    margin: 0 0.75rem 0 0;
+  .occ__position {
+    margin: 0 0.4rem;
+    min-width: 4.5rem;
+    text-align: center;
     font-variant-numeric: tabular-nums;
     font-size: 0.875rem;
     letter-spacing: 0.1em;
-    color: color-mix(in srgb, var(--color-ivory) 75%, transparent);
+    color: color-mix(in srgb, var(--color-ivory) 78%, transparent);
   }
 
-  .deck-btn {
+  .occ__btn {
     display: inline-grid;
     place-items: center;
     width: 48px;
@@ -314,150 +900,57 @@ const sizes = "(min-width: 1024px) 380px, 66vw";
     background: transparent;
     color: var(--color-ivory);
     cursor: pointer;
-    transition: background-color 0.18s var(--ease-micro), border-color 0.18s var(--ease-micro);
+    transition:
+      background-color 0.18s var(--ease-micro),
+      border-color 0.18s var(--ease-micro);
   }
 
-  .deck-btn:hover {
+  .occ__btn:hover {
     background: color-mix(in srgb, var(--color-ivory) 10%, transparent);
     border-color: var(--color-ivory);
   }
 
-  .deck-btn svg {
+  .occ__btn:focus-visible {
+    outline: 3px solid var(--color-rose);
+    outline-offset: 3px;
+  }
+
+  .occ__btn svg {
     width: 20px;
     height: 20px;
     fill: none;
     stroke: currentColor;
     stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
   }
 
-  .deck-btn:focus-visible {
-    outline-color: var(--color-rose);
+  .occ__btn--toggle {
+    margin-left: 0.5rem;
   }
 
-  /* Static fallback: an ordinary grid of occasion links. */
-  .deck {
-    margin-top: clamp(2rem, 4vw, 3rem);
-    padding: 0 clamp(16px, 4vw, 48px);
+  .occ__btn--toggle .occ__icon-play {
+    fill: currentColor;
+    stroke: none;
   }
 
-  .deck__track {
-    list-style: none;
-    margin: 0 auto;
-    padding: 0;
+  .occ__btn--toggle[data-state="playing"] .occ__icon-play,
+  .occ__btn--toggle[data-state="paused"] .occ__icon-pause {
+    display: none;
+  }
+
+  .occ__more {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.25rem 1.5rem;
     max-width: 1320px;
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 1rem;
-  }
-
-  .deck__link {
-    position: relative;
-    display: block;
-    border-radius: 18px;
-    overflow: hidden;
-    color: var(--color-ivory);
-    text-decoration: none;
-    background: var(--color-ink-deep);
-    user-select: none;
-    -webkit-user-drag: none;
-  }
-
-  .deck__link:focus-visible {
-    outline: 3px solid var(--color-rose);
-    outline-offset: 4px;
-  }
-
-  .deck__photo {
-    display: block;
-    aspect-ratio: 4 / 5;
-  }
-
-  .deck__photo img {
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
-  .deck__caption {
-    position: absolute;
-    inset: auto 0 0 0;
-    padding: 3.5rem 1.1rem 1rem;
-    background: linear-gradient(to top, rgba(15, 42, 31, 0.86), rgba(15, 42, 31, 0.5) 55%, rgba(15, 42, 31, 0));
-  }
-
-  .deck__name {
-    display: block;
-    font-family: var(--font-display);
-    font-size: clamp(1.6rem, 1.2rem + 1.4vw, 2.3rem);
-    line-height: 1;
-    letter-spacing: -0.02em;
-  }
-
-  .deck__meta {
-    display: block;
-    margin-top: 0.45rem;
-    font-size: 0.875rem;
-    line-height: 1.4;
-    color: color-mix(in srgb, var(--color-ivory) 88%, transparent);
-  }
-
-
-  /* Enhanced: the curved 3D deck. */
-  .deck.is-deck {
-    position: relative;
-    height: clamp(420px, 44vw, 560px);
-    perspective: 1500px;
-    touch-action: pan-y;
-    cursor: grab;
-  }
-
-  .deck.is-deck.is-dragging {
-    cursor: grabbing;
-  }
-
-  .deck.is-deck .deck__track {
-    position: relative;
-    display: block;
-    height: 100%;
-    max-width: none;
-    transform-style: preserve-3d;
-  }
-
-  .deck.is-deck .deck__panel {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: min(74vw, 350px);
-    margin: calc(min(74vw, 350px) * -0.625) 0 0 calc(min(74vw, 350px) * -0.5);
-    will-change: transform;
-  }
-
-  .deck.is-deck .deck__link {
-    box-shadow: 0 30px 60px -30px rgba(0, 0, 0, 0.55);
-  }
-
-  .deck.is-deck .deck__caption {
-    opacity: var(--near, 0);
-    background: linear-gradient(to top, rgba(15, 42, 31, calc(0.55 + var(--active, 0) * 0.31)), rgba(15, 42, 31, 0.4) 55%, rgba(15, 42, 31, 0));
-  }
-
-  .deck.is-deck .deck__panel.is-after .deck__caption {
-    text-align: right;
-  }
-
-  .deck.is-deck .deck__meta {
-    opacity: var(--active, 0);
-  }
-
-  .deck-section__more {
-    max-width: 1320px;
-    margin: 1.5rem auto 0;
+    margin: 1.1rem auto 0;
     padding: 0 clamp(16px, 4vw, 48px);
     text-align: center;
   }
 
-  .deck-section__link {
+  .occ__more-link {
     display: inline-flex;
     align-items: center;
     min-height: 44px;
@@ -466,7 +959,20 @@ const sizes = "(min-width: 1024px) 380px, 66vw";
     font-size: 0.9375rem;
   }
 
-  .deck-section__link span {
+  .occ__more-link--primary {
+    padding: 0 1.2rem;
+    border: 1px solid color-mix(in srgb, var(--color-ivory) 55%, transparent);
+    border-radius: 999px;
+    color: var(--color-ivory);
+    font-weight: 600;
+  }
+
+  .occ__more-link:focus-visible {
+    outline: 3px solid var(--color-rose);
+    outline-offset: 3px;
+  }
+
+  .occ__more-link span {
     color: var(--color-ivory);
     text-decoration: underline;
     text-underline-offset: 0.25em;
@@ -474,24 +980,40 @@ const sizes = "(min-width: 1024px) 380px, 66vw";
     margin-left: 0.3em;
   }
 
+  /* On a phone the neighbours are only a peek: a clipped title would read as a mistake. */
   @media (max-width: 767px) {
-    .deck-section__head {
-      flex-direction: column;
-      align-items: flex-start;
+    .occ.is-enhanced .occ__card[data-slot="1"],
+    .occ.is-enhanced .occ__card[data-slot="-1"] {
+      --cap-o: 0;
     }
-    .deck-controls {
-      align-self: stretch;
-      justify-content: flex-end;
+  }
+
+  @media (min-width: 768px) {
+    .occ.is-enhanced {
+      --occ-w: 280px;
+      --occ-pad: 30px;
+      --occ-near: 0.82;
+      --occ-far: 1.52;
+      --occ-off: 2.1;
+      --occ-turn: 7deg;
     }
-    .deck.is-deck {
-      height: calc(min(66vw, 380px) * 1.25 + 40px);
+  }
+
+  @media (min-width: 1024px) {
+    .occ__title {
+      max-width: none;
     }
-    .deck.is-deck .deck__panel {
-      width: min(66vw, 380px);
-      margin: calc(min(66vw, 380px) * -0.625) 0 0 calc(min(66vw, 380px) * -0.5);
+
+    .occ.is-enhanced {
+      --occ-w: 310px;
+      --occ-far: 1.6;
+      --occ-off: 2.2;
     }
-    .deck__name {
-      font-size: 1.5rem;
+  }
+
+  @media (min-width: 1440px) {
+    .occ.is-enhanced {
+      --occ-w: 340px;
     }
   }
 </style>

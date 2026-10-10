@@ -17,9 +17,9 @@ export const prerender = false;
 
 for (const [name, value] of Object.entries(garlandCacheHeaders())) Astro.response.headers.set(name, value);
 
-const [garlands, priceMap] = await Promise.all([loadGarlands(), loadAuthoritativePrices({ fresh: true })]);
+const [garlands, priceMap] = await Promise.all([loadGarlands(), loadAuthoritativePrices()]);
 // The other garland orders in the static catalogue (e.g. event garlands),
-// priced from the database like every other product.
+// at this deployment's published price, like their product pages.
 const otherProducts = productCatalog
   .filter((product) => product.collectionTags?.includes("garlands") || product.category.toLowerCase() === "garlands")
   .map((product) => withAuthoritativePrice(product, priceMap));

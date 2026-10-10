@@ -294,6 +294,10 @@ const searchableProducts = productCatalog.map((product) => withAuthoritativePric
       applySearch();
     });
 
+    // A shared link such as /search?q=FP-G012 or ?q=lily fills the box.
+    const sharedQuery = new URLSearchParams(location.search).get("q");
+    if (searchInput && sharedQuery && !searchInput.value) searchInput.value = sharedQuery.slice(0, 80);
+
     applySearch();
 
     // Garland designs are managed in the admin and loaded live (with their
