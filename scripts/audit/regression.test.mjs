@@ -12,6 +12,23 @@ const { OCCASION_PAGES } = load('src/data/occasionPages.ts');
 const empty = () => new Map(productCatalog.map((p) => [p.slug, []]));
 const json = (value) => JSON.parse(JSON.stringify(value));
 
+test('homepage edit keeps eligible designs and their supplied prices; no hidden design is invented', () => {
+  const { getFeaturedBouquets } = sourceLoader({ mocks: {
+    'src/server/services/ProductPricing.ts': { withAuthoritativePrice: (product) => product },
+  } })('src/data/atelierHome.ts');
+  const range = load('src/data/launchCatalogue.ts').launchProducts().map((product, index) => ({ ...product, priceLabel: `From ₹${2100 + index}` }));
+  const featured = getFeaturedBouquets(range);
+  assert.equal(featured.length, 4);
+  assert.equal(new Set(featured.map((product) => product.slug)).size, 4);
+  assert(featured.every((product) => range.includes(product)));
+  const withoutFeatured = range.filter((product) => !featured.some((item) => item.slug === product.slug));
+  const replacement = getFeaturedBouquets(withoutFeatured);
+  assert.equal(replacement.length, Math.min(4, withoutFeatured.length));
+  assert(replacement.every((product) => withoutFeatured.includes(product)));
+  for (const count of [0, 1, 2, 3]) assert.equal(getFeaturedBouquets(range.slice(0, count)).length, count);
+  assert.equal(range.length, load('src/data/launchCatalogue.ts').launchProducts().length);
+});
+
 test('valid empty occasion survives; invalid value is ignored; facets do not define validity', () => {
   const state = filters.parseShopFilters(new URLSearchParams('occasion=housewarming,unknown,housewarming'));
   assert.deepEqual(json(state.occasion), ['housewarming']);

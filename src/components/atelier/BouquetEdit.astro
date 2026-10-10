@@ -1,543 +1,181 @@
 ---
-// C. Bouquets to choose from — the launch bouquet range
-// (src/data/launchCatalogue.ts) with database prices, laid out as an uneven
-// editorial spread rather than a uniform grid. Add-to-basket uses the
-// site's existing cart module.
+// Four comparable bouquets before the occasion carousel. The category page
+// keeps the full public range; prices and basket behaviour use existing sources.
 import type { EditProduct } from "../../data/atelierHome";
 import { whatsappLink } from "../../config/storefront";
 
 interface Props {
   products: EditProduct[];
-  /** Bouquet types — kept here with the bouquets, not in the occasion deck. */
+  totalCount: number;
   browse?: { label: string; href: string }[];
-  /** Bouquets priced under ₹1,500 (displayed price), beside the heading. */
   budget?: { label: string; href: string } | null;
 }
-const { products, browse = [], budget = null } = Astro.props;
-// The one availability helper near the selection: a date/area question,
-// never a promise (the answer comes on WhatsApp).
+const { products, totalCount, browse = [], budget = null } = Astro.props;
 const availabilityHref = whatsappLink(
   ["Hi Fresh Petals, can you deliver flowers on a particular date?", "Date: ", "Delivery area: ", "Bouquet (if you've chosen one): "].join("\n")
 );
-const shape = ["feature", "tall", "square", "wide", "tall", "portrait", "landscape", "square"];
-const sizes = [
-  "(min-width: 1024px) 40vw, 100vw",
-  "(min-width: 1024px) 24vw, 50vw",
-  "(min-width: 1024px) 24vw, 50vw",
-  "(min-width: 1024px) 48vw, 50vw",
-  "(min-width: 1024px) 24vw, 50vw",
-  "(min-width: 1024px) 30vw, 50vw",
-  "(min-width: 1024px) 40vw, 50vw",
-  "(min-width: 1024px) 24vw, 50vw",
-];
+const imageSizes = "(min-width: 1440px) 312px, (min-width: 1024px) 23vw, 46vw";
 const flowerLine = (product: EditProduct) =>
-  (product.flowerTypes ?? [])
-    .slice(0, 2)
-    .map((type) => type.toLowerCase())
-    .join(" · ");
+  (product.flowerTypes ?? []).slice(0, 2).map((type) => type.toLowerCase()).join(" · ");
 ---
 
-<section class="edit" aria-labelledby="edit-title">
-  <div class="edit__head">
-    <p class="edit__eyebrow" data-reveal="fade">Bouquets</p>
-    <h2 id="edit-title" class="edit__title" data-reveal="mask">Bouquets to <em>choose from</em></h2>
-    <p class="edit__lede" data-reveal="fade">
-      Our launch range of hand-tied rose, mixed-flower and lily bouquets. Each price is the bouquet's starting
-      price; delivery is quoted separately on WhatsApp before you pay.
-    </p>
-    <div class="edit__tools">
-      {budget && <a class="edit__budget" href={budget.href}>{budget.label}</a>}
-      <a class="edit__availability" href={availabilityHref} target="_blank" rel="noopener noreferrer">
-        Need flowers for a particular date? <span>Check availability</span>
-      </a>
+{products.length > 0 && (
+  <section id="featured-bouquets" class="edit" aria-labelledby="edit-title">
+    <div class="edit__head">
+      <div>
+        <p class="edit__eyebrow" data-reveal="fade">The bouquet edit</p>
+        <h2 id="edit-title" class="edit__title" data-reveal="mask">Find <em>your bouquet.</em></h2>
+      </div>
+      <div class="edit__intro">
+        <p class="edit__lede">Red roses, soft pinks, a little colour or something with lilies. A few favourites to help you begin.</p>
+        <p class="edit__price-note">Starting bouquet prices. Delivery is quoted separately before you pay.</p>
+      </div>
     </div>
-  </div>
 
-  <ul class="edit__grid">
-    {
-      products.map((product, index) => (
-        <li class={`edit__item edit__item--${shape[index % shape.length]}`}>
-          <a href={`/products/${product.slug}`} class="edit__photo fp-photo" data-reveal="image" style={`--reveal-delay:${(index % 3) * 90}ms`}>
-            <img
-              src={product.img.src}
-              srcset={product.img.srcset}
-              sizes={sizes[index % sizes.length]}
-              width={product.img.width}
-              height={product.img.height}
-              alt={product.name}
-              loading="lazy"
-              decoding="async"
-            />
+    <ul class="edit__grid">
+      {products.map((product, index) => (
+        <li class="edit__item" data-featured-bouquet={product.slug}>
+          <a href={`/products/${product.slug}`} class="edit__photo fp-photo" data-reveal="image" style={`--reveal-delay:${index * 60}ms`}>
+            <img src={product.img.src} srcset={product.img.srcset} sizes={imageSizes}
+              width={product.img.width} height={product.img.height} alt={product.name}
+              loading="lazy" decoding="async" />
           </a>
           <div class="edit__info">
-            <div>
-              <h3 class="edit__name">
-                <a href={`/products/${product.slug}`}>{product.name}</a>
-              </h3>
-              {flowerLine(product) && <p class="edit__flowers">{flowerLine(product)}</p>}
-            </div>
+            <h3 class="edit__name"><a href={`/products/${product.slug}`}>{product.name}</a></h3>
+            {flowerLine(product) && <p class="edit__flowers">{flowerLine(product)}</p>}
             <p class="edit__price fp-price">{product.priceLabel}</p>
           </div>
           <div class="edit__actions">
-            <a class="edit__view" href={`/products/${product.slug}`}>View bouquet</a>
-            <button
-              type="button"
-              class="edit__add"
-              data-edit-add
-              data-cart-id={product.id}
-              data-cart-slug={product.slug}
-              data-cart-name={product.name}
-              data-cart-image={product.image}
-              data-cart-price-label={product.priceLabel}
-              data-cart-category={product.category}
-            >
-              Add to basket
+            <a class="edit__view" href={`/products/${product.slug}`} aria-label={`View ${product.name}`}>View bouquet <span aria-hidden="true">↗</span></a>
+            <button type="button" class="edit__add" data-edit-add aria-label={`Add ${product.name} to basket`}
+              data-cart-id={product.id} data-cart-slug={product.slug} data-cart-name={product.name}
+              data-cart-image={product.image} data-cart-price-label={product.priceLabel} data-cart-category={product.category}>
+              <span data-edit-label>Add to basket</span>
             </button>
-            <span class="edit__added" role="status" data-edit-feedback={product.id}></span>
+            <span class="sr-only" role="status" data-edit-feedback={product.id}></span>
           </div>
         </li>
-      ))
-    }
-    <li class="edit__item edit__item--more">
-      <a href="/categories/bouquets" class="edit__more-link">
-        <span class="edit__more-kicker">Rose, mixed-flower and lily bouquets, grouped by type</span>
-        <span class="edit__more-title">See all bouquets <span aria-hidden="true">→</span></span>
-      </a>
-      {
-        browse.length > 0 && (
-          <nav class="edit__browse" aria-label="Browse bouquets">
-            {browse.map((link) => (
-              <a href={link.href}>{link.label}</a>
-            ))}
-          </nav>
-        )
-      }
-    </li>
-  </ul>
-</section>
+      ))}
+    </ul>
+
+    <div class="edit__footer">
+      <div>
+        <nav class="edit__browse" aria-label="Browse bouquet types">
+          {browse.map((link) => <a href={link.href}>{link.label}</a>)}
+          {budget && <a href={budget.href}>{budget.label}</a>}
+        </nav>
+        <a class="edit__availability" href={availabilityHref} target="_blank" rel="noopener noreferrer">Need a particular date? Check availability <span aria-hidden="true">↗</span></a>
+      </div>
+      <a href="/categories/bouquets" class="fp-btn-outline edit__all">{`View all ${totalCount} ${totalCount === 1 ? "bouquet" : "bouquets"}`} <span aria-hidden="true">→</span></a>
+    </div>
+  </section>
+)}
 
 <script>
   import { addToCart } from "../../utils/cart";
 
   document.querySelectorAll<HTMLButtonElement>("[data-edit-add]").forEach((button) => {
+    let reset = 0;
     button.addEventListener("click", () => {
       const { cartId = "", cartSlug = "", cartName = "", cartImage = "", cartPriceLabel = "", cartCategory = "" } = button.dataset;
       addToCart({ id: cartId, slug: cartSlug, name: cartName, image: cartImage, priceLabel: cartPriceLabel, category: cartCategory }, 1);
-      const feedback = document.querySelector<HTMLElement>(`[data-edit-feedback="${cartId}"]`);
-      if (feedback) {
-        feedback.textContent = `Added — ${cartName} is in your basket`;
-        button.classList.add("is-added");
-        window.setTimeout(() => {
-          feedback.textContent = "";
-          button.classList.remove("is-added");
-        }, 2200);
-      }
+      const feedback = button.parentElement?.querySelector<HTMLElement>("[data-edit-feedback]");
+      const label = button.querySelector<HTMLElement>("[data-edit-label]");
+      window.clearTimeout(reset);
+      if (feedback) feedback.textContent = `${cartName} added to your basket`;
+      if (label) label.textContent = "Added ✓";
+      button.classList.add("is-added");
+      reset = window.setTimeout(() => {
+        if (feedback) feedback.textContent = "";
+        if (label) label.textContent = "Add to basket";
+        button.classList.remove("is-added");
+      }, 2200);
     });
   });
 </script>
 
 <style>
   .edit {
-    position: relative;
     background: var(--color-paper);
-    padding: clamp(3.5rem, 8vw, 7.5rem) clamp(16px, 4vw, 56px) clamp(3rem, 6vw, 5rem);
+    padding: clamp(2.75rem, 5vw, 5rem) clamp(16px, 4vw, 56px);
+    scroll-margin-top: calc(var(--header-h) + 20px);
+  }
+
+  .edit__head, .edit__grid, .edit__footer {
+    max-width: 1320px;
+    margin-inline: auto;
   }
 
   .edit__head {
-    max-width: 1320px;
-    margin: 0 auto clamp(2rem, 4vw, 3.5rem);
     display: grid;
-    gap: 0.8rem 3rem;
-  }
-
-  @media (min-width: 1024px) {
-    .edit__head {
-      grid-template-columns: 1.1fr 1fr;
-      align-items: end;
-    }
-    .edit__eyebrow {
-      grid-column: 1 / -1;
-    }
+    gap: 1.25rem 3rem;
+    margin-bottom: clamp(1.5rem, 3vw, 2.5rem);
   }
 
   .edit__eyebrow {
-    margin: 0;
-    font-size: 12px;
+    margin: 0 0 0.75rem;
+    color: var(--color-rose-deep);
+    font-size: 11px;
     font-weight: 600;
     letter-spacing: 0.2em;
     text-transform: uppercase;
-    color: var(--color-rose-deep);
   }
 
   .edit__title {
     margin: 0;
     font-family: var(--font-display);
     font-weight: 360;
-    font-size: clamp(2.3rem, 1.3rem + 4.4vw, 5.2rem);
-    line-height: 0.95;
+    font-size: clamp(2.4rem, 1.6rem + 3vw, 4.5rem);
+    line-height: 1.02;
     letter-spacing: -0.035em;
   }
-
-  .edit__title em {
-    font-style: italic;
-    color: var(--color-rose-deep);
-  }
-
-  .edit__lede {
-    margin: 0;
-    max-width: 46ch;
-    color: var(--color-moss);
-    line-height: 1.6;
-  }
+  .edit__title em { color: var(--color-rose-deep); font-style: italic; }
+  .edit__lede { max-width: 44ch; margin: 0; color: var(--color-moss); line-height: 1.6; }
+  .edit__price-note { margin: 0.5rem 0 0; color: var(--color-moss); font-size: 0.875rem; line-height: 1.5; }
 
   .edit__grid {
-    list-style: none;
-    margin: 0 auto;
-    padding: 0;
-    max-width: 1320px;
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 2.2rem 1rem;
+    gap: 1.75rem 0.85rem;
+    list-style: none;
+    padding: 0;
+    margin-block: 0;
   }
+  .edit__item { display: flex; flex-direction: column; min-width: 0; }
+  .edit__photo { display: block; aspect-ratio: 4 / 5; border-radius: 16px; }
+  .edit__photo img { transition: transform 0.7s var(--ease-premium); }
+  .edit__photo:hover img { transform: scale(1.035); }
 
-  .edit__item {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-  }
+  .edit__info { padding-top: 0.85rem; }
+  .edit__name { min-height: 2.5em; margin: 0; font-family: var(--font-display); font-weight: 440; font-size: clamp(1.125rem, 0.95rem + 0.65vw, 1.5rem); line-height: 1.25; }
+  .edit__name a { color: var(--color-ink); text-decoration: none; }
+  .edit__name a:hover { text-decoration: underline; text-underline-offset: 0.15em; }
+  .edit__flowers { min-height: 2.8em; margin: 0.25rem 0 0; color: var(--color-moss); font-size: 0.8125rem; line-height: 1.4; }
+  .edit__price { margin: 0.5rem 0 0; font-size: 1rem; color: var(--color-berry); }
 
-  .edit__photo {
-    display: block;
-    border-radius: 14px;
-    aspect-ratio: 3 / 4;
-  }
+  .edit__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem 0.75rem; margin-top: auto; padding-top: 0.65rem; }
+  .edit__view { display: inline-flex; align-items: center; justify-content: space-between; gap: 0.4rem; min-height: 44px; color: var(--color-ink); font-size: 0.8125rem; font-weight: 600; text-decoration: underline; text-underline-offset: 0.25em; }
+  .edit__add { display: none; justify-content: center; align-items: center; min-height: 44px; padding: 0.5rem 0.75rem; border: 1px solid var(--color-line); border-radius: 999px; background: transparent; color: var(--color-ink); font: inherit; font-size: 0.8125rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s, border-color 0.2s; }
+  :global(html.js) .edit__add { display: inline-flex; }
+  .edit__add:hover { border-color: var(--color-ink); background: var(--color-ivory); }
+  .edit__add.is-added { border-color: var(--color-ink); background: var(--color-ink); color: var(--color-ivory); }
 
-  .edit__photo img {
-    transition: transform 0.9s var(--ease-premium);
-  }
+  .edit__footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1.25rem 2rem; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--color-line); }
+  .edit__browse { display: flex; flex-wrap: wrap; gap: 0 1.2rem; }
+  .edit__browse a { display: inline-flex; align-items: center; min-height: 44px; color: var(--color-ink); font-size: 0.875rem; text-underline-offset: 0.25em; }
+  .edit__availability { display: inline-flex; align-items: center; gap: 0.35rem; min-height: 44px; color: var(--color-moss); font-size: 0.8125rem; text-underline-offset: 0.25em; }
+  .edit__all { flex-shrink: 0; gap: 1rem; }
 
-  .edit__photo:hover img {
-    transform: scale(1.035);
+  @media (max-width: 479px) {
+    .edit__actions { display: grid; gap: 0; }
+    .edit__view { justify-content: flex-start; }
+    .edit__all { width: 100%; justify-content: center; }
   }
-
-  .edit__item--feature {
-    grid-column: 1 / -1;
+  @media (min-width: 768px) {
+    .edit__head { grid-template-columns: 1.15fr 1fr; align-items: end; }
+    .edit__grid { gap: 1.75rem 1.5rem; }
   }
-  .edit__item--feature .edit__photo {
-    aspect-ratio: 4 / 5;
-  }
-  .edit__item--square .edit__photo,
-  .edit__item--landscape .edit__photo {
-    aspect-ratio: 1 / 1;
-  }
-  .edit__item:nth-child(odd):not(.edit__item--feature) {
-    margin-top: 2.5rem;
-  }
-
-  .edit__info {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 0.75rem;
-    margin-top: 0.85rem;
-  }
-
-  /* Mobile: the section follows the hero directly, so the heading is
-     compact and the first product shows its whole (square) photograph. */
-  @media (max-width: 1023px) {
-    .edit {
-      padding-top: 2.25rem;
-    }
-    .edit__head {
-      margin-bottom: 1.25rem;
-      gap: 0.5rem;
-    }
-    .edit__title {
-      font-size: clamp(2rem, 1.4rem + 3vw, 3.2rem);
-    }
-    .edit__lede {
-      font-size: 0.9375rem;
-      line-height: 1.5;
-    }
-    .edit__item--feature .edit__photo {
-      aspect-ratio: 1 / 1;
-    }
-  }
-
-  /* Narrow two-column cards: price sits under the name, never beside it. */
-  @media (max-width: 639px) {
-    .edit__item:not(.edit__item--feature) .edit__info {
-      flex-direction: column;
-      gap: 0.25rem;
-    }
-  }
-
-  .edit__name {
-    margin: 0;
-    font-family: var(--font-display);
-    font-weight: 400;
-    font-size: clamp(1.15rem, 1rem + 0.6vw, 1.55rem);
-    line-height: 1.1;
-    letter-spacing: -0.015em;
-  }
-
-  .edit__name a {
-    color: var(--color-ink);
-    text-decoration: none;
-  }
-
-  .edit__name a:hover {
-    text-decoration: underline;
-    text-decoration-thickness: 1px;
-    text-underline-offset: 0.2em;
-    text-decoration-color: var(--color-apricot);
-  }
-
-  .edit__flowers {
-    margin: 0.3rem 0 0;
-    font-size: 0.8125rem;
-    color: var(--color-moss);
-  }
-
-  .edit__price {
-    margin: 0.15rem 0 0;
-    font-size: 0.9375rem;
-    white-space: nowrap;
-  }
-
-  .edit__actions {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 0.5rem 0.8rem;
-    margin-top: 0.7rem;
-  }
-
-  /* Beside the heading: the budget shortcut and the one availability helper. */
-  .edit__tools {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.5rem 1.2rem;
-  }
-
-  .edit__budget {
-    display: inline-flex;
-    align-items: center;
-    min-height: 44px;
-    padding: 0 1.1rem;
-    border-radius: 999px;
-    background: var(--color-ink);
-    color: var(--color-ivory);
-    font-size: 0.875rem;
-    font-weight: 600;
-    text-decoration: none;
-  }
-
-  .edit__budget:hover {
-    background: color-mix(in srgb, var(--color-ink) 85%, var(--color-rose));
-  }
-
-  .edit__availability {
-    display: inline-flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0 0.35rem;
-    min-height: 44px;
-    font-size: 0.9375rem;
-    color: var(--color-moss);
-    text-decoration: none;
-  }
-
-  .edit__availability span {
-    font-weight: 700;
-    color: var(--color-ink);
-    text-decoration: underline;
-    text-underline-offset: 0.2em;
-  }
-
-  .edit__budget:focus-visible,
-  .edit__availability:focus-visible,
-  .edit__view:focus-visible {
-    outline: 3px solid var(--color-ink);
-    outline-offset: 2px;
-  }
-
-  .edit__view {
-    display: inline-flex;
-    align-items: center;
-    min-height: 44px;
-    font-size: 0.8125rem;
-    font-weight: 700;
-    color: var(--color-ink);
-    text-decoration: underline;
-    text-underline-offset: 0.2em;
-  }
-
-  .edit__add {
-    min-height: 44px;
-    padding: 0 1.1rem;
-    border-radius: 999px;
-    border: 1px solid color-mix(in srgb, var(--color-ink) 40%, transparent);
-    background: transparent;
-    color: var(--color-ink);
-    font: inherit;
-    font-size: 0.8125rem;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: background-color 0.18s var(--ease-micro), color 0.18s var(--ease-micro), transform 0.15s var(--ease-micro);
-  }
-
-  .edit__add:hover {
-    background: var(--color-ink);
-    color: var(--color-ivory);
-  }
-
-  .edit__add:active {
-    transform: scale(0.97);
-  }
-
-  .edit__add.is-added {
-    background: var(--color-rose);
-    border-color: var(--color-rose);
-    color: var(--color-ink);
-  }
-
-  .edit__added {
-    font-size: 0.8125rem;
-    color: var(--color-moss);
-  }
-
-  .edit__added:empty {
-    display: none;
-  }
-
-  .edit__item--more {
-    grid-column: 1 / -1;
-  }
-
-  .edit__more-link {
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    gap: 0.6rem;
-    /* Fills the item without claiming all of it, so the browse links below stay inside. */
-    flex: 1 1 auto;
-    padding: 1.6rem 0 0.4rem;
-    border-top: 1px solid var(--color-ink);
-    color: var(--color-ink);
-    text-decoration: none;
-  }
-
-  .edit__more-kicker {
-    font-size: 0.9375rem;
-    color: var(--color-moss);
-  }
-
-  .edit__more-title {
-    font-family: var(--font-display);
-    font-weight: 360;
-    font-size: clamp(2rem, 1.3rem + 2.6vw, 3.6rem);
-    line-height: 1;
-    letter-spacing: -0.03em;
-  }
-
-  .edit__more-title span {
-    display: inline-block;
-    color: var(--color-apricot-deep);
-    transition: transform 0.35s var(--ease-premium);
-  }
-
-  .edit__more-link:hover .edit__more-title span {
-    transform: translateX(8px);
-  }
-
-  .edit__browse {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-top: 1rem;
-  }
-
-  .edit__browse a {
-    display: inline-flex;
-    align-items: center;
-    min-height: 44px;
-    padding: 0 1rem;
-    border: 1px solid var(--color-line-strong);
-    border-radius: 999px;
-    color: var(--color-ink);
-    font-size: 0.875rem;
-    font-weight: 600;
-    text-decoration: none;
-  }
-
-  .edit__browse a:hover {
-    border-color: var(--color-ink);
-  }
-
-  .edit__browse a:focus-visible {
-    outline: 3px solid var(--color-ink);
-    outline-offset: 2px;
-  }
-
   @media (min-width: 1024px) {
-    .edit__grid {
-      grid-template-columns: repeat(12, minmax(0, 1fr));
-      gap: 3.5rem 1.6rem;
-      align-items: start;
-    }
-    .edit__item:nth-child(odd):not(.edit__item--feature) {
-      margin-top: 0;
-    }
-    .edit__item--feature {
-      grid-column: 1 / span 5;
-      grid-row: span 2;
-    }
-    .edit__item--tall {
-      grid-column: span 3;
-    }
-    .edit__item--tall .edit__photo {
-      aspect-ratio: 3 / 4;
-    }
-    .edit__item--square {
-      grid-column: span 3;
-      margin-top: 7rem !important;
-    }
-    .edit__item--wide {
-      grid-column: 7 / span 6;
-    }
-    /* 4:3, not wider: product photos are square, and a wide crop would
-       cut flower heads off the actual product. */
-    .edit__item--wide .edit__photo {
-      aspect-ratio: 4 / 3;
-    }
-    .edit__item--portrait {
-      grid-column: span 4;
-      margin-top: -3rem !important;
-    }
-    .edit__item--portrait .edit__photo {
-      aspect-ratio: 4 / 5;
-    }
-    .edit__item--landscape {
-      grid-column: span 5;
-      margin-top: 4rem !important;
-    }
-    .edit__item--landscape .edit__photo {
-      aspect-ratio: 5 / 4;
-    }
-    .edit__item:nth-child(5) {
-      grid-column: 1 / span 3;
-    }
-    .edit__item:nth-child(8) {
-      grid-column: 2 / span 3;
-      margin-top: 1rem !important;
-    }
-    .edit__item--more {
-      grid-column: 6 / span 7;
-      align-self: end;
-    }
+    .edit__grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   }
 </style>

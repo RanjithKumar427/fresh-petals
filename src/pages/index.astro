@@ -4,8 +4,9 @@
 // identifiable public bouquet → bouquets to choose from (budget shortcut,
 // availability helper) → the occasion carousel → what will arrive → how
 // ordering works → focused questions → assisted choice → footer. No
-// announcement bar: there is no confirmed operational notice or approved
-// promotion to show. (The bouquet builder — /studio — was removed
+// promotional claims: the delivery strip uses the confirmed initial areas.
+// The bouquet edit shows four designs; the category retains the full range.
+// (The bouquet builder — /studio — was removed
 // on 4 Oct 2026; its URL redirects to /categories/bouquets.) All server-rendered HTML;
 // depth is CSS perspective plus small scripts. HeroReel.astro is kept but
 // not mounted: a second browsing carousel before the products duplicated
@@ -21,7 +22,7 @@ import OrderJourney from "../components/atelier/OrderJourney.astro";
 import FinalInvite from "../components/atelier/FinalInvite.astro";
 import HomeFaq from "../components/atelier/HomeFaq.astro";
 import { HOME_LANDING } from "../data/seoLanding";
-import { HERO_SIZES, getArrivalBouquet, getBouquetBrowse, getBouquetEdit, getBudgetShortcut, getHeroPhoto } from "../data/atelierHome";
+import { HERO_SIZES, getArrivalBouquet, getBouquetBrowse, getBouquetEdit, getBudgetShortcut, getFeaturedBouquets, getHeroPhoto } from "../data/atelierHome";
 import { catalogueSlugs } from "../data/occasionJourneys";
 import { garlandsPromoted } from "../data/launchCatalogue";
 import { loadGarlands, isListedGarland } from "../data/garlands";
@@ -41,6 +42,8 @@ for (const [name, value] of Object.entries(occasionCacheHeaders([OCCASION_INDEX_
 // launch range (occasionJourneys.carouselOccasions).
 const [priceMap, membership] = await Promise.all([loadAuthoritativePrices(), loadOccasionMembership(catalogueSlugs())]);
 const editProducts = getBouquetEdit(priceMap);
+const featuredProducts = getFeaturedBouquets(editProducts);
+const budget = getBudgetShortcut(priceMap);
 const publicGarlands = garlandsPromoted() ? (await loadGarlands()).map((product) => product.garland).filter(isListedGarland) : [];
 const hero = getHeroPhoto();
 // The hero bouquet's published price, exactly as its card and page show it.
@@ -80,6 +83,7 @@ const homeJsonLd = [
   title={HOME_LANDING.title}
   description={HOME_LANDING.description}
   showCategoryCarousel={false}
+  homeHeader={true}
   jsonLd={homeJsonLd}
 >
   <!-- Homepage only: the display serif sets the hero headline in the first
@@ -89,8 +93,8 @@ const homeJsonLd = [
   <link slot="head" rel="preload" as="image" imagesrcset={hero.main.srcset} imagesizes={HERO_SIZES} fetchpriority="high" />
 
   <main class="atelier-home">
-    <HeroAtelier membership={membership} heroPrice={heroPrice} publicGarlands={publicGarlands} />
-    <BouquetEdit products={editProducts} browse={getBouquetBrowse()} budget={getBudgetShortcut(priceMap)} />
+    <HeroAtelier membership={membership} heroPrice={heroPrice} publicGarlands={publicGarlands} budget={budget} />
+    <BouquetEdit products={featuredProducts} totalCount={editProducts.length} browse={getBouquetBrowse()} budget={budget} />
     <OccasionCarousel membership={membership} />
     <InsideBouquet bouquet={getArrivalBouquet(priceMap)} />
     <OrderJourney />

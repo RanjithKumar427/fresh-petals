@@ -5,6 +5,15 @@
 // existing menu entry. Menu data: src/data/navigation.ts.
 import Wordmark from "./Wordmark.astro";
 import { SITE_NAV } from "../../data/navigation";
+import { whatsappLink } from "../../config/storefront";
+
+interface Props {
+  /** A compact homepage header; other pages keep their existing navigation. */
+  home?: boolean;
+}
+const { home = false } = Astro.props;
+const primaryNav = home ? SITE_NAV.filter((item) => item.href !== "/about" && item.href !== "/contact") : SITE_NAV;
+const deliveryHref = whatsappLink("Hi Fresh Petals, can you deliver to my address?\nDelivery area: \nDate: ");
 
 const path = Astro.url.pathname.replace(/\/+$/, "") || "/";
 const isCurrent = (href: string) => path === href || (href !== "/" && path.startsWith(href + "/"));
@@ -14,8 +23,22 @@ const isCurrent = (href: string) => path === href || (href !== "/" && path.start
   Skip to content
 </a>
 
-<header class="site-header" data-site-header>
+{home && (
+  <aside class="delivery-notice" aria-label="Initial delivery areas">
+    <a href={deliveryHref} target="_blank" rel="noopener noreferrer">
+      <span>Bengaluru · Chamarajpet &amp; Basavanagudi</span>
+      <span class="delivery-notice__check">Check your address <span aria-hidden="true">↗</span></span>
+    </a>
+  </aside>
+)}
+
+<header class:list={["site-header", { "site-header--home": home }]} data-site-header>
   <div class="site-header__bar">
+    {home && (
+      <button type="button" class="site-menu-button site-menu-button--home" aria-expanded="false" aria-controls="mobile-menu" data-mobile-menu-open>
+        Menu
+      </button>
+    )}
     <a href="/" class="site-header__brand" aria-label="Fresh Petals Bengaluru — home">
       <Wordmark />
     </a>
@@ -23,7 +46,7 @@ const isCurrent = (href: string) => path === href || (href !== "/" && path.start
     <nav class="site-nav" aria-label="Primary">
       <ul class="site-nav__list">
         {
-          SITE_NAV.map((item) =>
+          primaryNav.map((item) =>
             item.links ? (
               <li class="site-nav__item" data-menu>
                 <button type="button" class="site-nav__link" aria-expanded="false" data-menu-toggle>
@@ -71,12 +94,13 @@ const isCurrent = (href: string) => path === href || (href !== "/" && path.start
         <span data-saved-count-badge class="site-badge" hidden>0</span>
       </a>
       <a href="/cart" class="site-basket" aria-label="Basket">
+        {home && <svg class="site-basket__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l1 12H4L5 8Z" /><path d="M9 8V6a3 3 0 0 1 6 0v2" /></svg>}
         <span class="site-basket__label">Basket</span>
         <span class="site-basket__count" data-cart-count-badge>0</span>
       </a>
-      <button type="button" class="site-menu-button" aria-expanded="false" aria-controls="mobile-menu" data-mobile-menu-open>
+      {!home && <button type="button" class="site-menu-button" aria-expanded="false" aria-controls="mobile-menu" data-mobile-menu-open>
         Menu
-      </button>
+      </button>}
     </div>
   </div>
 </header>
@@ -121,6 +145,17 @@ const isCurrent = (href: string) => path === href || (href !== "/" && path.start
     </ul>
   </nav>
 </dialog>
+
+{home && (
+  <noscript>
+    <nav class="header-fallback" aria-label="Browse flowers">
+      <a href="/categories/bouquets">Bouquets</a>
+      <a href="/occasions">Occasions</a>
+      <a href="/custom-orders">Custom orders</a>
+      <a href="/search">Search</a>
+    </nav>
+  </noscript>
+)}
 
 <script>
   import { getCartCount } from "../../utils/cart";
@@ -220,6 +255,125 @@ const isCurrent = (href: string) => path === href || (href !== "/" && path.start
 </script>
 
 <style>
+  .delivery-notice {
+    background: var(--color-berry);
+    color: var(--color-ivory);
+  }
+
+  .delivery-notice a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.25rem 1.25rem;
+    min-height: 44px;
+    padding: 0.35rem 16px;
+    color: inherit;
+    font-size: 0.8125rem;
+    line-height: 1.35;
+    text-align: center;
+    text-decoration: none;
+  }
+
+  .delivery-notice__check {
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+
+  .delivery-notice a:focus-visible {
+    outline-color: var(--color-ivory);
+    outline-offset: -4px;
+  }
+
+  .site-basket__icon {
+    display: none;
+    width: 23px;
+    height: 23px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .site-menu-button--home {
+    margin-left: 0;
+  }
+
+  @media (max-width: 1099px) {
+    .site-header--home .site-header__bar {
+      display: grid;
+      grid-template-columns: minmax(44px, 1fr) auto minmax(44px, 1fr);
+      gap: 0.5rem;
+    }
+    .site-header--home .site-menu-button--home {
+      justify-self: start;
+      padding-inline: 0.65rem;
+      margin-left: 0;
+    }
+    .site-header--home .site-header__actions {
+      justify-self: end;
+      margin-left: 0;
+    }
+    .site-header--home .site-header__actions > .site-icon,
+    .site-header--home .site-basket__label {
+      display: none;
+    }
+    .site-header--home .site-basket {
+      position: relative;
+      justify-content: center;
+      width: 44px;
+      padding: 0;
+      margin: 0;
+      background: transparent;
+      color: var(--color-ink);
+    }
+    .site-header--home .site-basket__icon {
+      display: block;
+    }
+    .site-header--home .site-basket__count {
+      position: absolute;
+      top: 0;
+      right: -2px;
+      min-width: 18px;
+      height: 18px;
+      padding: 0 4px;
+      font-size: 10px;
+    }
+  }
+
+  @media (min-width: 1100px) {
+    .site-menu-button--home {
+      display: none;
+    }
+  }
+
+  @media (max-width: 639px) {
+    .delivery-notice__check {
+      display: none;
+    }
+  }
+
+  .header-fallback {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0 1rem;
+    padding: 0.25rem 16px;
+    border-bottom: 1px solid var(--color-line);
+  }
+  .header-fallback a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    color: var(--color-ink);
+  }
+
+  :global(html:not(.js)) .site-menu-button--home {
+    visibility: hidden;
+  }
+
   .site-header {
     position: sticky;
     top: 0;

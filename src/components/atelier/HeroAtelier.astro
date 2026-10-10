@@ -13,7 +13,7 @@
 // motion (or no JS) shows the rest composition with nothing moving.
 import { HOME_LANDING } from "../../data/seoLanding";
 import { HERO_SIZES, getHeroPhoto } from "../../data/atelierHome";
-import { SERVICE_AREA_SHORT, heroOccasionLinks, homeShortcuts, type Membership } from "../../data/occasionJourneys";
+import { heroOccasionLinks, homeShortcuts, type Membership } from "../../data/occasionJourneys";
 import type { GarlandDesign } from "../../data/garlandRules";
 
 interface Props {
@@ -21,6 +21,7 @@ interface Props {
   /** The hero bouquet's published price label (same as its card and page). */
   heroPrice?: string;
   publicGarlands?: GarlandDesign[];
+  budget?: { href: string; label: string } | null;
 }
 
 const { slug, name, main, detail } = getHeroPhoto();
@@ -29,7 +30,7 @@ const { slug, name, main, detail } = getHeroPhoto();
 // choose"; "Choose garlands" and "Flowers for a ceremony" join once garlands
 // are public and promoted. Exact-design shoppers skip straight to search.
 const shortcuts = homeShortcuts(Astro.props.membership, Astro.props.publicGarlands);
-const occasionLinks = heroOccasionLinks(Astro.props.membership);
+const occasionLinks = heroOccasionLinks(Astro.props.membership).filter((link) => link.href !== "/occasions");
 const productHref = `/products/${slug}`;
 ---
 
@@ -51,10 +52,11 @@ const productHref = `/products/${slug}`;
           </a>
         ))}
       </nav>
-      <nav class="hero__occasions" aria-label="Flowers by occasion">
+      <nav class="hero__occasions" aria-label="Quick bouquet choices">
         {occasionLinks.map((link) => <a href={link.href}>{link.label}</a>)}
+        {Astro.props.budget && <a href={Astro.props.budget.href}>Under ₹1,500</a>}
       </nav>
-      <p class="hero__note">{SERVICE_AREA_SHORT}</p>
+      <p class="hero__note">Availability, delivery and your final total confirmed before you pay.</p>
       <p class="hero__note hero__links"><a href="/search">Search by name or code</a> · <a href="/custom-orders">Custom orders</a></p>
       <p class="sr-only">{HOME_LANDING.intro[0]}</p>
     </div>
@@ -239,12 +241,12 @@ const productHref = `/products/${slug}`;
     color: var(--color-moss);
   }
 
-  /* Birthday · Anniversary · More occasions: plain links, not buttons. */
+  /* Small shopping shortcuts; occasion visibility follows admin assignments. */
   .hero__occasions {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0 1.1rem;
+    gap: 0.5rem;
     font-size: var(--step--1);
   }
 
@@ -252,15 +254,18 @@ const productHref = `/products/${slug}`;
     display: inline-flex;
     align-items: center;
     min-height: 44px;
+    padding: 0.45rem 0.85rem;
+    border: 1px solid var(--color-line);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--color-paper) 70%, transparent);
     font-weight: 700;
     color: var(--color-ink);
-    text-decoration: underline;
-    text-decoration-color: color-mix(in srgb, var(--color-ink) 35%, transparent);
-    text-underline-offset: 0.25em;
+    text-decoration: none;
   }
 
   .hero__occasions a:hover {
-    text-decoration-color: currentColor;
+    border-color: var(--color-rose-deep);
+    background: var(--color-paper);
   }
 
   /* The bouquet in the photograph: name, published price, a plain link. */
@@ -567,7 +572,7 @@ const productHref = `/products/${slug}`;
       grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr);
       column-gap: clamp(2rem, 4vw, 4rem);
       align-items: center;
-      min-height: calc(100svh - var(--header-h));
+      min-height: min(48rem, calc(100svh - var(--header-h) - 44px));
       padding-top: 1.5rem;
       padding-bottom: 2.5rem;
     }
@@ -583,7 +588,7 @@ const productHref = `/products/${slug}`;
     }
 
     .hero__scene {
-      --mask-h: min(calc(100svh - var(--header-h) - 10rem), 600px);
+      --mask-h: clamp(300px, calc(100svh - var(--header-h) - 12rem), 520px);
       min-height: calc(var(--mask-h) + 6rem);
     }
 

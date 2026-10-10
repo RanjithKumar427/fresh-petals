@@ -18,6 +18,7 @@ const {
   // genuine, already-shipped photo for link previews, not a blank one.
   image = "/images/hero-main-banner.jpg",
   showCategoryCarousel = true,
+  homeHeader = false,
   // Keeps a page reachable for customers but out of search results
   // (cart, search, saved, empty categories). "follow" so its links still
   // count.
@@ -111,7 +112,7 @@ const absoluteImageUrl = new URL(image, Astro.site);
   </head>
 
   <body>
-    <SiteHeader />
+    <SiteHeader home={homeHeader} />
     <slot name="stage" />
     <div id="main" class="site-main" tabindex="-1">
       {showCategoryCarousel && <RoundCategoryCarousel />}

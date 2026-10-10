@@ -40,7 +40,7 @@ const AREA_FAQ: LandingFaq = {
 };
 
 /**
- * Homepage FAQs — each answer restates the published policy pages
+ * Five homepage FAQs — each answer restates the published policy pages
  * (/shipping, /refunds, /terms, /faqs); nothing beyond them. Same-day
  * delivery is described as the FAQ page does (not confirmed), not as the
  * shipping page's slot list (see docs/occasion-journeys.md, open decisions).
@@ -62,23 +62,6 @@ export const HOME_FAQS: (LandingFaq & { link?: LandingLink })[] = [
     question: "What if a flower isn't available?",
     answer:
       "Flowers vary naturally in shade, size and bloom stage. If a flower in your bouquet isn't available, we tell you before you pay and suggest an alternative — or you can cancel.",
-  },
-  {
-    question: "Can I add a greeting message?",
-    answer:
-      "Add your requested message on the bouquet's page or in your basket. Check that design's included features; where a message note isn't listed, we confirm its availability and any charge on WhatsApp. A printed premium card is a separate quoted extra.",
-  },
-  {
-    question: "Can I cancel or change an order?",
-    answer:
-      "Ask us on WhatsApp. Cancellation may be possible before sourcing or preparation begins, depending on the order. Once work has started, cancellation may not be possible.",
-    link: { href: "/terms", label: "Terms" },
-  },
-  {
-    question: "What if something is wrong when the flowers arrive?",
-    answer:
-      "Tell us on WhatsApp as soon as you can, with photos. We review each issue; depending on the case, a replacement, partial replacement, store credit or refund may be offered.",
-    link: { href: "/refunds", label: "Refund policy" },
   },
   {
     question: "How do I pay?",

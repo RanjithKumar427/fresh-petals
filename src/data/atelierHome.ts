@@ -224,6 +224,21 @@ export function getBouquetEdit(priceMap: Map<string, AuthoritativePrice>): EditP
   return interleaved.map((product) => ({ ...withAuthoritativePrice(product, priceMap), img: responsiveImage(product.image) }));
 }
 
+/**
+ * A small homepage edit: red roses, soft pink roses, mixed flowers and lilies.
+ * Select only from the public launch range, keeping its authoritative prices.
+ * If a chosen design leaves the range, another eligible bouquet fills its place.
+ * The category page continues to show the complete range.
+ */
+export function getFeaturedBouquets(products: EditProduct[]): EditProduct[] {
+  const preferred = ["red-affair", "timeless-hug", "colourful-confession", "blush-lily-letter"];
+  const ordered = [
+    ...preferred.flatMap((slug) => products.filter((product) => product.slug === slug)),
+    ...products.filter((product) => !preferred.includes(product.slug)),
+  ];
+  return ordered.slice(0, 4);
+}
+
 // ---------------------------------------------------------------------
 // D. What will arrive — one public launch bouquet, its own photograph (linked
 // to its page) and two close-ups cropped from that same file in CSS, with
