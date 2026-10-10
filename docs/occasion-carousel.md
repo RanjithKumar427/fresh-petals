@@ -14,16 +14,20 @@ carousel in the same position (`src/pages/index.astro`, after the bouquet edit).
 
 ## Rules
 
-- **Eligibility and count**: `launchProductsForOccasion(route)` — the launch
-  range (ready categories, every product priced from the database through
-  `ProductPricing`) genuinely tagged for the route. This is the same list and
-  count the launch occasion pages show as "N options". An occasion with no
-  eligible bouquets is left out; occasions are never repeated or padded.
+- **Eligibility and count**: `occasionBouquets(route)` in `launchCatalogue.ts`
+  is the one list behind both a card (count and photo) and the occasion page
+  it opens, so the card's "N designs" always equals the page's "N options".
+  Launch occasions use the launch range (`launchProductsForOccasion`).
+  Condolence (`sympathy`, not a launch occasion) keeps its existing public
+  bouquets: catalogue Bouquets/Lilies tagged `sympathy`, with no add-ons or
+  fallbacks. Every product is priced from the database through
+  `ProductPricing`. An occasion with no eligible bouquets is left out;
+  occasions are never repeated or padded.
 - **Order**: Birthday, Anniversary, Wedding, Engagement, Housewarming & Pooja
   (`/occasions/housewarming`), Condolence (`/occasions/sympathy`).
 - **Dataset sizes**: 0 — no section; 1 — one linked card; 2 — a balanced
-  static pair; 3+ — the carousel. Today's catalogue gives Birthday (8) and
-  Anniversary (5), so production currently shows the pair.
+  static pair; 3+ — the carousel. Today's catalogue gives Birthday (8),
+  Anniversary (5) and Condolence (7), so production shows the carousel.
 - **Refresh**: the homepage is prerendered, as before. Counts and visibility
   change with the next build, exactly as the menus and occasion pages do. The
   admin garland cache refresh (`GarlandWebsite.ts`) is unchanged; garlands are
@@ -52,14 +56,11 @@ carousel in the same position (`src/pages/index.astro`, after the bouquet edit).
 ## Occasion source and Condolence
 
 - Source of truth: `launchCatalogue.ts` + catalogue `occasionTags`, as for
-  the menus and occasion pages. Every carousel route's page is
-  launch-restricted (`LAUNCH_OCCASION_ROUTES`), so card and page list the
-  same eligible bouquets, never add-ons or fallbacks.
-- Effect today: `/occasions/sympathy` previously listed 7 white/lily bouquets
-  outside the launch range plus the card add-on. It now shows the "not ready"
-  state, `noindex`, and leaves the sitemap until a launch bouquet is tagged
-  `sympathy`. Owner decision: keep that, or add those bouquets to the launch
-  range in `LAUNCH_CATEGORIES`.
+  the menus and occasion pages. `LAUNCH_CATEGORIES` and
+  `LAUNCH_OCCASION_ROUTES` are unchanged.
+- `/occasions/sympathy` keeps the same 7 white/lily bouquets as before; only
+  the premium card add-on (a fallback) is no longer listed. It stays indexed
+  and in the sitemap.
 - `OccasionMembership.ts` / `OccasionWebsite.ts` (admin-driven occasions) are
   not on this branch, `main` or any pushed branch. When that work lands, it
   should replace `occasionCarousel()`'s source rather than run beside it.
@@ -87,10 +88,13 @@ memory at build time.
   covered links and counts, order, scales, overflow, looping, transition
   timing, autoplay timing, the pause conditions, keyboard use, swipe and drag,
   clicks, reduced motion and no-JS.
-- Follow-up (same day): after the Condolence rule change, card counts equal
-  page counts for all six fixture occasions and today's real data, and
-  keyboard checks pass at 390/1440 including Alt/Ctrl/Meta/Shift+Arrow being
-  ignored.
+- Follow-up (same day, shared `occasionBouquets` list): 671 browser checks
+  passed with 0 failures, rebuilt for 0, 1, 2, 3 (today's real data:
+  Birthday, Anniversary, Condolence), 4 and 6 occasions. Focused checks:
+  every card count equals its page for the fixture and real data;
+  `/occasions/sympathy` keeps its 7 bouquets without the add-on; Alt, Ctrl,
+  Meta and Shift with an arrow key are ignored at 390 and 1440px. Every other
+  occasion page lists the same products as before.
 - `astro check` reports the existing 20 errors in `DiscoveryPostCard`,
   `MobileBottomBar` and `SubscriptionConfigurator`. There are no new errors.
 - Not verified: real iOS/Android devices or a Safari/WebKit engine (only

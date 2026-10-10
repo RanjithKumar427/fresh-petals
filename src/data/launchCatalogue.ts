@@ -127,6 +127,9 @@ export const GARLAND_OCCASION_ROUTES = new Set(["wedding", "engagement"]);
 /** Whether the owner has switched garlands on in the menus (the garlands entry's `ready`). */
 export const garlandsPromoted = () => LAUNCH_CATEGORIES.some((category) => category.id === "garlands" && category.ready);
 
+/** Occasion routes whose pages are restricted to the launch range. */
+export const LAUNCH_OCCASION_ROUTES = new Set(LAUNCH_OCCASIONS.map((item) => item.route).filter((route): route is string => !!route));
+
 /**
  * The homepage occasion carousel, in the owner's preferred order. `route` is
  * the existing occasion page each card links to; `feature` optionally names
@@ -142,27 +145,33 @@ export const OCCASION_CAROUSEL: { label: string; route: string; feature?: string
   { label: "Condolence", route: "sympathy" },
 ];
 
-/**
- * Occasion routes whose pages are restricted to the launch range: the menu's
- * launch occasions and every homepage carousel route, so a carousel card and
- * the page it opens list exactly the same eligible bouquets (no add-ons or
- * fallbacks).
- */
-export const LAUNCH_OCCASION_ROUTES = new Set([
-  ...LAUNCH_OCCASIONS.map((item) => item.route).filter((route): route is string => !!route),
-  ...OCCASION_CAROUSEL.map((item) => item.route),
-]);
+/** Carousel routes; their occasion pages list occasionBouquets(route). */
+export const OCCASION_CAROUSEL_ROUTES = new Set(OCCASION_CAROUSEL.map((item) => item.route));
+
+const BOUQUET_CATEGORIES = new Set(["Bouquets", "Lilies"]);
 
 /**
- * Carousel entries with eligible public bouquets: the launch range (ready
- * categories, every product priced from the database) genuinely tagged for
- * the route — the same rule and count its occasion page lists (see
- * LAUNCH_OCCASION_ROUTES). Each occasion appears once; none is padded or
- * repeated.
+ * The eligible public bouquets for a carousel occasion — one list read by
+ * both its homepage card (count and photo) and its occasion page. Launch
+ * occasions keep the launch range (launchProductsForOccasion). The others
+ * (Condolence → sympathy) keep their existing public bouquets: catalogue
+ * bouquets genuinely tagged for the route, with no add-ons or fallbacks.
+ * Every product shown still takes its price from the database.
+ */
+export function occasionBouquets(route: string): Product[] {
+  if (LAUNCH_OCCASION_ROUTES.has(route)) return launchProductsForOccasion(route);
+  return productCatalog.filter(
+    (product) => product.occasionTags?.includes(route) && BOUQUET_CATEGORIES.has(product.category) && !product.isAddon
+  );
+}
+
+/**
+ * Carousel entries that have eligible bouquets, in order. Each occasion
+ * appears once; none is padded or repeated.
  */
 export function occasionCarousel(): { label: string; href: string; count: number; products: Product[]; feature?: string }[] {
   return OCCASION_CAROUSEL.flatMap((item) => {
-    const products = launchProductsForOccasion(item.route);
+    const products = occasionBouquets(item.route);
     return products.length > 0 ? [{ label: item.label, href: `/occasions/${item.route}`, count: products.length, products, feature: item.feature }] : [];
   });
 }

@@ -6,7 +6,7 @@ import { loadAuthoritativePrices, withAuthoritativePrice } from "../../server/se
 import { curateDiscoveryOrder } from "../../utils/feedCuration";
 import LandingDetails from "../../components/LandingDetails.astro";
 import { OCCASION_LANDING, NOINDEX_OCCASION_SLUGS, lowestPrice } from "../../data/seoLanding";
-import { GARLAND_OCCASION_ROUTES, LAUNCH_OCCASION_ROUTES, garlandsPromoted, launchProductsForOccasion } from "../../data/launchCatalogue";
+import { GARLAND_OCCASION_ROUTES, LAUNCH_OCCASION_ROUTES, OCCASION_CAROUSEL_ROUTES, garlandsPromoted, launchProductsForOccasion, occasionBouquets } from "../../data/launchCatalogue";
 import LiveGarlands from "../../components/LiveGarlands.astro";
 
 type OccasionMeta = {
@@ -248,13 +248,16 @@ export async function getStaticPaths() {
     // Launch occasions (src/data/launchCatalogue.ts) recommend only launch
     // products genuinely tagged for them — no fallback add-ons, baskets or
     // torans that aren't ready. An empty one is noindexed and left out of
-    // the menu and sitemap.
-    if (LAUNCH_OCCASION_ROUTES.has(occasion.slug)) {
+    // the menu and sitemap. Homepage carousel occasions list exactly the
+    // bouquets their carousel card counts (occasionBouquets): for launch
+    // occasions that is the same launch list; for Condolence (sympathy) it
+    // is its tagged public bouquets, without add-ons or fallbacks.
+    if (LAUNCH_OCCASION_ROUTES.has(occasion.slug) || OCCASION_CAROUSEL_ROUTES.has(occasion.slug)) {
       return {
         params: { slug: occasion.slug },
         props: {
           occasion,
-          products: launchProductsForOccasion(occasion.slug).map((product) => withAuthoritativePrice(product, priceMap)),
+          products: occasionBouquets(occasion.slug).map((product) => withAuthoritativePrice(product, priceMap)),
         },
       };
     }
