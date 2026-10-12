@@ -23,6 +23,7 @@
 import { ProductRepository } from "../db/repositories/ProductRepository";
 import { productCatalog } from "../../data/productCatalog";
 import { isExemptFromDatabasePrice, type GarlandDesign } from "../../data/garlandRules";
+import { QUOTE_ONLY_PRICE_LABEL, isQuoteOnly, publicPriceView } from "../../shared/quoteOnly";
 
 export type AuthoritativePrice = {
   priceLabel: string | null;
@@ -105,9 +106,19 @@ export async function readPriceMapFromDatabase(): Promise<Map<string, Authoritat
  * reach the website without a deployment.
  */
 export function loadAuthoritativePrices({ fresh = false }: { fresh?: boolean } = {}): Promise<Map<string, AuthoritativePrice>> {
-  if (fresh || import.meta.env.DEV) return readPriceMapFromDatabase();
-  if (!cache) cache = import("./PublishedPrices").then((m) => m.publishedPriceMap());
+  if (fresh || import.meta.env.DEV) return readPriceMapFromDatabase().then(withoutQuoteOnlyAmounts);
+  if (!cache) cache = import("./PublishedPrices").then((m) => m.publishedPriceMap()).then(withoutQuoteOnlyAmounts);
   return cache;
+}
+
+// Quote-only products (src/shared/quoteOnly.ts) are priced on WhatsApp: the
+// map the storefront reads carries their label and no amount, so no page can
+// show, sort by or filter on one. The database rows are untouched, and the
+// build-time validation above still runs on the real amounts.
+const quoteOnlySlugs = new Set(productCatalog.filter((product) => isQuoteOnly(product)).map((product) => product.slug));
+function withoutQuoteOnlyAmounts(map: Map<string, AuthoritativePrice>): Map<string, AuthoritativePrice> {
+  const quoted = { priceLabel: QUOTE_ONLY_PRICE_LABEL, sellingPrice: null, compareAtPrice: null };
+  return new Map([...map].map(([slug, price]) => [slug, quoteOnlySlugs.has(slug) ? quoted : price]));
 }
 
 /**
@@ -134,7 +145,7 @@ export function withAuthoritativePrice<T extends { slug: string; priceLabel: str
   // draft keeps its own price label even if a row exists.
   const garland = (product as { garland?: GarlandDesign }).garland;
   if (garland && isExemptFromDatabasePrice(garland)) {
-    return product;
+    return publicPriceView(product);
   }
   if (!authoritative) {
     throw new Error(
@@ -143,6 +154,9 @@ export function withAuthoritativePrice<T extends { slug: string; priceLabel: str
         `or remove it from productCatalog.ts, before the build can proceed.`
     );
   }
+  // Quote-only products never carry an amount, whatever the catalogue or the
+  // database holds (src/shared/quoteOnly.ts).
+  if (isQuoteOnly(product)) return publicPriceView(product);
   if (authoritative.priceLabel == null) return product;
   return { ...product, priceLabel: authoritative.priceLabel };
 }

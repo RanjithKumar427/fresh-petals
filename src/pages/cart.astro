@@ -4,6 +4,7 @@ import { TaxonomyService } from "../server/services/TaxonomyService";
 import { DELIVERY_METHOD_OPTIONS } from "../server/services/delivery/DeliveryService";
 import { productCatalog } from "../data/productCatalog";
 import { loadAuthoritativePrices, withAuthoritativePrice } from "../server/services/ProductPricing";
+import { QUOTE_ONLY_BASKET_LABEL, QUOTE_ONLY_CONFIG } from "../shared/quoteOnly";
 
 // Commerce Foundation Phase 3, Milestone 2 — Delivery Details' Occasion
 // field reuses the real, admin-managed taxonomy instead of a hardcoded
@@ -23,7 +24,9 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
 // The price label every catalogue product (and add-on) is published with in
 // this deployment — the same snapshot the product pages and listings show.
 // A basket saved earlier is brought up to date against it before it is shown
-// or sent, so WhatsApp never receives an outdated price.
+// or sent, so WhatsApp never receives an outdated price. Quote-only products
+// (src/shared/quoteOnly.ts) are published as "Price on WhatsApp": the page
+// receives no amount for them.
 const priceMap = await loadAuthoritativePrices();
 const publishedPrices = Object.fromEntries(productCatalog.map((product) => [product.slug, withAuthoritativePrice(product, priceMap).priceLabel]));
 ---
@@ -47,7 +50,7 @@ const publishedPrices = Object.fromEntries(productCatalog.map((product) => [prod
           </h1>
 
           <p class="mx-auto mt-5 max-w-2xl text-sm leading-7 text-moss md:text-base">
-            Review your selected flowers and continue on WhatsApp for availability, final price and payment confirmation.
+            Review your selected flowers and send them to us on WhatsApp. We reply with the prices and availability before you pay.
           </p>
         </div>
 
@@ -284,7 +287,7 @@ const publishedPrices = Object.fromEntries(productCatalog.map((product) => [prod
 
     <li class="flex gap-2">
       <span class="mt-1 text-ink">•</span>
-      <span>Final flower availability and price are confirmed on WhatsApp.</span>
+      <span>Prices and flower availability are sent to you on WhatsApp.</span>
     </li>
 
     <li class="flex gap-2">
@@ -304,7 +307,7 @@ const publishedPrices = Object.fromEntries(productCatalog.map((product) => [prod
                 data-send-cart-whatsapp
                 class="fp-btn-whatsapp inline-flex items-center justify-center rounded-full bg-berry px-7 py-4 text-[11px] font-bold uppercase tracking-[0.22em] text-white hover:bg-berry-deep"
               >
-                Send basket on WhatsApp
+                {QUOTE_ONLY_BASKET_LABEL}
               </button>
 
               <button
@@ -317,7 +320,7 @@ const publishedPrices = Object.fromEntries(productCatalog.map((product) => [prod
             </div>
 
             <p class="mt-4 text-xs leading-6 text-moss">
-              Final flower availability, price, delivery fee and payment confirmation will happen on WhatsApp.
+              Prices, flower availability, delivery fee and payment are confirmed on WhatsApp.
             </p>
           </div>
         </div>
@@ -326,8 +329,16 @@ const publishedPrices = Object.fromEntries(productCatalog.map((product) => [prod
   </main>
 
   <script is:inline type="application/json" id="published-prices" set:html={JSON.stringify(publishedPrices)}></script>
+  <script is:inline type="application/json" id="quote-only" set:html={JSON.stringify(QUOTE_ONLY_CONFIG)}></script>
   <script is:inline>
     const whatsappNumber = "919652012274";
+    // The shared quote-only rule (src/shared/quoteOnly.ts), as data: these
+    // items and the add-ons chosen with them never show or send an amount.
+    const quoteOnly = JSON.parse(document.getElementById("quote-only").textContent);
+    const isQuoteOnlyItem = (item) => quoteOnly.categories.includes(item.category) || quoteOnly.slugs.includes(item.slug);
+    const hasQuoteOnlyItems = (items) => items.some(isQuoteOnlyItem);
+    const itemPriceLabel = (item) => (isQuoteOnlyItem(item) ? quoteOnly.label : item.priceLabel);
+    const addOnPriceText = (item, addOn) => (!isQuoteOnlyItem(item) && addOn.priceLabel ? ` (${addOn.priceLabel})` : "");
     const CART_KEY = "fresh_petals_cart";
 
     /**
@@ -593,14 +604,14 @@ const publishedPrices = Object.fromEntries(productCatalog.map((product) => [prod
       return /within 4\s*[-–]\s*6 hours/i.test(slot) ? "Express request — timing to be confirmed on WhatsApp" : slot;
     }
 
-    function renderAddOnsHtml(addOns) {
+    function renderAddOnsHtml(addOns, item) {
       if (!addOns || addOns.length === 0) return "";
 
       const addOnRows = addOns
         .map(
           (addOn) => `
             <li>
-              ${escapeHtml(addOn.name)} (${escapeHtml(addOn.priceLabel)}) × ${escapeHtml(addOn.quantity || 1)}
+              ${escapeHtml(addOn.name)}${escapeHtml(addOnPriceText(item, addOn))} × ${escapeHtml(addOn.quantity || 1)}
             </li>
           `
         )
@@ -673,7 +684,7 @@ const publishedPrices = Object.fromEntries(productCatalog.map((product) => [prod
       return `
         <div class="mt-4 space-y-3 rounded-2xl border border-line bg-linen p-4 text-xs leading-6 text-moss">
           ${deliveryHtml}
-          ${renderAddOnsHtml(item.addOns)}
+          ${renderAddOnsHtml(item.addOns, item)}
           ${renderSubscriptionHtml(item.subscription)}
         </div>
       `;
@@ -694,7 +705,7 @@ const publishedPrices = Object.fromEntries(productCatalog.map((product) => [prod
         lines.push("Add-ons:");
         item.addOns.forEach((addOn) => {
           lines.push(
-            `- ${addOn.name} (${addOn.priceLabel}) × ${addOn.quantity || 1}`
+            `- ${addOn.name}${addOnPriceText(item, addOn)} × ${addOn.quantity || 1}`
           );
         });
       }
@@ -752,6 +763,7 @@ const publishedPrices = Object.fromEntries(productCatalog.map((product) => [prod
 
       emptyState.classList.add("hidden");
       cartContent.classList.remove("hidden");
+      if (sendWhatsappButton) sendWhatsappButton.textContent = hasQuoteOnlyItems(items) ? quoteOnly.basketLabel : "Send basket on WhatsApp";
 
       items.forEach((item) => {
         const itemElement = document.createElement("div");
@@ -779,8 +791,8 @@ const publishedPrices = Object.fromEntries(productCatalog.map((product) => [prod
               </h2>
             </a>
 
-            <p class="mt-2 text-sm font-bold text-ink">
-              ${escapeHtml(item.priceLabel)}
+            <p class="mt-2 text-sm font-bold text-ink" data-cart-item-price>
+              ${escapeHtml(itemPriceLabel(item))}
             </p>
 
             ${renderConfiguredDetailsHtml(item)}
@@ -875,7 +887,7 @@ const publishedPrices = Object.fromEntries(productCatalog.map((product) => [prod
               <div class="flex justify-between gap-4">
                 <span>${index + 1}. ${escapeHtml(item.name)}</span>
                 <strong class="text-right text-ink">
-                  ${escapeHtml(item.priceLabel)} × ${escapeHtml(item.quantity)}
+                  ${escapeHtml(itemPriceLabel(item))} × ${escapeHtml(item.quantity)}
                 </strong>
               </div>
 
@@ -996,7 +1008,7 @@ const publishedPrices = Object.fromEntries(productCatalog.map((product) => [prod
         </div>
 
         <p class="mt-4 rounded-2xl bg-linen p-4 text-xs leading-6 text-berry">
-          This is an estimated cart summary. Final price, flower availability, delivery fee and payment confirmation will happen on WhatsApp.
+          This is a summary of your request, not an order total. Prices, flower availability, delivery fee and payment are confirmed on WhatsApp.
         </p>
       `;
     }
@@ -1006,9 +1018,10 @@ const publishedPrices = Object.fromEntries(productCatalog.map((product) => [prod
 
       return [
         `${index + 1}. ${item.name}`,
-        `Price: ${item.priceLabel}`,
+        ...(isQuoteOnlyItem(item) ? [] : [`Price: ${item.priceLabel}`]),
         `Qty: ${item.quantity}`,
         `Category: ${item.category}`,
+        ...(item.slug ? [`Link: ${location.origin}/products/${encodeURIComponent(item.slug)}`] : []),
         configuredText !== "No item-level configuration"
           ? `Configured Details:\n${configuredText}`
           : "Configured Details: None",
@@ -1165,10 +1178,13 @@ const publishedPrices = Object.fromEntries(productCatalog.map((product) => [prod
         occasion,
       });
 
+      // A basket with quote-only items is a price request: no amounts (item,
+      // add-on or delivery fee) and the shared closing line.
+      const priceRequest = hasQuoteOnlyItems(items);
       const message = `
-FreshPetals Order Request
+${priceRequest ? "FreshPetals Price Request" : "FreshPetals Order Request"}
 
-This is a request, not a confirmed order — please confirm availability, final price, delivery fee and payment details.
+${priceRequest ? "This is a request, not a confirmed order." : "This is a request, not a confirmed order — please confirm availability, final price, delivery fee and payment details."}
 
 CUSTOMER
 Name: ${customerName}
@@ -1182,8 +1198,7 @@ DELIVERY
 Pincode: ${pincode || "Not given — please confirm the delivery area"}
 Area: ${areaText}
 Delivery Option: ${deliveryResult.label}
-Promise: ${promiseText}
-Delivery Fee: ${deliveryFeeText}
+Promise: ${promiseText}${priceRequest ? "" : `\nDelivery Fee: ${deliveryFeeText}`}
 Service Status: ${serviceStatusText}
 Date: ${deliveryDate}
 Landmark: ${landmark}
@@ -1195,7 +1210,7 @@ ${cartLines}
 Order Note / Address:
 ${note || "None"}
 
-Please confirm availability, final price, delivery fee and payment details.
+${priceRequest ? quoteOnly.closing : "Please confirm availability, final price, delivery fee and payment details."}
       `.trim();
 
       logInquiry({
@@ -1323,8 +1338,17 @@ Please confirm availability, final price, delivery fee and payment details.
       } catch {}
       const has = (slug) => typeof slug === "string" && Object.prototype.hasOwnProperty.call(published, slug);
       const changes = [];
+      let quiet = false;
       const items = getCartItems().map((item) => {
         let next = item;
+        // Quote-only items lose any amount saved earlier, without a notice
+        // (a notice would repeat the amounts).
+        if (isQuoteOnlyItem(item)) {
+          const addOns = Array.isArray(item.addOns) ? item.addOns.map((addOn) => (addOn.priceLabel ? { ...addOn, priceLabel: "" } : addOn)) : item.addOns;
+          const changed = item.priceLabel !== quoteOnly.label || (Array.isArray(addOns) && addOns.some((addOn, i) => addOn !== item.addOns[i]));
+          if (changed) quiet = true;
+          return changed ? { ...item, priceLabel: quoteOnly.label, addOns } : item;
+        }
         if (has(item.slug) && published[item.slug] !== item.priceLabel) {
           changes.push(`${item.name}: ${item.priceLabel || "no price"} → ${published[item.slug]}`);
           next = { ...next, priceLabel: published[item.slug] };
@@ -1341,8 +1365,9 @@ Please confirm availability, final price, delivery fee and payment details.
         }
         return next;
       });
-      if (changes.length === 0) return;
+      if (changes.length === 0 && !quiet) return;
       saveCartItems(items);
+      if (changes.length === 0) return;
       const notice = document.querySelector("[data-cart-price-notice]");
       if (notice) {
         notice.textContent = `Prices updated to the current listed prices: ${changes.join("; ")}.`;

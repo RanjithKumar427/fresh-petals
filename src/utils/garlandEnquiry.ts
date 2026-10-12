@@ -1,18 +1,18 @@
 // The WhatsApp quotation message for a garland design. Shared by the server-
 // rendered links and the product page's quantity script, so both send the
-// same text. It names the public design code and title, the listed price
-// when the owner has set one, the quantity, and only options the customer
-// actually chose. It never multiplies the price into a total (what the price
-// covers — single or pair, length — is confirmed in the chat), and asks for
-// no pincode or delivery slot. Occasion/date and delivery area are left blank
-// for the customer to fill in WhatsApp.
+// same text. It names the public design code and title, the quantity, and
+// only options the customer actually chose. Garlands are quote-only
+// (src/shared/quoteOnly.ts): the message carries no amount and ends by
+// asking for the price and availability. It asks for no pincode or delivery
+// slot. Occasion/date and delivery area are left blank for the customer to
+// fill in WhatsApp.
+import { QUOTE_ONLY_CLOSING } from "../shared/quoteOnly";
+
 export type GarlandEnquiry = {
   code: string;
   title: string;
   quantity: number;
-  /** The listed price exactly as shown on the page, e.g. "₹5,000"; omitted when none is set. */
-  price?: string | null;
-  /** Confirmed sold unit; quantities are stated in it once confirmed (never multiplied into a total). */
+  /** Confirmed sold unit; quantities are stated in it once confirmed . */
   unit?: "single" | "pair" | "set" | null;
   /** Options the customer chose, e.g. "Finish: Gold tassels". */
   options?: string[];
@@ -26,21 +26,20 @@ export type GarlandEnquiry = {
 
 const UNIT_WORDS = { single: ["garland", "garlands"], pair: ["pair", "pairs"], set: ["set", "sets"] } as const;
 
-export function garlandEnquiryText({ code, title, quantity, price, unit = null, options = [], url, occasion = null, purpose = null }: GarlandEnquiry): string {
+export function garlandEnquiryText({ code, title, quantity, unit = null, options = [], url, occasion = null, purpose = null }: GarlandEnquiry): string {
   const count = Math.max(1, Math.floor(quantity) || 1);
   const unitWord = unit ? ` ${UNIT_WORDS[unit][count === 1 ? 0 : 1]}` : "";
   const lines = [
-    price ? "Hi Fresh Petals, I'd like to enquire about this garland." : "Hi Fresh Petals, I'd like a quotation for this garland.",
+    "Hi Fresh Petals, I'd like to enquire about this garland.",
     `Design: ${code} — ${title}`,
   ];
-  if (price) lines.push(`Listed price: ${price}${unit ? ` per ${UNIT_WORDS[unit][0]}` : ""}`);
   lines.push(
     `Quantity: ${count}${unitWord}`,
     `Options: ${options.length > 0 ? options.join("; ") : "none chosen — please advise"}`
   );
   if (url) lines.push(`Link: ${url}`);
   if (purpose) lines.push(`For: ${purpose}`);
-  lines.push(occasion ? `Occasion: ${occasion}` : "Occasion: ", "Date (optional): ", "Delivery area (optional): ");
+  lines.push(occasion ? `Occasion: ${occasion}` : "Occasion: ", "Date (optional): ", "Delivery area (optional): ", "", QUOTE_ONLY_CLOSING);
   return lines.join("\n");
 }
 

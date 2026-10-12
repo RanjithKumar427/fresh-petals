@@ -12,6 +12,14 @@ export function parseShopFilters(params: URLSearchParams): ShopFilterState {
   if (intent === "gift" || intent === "ceremony") state.intent = intent;
   return state;
 }
+/**
+ * Quote-only products have no displayed price, so no budget band. On a list
+ * where nothing carries one, an old ?budget=… link is ignored instead of
+ * emptying the list.
+ */
+export function withoutUnpricedBudget(state: ShopFilterState, items: Pick<ShopItemData, "budget">[]): ShopFilterState {
+  return state.budget.length && !items.some((item) => item.budget) ? { ...state, budget: [] } : state;
+}
 export function matchesShopFilters(item: ShopItemData, state: ShopFilterState, except?: FilterKey): boolean {
   if (state.intent && item.intent !== state.intent) return false;
   const values: Record<FilterKey, string[]> = { occasion: item.occasions, colour: item.colours, budget: item.budget ? [item.budget] : [] };

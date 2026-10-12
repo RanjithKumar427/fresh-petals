@@ -10,6 +10,7 @@ import { loadAuthoritativePrices, withAuthoritativePrice } from "../../server/se
 import { slugify } from "../../server/utils/slugify";
 import imageVariants from "../../data/imageVariants.json";
 import { whatsappLink } from "../../config/storefront";
+import { QUOTE_ONLY_PRICE_LABEL, isQuoteOnly } from "../../shared/quoteOnly";
 
 // Catalog/Database Reconciliation milestone — the product's displayed
 // price now comes from PostgreSQL (the admin-editable, authoritative
@@ -41,6 +42,8 @@ const { product } = Astro.props;
 // Offer ranges ("Budget picks", "Fresh deals") carry a merchandising label,
 // not an amount, so there is no starting or set price to describe.
 const pricedAs = /\d/.test(product.priceLabel) ? product.priceType : null;
+// Bouquets and garlands are priced on WhatsApp (src/shared/quoteOnly.ts).
+const quoteOnly = isQuoteOnly(product);
 
 // Customer UX milestone — same admin-managed taxonomy cart.astro's
 // Delivery Details section already uses for its Occasion field; reused
@@ -231,7 +234,14 @@ const breadcrumbJsonLd = {
         )}
 
         {
-          product.priceType === "quote" ? (
+          quoteOnly ? (
+            <div class="mt-6">
+              <p class="text-2xl font-bold text-ink" data-quote-only-price>{QUOTE_ONLY_PRICE_LABEL}</p>
+              <p class="mt-2 text-sm leading-6 text-moss">
+                Choose what you like and send it to us — we reply on WhatsApp with the price and availability before anything is made.
+              </p>
+            </div>
+          ) : product.priceType === "quote" ? (
             <div class="mt-6">
               <p class="text-2xl font-bold text-ink">Custom quotation</p>
               <p class="mt-2 text-sm leading-6 text-moss">
@@ -354,7 +364,11 @@ const breadcrumbJsonLd = {
             {pricedAs === "fixed" && (
               <p><strong class="text-ink">{product.priceLabel} is the price of this {product.category === "Bouquets" || product.category === "Lilies" ? "bouquet" : "item"}.</strong></p>
             )}
+            {quoteOnly ? (
+              <p>We send the price of this {product.category === "Bouquets" || product.category === "Lilies" ? "bouquet" : "item"}, any add-ons you choose and delivery on WhatsApp, and confirm availability before you pay. <a href="/terms" class="inline-flex min-h-[44px] items-center font-semibold text-ink underline underline-offset-2">Terms</a></p>
+            ) : (
             <p class={pricedAs === "from" || pricedAs === "fixed" ? "mt-1" : ""}>Add-ons are priced separately (shown with each one). Delivery is charged separately; availability, delivery and the final price are confirmed on WhatsApp before you pay. <a href="/terms" class="inline-flex min-h-[44px] items-center font-semibold text-ink underline underline-offset-2">Terms</a></p>
+            )}
           </div>
         )}
         <ProductOptions product={product} occasionOptions={occasionOptions} />

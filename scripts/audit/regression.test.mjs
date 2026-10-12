@@ -135,7 +135,9 @@ test('development pricing errors remain explicit, retry recovers; invalid prices
   const pricing = sourceLoader({ dev: true, mocks: { 'src/server/db/repositories/ProductRepository.ts': { ProductRepository: { list: async () => { if (!rows) throw new Error('fixture outage'); return rows; } } } } })('src/server/services/ProductPricing.ts');
   await assert.rejects(pricing.loadAuthoritativePrices(), /fixture outage/);
   rows = [{ slug: 'red-affair', priceType: 'from', sellingPrice: 1234, compareAtPrice: null }];
-  assert.equal((await pricing.loadAuthoritativePrices()).get('red-affair').priceLabel, 'From ₹1234');
+  // The database amount is read and validated, but a quote-only bouquet reaches the storefront without it.
+  assert.equal((await pricing.readPriceMapFromDatabase()).get('red-affair').priceLabel, 'From ₹1234');
+  assert.deepEqual({ ...(await pricing.loadAuthoritativePrices()).get('red-affair') }, { priceLabel: 'Price on WhatsApp', sellingPrice: null, compareAtPrice: null });
   for (const amount of [0, -1, null, NaN]) { rows[0].sellingPrice = amount; await assert.rejects(pricing.readPriceMapFromDatabase(), /Invalid authoritative price/); }
   // Offer ranges have no amount: the catalogue's merchandising label is kept, never a number.
   const offers = ['flowers-under-499', 'bouquets-under-999', 'flower-gifts-under-1499'];
@@ -249,4 +251,41 @@ test('hero banner: three distinct launch bouquets, each with its own photograph 
   const launch = journeys.launchSlugs();
   membership.set(launch[0], ['birthday', 'sympathy']);
   assert.deepEqual(json(home.getOccasionCarousel(membership)).map((card) => [card.key, card.tone]), [['birthday', 'default'], ['sympathy', 'quiet']]);
+});
+
+test('bouquets and garlands are quote-only: no amount in labels, price maps, filters or WhatsApp drafts', async () => {
+  const rule = load('src/shared/quoteOnly.ts');
+  const quoted = productCatalog.filter((product) => rule.isQuoteOnly(product));
+  assert.ok(quoted.some((p) => p.slug === 'event-garlands') && quoted.some((p) => p.slug === 'blush-lily-letter') && quoted.some((p) => p.slug === 'red-affair'));
+  assert.ok(productCatalog.filter((p) => p.category === 'Bouquets' || p.category === 'Lilies').every((p) => rule.isQuoteOnly(p)));
+  assert.equal(rule.isQuoteOnly({ category: 'Garlands', slug: 'any-garland' }), true);
+  assert.equal(rule.isQuoteOnly({ category: 'Add-ons', slug: 'chocolates-addon' }), false);
+  const rows = productCatalog.map((p) => ({ slug: p.slug, priceType: 'fixed', sellingPrice: 4321, compareAtPrice: 5000 }));
+  const pricing = sourceLoader({ dev: true, mocks: { 'src/server/db/repositories/ProductRepository.ts': { ProductRepository: { list: async () => rows } } } })('src/server/services/ProductPricing.ts');
+  const map = await pricing.loadAuthoritativePrices();
+  for (const product of quoted) {
+    assert.deepEqual({ ...map.get(product.slug) }, { priceLabel: 'Price on WhatsApp', sellingPrice: null, compareAtPrice: null });
+    const shown = pricing.withAuthoritativePrice({ ...product, salePriceLabel: '₹999', regularPriceLabel: '₹1999', discountLabel: '50% off' }, map);
+    assert.equal(shown.priceLabel, 'Price on WhatsApp');
+    assert.equal(shown.priceType, 'quote');
+    assert.ok(!/₹|\d{3,}/.test(JSON.stringify([shown.priceLabel, shown.salePriceLabel, shown.regularPriceLabel, shown.discountLabel])));
+    assert.equal(journeys.budgetBand(shown), null);
+  }
+  // Other products keep their database price.
+  assert.equal(pricing.withAuthoritativePrice(productCatalog.find((p) => p.slug === 'chocolates-addon'), map).priceLabel, '₹4321');
+  // No price filter, and an old ?budget= link does not empty the list.
+  const shown = quoted.map((product) => pricing.withAuthoritativePrice(product, map));
+  const state = filters.parseShopFilters(new URLSearchParams('budget=under-1500'));
+  assert.equal(journeys.filterGroups(shown, ['occasion', 'budget', 'colour'], { allOccasions: true, selected: state }).some((g) => g.id === 'budget'), false);
+  assert.equal(filters.withoutUnpricedBudget(state, shown.map((p) => journeys.shopItemData(p))).budget.length, 0);
+  // Garland enquiry: code, quantity, options, occasion, link; no amount; fixed closing line.
+  const { garlandEnquiryText } = load('src/utils/garlandEnquiry.ts');
+  const text = garlandEnquiryText({ code: 'FP-G001', title: 'Rose Garland', quantity: 2, unit: 'pair', options: ['Finish: Gold tassels'], url: 'https://onlyfreshpetals.in/products/rose-garland', occasion: 'Wedding', price: '₹5,000' });
+  assert.match(text, /Design: FP-G001 — Rose Garland/);
+  assert.match(text, /Quantity: 2 pairs/);
+  assert.match(text, /Finish: Gold tassels/);
+  assert.match(text, /Occasion: Wedding/);
+  assert.match(text, /Link: https:\/\/onlyfreshpetals\.in\/products\/rose-garland/);
+  assert.ok(!/₹|Listed price/.test(text));
+  assert.ok(text.endsWith('Please share the prices and availability for these selections.'));
 });

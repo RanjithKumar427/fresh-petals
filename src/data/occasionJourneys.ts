@@ -218,7 +218,11 @@ export function filterGroups(products: Product[], groups: FilterGroup["id"][], {
     // Both bands must be present, otherwise the choice can't narrow anything.
     // "Bouquet price": the bands are the displayed (starting) price, not an
     // order total with delivery or add-ons.
-    if (useful(options).length === 2 || selected.budget?.length) result.push({ id: "budget", label: "Bouquet price", options });
+    // Quote-only products (src/shared/quoteOnly.ts) have no displayed price,
+    // so no band: with none on the list the price filter is never offered,
+    // even for an old link that still carries ?budget=….
+    const priced = options.some((option) => option.count > 0);
+    if (priced && (useful(options).length === 2 || selected.budget?.length)) result.push({ id: "budget", label: "Bouquet price", options });
   }
   if (groups.includes("colour")) {
     const options = (
@@ -394,8 +398,8 @@ export function needDestinations(membership: Membership, publicGarlands: Garland
   const thanks = withTags("congratulations", "thank-you");
   const gentle = withTags("get-well-soon", "i-am-sorry");
   const list: NeedDestination[] = [
-    { need: "Birthday", href: n("birthday") ? "/occasions/birthday" : null, note: "Bouquets with prices, by colour and budget.", count: n("birthday"), enquiry: "birthday flowers" },
-    { need: "Anniversary, love & proposal", href: n("anniversary") ? "/occasions/anniversary" : null, note: "Roses and lilies with prices.", count: n("anniversary"), enquiry: "anniversary flowers" },
+    { need: "Birthday", href: n("birthday") ? "/occasions/birthday" : null, note: "Bouquets by colour; prices on WhatsApp.", count: n("birthday"), enquiry: "birthday flowers" },
+    { need: "Anniversary, love & proposal", href: n("anniversary") ? "/occasions/anniversary" : null, note: "Roses and lilies; prices on WhatsApp.", count: n("anniversary"), enquiry: "anniversary flowers" },
     {
       need: "Congratulations, thanks & farewell",
       href: thanks.length ? `/categories/bouquets?occasion=${thanks.join(",")}` : null,

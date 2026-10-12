@@ -1,6 +1,7 @@
 ---
 // Four comparable bouquets before the occasion carousel. The category page
-// keeps the full public range; prices and basket behaviour use existing sources.
+// keeps the full public range. Bouquets are quote-only (src/shared/quoteOnly.ts):
+// each card shows "Price on WhatsApp"; basket behaviour uses existing sources.
 import type { EditProduct } from "../../data/atelierHome";
 import { whatsappLink } from "../../config/storefront";
 
@@ -28,7 +29,7 @@ const flowerLine = (product: EditProduct) =>
       </div>
       <div class="edit__intro">
         <p class="edit__lede">Red roses, soft pinks, a little colour or something with lilies. A few favourites to help you begin.</p>
-        <p class="edit__price-note">Starting bouquet prices. Delivery is quoted separately before you pay.</p>
+        <p class="edit__price-note">Choose your bouquets; we send the prices and availability on WhatsApp.</p>
       </div>
     </div>
 

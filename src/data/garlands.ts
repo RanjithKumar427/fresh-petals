@@ -26,6 +26,7 @@
 // enables checkout by itself: see isCartGarland.
 import drafts from "./garlandDrafts.json";
 import type { Product } from "./productCatalog";
+import { QUOTE_ONLY_PRICE_LABEL } from "../shared/quoteOnly";
 import { GARLAND_FILTER_LABELS, GARLAND_PREVIEW, formatGarlandPrice, isCartGarland, isListedGarland, type GarlandDesign, type GarlandOption } from "./garlandRules";
 import { loadGarlandRecords, type GarlandRecord } from "../server/services/GarlandCatalogue";
 
@@ -100,7 +101,29 @@ function fromRecord(base: GarlandDesign | undefined, record: GarlandRecord): Gar
 
 const catalogueDesigns = drafts.designs as GarlandDesign[];
 
+/**
+ * Garlands are quote-only (src/shared/quoteOnly.ts): the website's copy of a
+ * design carries no amount — neither its price nor an option's extra charge —
+ * so no page, enquiry or payload can show one. The database keeps both for
+ * the admin.
+ */
+function withoutAmounts<T extends GarlandDesign>(design: T): T {
+  return {
+    ...design,
+    price: null,
+    priceConfirmed: false,
+    options: design.options.map((option) => ({
+      ...option,
+      values: option.values?.map((value) => (typeof value === "string" ? value : { ...value, extraCharge: null })),
+    })),
+  };
+}
+
 async function mergedDesigns(fresh: boolean): Promise<(GarlandDesign & { updatedAt?: string })[]> {
+  return (await storedDesigns(fresh)).map(withoutAmounts);
+}
+
+async function storedDesigns(fresh: boolean): Promise<(GarlandDesign & { updatedAt?: string })[]> {
   const records = await loadGarlandRecords({ fresh });
   return [
     ...catalogueDesigns.map((design) => {
@@ -125,7 +148,7 @@ function toProduct(design: GarlandDesign): GarlandProduct {
     name: design.title,
     category: "Garlands",
     image: design.image.path,
-    priceLabel: price ?? "Price on request",
+    priceLabel: price ?? QUOTE_ONLY_PRICE_LABEL,
     priceType: price ? "fixed" : "quote",
     description: design.description || `${design.title} — design ${design.code}.`,
     longDescription:

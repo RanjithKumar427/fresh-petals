@@ -1,6 +1,7 @@
 ---
 import imageVariants from "../data/imageVariants.json";
 import { journeyHref, journeyLines, type Journey } from "../utils/journey";
+import { QUOTE_ONLY_CLOSING, isQuoteOnlyLabel } from "../shared/quoteOnly";
 
 type PriceType = "fixed" | "from" | "market" | "quote";
 
@@ -49,14 +50,21 @@ const srcset = variants
       .join(", ")
   : undefined;
 
+// Quote-only products (src/shared/quoteOnly.ts) arrive with the quote-only
+// label instead of an amount; their enquiry carries no price.
+const quoteOnly = isQuoteOnlyLabel(priceLabel);
 const defaultMessage = `Hi Fresh Petals, I want to order ${name}. Please confirm today's availability and price.`;
+const linkLine = slug ? `Link: ${Astro.site ? new URL(`/products/${slug}`, Astro.site) : `/products/${slug}`}` : "";
 
-const finalMessage = whatsappText || [defaultMessage, `Price: ${priceLabel}`, "Quantity: 1", slug ? `Link: ${Astro.site ? new URL(`/products/${slug}`, Astro.site) : `/products/${slug}`}` : "", ...journeyLines(journey)].filter(Boolean).join("\n");
+const finalMessage = whatsappText || (quoteOnly
+  ? [...[`Hi Fresh Petals, I'd like to enquire about ${name}.`, "Quantity: 1", linkLine, ...journeyLines(journey)].filter(Boolean), "", QUOTE_ONLY_CLOSING]
+  : [defaultMessage, `Price: ${priceLabel}`, "Quantity: 1", linkLine, ...journeyLines(journey)].filter(Boolean)).join("\n");
 
 const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(finalMessage)}`;
 
-const priceBadge =
-  priceType === "fixed"
+const priceBadge = quoteOnly
+  ? "WhatsApp quote"
+  : priceType === "fixed"
     ? "Fixed price"
     : priceType === "from"
       ? "Starting price"
@@ -200,6 +208,7 @@ const priceBadgeShort =
       data-whatsapp-number={whatsappNumber}
       data-whatsapp-product-name={name}
       data-whatsapp-price-label={priceLabel}
+      data-whatsapp-quote-only={quoteOnly ? "true" : undefined}
       class:list={[
         "fp-btn-whatsapp mt-2 inline-flex min-h-[44px] w-full items-center justify-center rounded-full px-2 py-2 text-center text-[10px] font-bold uppercase leading-tight tracking-[0.06em] shadow-[0_10px_22px_rgba(138,63,86,0.22)]",
         isAvailable
@@ -222,6 +231,7 @@ const priceBadgeShort =
 
 <script>
   import { addToCart } from "../utils/cart";
+  import { QUOTE_ONLY_CLOSING } from "../shared/quoteOnly";
   import { journeyFromParams, journeyLines } from "../utils/journey";
   const contextFor = (element: Element) => { const link = element.closest("article")?.querySelector<HTMLAnchorElement>("[data-journey-link]"); return link ? journeyFromParams(new URL(link.href).searchParams) : null; };
   import { getSelectedArea, AREA_UPDATED_EVENT } from "../utils/area";
@@ -301,6 +311,12 @@ const priceBadgeShort =
 
       const journey = contextFor(link);
       const productLink = link.closest("article")?.querySelector<HTMLAnchorElement>("[data-journey-link]");
+      const linkLine = productLink ? `Link: ${location.origin}${new URL(productLink.href).pathname}` : "";
+      if (link.dataset.whatsappQuoteOnly === "true") {
+        const lines = [`Hi Fresh Petals, I'd like to enquire about ${productName}.`, "Quantity: 1", linkLine, ...journeyLines(journey), area ? `Delivery area: ${area}` : ""].filter(Boolean);
+        link.href = `https://wa.me/${number}?text=${encodeURIComponent([...lines, "", QUOTE_ONLY_CLOSING].join("\n"))}`;
+        return;
+      }
       const base = area
         ? [
             "FreshPetals Order Request 🌸",

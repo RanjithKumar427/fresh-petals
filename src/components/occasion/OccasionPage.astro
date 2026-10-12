@@ -2,7 +2,7 @@
 // One occasion landing page (docs/occasion-journeys.md). Rendered by the
 // prebuilt route for the older occasion pages and by the live route for
 // launch occasions, whose products come from the admin's assignments.
-import { parseShopFilters, matchesShopFilters, shopFilterUrl, countShopFacets } from "../../utils/shopFilters";
+import { parseShopFilters, withoutUnpricedBudget, matchesShopFilters, shopFilterUrl, countShopFacets } from "../../utils/shopFilters";
 import { makeJourney } from "../../utils/journey";
 import { shopItemData } from "../../data/occasionJourneys";
 import BaseLayout from "../../layouts/BaseLayout.astro";
@@ -57,7 +57,7 @@ const ceremony = journey.kind === "ceremony" && journey.intents;
 // Live public ceremony designs are rendered in HTML too, with the same
 // suitability routes and gates used by shortcuts. Drafts stay private.
 const ceremonyDesigns = GARLAND_OCCASION_ROUTES.has(occasion.slug) ? (await loadGarlands()).filter((product) => isListedGarland(product.garland) && product.occasionTags?.includes(occasion.slug)) : [];
-const filters = parseShopFilters(Astro.url.searchParams);
+const filters = withoutUnpricedBudget(parseShopFilters(Astro.url.searchParams), [...products, ...ceremonyDesigns].map((product) => shopItemData(product)));
 const giftSelected = !ceremony || filters.intent === "gift";
 const selectedProducts = giftSelected ? products : ceremonyDesigns;
 const selectedPurpose = giftSelected ? "gift" : "ceremony";

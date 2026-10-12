@@ -9,7 +9,7 @@ import type { Product } from "../../data/productCatalog";
 import LandingDetails from "../LandingDetails.astro";
 import { CATEGORY_LANDING, NOINDEX_CATEGORY_SLUGS, lowestPrice } from "../../data/seoLanding";
 import ShopFilters from "../occasion/ShopFilters.astro";
-import { parseShopFilters, matchesShopFilters, shopFilterUrl, countShopFacets } from "../../utils/shopFilters";
+import { parseShopFilters, withoutUnpricedBudget, matchesShopFilters, shopFilterUrl, countShopFacets } from "../../utils/shopFilters";
 import { makeJourney } from "../../utils/journey";
 import { whatsappLink } from "../../config/storefront";
 import { filterGroups, shopItemData, type Membership } from "../../data/occasionJourneys";
@@ -54,7 +54,7 @@ const noindex = products.length === 0 || NOINDEX_CATEGORY_SLUGS.has(category.slu
 // Launch categories (bouquets) can be narrowed by occasion, budget and
 // colour — derived from the products, shown only when they divide the list
 // (src/data/occasionJourneys.ts). Shareable: ?occasion=…&budget=…&colour=….
-const filters = groups.length ? parseShopFilters(Astro.url.searchParams) : parseShopFilters(new URLSearchParams());
+const filters = withoutUnpricedBudget(groups.length ? parseShopFilters(Astro.url.searchParams) : parseShopFilters(new URLSearchParams()), products.map((product) => shopItemData(product)));
 const shopGroups = groups.length > 0 ? filterGroups(products, ["occasion", "budget", "colour"], { allOccasions: true, selected: filters }) : [];
 const matches = (product: Product) => matchesShopFilters(shopItemData(product), filters);
 const shown = products.filter(matches).length;

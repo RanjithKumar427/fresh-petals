@@ -47,7 +47,7 @@ const breadcrumbJsonLd = {
     <header class="occ-index__head">
       <p class="occ-index__eyebrow">Occasions · Bengaluru</p>
       <h1 class="occ-index__title">What are the flowers for?</h1>
-      <p class="occ-index__lede">Pick the occasion. Where we have flowers listed you'll see them with prices; otherwise tell us on WhatsApp and we'll reply with options.</p>
+      <p class="occ-index__lede">Pick the occasion. Where we have flowers listed you can choose them and ask for the price on WhatsApp; otherwise tell us what you need and we'll reply with options.</p>
       <p class="occ-index__skip">
         <a href="/search">Know the design or code? Search</a>
         {underBudget > 0 && <a href="/categories/bouquets?budget=under-1500">Bouquets under ₹1,500 ({underBudget})</a>}
@@ -63,7 +63,7 @@ const breadcrumbJsonLd = {
               <a class="need__link" href={need.href}>
                 <span class="need__name">{need.need}</span>
                 <span class="need__note">{need.note}</span>
-                {need.count > 0 && <span class="need__count">{need.count} {need.count === 1 ? "bouquet" : "bouquets"} with prices</span>}
+                {need.count > 0 && <span class="need__count">{need.count} {need.count === 1 ? "bouquet" : "bouquets"}</span>}
               </a>
             ) : (
               <a class="need__link need__link--ask" href={whatsappLink(journeyEnquiryText(need.enquiry))} target="_blank" rel="noopener noreferrer" data-whatsapp-enquiry>

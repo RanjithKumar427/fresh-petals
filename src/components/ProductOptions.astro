@@ -15,6 +15,7 @@
 import { DELIVERY_METHOD_OPTIONS } from "../server/services/delivery/DeliveryService";
 import { productCatalog, type Product } from "../data/productCatalog";
 import { loadAuthoritativePrices, withAuthoritativePrice } from "../server/services/ProductPricing";
+import { isQuoteOnly } from "../shared/quoteOnly";
 
 type Props = {
   product: Product;
@@ -24,6 +25,9 @@ type Props = {
 const { product, occasionOptions = [] } = Astro.props;
 
 const whatsappNumber = "919652012274";
+// Quote-only products (src/shared/quoteOnly.ts): no amount for the product
+// or for the add-ons chosen with it.
+const quoteOnly = isQuoteOnly(product);
 
 // Add-ons are catalogue products; each shows its published price (or the
 // catalogue's own wording where the price is quoted), like its own page.
@@ -37,7 +41,7 @@ const ADD_ON_SLUGS: [string, string][] = [
 const addOnPrices = await loadAuthoritativePrices();
 const addOns = ADD_ON_SLUGS.flatMap(([id, name]) => {
   const item = productCatalog.find((entry) => entry.slug === id);
-  return item ? [{ id, name, priceLabel: withAuthoritativePrice(item, addOnPrices).priceLabel }] : [];
+  return item ? [{ id, name, priceLabel: quoteOnly ? "" : withAuthoritativePrice(item, addOnPrices).priceLabel }] : [];
 });
 
 // P0.1 content containment: two of the four card options were removed
@@ -296,9 +300,11 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
                   <span class="block text-sm font-semibold text-ink">
                     {addOn.name}
                   </span>
-                  <span class="block text-xs text-moss">
-                    {addOn.priceLabel}
-                  </span>
+                  {addOn.priceLabel && (
+                    <span class="block text-xs text-moss">
+                      {addOn.priceLabel}
+                    </span>
+                  )}
                 </span>
               </label>
             ))
@@ -438,6 +444,7 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
 
 <script>
   import { addToCart } from "../utils/cart";
+  import { QUOTE_ONLY_CLOSING, isQuoteOnly } from "../shared/quoteOnly";
   import { getSelectedArea, AREA_UPDATED_EVENT } from "../utils/area";
   import { checkDeliveryMethod } from "../utils/deliveryCheck";
   import { journeyLines, readJourney, makeJourney, journeyHref } from "../utils/journey";
@@ -585,7 +592,19 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
 
     const area = getSelectedArea();
 
-    const message = area
+    const quoteLines = [
+      `Hi Fresh Petals, I'd like to enquire about ${meta.name}.`,
+      "Quantity: 1",
+      `Link: ${productUrl(meta.slug)}`,
+      ...journeyLines(currentJourney()),
+      ...(area ? [`Delivery area: ${area}`] : []),
+      "",
+      QUOTE_ONLY_CLOSING,
+    ].join("\n");
+
+    const message = isQuoteOnly(meta)
+      ? quoteLines
+      : area
       ? [
           "FreshPetals Order Request 🌸",
           "",
@@ -892,9 +911,10 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
     // seconds or minutes ago, and availability may have changed since.
     const deliveryResult = await checkDeliveryMethod(pincode, deliveryDate, method);
 
+    const quoteOnly = isQuoteOnly(meta);
     const addOnsText =
       addOns.length > 0
-        ? addOns.map((addOn) => `- ${addOn.name} (${addOn.priceLabel})`).join("\n")
+        ? addOns.map((addOn) => `- ${addOn.name}${!quoteOnly && addOn.priceLabel ? ` (${addOn.priceLabel})` : ""}`).join("\n")
         : "None";
 
     const deliveryLines = deliveryResult.available
@@ -902,18 +922,18 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
           `Area: ${deliveryResult.area}`,
           `Delivery Option: ${deliveryResult.label}`,
           `Promise: ${deliveryResult.promise}`,
-          `Delivery Fee: ₹${deliveryResult.fee}`,
+          ...(quoteOnly ? [] : [`Delivery Fee: ₹${deliveryResult.fee}`]),
         ]
       : [`Status: ${deliveryResult.reason}`];
 
     const whatsappMessage = [
-      "FreshPetals Order Request 🌸",
+      quoteOnly ? "FreshPetals Price Request 🌸" : "FreshPetals Order Request 🌸",
       "",
-      "This is a request, not a confirmed order — please confirm availability, final price, delivery fee and payment details.",
+      quoteOnly ? "This is a request, not a confirmed order." : "This is a request, not a confirmed order — please confirm availability, final price, delivery fee and payment details.",
       "",
       "PRODUCT",
       meta.name,
-      `Price: ${meta.priceLabel}`,
+      quoteOnly ? "Quantity: 1" : `Price: ${meta.priceLabel}`,
       `Link: ${productUrl(meta.slug)}`,
       "",
       "DELIVERY",
@@ -934,7 +954,7 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
       "",
       `Message: ${message || "None"}`,
       "",
-      "Please confirm availability, final price, delivery fee and payment details.",
+      quoteOnly ? QUOTE_ONLY_CLOSING : "Please confirm availability, final price, delivery fee and payment details.",
     ].join("\n");
 
     window.open(`https://wa.me/${meta.whatsappNumber}?text=${encodeURIComponent(whatsappMessage)}`, "_blank");

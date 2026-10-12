@@ -1,6 +1,6 @@
 import type { APIRoute } from "astro";
 import { findGarlandByCode } from "../data/garlands";
-import { formatGarlandPrice, optionValues } from "../data/garlandRules";
+import { optionValues } from "../data/garlandRules";
 import { whatsappLink } from "../config/storefront";
 import { garlandEnquiryText } from "../utils/garlandEnquiry";
 import { OCCASION_JOURNEYS } from "../data/occasionJourneys";
@@ -9,8 +9,8 @@ import { OCCASION_JOURNEYS } from "../data/occasionJourneys";
 // WhatsApp" button. Never cached: it reads the database at the moment of the
 // enquiry, so an unpublished garland can't be enquired about even from a page
 // a cache is still holding. The WhatsApp message is built here from the saved
-// details (title, listed price, sold unit), using only option choices that
-// exist for the design. No price is multiplied into a total.
+// details (title, sold unit), using only option choices that exist for the
+// design. Garlands are quote-only: the message carries no amount.
 export const prerender = false;
 
 const NO_STORE = { "cache-control": "no-store", "x-robots-tag": "noindex" };
@@ -34,7 +34,7 @@ export const GET: APIRoute = async ({ url, site, redirect }) => {
     .getAll("opt")
     .map((raw) => known.get(raw))
     .filter((entry): entry is NonNullable<typeof entry> => !!entry)
-    .map(({ option, value }) => `${option}: ${value.label}${value.extraCharge ? ` (+₹${value.extraCharge.toLocaleString("en-IN")})` : ""}`);
+    .map(({ option, value }) => `${option}: ${value.label}`);
 
   const pageUrl = new URL(`/products/${garland.slug}`, site ?? url).toString();
   // Occasion and intent from the page the shopper came from — only known
@@ -45,7 +45,6 @@ export const GET: APIRoute = async ({ url, site, redirect }) => {
   const text = garlandEnquiryText({
     code: design.code,
     title: design.title,
-    price: formatGarlandPrice(design),
     unit: design.soldUnit,
     quantity,
     options: [...new Set(chosen)],
