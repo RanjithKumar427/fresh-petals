@@ -73,9 +73,18 @@ export function optionValues(option: GarlandOption): GarlandOptionValue[] {
   return (option.values ?? []).map((value) => (typeof value === "string" ? { label: value, extraCharge: null } : value));
 }
 
-/** Public: published, photo permission granted and the sample verified. */
+/**
+ * Whether a made sample must be verified before a design in this selling mode
+ * can be public. Made-to-order WhatsApp enquiry designs are confirmed with the
+ * customer before anything is made, so their sample check is optional; every
+ * other mode (the cart) still needs it. The server, the editor and the
+ * storefront all use this one rule.
+ */
+export const garlandSampleRequired = (sellingMode: string | null | undefined) => sellingMode !== "enquiry";
+
+/** Public: published, photo permission granted and — unless it is a WhatsApp enquiry design — the sample verified. */
 export const isPublicGarland = (design: GarlandDesign) =>
-  design.published === true && design.photoPermission === "granted" && design.sampleVerified === true;
+  design.published === true && design.photoPermission === "granted" && (design.sampleVerified === true || !garlandSampleRequired(design.sellingMode));
 
 /** A price the owner has set and confirmed (shown to customers). */
 export const hasConfirmedPrice = (design: GarlandDesign) =>

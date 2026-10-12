@@ -1,6 +1,6 @@
 # Garlands / Poola Mala
 
-**156 draft garland designs, FP-G001–FP-G156,** are in the production database and managed in the admin (released 6 October 2026 — see "Production rollout record"). None of them is public yet: none has photo permission or a verified sample.
+**156 garland designs, FP-G001–FP-G156,** are in the production database and managed in the admin (released 6 October 2026 — see "Production rollout record"). **All 156 are public since 12 October 2026** (see "Launch record"): the owner confirmed the photographs are their own, and the designs are made to order through WhatsApp enquiry. No sample is recorded as verified.
 
 - **FP-G001–FP-G025** are the original shortlist. Their records were not changed by the full-catalogue expansion.
 - **FP-G026–FP-G156** (131 designs) were added on 5 October 2026 from a review of every photo in the four supplier catalogues (197 photo entries, 183 distinct photos).
@@ -84,11 +84,16 @@ Garlands are ordinary products in the admin, edited with the bouquet editor:
 
 **Protected identity.** The design code, the URL and the Garlands category can't be changed, and garlands can't be duplicated or deleted (archive instead). The database refuses a design-code change too.
 
-**Publishing.** A garland publishes only with a name, a photo, a price or "Price on request", photo permission **granted** and the sample **verified**. While a garland is published, its permission and verification can't be withdrawn (unpublish first).
+**Publishing.** A garland publishes only with a name, a photo, a price or "Price on request" and photo permission **granted**. Sample verification depends on how it is sold (one rule, `garlandSampleRequired` in `src/data/garlandRules.ts`, used by the server, the editor and the storefront):
+
+- **WhatsApp enquiry (made to order):** the sample check is optional. Tick it only when a sample really has been made.
+- **Cart mode:** the sample must be **verified**, as before.
+
+While a garland is published, its photo permission can't be withdrawn, and it can't be switched to cart mode without a verified sample (unpublish first).
 
 **Selling.** Garlands stay in WhatsApp enquiry mode. Cart mode needs a fixed price **and** "Ready for sale". Once "Sold as" is set, WhatsApp messages state quantities in that unit (e.g. "Quantity: 2 pairs", "Listed price: ₹6,500 per pair"). No totals are calculated.
 
-**When changes appear.** Straight away — see the next section. A design appears publicly only when it's published, approved (photo permission granted, sample verified) and its main photo is in image storage. **Unpublish** (or Archive) takes it off the website.
+**When changes appear.** Straight away — see the next section. A design appears publicly only when it's published, approved (photo permission granted; sample verified too for cart mode) and its main photo is in image storage. **Unpublish** (or Archive) takes it off the website.
 
 ## How admin changes reach the website
 
@@ -99,7 +104,7 @@ No deployment is needed for garland changes: prices, details, options, photos, f
 - **Refreshed on save.** When a save, publish, unpublish or archive affects a garland that is (or was) public, the server deletes everything tagged `garlands` from the CDN (`dangerouslyDeleteByTag` from `@vercel/functions`). The next visitor gets the saved version — normally within seconds.
 - **If the refresh fails,** nothing is lost: the change is saved, and the old version is served for **at most 3 minutes** (2 + 1) before it expires on its own. The editor says so and offers **Refresh website** to retry.
 - **Enquiries are checked live.** Every "Enquire / Ask for a quote on WhatsApp" button goes through `/garland-enquiry`, which is never cached. It reads the database at that moment, so an unpublished design can't be enquired about even from a page a cache is still holding. It also builds the WhatsApp message from the saved title, price and unit, keeping only option choices that exist for the design.
-- **Validation unchanged.** Saves still go through the same checks: price validation, publish blockers (photo permission granted, sample verified, a photo, a price or "Price on request"), approvals that can't be withdrawn while published.
+- **Validation unchanged.** Saves still go through the same checks: price validation, publish blockers (photo permission granted, sample verified for cart mode, a photo, a price or "Price on request"), approvals that can't be withdrawn while published.
 
 **What the editor shows.** For garlands the editor has two separate indicators:
 
@@ -223,6 +228,20 @@ Prefer reverting the deployment over touching the database. The database changes
 | Verified live | 58/58 route, header, admin-refusal and mobile/desktop page checks; bouquet journey 15/15, quote/cart 5/5, options 4/4 with enquiries blocked (enquiry count unchanged at 7). CDN: garland routes MISS → HIT (40–60 ms), uncached renders ~1 s (functions in iad1, database in Seoul; first cold render ~4 s). Expiry observed on `/categories/garlands`: HIT until age 119 s, STALE at 122 s, fresh copy (age 12 s) on the next request. |
 | Not yet verified | The purge path and the editor's Website bar on production (needs the owner signed in with two-step verification, and a published design), and therefore the observed refresh time after an admin save. |
 | Type check | 20 errors, all type-only and outside garland code: 15 already in production's code (`SubscriptionConfigurator`, which had 53 errors in total), 4 from the earlier unpushed commits (`DiscoveryPostCard`), 1 from the earlier admin pass (`MobileBottomBar`). |
+
+## Launch record (12 October 2026)
+
+| Step | Result |
+|---|---|
+| Owner confirmation | The owner confirmed that all 156 mapped photographs are their own and may be published, and that the designs are sold made to order through WhatsApp enquiry. |
+| Photo permission | Recorded as **granted** on FP-G001–FP-G156. `sample_verified` left **false** on all 156 — no sample is recorded as made. |
+| Photos | `scripts/migrate-garland-images.mjs`: dry run (156 to attach), then `--apply`. 156 main photos uploaded to the `media` bucket, `products/` folder, one primary photo per design; each stored file checked byte-for-byte against its mapped local file. No gallery photos: the 20 alternate views are still provisional. |
+| Rule change | Sample verification is optional for WhatsApp enquiry designs and still required for cart mode (see "Publishing"). |
+| Publication | All 156 published through `ProductService.setStatus` (the existing publish gate): 0 blocked. Prices (₹5,000), design codes, URLs, descriptions, filters and enquiry mode unchanged. The other 89 products untouched. |
+| Menus | `ready: true` on the garlands entry in `src/data/launchCatalogue.ts`. |
+| Still unrecorded | Per design: single or pair, length, exact flowers, finish, preparation time, substitutions (shown as "To be confirmed on WhatsApp"); filters come from the photographs; delivery area for garlands. The photo-quality notes under "Information needed before publication" still apply as improvements. |
+
+The uploaded photos live only in the Supabase `media` bucket — see "Protecting images".
 
 ## Bouquets: known limitation (unchanged)
 

@@ -129,7 +129,7 @@ export default function GarlandDetailsSection({ draft, onChange }: Props) {
         </div>
 
         <div className="rounded-xl border border-[#EEE5E8] p-4">
-          <p className="fp-label text-[10px] text-[#66565D]">Approvals (required to publish)</p>
+          <p className="fp-label text-[10px] text-[#66565D]">Approvals</p>
           <FormField label="Photo permission" htmlFor="garland-photoPermission" hint="Permission to publish these photos, or 'Granted' once you use your own.">
             <select
               id="garland-photoPermission"
@@ -146,6 +146,10 @@ export default function GarlandDetailsSection({ draft, onChange }: Props) {
             <input id="garland-sampleVerified" type="checkbox" checked={garland.sampleVerified} onChange={(event) => update({ sampleVerified: event.target.checked })} />
             A sample has been made and checked
           </label>
+          <p className="mt-1 text-[12px] text-[#9B948F]">
+            Photo permission is needed to publish. The sample check is optional for made-to-order WhatsApp enquiry designs and required for cart mode — tick it only
+            when a sample really has been made.
+          </p>
         </div>
       </div>
     </section>

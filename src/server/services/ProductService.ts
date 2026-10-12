@@ -10,6 +10,7 @@ import { CategoryService } from "./CategoryService";
 import { productInputSchema } from "../validation/productSchema";
 import { slugify } from "../utils/slugify";
 import { ok, fail, zodFieldErrors, type ServiceResult } from "./result";
+import { garlandSampleRequired } from "../../data/garlandRules";
 
 /** Appends -2, -3, ... until a slug that isn't already taken is found (optionally ignoring one product's own row). */
 async function uniqueSlug(base: string, excludeId?: number): Promise<string> {
@@ -49,13 +50,14 @@ export async function getPublishBlockers(product: Product): Promise<string[]> {
   }
 
   // Garlands keep their publication approval rules (see src/data/garlandRules.ts):
-  // published, photo permission granted and the sample verified.
+  // published, photo permission granted and — except for WhatsApp enquiry
+  // designs, which are made to order — the sample verified.
   if (product.garland) {
     if (product.garland.photoPermission !== "granted") {
       blockers.push("Record photo-publication permission (or use your own photographs) before publishing this garland.");
     }
-    if (!product.garland.sampleVerified) {
-      blockers.push("Verify a made sample of this garland before publishing it.");
+    if (garlandSampleRequired(product.garland.sellingMode) && !product.garland.sampleVerified) {
+      blockers.push("Verify a made sample of this garland before publishing it in cart mode.");
     }
     if (product.garland.sellingMode === "cart" && (!product.garland.readyForSale || product.priceType !== "fixed" || !product.sellingPrice)) {
       blockers.push("Cart mode needs a fixed price and 'Ready for sale' — or switch back to WhatsApp enquiry.");
@@ -201,12 +203,17 @@ export const ProductService = {
     }
 
     // A published garland must keep meeting its approval rules: an edit that
-    // withdraws photo permission or sample verification is refused until the
-    // design is unpublished first.
+    // withdraws photo permission — or leaves a cart design without a verified
+    // sample — is refused until the design is unpublished first.
     if (existing.garland && existing.status === "published" && data.garland) {
-      if (data.garland.photoPermission !== "granted" || !data.garland.sampleVerified) {
-        return fail("This garland is published. Move it back to draft before withdrawing photo permission or sample verification.", {
+      if (data.garland.photoPermission !== "granted") {
+        return fail("This garland is published. Move it back to draft before withdrawing photo permission.", {
           photoPermission: "Unpublish first.",
+        });
+      }
+      if (garlandSampleRequired(data.garland.sellingMode) && !data.garland.sampleVerified) {
+        return fail("This garland is published. Cart mode needs a verified sample — verify one, keep WhatsApp enquiry, or move it back to draft first.", {
+          sellingMode: "Cart mode needs a verified sample.",
         });
       }
     }

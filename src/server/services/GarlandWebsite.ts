@@ -15,6 +15,7 @@
 //      purge hook. Also used by the local test harness.
 //   3. Neither (local development): there is no shared cache to purge.
 import { dangerouslyDeleteByTag } from "@vercel/functions";
+import { garlandSampleRequired } from "../../data/garlandRules";
 
 export const GARLAND_CACHE_TAG = "garlands";
 const S_MAXAGE = 120;
@@ -127,7 +128,7 @@ type GarlandLike = {
   status: string;
   updatedAt: string;
   images: unknown[];
-  garland: { photoPermission: string; sampleVerified: boolean } | null;
+  garland: { photoPermission: string; sampleVerified: boolean; sellingMode: string } | null;
 };
 
 /** What an admin save did to the website, returned alongside the saved product. */
@@ -237,17 +238,17 @@ export async function checkGarlandOnWebsite(product: GarlandLike, origin: string
   }
 }
 
-/** A garland is on the public website: published, photo permission granted, sample verified, and a stored photo. */
+/** A garland is on the public website: published, photo permission granted, sample verified (cart designs only), and a stored photo. */
 export function isPublicGarlandRecord(product: {
   status: string;
   images: unknown[];
-  garland: { photoPermission: string; sampleVerified: boolean } | null;
+  garland: { photoPermission: string; sampleVerified: boolean; sellingMode: string } | null;
 }): boolean {
   return (
     !!product.garland &&
     product.status === "published" &&
     product.garland.photoPermission === "granted" &&
-    product.garland.sampleVerified === true &&
+    (product.garland.sampleVerified === true || !garlandSampleRequired(product.garland.sellingMode)) &&
     product.images.length > 0
   );
 }
@@ -256,12 +257,12 @@ export function isPublicGarlandRecord(product: {
 export function hiddenReason(product: {
   status: string;
   images: unknown[];
-  garland: { photoPermission: string; sampleVerified: boolean } | null;
+  garland: { photoPermission: string; sampleVerified: boolean; sellingMode: string } | null;
 }): string {
   if (product.status === "archived") return "archived";
   if (product.status !== "published") return "draft — publish to show it";
   if (product.garland?.photoPermission !== "granted") return "photo permission not granted";
-  if (!product.garland?.sampleVerified) return "sample not verified";
+  if (!product.garland?.sampleVerified && garlandSampleRequired(product.garland?.sellingMode)) return "sample not verified (needed for cart mode)";
   if (product.images.length === 0) return "no photo";
   return "not public";
 }

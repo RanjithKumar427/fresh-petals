@@ -72,6 +72,19 @@ test('ceremony suitability uses supported routes and every public product gate',
   assert.equal(journeys.ceremonyProducts('housewarming', [design]).length, 0);
   for (const [field, value] of [['published', false], ['archived', true], ['photoPermission', 'unconfirmed'], ['sampleVerified', false], ['hasStoredPhoto', false]]) assert.equal(journeys.ceremonyProducts('wedding', [{ ...design, [field]: value }]).length, 0);
 });
+test('sample verification is optional for WhatsApp enquiry garlands only; cart mode still needs it', () => {
+  const { isListedGarland, garlandSampleRequired } = load('src/data/garlandRules.ts');
+  const design = { published: true, archived: false, photoPermission: 'granted', sampleVerified: false, hasStoredPhoto: true, sellingMode: 'enquiry' };
+  assert.equal(garlandSampleRequired('enquiry'), false);
+  assert.equal(garlandSampleRequired('cart'), true);
+  assert.equal(garlandSampleRequired(undefined), true);
+  assert.equal(isListedGarland(design), true);
+  assert.equal(isListedGarland({ ...design, sellingMode: 'cart' }), false);
+  assert.equal(isListedGarland({ ...design, sellingMode: 'cart', sampleVerified: true }), true);
+  for (const [field, value] of [['published', false], ['archived', true], ['photoPermission', 'unconfirmed'], ['photoPermission', 'refused'], ['hasStoredPhoto', false]]) assert.equal(isListedGarland({ ...design, [field]: value }), false);
+  assert.equal(journeys.ceremonyProducts('wedding', [{ ...design, occasionTags: ['wedding'] }]).length, 1);
+  for (const file of ['src/server/services/ProductService.ts', 'src/server/services/GarlandWebsite.ts', 'src/features/admin/productEditor/publishReadiness.ts', 'src/features/admin/productEditor/completion.ts']) assert(readFileSync(file, 'utf8').includes('garlandSampleRequired('), file);
+});
 test('156 original draft garlands remain private', () => {
   const designs = JSON.parse(readFileSync('src/data/garlandDrafts.json', 'utf8')).designs;
   const { isListedGarland, isCartGarland } = load('src/data/garlandRules.ts');
