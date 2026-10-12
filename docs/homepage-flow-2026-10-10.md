@@ -5,9 +5,17 @@ selection before the occasion carousel; the bouquet category keeps the full rang
 
 1. Factual delivery strip and compact homepage header. On phones: menu, centred
    wordmark and basket; the menu retains every existing destination.
-2. Existing real-photo hero, with Birthday, Anniversary and price-filter shortcuts.
-   Occasion shortcuts still follow admin assignments; the budget shortcut uses
-   the existing published-price filter.
+2. Full-width campaign hero (12 October 2026, `HeroAtelier.astro`): three
+   campaign photographs — bouquets, wedding garlands, pooja flowers — with HTML
+   copy over the open left side, two small photo prints linking to the other
+   campaigns, hand-drawn SVG accents, light pointer/scroll parallax, and an ivory
+   shortcut strip across the hero's lower edge. Slides and destinations are
+   `getHeroCampaigns` in `src/data/atelierHome.ts`; the photographs are campaign
+   imagery, so none carries a product name or price. Originals are in
+   `src/assets/hero/`; `node scripts/hero-campaign-images.mjs` writes the
+   AVIF/WebP sizes to `public/images/hero/`. The garland slide and every garland
+   button appear only while garlands are public. Strip shortcuts still follow
+   admin assignments; the budget shortcut uses the existing published-price filter.
 3. Four featured bouquets: Red Affair, Timeless Hug, Colourful Confession and
    Blush Lily Letter. Equal portrait cards, two columns on phones/tablets and
    four on desktop, with the existing basket action. The view-all count comes

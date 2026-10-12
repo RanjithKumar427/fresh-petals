@@ -161,7 +161,7 @@ const priceBadgeShort =
       {description}
     </p>
 
-    <p class="mt-4 text-[14px] font-bold text-berry">
+    <p class="mt-4 text-[14px] font-bold text-ink">
       {priceLabel}
     </p>
 
@@ -181,16 +181,16 @@ const priceBadgeShort =
         class:list={[
           "mt-1 inline-flex min-h-[44px] w-full items-center justify-center rounded-full border px-2 py-2 text-center text-[10px] font-bold uppercase leading-tight tracking-[0.06em] transition active:scale-95",
           isAvailable
-            ? "border-line-strong text-ink hover:border-berry hover:text-berry"
-            : "pointer-events-none border-line text-sage",
+            ? "border-berry bg-berry text-white hover:border-berry-deep hover:bg-berry-deep"
+            : "pointer-events-none border-line text-sage-deep",
         ]}
       >
         {isAvailable ? "Add to basket" : "Closed"}
       </button>
 
-    <!-- "Enquire on WhatsApp" is the direct single-bouquet enquiry, so it
-         stays the one solid-filled button on the card; "Add to basket"
-         (for several bouquets) is outline-only. -->
+    <!-- "Enquire on WhatsApp" is the direct single-bouquet enquiry and
+         "Add to basket" collects several bouquets; both are primary
+         actions, so both are Deep Rose with white lettering. -->
     <a
       href={whatsappUrl}
       target="_blank"
@@ -201,9 +201,9 @@ const priceBadgeShort =
       data-whatsapp-product-name={name}
       data-whatsapp-price-label={priceLabel}
       class:list={[
-        "fp-btn-whatsapp mt-2 inline-flex min-h-[44px] w-full items-center justify-center rounded-full px-2 py-2 text-center text-[10px] font-bold uppercase leading-tight tracking-[0.06em] shadow-[0_10px_22px_rgba(7,88,56,0.22)]",
+        "fp-btn-whatsapp mt-2 inline-flex min-h-[44px] w-full items-center justify-center rounded-full px-2 py-2 text-center text-[10px] font-bold uppercase leading-tight tracking-[0.06em] shadow-[0_10px_22px_rgba(138,63,86,0.22)]",
         isAvailable
-          ? "bg-ink text-white hover:bg-berry"
+          ? "bg-berry text-white hover:bg-berry-deep"
           : "pointer-events-none bg-linen text-moss",
       ]}
     >

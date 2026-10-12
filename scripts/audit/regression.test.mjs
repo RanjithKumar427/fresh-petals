@@ -203,3 +203,50 @@ test('Condolence lists public bouquets only; other older routes keep their wider
   assert.equal(journeys.occasionProductEligible('cloud-white', 'sympathy', []), false);
   assert.equal(journeys.occasionProductEligible('premium-card-addon', 'thank-you', ['thank-you']), true);
 });
+test('hero campaigns: three slides with real destinations; garland routes only while garlands are public; no product claims', () => {
+  const home = sourceLoader({ mocks: { 'src/server/services/ProductPricing.ts': { withAuthoritativePrice: (product) => product } } })('src/data/atelierHome.ts');
+  const slides = json(home.getHeroCampaigns({ garlandsPublic: true }));
+  assert.deepEqual(slides.map((slide) => slide.id), ['bouquets', 'garlands', 'pooja']);
+  assert.deepEqual(slides.map((slide) => [slide.primary.href, slide.secondary?.href]), [['/categories/bouquets', '/occasions'], ['/categories/garlands', '/custom-orders'], ['/custom-orders', '/categories/garlands']]);
+  assert.equal(slides[0].headline.before + slides[0].headline.accent + slides[0].headline.after, 'Flowers that feel as special as the moment.');
+  for (const slide of slides) {
+    // Campaign imagery: no price, no delivery promise, and every file exists.
+    assert.doesNotMatch(JSON.stringify([slide.headline, slide.text, slide.print.caption]), /₹|same-day|free delivery/i);
+    for (const picture of [slide.image, slide.print.image]) for (const entry of `${picture.avif}, ${picture.webp}`.split(', ')) assert.ok(readFileSync(`public${entry.split(' ')[0]}`).length > 0);
+    assert.equal(slide.image.width, 1672);
+    assert.equal(slide.image.height, 941);
+  }
+  const withoutGarlands = json(home.getHeroCampaigns({ garlandsPublic: false }));
+  assert.deepEqual(withoutGarlands.map((slide) => slide.id), ['bouquets', 'pooja']);
+  assert.ok(!JSON.stringify(withoutGarlands.map((slide) => [slide.primary, slide.secondary])).includes('/categories/garlands'));
+});
+test('hero banner: three distinct launch bouquets, each with its own photograph and supplied price', () => {
+  const home = sourceLoader({ mocks: {
+    'src/server/services/ProductPricing.ts': { withAuthoritativePrice: (product) => product },
+  } })('src/data/atelierHome.ts');
+  const range = load('src/data/launchCatalogue.ts').launchProducts().map((product, index) => ({ ...product, priceLabel: `From ₹${2100 + index}` }));
+  const slides = json(home.getHeroSlides(range));
+  assert.deepEqual(slides.map((slide) => slide.slug), ['timeless-hug', 'rose-promise', 'blush-lily-letter']);
+  assert.equal(new Set(slides.map((slide) => slide.image.src)).size, 3);
+  for (const slide of slides) {
+    const product = range.find((item) => item.slug === slide.slug);
+    // The caption is the photographed bouquet: its name, its price, its own image file.
+    assert.equal(slide.name, product.name);
+    assert.equal(slide.priceLabel, product.priceLabel);
+    assert.ok(slide.image.srcset.includes(product.image));
+    assert.ok(slide.image.width > 0 && slide.image.height > 0);
+  }
+  // A bouquet that leaves the range is replaced by another launch bouquet, never an invented one.
+  const without = range.filter((product) => product.slug !== 'rose-promise');
+  const replaced = json(home.getHeroSlides(without));
+  assert.equal(replaced.length, 3);
+  assert.ok(replaced.every((slide) => without.some((product) => product.slug === slide.slug)));
+  for (const count of [0, 1, 2]) assert.equal(home.getHeroSlides(range.slice(0, count)).length, count);
+  // The first slide is the bouquet the business check reads (scripts/audit/business.mjs).
+  assert.equal(home.getHeroPhoto().slug, slides[0].slug);
+  // Condolence is the one quiet card.
+  const membership = empty();
+  const launch = journeys.launchSlugs();
+  membership.set(launch[0], ['birthday', 'sympathy']);
+  assert.deepEqual(json(home.getOccasionCarousel(membership)).map((card) => [card.key, card.tone]), [['birthday', 'default'], ['sympathy', 'quiet']]);
+});

@@ -96,7 +96,7 @@ const flowerLine = (product: EditProduct) =>
 
 <style>
   .edit {
-    background: var(--color-paper);
+    background: var(--color-ivory);
     padding: clamp(2.75rem, 5vw, 5rem) clamp(16px, 4vw, 56px);
     scroll-margin-top: calc(var(--header-h) + 20px);
   }
@@ -151,13 +151,13 @@ const flowerLine = (product: EditProduct) =>
   .edit__name a { color: var(--color-ink); text-decoration: none; }
   .edit__name a:hover { text-decoration: underline; text-underline-offset: 0.15em; }
   .edit__flowers { min-height: 2.8em; margin: 0.25rem 0 0; color: var(--color-moss); font-size: 0.8125rem; line-height: 1.4; }
-  .edit__price { margin: 0.5rem 0 0; font-size: 1rem; color: var(--color-berry); }
+  .edit__price { margin: 0.5rem 0 0; font-size: 1rem; color: var(--color-ink); }
 
   .edit__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem 0.75rem; margin-top: auto; padding-top: 0.65rem; }
   .edit__view { display: inline-flex; align-items: center; justify-content: space-between; gap: 0.4rem; min-height: 44px; color: var(--color-ink); font-size: 0.8125rem; font-weight: 600; text-decoration: underline; text-underline-offset: 0.25em; }
-  .edit__add { display: none; justify-content: center; align-items: center; min-height: 44px; padding: 0.5rem 0.75rem; border: 1px solid var(--color-line); border-radius: 999px; background: transparent; color: var(--color-ink); font: inherit; font-size: 0.8125rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s, border-color 0.2s; }
+  .edit__add { display: none; justify-content: center; align-items: center; min-height: 44px; padding: 0.5rem 0.75rem; border: 1px solid var(--color-berry); border-radius: 999px; background: var(--color-berry); color: #ffffff; font: inherit; font-size: 0.8125rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s, border-color 0.2s; }
   :global(html.js) .edit__add { display: inline-flex; }
-  .edit__add:hover { border-color: var(--color-ink); background: var(--color-ivory); }
+  .edit__add:hover { border-color: var(--color-berry-deep); background: var(--color-berry-deep); }
   .edit__add.is-added { border-color: var(--color-ink); background: var(--color-ink); color: var(--color-ivory); }
 
   .edit__footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1.25rem 2rem; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--color-line); }

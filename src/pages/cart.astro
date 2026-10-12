@@ -34,7 +34,7 @@ const publishedPrices = Object.fromEntries(productCatalog.map((product) => [prod
   description="Review your Fresh Petals flower order cart and continue on WhatsApp."
   showCategoryCarousel={false}
 >
-  <main class="bg-paper">
+  <main class="bg-ivory">
     <section class="px-5 py-12 md:px-8 md:py-16">
       <div class="mx-auto max-w-5xl">
         <div class="mb-10 text-center">
@@ -90,7 +90,7 @@ const publishedPrices = Object.fromEntries(productCatalog.map((product) => [prod
                   type="text"
                   data-customer-name
                   placeholder="Your name"
-                  class="w-full rounded-full border border-line-strong bg-paper px-5 py-3 text-sm text-ink outline-none transition placeholder:text-sage focus:border-berry"
+                  class="w-full rounded-full border border-line-strong bg-paper px-5 py-3 text-sm text-ink outline-none transition placeholder:text-sage-deep focus:border-berry"
                 />
               </div>
 
@@ -103,7 +103,7 @@ const publishedPrices = Object.fromEntries(productCatalog.map((product) => [prod
                   type="tel"
                   data-customer-phone
                   placeholder="Your phone number"
-                  class="w-full rounded-full border border-line-strong bg-paper px-5 py-3 text-sm text-ink outline-none transition placeholder:text-sage focus:border-berry"
+                  class="w-full rounded-full border border-line-strong bg-paper px-5 py-3 text-sm text-ink outline-none transition placeholder:text-sage-deep focus:border-berry"
                 />
               </div>
 
@@ -118,7 +118,7 @@ const publishedPrices = Object.fromEntries(productCatalog.map((product) => [prod
                   maxlength="6"
                   data-customer-pincode
                   placeholder="6-digit pincode — optional"
-                  class="w-full rounded-full border border-line-strong bg-paper px-5 py-3 text-sm text-ink outline-none transition placeholder:text-sage focus:border-berry"
+                  class="w-full rounded-full border border-line-strong bg-paper px-5 py-3 text-sm text-ink outline-none transition placeholder:text-sage-deep focus:border-berry"
                 />
               </div>
 
@@ -163,7 +163,7 @@ const publishedPrices = Object.fromEntries(productCatalog.map((product) => [prod
                   rows="3"
                   data-customer-note
                   placeholder="Delivery address, preferred flowers, special instructions, etc."
-                  class="w-full rounded-[20px] border border-line-strong bg-paper px-5 py-3 text-sm text-ink outline-none transition placeholder:text-sage focus:border-berry"
+                  class="w-full rounded-[20px] border border-line-strong bg-paper px-5 py-3 text-sm text-ink outline-none transition placeholder:text-sage-deep focus:border-berry"
                 ></textarea>
               </div>
             </div>
@@ -187,7 +187,7 @@ const publishedPrices = Object.fromEntries(productCatalog.map((product) => [prod
                     type="text"
                     data-recipient-name
                     placeholder="Who should receive the flowers?"
-                    class="w-full rounded-full border border-line-strong bg-paper px-5 py-3 text-sm text-ink outline-none transition placeholder:text-sage focus:border-berry"
+                    class="w-full rounded-full border border-line-strong bg-paper px-5 py-3 text-sm text-ink outline-none transition placeholder:text-sage-deep focus:border-berry"
                   />
                 </div>
 
@@ -200,7 +200,7 @@ const publishedPrices = Object.fromEntries(productCatalog.map((product) => [prod
                     type="tel"
                     data-recipient-phone
                     placeholder="10-digit mobile number"
-                    class="w-full rounded-full border border-line-strong bg-paper px-5 py-3 text-sm text-ink outline-none transition placeholder:text-sage focus:border-berry"
+                    class="w-full rounded-full border border-line-strong bg-paper px-5 py-3 text-sm text-ink outline-none transition placeholder:text-sage-deep focus:border-berry"
                   />
                 </div>
 
@@ -213,7 +213,7 @@ const publishedPrices = Object.fromEntries(productCatalog.map((product) => [prod
                     type="text"
                     data-delivery-landmark
                     placeholder="Apartment, office, landmark, etc."
-                    class="w-full rounded-full border border-line-strong bg-paper px-5 py-3 text-sm text-ink outline-none transition placeholder:text-sage focus:border-berry"
+                    class="w-full rounded-full border border-line-strong bg-paper px-5 py-3 text-sm text-ink outline-none transition placeholder:text-sage-deep focus:border-berry"
                   />
                 </div>
 
@@ -246,7 +246,7 @@ const publishedPrices = Object.fromEntries(productCatalog.map((product) => [prod
                     data-occasion-other
                     placeholder="Short description of the occasion"
                     maxlength="80"
-                    class="w-full rounded-full border border-line-strong bg-paper px-5 py-3 text-sm text-ink outline-none transition placeholder:text-sage focus:border-berry"
+                    class="w-full rounded-full border border-line-strong bg-paper px-5 py-3 text-sm text-ink outline-none transition placeholder:text-sage-deep focus:border-berry"
                   />
                 </div>
               </div>
@@ -302,7 +302,7 @@ const publishedPrices = Object.fromEntries(productCatalog.map((product) => [prod
               <button
                 type="button"
                 data-send-cart-whatsapp
-                class="fp-btn-whatsapp inline-flex items-center justify-center rounded-full bg-ink px-7 py-4 text-[11px] font-bold uppercase tracking-[0.22em] text-white hover:bg-berry"
+                class="fp-btn-whatsapp inline-flex items-center justify-center rounded-full bg-berry px-7 py-4 text-[11px] font-bold uppercase tracking-[0.22em] text-white hover:bg-berry-deep"
               >
                 Send basket on WhatsApp
               </button>
@@ -779,7 +779,7 @@ const publishedPrices = Object.fromEntries(productCatalog.map((product) => [prod
               </h2>
             </a>
 
-            <p class="mt-2 text-sm font-bold text-berry">
+            <p class="mt-2 text-sm font-bold text-ink">
               ${escapeHtml(item.priceLabel)}
             </p>
 

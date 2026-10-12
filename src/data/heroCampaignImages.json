@@ -1,0 +1,104 @@
+{
+  "hero-bouquets": {
+    "width": 1672,
+    "height": 941,
+    "avif": {
+      "640": "/images/hero/hero-bouquets-640w.avif",
+      "960": "/images/hero/hero-bouquets-960w.avif",
+      "1280": "/images/hero/hero-bouquets-1280w.avif",
+      "1672": "/images/hero/hero-bouquets-1672w.avif"
+    },
+    "webp": {
+      "640": "/images/hero/hero-bouquets-640w.webp",
+      "960": "/images/hero/hero-bouquets-960w.webp",
+      "1280": "/images/hero/hero-bouquets-1280w.webp",
+      "1672": "/images/hero/hero-bouquets-1672w.webp"
+    },
+    "print": {
+      "width": 700,
+      "height": 840,
+      "crop": {
+        "left": 760,
+        "top": 30,
+        "width": 700,
+        "height": 840
+      },
+      "avif": {
+        "180": "/images/hero/hero-bouquets-print-180w.avif",
+        "360": "/images/hero/hero-bouquets-print-360w.avif"
+      },
+      "webp": {
+        "180": "/images/hero/hero-bouquets-print-180w.webp",
+        "360": "/images/hero/hero-bouquets-print-360w.webp"
+      }
+    }
+  },
+  "hero-garlands": {
+    "width": 1672,
+    "height": 941,
+    "avif": {
+      "640": "/images/hero/hero-garlands-640w.avif",
+      "960": "/images/hero/hero-garlands-960w.avif",
+      "1280": "/images/hero/hero-garlands-1280w.avif",
+      "1672": "/images/hero/hero-garlands-1672w.avif"
+    },
+    "webp": {
+      "640": "/images/hero/hero-garlands-640w.webp",
+      "960": "/images/hero/hero-garlands-960w.webp",
+      "1280": "/images/hero/hero-garlands-1280w.webp",
+      "1672": "/images/hero/hero-garlands-1672w.webp"
+    },
+    "print": {
+      "width": 640,
+      "height": 768,
+      "crop": {
+        "left": 860,
+        "top": 110,
+        "width": 640,
+        "height": 768
+      },
+      "avif": {
+        "180": "/images/hero/hero-garlands-print-180w.avif",
+        "360": "/images/hero/hero-garlands-print-360w.avif"
+      },
+      "webp": {
+        "180": "/images/hero/hero-garlands-print-180w.webp",
+        "360": "/images/hero/hero-garlands-print-360w.webp"
+      }
+    }
+  },
+  "hero-pooja": {
+    "width": 1672,
+    "height": 941,
+    "avif": {
+      "640": "/images/hero/hero-pooja-640w.avif",
+      "960": "/images/hero/hero-pooja-960w.avif",
+      "1280": "/images/hero/hero-pooja-1280w.avif",
+      "1672": "/images/hero/hero-pooja-1672w.avif"
+    },
+    "webp": {
+      "640": "/images/hero/hero-pooja-640w.webp",
+      "960": "/images/hero/hero-pooja-960w.webp",
+      "1280": "/images/hero/hero-pooja-1280w.webp",
+      "1672": "/images/hero/hero-pooja-1672w.webp"
+    },
+    "print": {
+      "width": 620,
+      "height": 744,
+      "crop": {
+        "left": 850,
+        "top": 190,
+        "width": 620,
+        "height": 744
+      },
+      "avif": {
+        "180": "/images/hero/hero-pooja-print-180w.avif",
+        "360": "/images/hero/hero-pooja-print-360w.avif"
+      },
+      "webp": {
+        "180": "/images/hero/hero-pooja-print-180w.webp",
+        "360": "/images/hero/hero-pooja-print-360w.webp"
+      }
+    }
+  }
+}

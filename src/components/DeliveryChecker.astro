@@ -58,7 +58,7 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
             placeholder="Enter pincode"
             aria-label="Enter delivery pincode"
             data-pincode-input
-            class="w-full rounded-full border border-line-strong bg-paper px-5 py-3 text-sm text-ink outline-none transition placeholder:text-sage focus:border-berry"
+            class="w-full rounded-full border border-line-strong bg-paper px-5 py-3 text-sm text-ink outline-none transition placeholder:text-sage-deep focus:border-berry"
           />
         </div>
 
@@ -122,14 +122,14 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
           placeholder="Example: Need it for birthday / pooja / gift note / preferred flowers"
           aria-label="Enter order note"
           data-note-input
-          class="w-full rounded-[20px] border border-line-strong bg-paper px-5 py-3 text-sm text-ink outline-none transition placeholder:text-sage focus:border-berry"
+          class="w-full rounded-[20px] border border-line-strong bg-paper px-5 py-3 text-sm text-ink outline-none transition placeholder:text-sage-deep focus:border-berry"
         ></textarea>
       </div>
 
       <button
         type="button"
         data-check-button
-        class="mt-5 rounded-full bg-ink px-6 py-3 text-[11px] font-bold uppercase tracking-[0.22em] text-white transition hover:bg-berry"
+        class="mt-5 rounded-full bg-berry px-6 py-3 text-[11px] font-bold uppercase tracking-[0.22em] text-white transition hover:bg-berry-deep"
       >
         Check Delivery
       </button>
@@ -149,7 +149,7 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
         target="_blank"
         rel="noopener noreferrer"
         data-whatsapp-order-button
-        class="mt-5 hidden w-full items-center justify-center rounded-full bg-ink px-6 py-4 text-[11px] font-bold uppercase tracking-[0.22em] text-white transition hover:bg-berry sm:w-auto"
+        class="mt-5 hidden w-full items-center justify-center rounded-full bg-berry px-6 py-4 text-[11px] font-bold uppercase tracking-[0.22em] text-white transition hover:bg-berry-deep sm:w-auto"
       >
         Continue on WhatsApp
       </a>
@@ -258,7 +258,7 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
 
               <div class="flex justify-between gap-4 border-b border-line pb-2">
                 <span>Price</span>
-                <strong class="text-right text-berry">${escapeHtml(priceLabel)}</strong>
+                <strong class="text-right text-ink">${escapeHtml(priceLabel)}</strong>
               </div>
 
               <div class="flex justify-between gap-4 border-b border-line pb-2">

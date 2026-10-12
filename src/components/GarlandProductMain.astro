@@ -111,14 +111,14 @@ const quoteLabel = price ? "Enquire on WhatsApp" : "Ask for a quote on WhatsApp"
       {
         price ? (
           <div class="mt-6">
-            <p class="text-2xl font-bold text-berry" data-garland-price>{price}</p>
+            <p class="text-2xl font-bold text-ink" data-garland-price>{price}</p>
             <p class="mt-2 text-sm leading-6 text-moss">
               Made to order. Anything listed below as “to be confirmed” is agreed with you on WhatsApp before you pay.
             </p>
           </div>
         ) : (
           <div class="mt-6">
-            <p class="text-2xl font-bold text-berry">Price on request</p>
+            <p class="text-2xl font-bold text-ink">Price on request</p>
             <p class="mt-2 text-sm leading-6 text-moss">
               Made to order. We confirm the flowers, length and price with you on WhatsApp before anything is made.
             </p>
@@ -192,7 +192,7 @@ const quoteLabel = price ? "Enquire on WhatsApp" : "Ask for a quote on WhatsApp"
               target="_blank"
               rel="noopener noreferrer"
               data-garland-quote={design.code}
-              class="mt-5 flex min-h-[48px] items-center justify-center rounded-full bg-berry px-6 text-sm font-semibold text-white transition hover:bg-ink"
+              class="mt-5 flex min-h-[48px] items-center justify-center rounded-full bg-berry px-6 text-sm font-semibold text-white transition hover:bg-berry-deep"
             >
               {quoteLabel}
             </a>

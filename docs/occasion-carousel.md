@@ -51,9 +51,17 @@ position (`src/pages/index.astro`, after the bouquet edit). Integrated on
 - Autoplay pauses on mouse hover, keyboard focus, a pressed pointer, a hidden
   tab and an off-screen section, and resumes when that ends. Pause stays
   paused until Play.
-- Desktop (1024px and up): centre 100%, neighbours 80%, outer cards 65%, with
-  dimming. Below 1024px: centre card and neighbours; on phones the neighbours
-  only peek and show no caption.
+- Desktop (1024px and up): five cards on stage when five or more occasions
+  qualify: centre 100%, neighbours about 82%, outer cards about 66%, turned
+  slightly toward the centre, overlapping only a little (an outer card keeps
+  85% or more of its width in view) and veiled lightly with ivory rather than
+  darkened. Every card on stage shows its name and count; outer captions keep
+  to the exposed side. With three or four occasions the unique cards are
+  shown and nothing is repeated. 768-1023px: centre card and two whole
+  neighbours. Phones: the neighbours only peek and show no caption.
+- Petal & Sage (12 Oct 2026): a blush-and-ivory stage with Forest Ink type;
+  photographs keep a dark gradient under their captions. Condolence
+  (`tone: "quiet"`) has an ivory caption panel with ink lettering instead.
 - Accessibility: there is one keyboard stop for the cards (the centre one)
   plus three buttons. Hidden cards are `inert`. Focus is visible. User moves
   are announced through a polite live region. Reduced motion, no JavaScript,

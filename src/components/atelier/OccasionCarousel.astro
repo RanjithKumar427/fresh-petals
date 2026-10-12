@@ -12,6 +12,9 @@
 // looping cinematic carousel: every card's transform is a continuous function
 // of one position value (never duplicated cards), so swipe, drag, keyboard,
 // buttons and autoplay all move the same position. No occasions, no section.
+// From 1024px five cards are on stage at once (centre 100%, neighbours ~82%,
+// outer cards ~66%) when five or more occasions qualify; with fewer, the
+// unique cards that exist are shown and nothing is repeated.
 import { getOccasionCarousel } from "../../data/atelierHome";
 import type { Membership } from "../../data/occasionJourneys";
 
@@ -22,7 +25,7 @@ interface Props {
 const cards = getOccasionCarousel(Astro.props.membership);
 const total = cards.length;
 const mode = total >= 3 ? "carousel" : total === 2 ? "pair" : "single";
-const sizes = "(min-width: 1440px) 360px, (min-width: 1024px) 340px, (min-width: 768px) 300px, 70vw";
+const sizes = "(min-width: 1280px) 350px, (min-width: 1024px) 300px, (min-width: 768px) 300px, 70vw";
 const pad = (value: number) => String(value).padStart(2, "0");
 ---
 
@@ -46,6 +49,7 @@ const pad = (value: number) => String(value).padStart(2, "0");
             <li
               class="occ__slide"
               data-occ-slide
+              data-tone={card.tone}
               role={mode === "carousel" ? "group" : undefined}
               aria-roledescription={mode === "carousel" ? "slide" : undefined}
               aria-label={mode === "carousel" ? `${card.title}, ${index + 1} of ${total}` : undefined}
@@ -124,15 +128,23 @@ const pad = (value: number) => String(value).padStart(2, "0");
     const count = slides.length;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
     const wide = window.matchMedia("(min-width: 1024px)");
+    const roomy = window.matchMedia("(min-width: 1280px)");
 
     const DURATION = 800;
     const INTERVAL = 4500;
-    // Offsets from the centre card, in card widths, by distance 0, 1, 2, 3:
-    // centre 100%, immediate neighbours ~80%, outer cards ~65%. Below 1024px
-    // only the neighbours show, as peeks at the edges.
+    // By distance from the centre card (0, 1, 2, 3): offset in card widths,
+    // scale, turn (degrees, facing the centre) and how far the card is
+    // veiled. Centre 100%, immediate neighbours ~82%, outer cards ~66%.
+    // Neighbours overlap only slightly, so an outer card keeps about 85% of
+    // its width in view: photograph, name and count stay recognisable.
+    //   roomy   1280px and up: five cards, each well exposed
+    //   wide    1024-1279px:   five cards, drawn a little closer together
+    //   compact below 1024px:  the centre card and its two neighbours
+    //                          (whole on a tablet, peeks on a phone)
     const LAYOUTS = {
-      wide: { x: [0, 0.78, 1.36, 1.8], scale: [1, 0.8, 0.65, 0.55], dim: [0, 0.32, 0.55, 0.7], reach: 2 },
-      compact: { x: [0, 0.84, 1.5, 1.9], scale: [1, 0.8, 0.65, 0.55], dim: [0, 0.35, 0.55, 0.7], reach: 1 },
+      roomy: { x: [0, 0.85, 1.54, 2.05], scale: [1, 0.82, 0.66, 0.56], turn: [0, 6, 9, 10], dim: [0, 0.1, 0.2, 0.4], reach: 2 },
+      wide: { x: [0, 0.81, 1.45, 1.92], scale: [1, 0.82, 0.66, 0.56], turn: [0, 6, 9, 10], dim: [0, 0.1, 0.2, 0.4], reach: 2 },
+      compact: { x: [0, 0.86, 1.5, 1.9], scale: [1, 0.82, 0.66, 0.56], turn: [0, 5, 8, 9], dim: [0, 0.12, 0.3, 0.45], reach: 1 },
     };
 
     let enabled = false;
@@ -164,7 +176,7 @@ const pad = (value: number) => String(value).padStart(2, "0");
     let sideText = false;
 
     const measure = () => {
-      layout = wide.matches ? LAYOUTS.wide : LAYOUTS.compact;
+      layout = roomy.matches ? LAYOUTS.roomy : wide.matches ? LAYOUTS.wide : LAYOUTS.compact;
       width = slides[0].offsetWidth || 300;
       sideText = (layout.x[1] + layout.scale[1] / 2) * width <= window.innerWidth / 2 + 1;
     };
@@ -182,15 +194,21 @@ const pad = (value: number) => String(value).padStart(2, "0");
         // from one side to the other (at count / 2), so it is fully
         // transparent when it changes sides and never jumps in view.
         const opacity = Math.min(clamp01((layout.reach + 0.6 - a) / 0.6), clamp01((count / 2 - 0.1 - a) / 0.4));
-        slide.style.transform = `translate3d(${x.toFixed(1)}px, 0, 0) scale(${scale.toFixed(4)})`;
+        // A gentle turn toward the centre, with the card's own perspective.
+        const turn = -Math.sign(d) * lerp(layout.turn, a);
+        slide.style.transform = `translate3d(${x.toFixed(1)}px, 0, 0) perspective(1400px) rotateY(${turn.toFixed(2)}deg) scale(${scale.toFixed(4)})`;
         slide.style.opacity = opacity.toFixed(3);
         slide.style.zIndex = String(100 - Math.round(a * 10));
         slide.style.setProperty("--dim", lerp(layout.dim, a).toFixed(3));
         // Captions dip to nothing halfway between centre and side, where a
         // right-hand card switches its caption to the uncovered right edge.
-        const text = sideText ? (a < 1 ? Math.abs(1 - 2 * a) : 1 - (a - 1)) : 1 - 2 * a;
+        // Every card on stage keeps its name and count, the outer ones too;
+        // they fade only past the last visible place.
+        const text = sideText ? (a < 1 ? Math.abs(1 - 2 * a) : 1 - (a - layout.reach)) : 1 - 2 * a;
         slide.style.setProperty("--text", clamp01(text).toFixed(3));
         slide.classList.toggle("is-after", d > 0.5);
+        // An outer card is partly behind its neighbour: its caption keeps to the exposed side.
+        slide.classList.toggle("is-outer", a > 1.5);
         slide.style.setProperty("--cta", clamp01(1 - a).toFixed(3));
         const hidden = opacity < 0.02;
         if (slide.inert !== hidden) slide.inert = hidden;
@@ -373,11 +391,13 @@ const pad = (value: number) => String(value).padStart(2, "0");
       measure();
       render();
     });
-    wide.addEventListener("change", () => {
-      if (!enabled) return;
-      measure();
-      render();
-    });
+    for (const query of [wide, roomy]) {
+      query.addEventListener("change", () => {
+        if (!enabled) return;
+        measure();
+        render();
+      });
+    }
 
     // --- Enhance / restore ------------------------------------------------
     const enable = () => {
@@ -398,7 +418,7 @@ const pad = (value: number) => String(value).padStart(2, "0");
       controls.hidden = true;
       slides.forEach((slide, i) => {
         slide.removeAttribute("style");
-        slide.classList.remove("is-after");
+        slide.classList.remove("is-after", "is-outer");
         slide.inert = false;
         links[i].removeAttribute("tabindex");
       });
@@ -411,18 +431,22 @@ const pad = (value: number) => String(value).padStart(2, "0");
 </script>
 
 <style>
+  /* Petal & Sage: a muted blush-and-ivory stage with a restrained glow
+     (blush behind the centre card, sage toward the corners) and Forest Ink
+     type. The photographs keep a dark gradient under their captions. */
   .occ {
-    --occ-bg: #3b1121;
-    --occ-bg-deep: #250913;
     --occ-w: min(70vw, 300px);
+    --occ-caption: 28, 42, 36;
     position: relative;
     isolation: isolate;
     overflow: hidden;
     overflow: clip;
     background:
-      radial-gradient(58% 52% at 50% 60%, rgba(232, 183, 178, 0.16), rgba(232, 183, 178, 0) 72%),
-      linear-gradient(180deg, var(--occ-bg), var(--occ-bg-deep));
-    color: var(--color-ivory);
+      radial-gradient(44% 46% at 50% 60%, color-mix(in srgb, var(--color-blush) 92%, transparent), transparent 72%),
+      radial-gradient(38% 44% at 12% 26%, color-mix(in srgb, var(--color-sage) 24%, transparent), transparent 72%),
+      radial-gradient(38% 44% at 90% 82%, color-mix(in srgb, var(--color-sage) 20%, transparent), transparent 72%),
+      linear-gradient(180deg, var(--color-ivory), color-mix(in srgb, var(--color-blush) 46%, var(--color-ivory)));
+    color: var(--color-ink);
     padding: clamp(3rem, 6vw, 5.5rem) 0 clamp(2.75rem, 5vw, 4.5rem);
   }
 
@@ -441,6 +465,7 @@ const pad = (value: number) => String(value).padStart(2, "0");
     font-size: clamp(2.1rem, 1.3rem + 3vw, 3.8rem);
     line-height: 1;
     letter-spacing: -0.03em;
+    color: var(--color-ink);
   }
 
   .occ__subtitle {
@@ -448,7 +473,7 @@ const pad = (value: number) => String(value).padStart(2, "0");
     max-width: 36ch;
     font-size: var(--step-0);
     line-height: 1.5;
-    color: color-mix(in srgb, var(--color-ivory) 82%, transparent);
+    color: var(--color-moss);
   }
 
   /* Static layout: a centred row of cards. One card, a balanced pair, no
@@ -489,18 +514,22 @@ const pad = (value: number) => String(value).padStart(2, "0");
     aspect-ratio: 5 / 7;
     border-radius: 20px;
     overflow: hidden;
-    background: #1c060d;
-    color: var(--color-ivory);
+    background: var(--color-linen);
+    border: 1px solid color-mix(in srgb, var(--color-sage) 45%, transparent);
+    color: #ffffff;
     text-decoration: none;
     container-type: inline-size;
-    box-shadow: 0 26px 50px -28px rgba(0, 0, 0, 0.75);
+    /* Restrained: a soft, close shadow in Forest Ink. */
+    box-shadow:
+      0 1px 2px rgba(39, 59, 50, 0.08),
+      0 22px 40px -26px rgba(39, 59, 50, 0.5);
     user-select: none;
     -webkit-user-drag: none;
     -webkit-tap-highlight-color: transparent;
   }
 
   .occ__card:focus-visible {
-    outline: 3px solid var(--color-rose);
+    outline: 3px solid var(--color-berry);
     outline-offset: 4px;
   }
 
@@ -517,16 +546,19 @@ const pad = (value: number) => String(value).padStart(2, "0");
     transform: scale(1.04);
   }
 
+  /* The dark gradient that keeps captions readable over a photograph. */
   .occ__shade {
     position: absolute;
     inset: 0;
-    background: linear-gradient(to top, rgba(28, 6, 13, 0.9), rgba(28, 6, 13, 0.5) 38%, rgba(28, 6, 13, 0) 66%);
+    background: linear-gradient(to top, rgba(var(--occ-caption), 0.9), rgba(var(--occ-caption), 0.52) 36%, rgba(var(--occ-caption), 0) 64%);
   }
 
+  /* Cards away from the centre are veiled lightly with ivory, so they sit
+     back on the pale stage without going dark. */
   .occ__dim {
     position: absolute;
     inset: 0;
-    background: #14040a;
+    background: var(--color-ivory);
     opacity: var(--dim, 0);
     pointer-events: none;
   }
@@ -554,7 +586,7 @@ const pad = (value: number) => String(value).padStart(2, "0");
     font-weight: 600;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: var(--color-rose-soft);
+    color: var(--color-blush);
   }
 
   .occ__cta {
@@ -565,7 +597,7 @@ const pad = (value: number) => String(value).padStart(2, "0");
     padding-bottom: 0.2em;
     font-size: clamp(0.8rem, 4.8cqi, 1rem);
     font-weight: 600;
-    border-bottom: 1px solid var(--color-apricot);
+    border-bottom: 1px solid var(--color-rose);
     opacity: var(--cta, 1);
   }
 
@@ -582,10 +614,29 @@ const pad = (value: number) => String(value).padStart(2, "0");
     transform: translateX(3px);
   }
 
+  /* Condolence: quieter. An ivory caption panel with Forest Ink lettering
+     and a sage rule instead of white type on a dark gradient. The photograph
+     itself is untouched. */
+  .occ__slide[data-tone="quiet"] .occ__card {
+    color: var(--color-ink);
+  }
+
+  .occ__slide[data-tone="quiet"] .occ__shade {
+    background: linear-gradient(to top, rgba(250, 247, 242, 0.97), rgba(250, 247, 242, 0.9) 30%, rgba(250, 247, 242, 0) 58%);
+  }
+
+  .occ__slide[data-tone="quiet"] .occ__count {
+    color: var(--color-moss);
+  }
+
+  .occ__slide[data-tone="quiet"] .occ__cta {
+    border-bottom-color: var(--color-sage);
+  }
+
   /* Enhanced: the cinematic carousel (3+ occasions, motion allowed). */
   .occ.is-cinema .occ__viewport {
     position: relative;
-    height: calc(var(--occ-w) * 1.4 + 2rem);
+    height: calc(var(--occ-w) * 1.4 + 2.5rem);
     padding: 0;
     touch-action: pan-y;
     cursor: grab;
@@ -607,9 +658,25 @@ const pad = (value: number) => String(value).padStart(2, "0");
     text-align: right;
   }
 
+  /* Outer cards: the caption stays within the part of the card that shows
+     (the left of a left-hand card, the right of a right-hand one), in type
+     small enough for the longest occasion name. */
+  .occ.is-cinema .occ__slide.is-outer .occ__body {
+    right: 20%;
+  }
+
+  .occ.is-cinema .occ__slide.is-outer.is-after .occ__body {
+    right: 0;
+    left: 20%;
+  }
+
+  .occ.is-cinema .occ__slide.is-outer .occ__name {
+    font-size: clamp(1.05rem, 9cqi, 2rem);
+  }
+
   .occ.is-cinema .occ__slide {
     position: absolute;
-    top: 1rem;
+    top: 1.25rem;
     left: 50%;
     width: var(--occ-w);
     margin-left: calc(var(--occ-w) / -2);
@@ -636,20 +703,21 @@ const pad = (value: number) => String(value).padStart(2, "0");
     height: 48px;
     flex-shrink: 0;
     border-radius: 999px;
-    border: 1px solid color-mix(in srgb, var(--color-ivory) 42%, transparent);
-    background: transparent;
-    color: var(--color-ivory);
+    border: 1px solid color-mix(in srgb, var(--color-ink) 38%, transparent);
+    background: color-mix(in srgb, #ffffff 55%, transparent);
+    color: var(--color-ink);
     cursor: pointer;
-    transition: background-color 0.18s var(--ease-micro), border-color 0.18s var(--ease-micro);
+    transition: background-color 0.18s var(--ease-micro), border-color 0.18s var(--ease-micro), color 0.18s var(--ease-micro);
   }
 
   .occ__btn:hover {
-    background: color-mix(in srgb, var(--color-ivory) 10%, transparent);
-    border-color: var(--color-ivory);
+    background: #ffffff;
+    border-color: var(--color-berry);
+    color: var(--color-berry);
   }
 
   .occ__btn:focus-visible {
-    outline: 3px solid var(--color-rose);
+    outline: 3px solid var(--color-berry);
     outline-offset: 3px;
   }
 
@@ -696,20 +764,20 @@ const pad = (value: number) => String(value).padStart(2, "0");
     width: 6px;
     height: 6px;
     border-radius: 999px;
-    background: color-mix(in srgb, var(--color-ivory) 35%, transparent);
+    background: var(--color-sage);
     transition: width 0.4s var(--ease-premium), background-color 0.4s var(--ease-premium);
   }
 
   .occ__dot.is-active {
     width: 18px;
-    background: var(--color-ivory);
+    background: var(--color-berry);
   }
 
   .occ__counter {
     font-variant-numeric: tabular-nums;
     font-size: 0.8125rem;
     letter-spacing: 0.12em;
-    color: color-mix(in srgb, var(--color-ivory) 78%, transparent);
+    color: var(--color-moss);
   }
 
   @media (min-width: 768px) {
@@ -718,15 +786,17 @@ const pad = (value: number) => String(value).padStart(2, "0");
     }
   }
 
+  /* Five cards from here: the card narrows so all five fit the stage
+     (about 3.6 card widths at 1024px, 3.75 from 1280px). */
   @media (min-width: 1024px) {
     .occ {
-      --occ-w: 340px;
+      --occ-w: clamp(264px, 26vw, 300px);
     }
   }
 
-  @media (min-width: 1440px) {
+  @media (min-width: 1280px) {
     .occ {
-      --occ-w: 360px;
+      --occ-w: clamp(310px, 24vw, 350px);
     }
   }
 

@@ -7,6 +7,7 @@ import { productCatalog, type Product } from "./productCatalog";
 import imageVariants from "./imageVariants.json";
 import imageDimensions from "./imageDimensions.json";
 import homePhotoVariants from "./homePhotoVariants.json";
+import heroCampaignImages from "./heroCampaignImages.json";
 import { withAuthoritativePrice, type AuthoritativePrice } from "../server/services/ProductPricing";
 import { launchGroups, launchProducts } from "./launchCatalogue";
 import { budgetBand, carouselOccasions, type Membership } from "./occasionJourneys";
@@ -67,21 +68,48 @@ export function photo(name: string, alt: string): Photo {
   };
 }
 
-// A. Opening photograph — a wrapped bouquet (bouquet-1.jpg, the catalogue's
-// own photo for its gift range), cropped to drop the window above it, plus
-// a detail of the same photograph for the hero's foreground layer.
-// Editorial only: no product name or price is attached to it.
-// The hero shows one identifiable public bouquet — its own product
-// photograph, linked to its page — rather than a generic photograph. The
-// foreground "lens" is a magnified detail of the same file (CSS crop, no
-// extra image). Falls back to the first launch bouquet if this one leaves
-// the range.
-const HERO_PRODUCT_SLUG = "timeless-hug";
-/** The hero photograph's display width (the lens uses the same, so both load one file); the preload in pages/index.astro uses it too. */
-export const HERO_SIZES = "(min-width: 1024px) 560px, calc(100vw - 4rem)";
+// A. Hero banner — three photographs, one shown at a time
+// (HeroAtelier.astro). Each is a public launch bouquet's own product
+// photograph, captioned with that bouquet's name and published price and
+// linked to its page: nothing editorial, nothing unidentified. Chosen for
+// three distinct looks (pink roses, cream roses with eucalyptus, pink
+// lilies). If one leaves the launch range, the next launch bouquet takes
+// its place, so there are three slides while the range has three bouquets.
+const HERO_SLIDE_SLUGS = ["timeless-hug", "rose-promise", "blush-lily-letter"];
+/** The hero photograph's display width; the first slide's preload in pages/index.astro uses it too. */
+export const HERO_SIZES = "(min-width: 1024px) min(46vw, 600px), calc(100vw - 2rem)";
 
+export type HeroSlide = {
+  slug: string;
+  name: string;
+  /** The bouquet's published price label, exactly as its card and page show it. */
+  priceLabel: string;
+  image: Photo;
+};
+
+/** `products`: the launch range with published prices (getBouquetEdit). */
+export function getHeroSlides(products: EditProduct[]): HeroSlide[] {
+  const ordered = [
+    ...HERO_SLIDE_SLUGS.flatMap((slug) => products.filter((product) => product.slug === slug)),
+    ...products.filter((product) => !HERO_SLIDE_SLUGS.includes(product.slug)),
+  ];
+  return ordered.slice(0, 3).map((product) => {
+    const main = productPhoto(product.slug);
+    // The banner is larger than a card: offer the original file as well as
+    // the card variants, for wide and high-density screens.
+    const srcset = main.srcset && !main.srcset.includes(`${main.width}w`) ? `${main.srcset}, ${product.image} ${main.width}w` : main.srcset;
+    return {
+      slug: product.slug,
+      name: product.name,
+      priceLabel: product.priceLabel,
+      image: { ...main, srcset, alt: `${product.name}: ${product.description}` },
+    };
+  });
+}
+
+/** The first hero bouquet and its photograph (scripts/audit/business.mjs checks it against the catalogue). */
 export function getHeroPhoto() {
-  const product = launchProducts().find((item) => item.slug === HERO_PRODUCT_SLUG) ?? launchProducts()[0];
+  const product = launchProducts().find((item) => item.slug === HERO_SLIDE_SLUGS[0]) ?? launchProducts()[0];
   const main = productPhoto(product.slug);
   return {
     slug: product.slug,
@@ -89,6 +117,88 @@ export function getHeroPhoto() {
     name: product.name,
     detail: { ...main, alt: "" },
   };
+}
+
+// A1. Hero campaigns — the full-width opening scene (HeroAtelier.astro):
+// three campaign photographs, each with its own copy and two destinations.
+// They are campaign imagery, not products: no product name or price is
+// attached, and every button goes to a collection or to custom orders. The
+// photographs and their AVIF/WebP sizes come from
+// scripts/hero-campaign-images.mjs (originals in src/assets/hero/).
+type CampaignImage = { width: number; height: number; avif: Record<string, string>; webp: Record<string, string> };
+type CampaignManifest = Record<string, CampaignImage & { print: CampaignImage }>;
+
+const srcsetOf = (variants: Record<string, string>) =>
+  Object.keys(variants)
+    .map(Number)
+    .sort((a, b) => a - b)
+    .map((w) => `${variants[String(w)]} ${w}w`)
+    .join(", ");
+
+export type HeroPicture = { src: string; avif: string; webp: string; width: number; height: number };
+
+function heroPicture(image: CampaignImage): HeroPicture {
+  const widths = Object.keys(image.webp).map(Number).sort((a, b) => a - b);
+  return { src: image.webp[String(widths[widths.length - 1])], avif: srcsetOf(image.avif), webp: srcsetOf(image.webp), width: image.width, height: image.height };
+}
+
+/** The scene spans the viewport; on a phone the photograph is cropped to its flowers, so it is drawn wider than the screen. */
+export const HERO_SCENE_SIZES = "(max-width: 899px) 150vw, 100vw";
+/** A photo print is at most 168 CSS pixels wide. */
+export const HERO_PRINT_SIZES = "168px";
+
+export type HeroCampaign = {
+  id: "bouquets" | "garlands" | "pooja";
+  /** Headline in three parts, so one word can be set in rose italic. */
+  headline: { before: string; accent: string; after: string };
+  text: string;
+  primary: { label: string; href: string };
+  secondary: { label: string; href: string } | null;
+  image: HeroPicture & { alt: string };
+  /** The small photo print that leads to this campaign from the other slides. */
+  print: { caption: string; href: string; image: HeroPicture };
+};
+
+/**
+ * The hero's slides. `garlandsPublic`: garlands are promoted in the menus
+ * and at least one design is public — the garland slide, and every button
+ * that leads to the garland collection, appear only then.
+ */
+export function getHeroCampaigns({ garlandsPublic }: { garlandsPublic: boolean }): HeroCampaign[] {
+  const images = heroCampaignImages as CampaignManifest;
+  const scene = (name: string, alt: string) => ({ ...heroPicture(images[name]), alt });
+  const garlands = { label: "Explore garlands", href: "/categories/garlands" };
+  const campaigns: (HeroCampaign & { needsGarlands?: boolean })[] = [
+    {
+      id: "bouquets",
+      headline: { before: "Flowers that feel as ", accent: "special", after: " as the moment." },
+      text: "Bouquets, garlands and flowers for celebrations. Choose your favourites; we’ll confirm the details on WhatsApp.",
+      primary: { label: "Browse bouquets", href: "/categories/bouquets" },
+      secondary: { label: "Help me choose", href: "/occasions" },
+      image: scene("hero-bouquets", "A hand-tied bouquet of pink roses, lilies and eucalyptus in blush wrapping, on a stone table in warm light."),
+      print: { caption: "Hand-tied bouquets", href: "/categories/bouquets", image: heroPicture(images["hero-bouquets"].print) },
+    },
+    {
+      id: "garlands",
+      needsGarlands: true,
+      headline: { before: "For the moments you celebrate ", accent: "together", after: "." },
+      text: "Wedding and engagement garlands, made to order. Choose a design; we’ll confirm the flowers, length and date on WhatsApp.",
+      primary: garlands,
+      secondary: { label: "Discuss your ceremony", href: "/custom-orders" },
+      image: scene("hero-garlands", "A pair of wedding garlands of white flowers with red and pink roses, draped beside a brass urn of lilies and roses."),
+      print: { caption: "For celebrations", href: "/categories/garlands", image: heroPicture(images["hero-garlands"].print) },
+    },
+    {
+      id: "pooja",
+      headline: { before: "Flowers for a beautiful ", accent: "beginning", after: "." },
+      text: "Housewarming, pooja or a family celebration? Tell us what you’re planning and we’ll discuss the flowers with you on WhatsApp.",
+      primary: { label: "Plan your flowers", href: "/custom-orders" },
+      secondary: garlandsPublic ? garlands : null,
+      image: scene("hero-pooja", "A basket of marigolds and white flowers beside a brass lamp and pooja tray, with marigold strings on a doorway behind."),
+      print: { caption: "Beautiful beginnings", href: "/custom-orders", image: heroPicture(images["hero-pooja"].print) },
+    },
+  ];
+  return campaigns.filter((campaign) => garlandsPublic || !campaign.needsGarlands).map(({ needsGarlands: _needsGarlands, ...campaign }) => campaign);
 }
 
 // A2. Hero gallery — the other photographs from the original homepage
@@ -153,6 +263,8 @@ export type OccasionCard = {
   image: ResponsiveImage;
   /** object-position for the card's 5:7 crop, so the flowers stay in frame. */
   focus: string;
+  /** "quiet": Condolence's ivory-and-sage caption instead of white type on a dark gradient. */
+  tone: "default" | "quiet";
 };
 
 function productPhoto(slug: string): Photo {
@@ -186,6 +298,7 @@ export function getOccasionCarousel(membership: Membership): OccasionCard[] {
       countLabel: designCountLabel(products.length),
       image: responsiveImage(lead.image),
       focus: OCCASION_FOCUS[lead.image] ?? "50% 50%",
+      tone: key === "sympathy" ? "quiet" : "default",
     };
   });
 }

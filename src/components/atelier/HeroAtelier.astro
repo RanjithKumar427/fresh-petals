@@ -1,230 +1,758 @@
 ---
-// A. Opening scene. The type and the buttons are static, ordinary HTML,
-// readable and clickable from the first paint. Beside them, a small 3D stage
-// (CSS perspective, one preserve-3d element) holds three planes of real
-// photography:
-//   back   — a restrained rose panel, pushed away from the viewer
-//   photo  — a public launch bouquet's own photograph (atelierHome
-//            getHeroPhoto), in an arched frame, linked to its product page
-//   lens   — a magnified detail of the same photograph, nearest the viewer
-// On entry the stage turns from a steeper angle and the planes separate;
-// during the first scroll it tilts back toward the next section and the
-// planes spread further; fine pointers add a small parallax. Reduced
-// motion (or no JS) shows the rest composition with nothing moving.
+// A. Opening scene. One full-width campaign photograph with the copy set as
+// ordinary HTML over its open left side, the flowers on the right, two small
+// photo prints that lead to the other campaigns, a few hand-drawn SVG
+// accents, and an ivory strip of shortcuts across the hero's lower edge.
+// The campaigns (photograph, copy, destinations) are
+// atelierHome.getHeroCampaigns: campaign imagery, so no product name or
+// price is attached to a photograph.
+//
+// Layers, back to front: photograph (.hero__scene) → prints → doodles →
+// copy and controls. Each moving layer has two wrappers: the outer one takes
+// the pointer/scroll parallax (CSS variables set by the script), the inner
+// one takes the slide transition, so the two never fight over `transform`.
+//
+// Without JavaScript the first campaign is the whole hero, with working
+// links. With it, the three cross-fade every 5.5 seconds, with previous/next,
+// three selectors, "1 / 3", pause/play, touch swipe and the arrow keys.
+// Autoplay waits while the hero is hovered, focused, touched, out of view or
+// in a hidden tab; an explicit pause stays until Play. With reduced motion
+// there is no autoplay, parallax, drawing or fade — only the controls.
+// Only the first photograph is in the HTML (and preloaded in
+// pages/index.astro); each later one is fetched just before it is needed and
+// decoded before it is shown.
 import { HOME_LANDING } from "../../data/seoLanding";
-import { HERO_SIZES, getHeroPhoto } from "../../data/atelierHome";
+import { HERO_PRINT_SIZES, HERO_SCENE_SIZES, type HeroCampaign } from "../../data/atelierHome";
 import { heroOccasionLinks, homeShortcuts, type Membership } from "../../data/occasionJourneys";
 import type { GarlandDesign } from "../../data/garlandRules";
 
 interface Props {
   membership: Membership;
-  /** The hero bouquet's published price label (same as its card and page). */
-  heroPrice?: string;
+  /** The campaign slides (atelierHome.getHeroCampaigns). */
+  campaigns: HeroCampaign[];
   publicGarlands?: GarlandDesign[];
   budget?: { href: string; label: string } | null;
 }
 
-const { slug, name, main, detail } = getHeroPhoto();
-// Buying shortcuts (docs/occasion-journeys.md). Each appears only when its
-// destination has public products: today "Browse bouquets" and "Help me
-// choose"; "Choose garlands" and "Flowers for a ceremony" join once garlands
-// are public and promoted. Exact-design shoppers skip straight to search.
-const shortcuts = homeShortcuts(Astro.props.membership, Astro.props.publicGarlands);
-const occasionLinks = heroOccasionLinks(Astro.props.membership).filter((link) => link.href !== "/occasions");
-const productHref = `/products/${slug}`;
+const { campaigns, budget } = Astro.props;
+const many = campaigns.length > 1;
+
+// The shortcut strip. Each entry appears only when its destination has
+// public products (docs/occasion-journeys.md): occasions follow the admin's
+// assignments, garlands and ceremony flowers need public garland designs,
+// and the budget shortcut exists only while bouquets are priced under it.
+const needs = homeShortcuts(Astro.props.membership, Astro.props.publicGarlands);
+const garlands = needs.find((item) => item.href === "/categories/garlands");
+const ceremony = needs.find((item) => item.href.includes("for=ceremony"));
+const strip: { label: string; href: string; icon: string }[] = [
+  ...heroOccasionLinks(Astro.props.membership)
+    .filter((link) => link.href !== "/occasions")
+    .map((link) => ({ ...link, icon: link.href.endsWith("/birthday") ? "cake" : "heart" })),
+  ...(garlands ? [{ label: "Garlands", href: garlands.href, icon: "garland" }] : []),
+  ...(ceremony ? [{ label: ceremony.href.includes("/wedding") ? "Wedding flowers" : "Engagement flowers", href: ceremony.href, icon: "rings" }] : []),
+  { label: "Custom orders", href: "/custom-orders", icon: "pencil" },
+  ...(budget ? [{ label: "Under ₹1,500", href: budget.href, icon: "tag" }] : []),
+];
+
+const ICONS: Record<string, string[]> = {
+  cake: ["M4 20h16", "M5 20v-7.5c0-.8.7-1.5 1.5-1.5h11c.8 0 1.5.7 1.5 1.5V20", "M5 15.5c1.2 1 2.3 1 3.5 0s2.3-1 3.5 0 2.3 1 3.5 0 2.3-1 3.5 0", "M12 11V8", "M12 5.2c.7-.6.7-1.4 0-2.2-.7.8-.7 1.6 0 2.2z"],
+  heart: ["M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.4A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"],
+  garland: ["M4 4c0 9 3.5 15 8 15s8-6 8-15", "M6.2 11.2a1.3 1.3 0 1 0 .1 0", "M9.3 16.3a1.3 1.3 0 1 0 .1 0", "M14.7 16.3a1.3 1.3 0 1 0 .1 0", "M17.8 11.2a1.3 1.3 0 1 0 .1 0"],
+  rings: ["M9 20a5 5 0 1 0 0-10 5 5 0 0 0 0 10z", "M15 20a5 5 0 1 0 0-10 5 5 0 0 0 0 10z", "M10.5 6.5 12 4l1.5 2.5L12 8z"],
+  pencil: ["M4 20l1-4.5L15.5 5a2 2 0 0 1 2.8 0l.7.7a2 2 0 0 1 0 2.8L8.5 19z", "M13.5 7l3.5 3.5"],
+  tag: ["M4 12.5V5.5A1.5 1.5 0 0 1 5.5 4h7l7.5 7.5a1.5 1.5 0 0 1 0 2.1l-5.4 5.4a1.5 1.5 0 0 1-2.1 0z", "M8.5 8.5h.01"],
+};
+
+// The prints shown beside a slide are the other campaigns, in order: the
+// first takes the upper place, the second the lower one.
+const printSlot = (print: number, active: number) => {
+  const others = campaigns.map((_, index) => index).filter((index) => index !== active);
+  return print === active ? "off" : others.indexOf(print) === 0 ? "a" : "b";
+};
 ---
 
-<section class="hero" data-hero aria-labelledby="hero-title" style={`--photo-ar: ${main.width} / ${main.height}`}>
-  <div class="hero__inner">
-    <div class="hero__copy">
-      <h1 id="hero-title" class="hero__title">
-        <span class="hero__eyebrow">Fresh flowers &amp; bouquets in Bengaluru</span>
-        <span class="hero__display">
-          <span class="hero__line">For someone.</span>
-          <span class="hero__line hero__line--italic">Or just for&nbsp;you.</span>
-        </span>
-      </h1>
-      <p class="hero__body">Choose your flowers, then confirm your order on WhatsApp.</p>
-      <nav class="hero__actions" aria-label="Shop by what you need" data-count={shortcuts.length}>
-        {shortcuts.map((shortcut) => (
-          <a class={shortcut.primary ? "fp-btn" : "fp-btn-outline"} href={shortcut.href}>
-            {shortcut.label}
-          </a>
+<section class="hero" data-hero data-slide={campaigns[0]?.id} aria-label="Fresh Petals flowers in Bengaluru">
+  <div
+    class="hero__stage"
+    data-hero-stage
+    role={many ? "group" : undefined}
+    aria-roledescription={many ? "carousel" : undefined}
+    aria-label={many ? "Flowers for your occasion" : undefined}
+  >
+    <div class="hero__media">
+      <!-- 1. The photograph. -->
+      <div class="hero__scene" data-hero-scene>
+        {campaigns.map((campaign, index) => (
+          <div class:list={["hero__photo", `hero__photo--${campaign.id}`, { "is-active": index === 0 }]} data-hero-photo aria-hidden={index === 0 ? undefined : "true"}>
+            <picture>
+              {index === 0 ? (
+                <Fragment>
+                  <source type="image/avif" srcset={campaign.image.avif} sizes={HERO_SCENE_SIZES} />
+                  <source type="image/webp" srcset={campaign.image.webp} sizes={HERO_SCENE_SIZES} />
+                  <img src={campaign.image.src} width={campaign.image.width} height={campaign.image.height} alt={campaign.image.alt} fetchpriority="high" draggable="false" />
+                </Fragment>
+              ) : (
+                <Fragment>
+                  <source type="image/avif" data-srcset={campaign.image.avif} sizes={HERO_SCENE_SIZES} />
+                  <source type="image/webp" data-srcset={campaign.image.webp} sizes={HERO_SCENE_SIZES} />
+                  <img data-src={campaign.image.src} width={campaign.image.width} height={campaign.image.height} alt={campaign.image.alt} decoding="async" draggable="false" />
+                </Fragment>
+              )}
+            </picture>
+          </div>
         ))}
-      </nav>
-      <nav class="hero__occasions" aria-label="Quick bouquet choices">
-        {occasionLinks.map((link) => <a href={link.href}>{link.label}</a>)}
-        {Astro.props.budget && <a href={Astro.props.budget.href}>Under ₹1,500</a>}
-      </nav>
-      <p class="hero__note">Availability, delivery and your final total confirmed before you pay.</p>
-      <p class="hero__note hero__links"><a href="/search">Search by name or code</a> · <a href="/custom-orders">Custom orders</a></p>
-      <p class="sr-only">{HOME_LANDING.intro[0]}</p>
+      </div>
+      <div class="hero__veil" aria-hidden="true"></div>
+
+      <!-- 2. Photo prints: the other campaigns. -->
+      {many && (
+        <div class="hero__prints" data-hero-prints>
+          {campaigns.map((campaign, index) => {
+            const slot = printSlot(index, 0);
+            return (
+              <div class="hero__print-slot" data-hero-print data-slot={slot}>
+                <div class="hero__print-drift">
+                  <a class="hero__print" href={campaign.print.href} tabindex={slot === "off" ? -1 : undefined} aria-hidden={slot === "off" ? "true" : undefined}>
+                    <picture>
+                      <source type="image/avif" srcset={campaign.print.image.avif} sizes={HERO_PRINT_SIZES} />
+                      <source type="image/webp" srcset={campaign.print.image.webp} sizes={HERO_PRINT_SIZES} />
+                      <img src={campaign.print.image.src} width={campaign.print.image.width} height={campaign.print.image.height} alt="" loading="lazy" decoding="async" draggable="false" />
+                    </picture>
+                    <span class="hero__print-caption">{campaign.print.caption}</span>
+                  </a>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <!-- 3. Hand-drawn accents (decorative). One set per campaign, each placed
+           on that photograph's open areas; only the current one shows. -->
+      <div class="hero__doodles" aria-hidden="true">
+        {campaigns.map((campaign) => (
+          <div class:list={["hero__doodle-set", `hero__doodle-set--${campaign.id}`]}>
+        <svg class="hero__doodle hero__doodle--sprig" viewBox="0 0 60 90" focusable="false">
+          <path pathLength="1" d="M30 88C28 62 33 36 27 6" />
+          <path pathLength="1" style="--d:0.15s" d="M29 66C16 62 10 52 9 44c11 2 19 10 21 20" />
+          <path pathLength="1" style="--d:0.25s" d="M31 52c13-2 19-12 21-21-11 2-19 9-21 19" />
+          <path pathLength="1" style="--d:0.35s" d="M29 38C18 34 14 26 14 19c9 3 14 9 15 17" />
+          <path pathLength="1" style="--d:0.45s" d="M29 22c8-2 12-9 12-15-7 2-11 7-12 13" />
+        </svg>
+        <div class="hero__note">
+          <p class="hero__note-text">For life’s<br />beautiful moments</p>
+          <svg class="hero__doodle hero__doodle--heart" viewBox="0 0 40 36" focusable="false">
+            <path pathLength="1" style="--d:0.5s" d="M20 32C8 24 3 16 6 9c3-6 11-5 14 2 2-7 11-9 15-3 3 7-4 16-16 25" />
+          </svg>
+          <svg class="hero__doodle hero__doodle--arrow" viewBox="0 0 90 50" focusable="false">
+            <path pathLength="1" style="--d:0.65s" d="M4 40c20 6 50 0 74-28" />
+            <path pathLength="1" style="--d:0.95s" d="M62 12l17-1-3 17" />
+          </svg>
+        </div>
+          </div>
+        ))}
+      </div>
     </div>
 
-    <div class="hero__scene">
-      <div class="hero__stage" data-hero-stage>
-        <div class="hero__back" aria-hidden="true"></div>
-        <div class="hero__shade" aria-hidden="true"></div>
-        <a class="hero__photo" href={productHref} tabindex="-1" aria-hidden="true">
-          <img
-            src={main.src}
-            srcset={main.srcset}
-            sizes={HERO_SIZES}
-            width={main.width}
-            height={main.height}
-            alt=""
-            fetchpriority="high"
-          />
-        </a>
-        <div class="hero__lens" aria-hidden="true">
-          <img
-            src={detail.src}
-            srcset={detail.srcset}
-            sizes={HERO_SIZES}
-            width={detail.width}
-            height={detail.height}
-            alt=""
-            decoding="async"
-          />
-        </div>
+    <!-- 4. Copy and controls: never moved by the parallax. -->
+    <div class="hero__content">
+      <div class="hero__copies">
+        {campaigns.map((campaign, index) => {
+          const Heading = index === 0 ? "h1" : "h2";
+          return (
+            <div
+              class:list={["hero__copy", { "is-active": index === 0 }]}
+              data-hero-copy
+              role={many ? "group" : undefined}
+              aria-roledescription={many ? "slide" : undefined}
+              aria-label={many ? `${index + 1} of ${campaigns.length}` : undefined}
+              inert={index !== 0}
+            >
+              <svg class="hero__doodle hero__doodle--flourish" viewBox="0 0 120 24" aria-hidden="true" focusable="false">
+                <path pathLength="1" d="M2 14C22 2 38 22 56 12c6-4 12-6 14 0s-6 8-8 2c-2-8 16-10 30-2 10 5 18 0 26-4" />
+              </svg>
+              <p class="hero__eyebrow">Floral moments in Bengaluru</p>
+              <Heading class="hero__headline" id={index === 0 ? "hero-title" : undefined}>
+                {campaign.headline.before}<em>{campaign.headline.accent}</em>{campaign.headline.after}
+              </Heading>
+              <p class="hero__body">{campaign.text}</p>
+              <div class="hero__actions">
+                <a class="fp-btn hero__cta" href={campaign.primary.href}>
+                  {campaign.primary.label}
+                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+                </a>
+                {campaign.secondary && (
+                  <a class="fp-btn-outline hero__cta hero__cta--quiet" href={campaign.secondary.href}>
+                    {campaign.secondary.label}
+                  </a>
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
-      <!-- The photograph is this bouquet: a plain, focusable link with its
-           name and published price (the photo plane above is the same link,
-           for pointer users). -->
-      <a class="hero__caption" href={productHref}>
-        <span class="hero__caption-name">{name}</span>
-        {Astro.props.heroPrice && <span class="hero__caption-price">{Astro.props.heroPrice}</span>}
-        <span class="hero__caption-cta">View bouquet <span aria-hidden="true">→</span></span>
-        <span class="sr-only">{main.alt}</span>
-      </a>
+
+      {many && (
+        <div class="hero__controls" data-hero-controls hidden>
+          <button type="button" class="hero__btn" data-hero-prev aria-label="Previous slide">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6" /></svg>
+          </button>
+          <div class="hero__dots" role="group" aria-label="Choose a slide">
+            {campaigns.map((campaign, index) => (
+              <button
+                type="button"
+                class="hero__dot"
+                data-hero-dot
+                aria-label={`Slide ${index + 1} of ${campaigns.length}: ${campaign.primary.label}`}
+                aria-current={index === 0 ? "true" : undefined}
+              >
+                <span></span>
+              </button>
+            ))}
+          </div>
+          <p class="hero__count" aria-hidden="true"><span data-hero-count>1</span> / {campaigns.length}</p>
+          <button type="button" class="hero__btn" data-hero-next aria-label="Next slide">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+          </button>
+          <button type="button" class="hero__btn hero__btn--toggle" data-hero-toggle aria-label="Pause slideshow">
+            <svg class="hero__icon-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6v12M15 6v12" /></svg>
+            <svg class="hero__icon-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10-6.5z" /></svg>
+          </button>
+        </div>
+      )}
+      {many && <p class="sr-only" aria-live="polite" data-hero-live></p>}
     </div>
+  </div>
+
+  <!-- Shortcuts across the hero's lower edge. -->
+  <nav class="hero__strip" aria-label="Shop by what you need">
+    <ul>
+      {strip.map((item) => (
+        <li>
+          <a href={item.href}>
+            <svg class="hero__strip-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              {ICONS[item.icon].map((d) => <path d={d} />)}
+            </svg>
+            <span>{item.label}</span>
+            <svg class="hero__strip-arrow" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+          </a>
+        </li>
+      ))}
+    </ul>
+  </nav>
+
+  <div class="hero__below">
+    <p class="hero__assure">Availability, delivery and your final total confirmed before you pay.</p>
+    <p class="hero__links"><a href="/search">Search by name or code</a> <span aria-hidden="true">·</span> <a href="/custom-orders">Custom orders</a></p>
+    <p class="sr-only">{HOME_LANDING.intro[0]}</p>
   </div>
 </section>
 
 <script>
-  // --hp: 0 at the top of the page, 1 once the hero has scrolled away.
-  // --px/--py: eased pointer position (-1..1), fine pointers only.
   const hero = document.querySelector<HTMLElement>("[data-hero]");
-  if (hero && document.documentElement.classList.contains("motion")) {
-    // The entry plays once the photograph is ready to be seen (or after
-    // 2.5s at most), not while it is still downloading.
-    const photo = hero.querySelector<HTMLImageElement>(".hero__photo img");
-    let ready = false;
-    const go = () => {
-      if (ready) return;
-      ready = true;
-      requestAnimationFrame(() => hero.classList.add("is-ready"));
-    };
-    if (photo?.complete && photo.naturalWidth) photo.decode().then(go, go);
-    else {
-      photo?.addEventListener("load", () => photo.decode().then(go, go), { once: true });
-      photo?.addEventListener("error", go, { once: true });
-    }
-    window.setTimeout(go, 2500);
+  const stage = hero?.querySelector<HTMLElement>("[data-hero-stage]");
+  const controls = hero?.querySelector<HTMLElement>("[data-hero-controls]");
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
-    let raf = 0;
-    const update = () => {
-      raf = 0;
-      const rect = hero.getBoundingClientRect();
-      const p = Math.min(1, Math.max(0, -rect.top / Math.max(1, rect.height * 0.9)));
-      hero.style.setProperty("--hp", p.toFixed(4));
-    };
-    const schedule = () => {
-      if (!raf) raf = requestAnimationFrame(update);
-    };
-    window.addEventListener("scroll", schedule, { passive: true });
-    window.addEventListener("resize", schedule);
-    schedule();
+  // ------------------------------------------------------------------
+  // Slides
+  // ------------------------------------------------------------------
+  if (hero && stage && controls) {
+    const photos = [...hero.querySelectorAll<HTMLElement>("[data-hero-photo]")];
+    const images = photos.map((photo) => photo.querySelector<HTMLImageElement>("img")!);
+    const copies = [...hero.querySelectorAll<HTMLElement>("[data-hero-copy]")];
+    const prints = [...hero.querySelectorAll<HTMLElement>("[data-hero-print]")];
+    const dots = [...hero.querySelectorAll<HTMLButtonElement>("[data-hero-dot]")];
+    const toggle = hero.querySelector<HTMLButtonElement>("[data-hero-toggle]")!;
+    const counter = hero.querySelector<HTMLElement>("[data-hero-count]");
+    const live = hero.querySelector<HTMLElement>("[data-hero-live]");
+    const ids = photos.map((photo) => [...photo.classList].find((name) => name.startsWith("hero__photo--"))?.replace("hero__photo--", "") ?? "");
+    const count = photos.length;
 
-    if (window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
-      let tx = 0;
-      let ty = 0;
-      let x = 0;
-      let y = 0;
-      let prf = 0;
-      const step = () => {
-        x += (tx - x) * 0.08;
-        y += (ty - y) * 0.08;
-        hero.style.setProperty("--px", x.toFixed(4));
-        hero.style.setProperty("--py", y.toFixed(4));
-        prf = Math.abs(tx - x) + Math.abs(ty - y) > 0.001 ? requestAnimationFrame(step) : 0;
+    const INTERVAL = 5500;
+    let index = 0;
+    let request = 0; // the latest slide asked for; an older one still decoding is dropped
+    let timer = 0;
+    let userPaused = false;
+    // Why autoplay is waiting: hover, focus, pointer, hidden, offscreen.
+    const holds = new Set<string>();
+    const mod = (value: number) => ((value % count) + count) % count;
+
+    // A later photograph is not in the HTML: give it its sources when it is
+    // about to be needed. Returns once it can be painted.
+    const loaded = new Set<number>([0]);
+    const load = (target: number) => {
+      const image = images[target];
+      if (!loaded.has(target)) {
+        loaded.add(target);
+        photos[target].querySelectorAll<HTMLSourceElement>("source[data-srcset]").forEach((source) => (source.srcset = source.dataset.srcset!));
+        image.src = image.dataset.src!;
+      }
+      return image.complete && image.naturalWidth ? Promise.resolve() : image.decode().catch(() => {});
+    };
+
+    const apply = (target: number, direction: number, announce: boolean) => {
+      const previous = index;
+      const hadFocus = copies[previous].contains(document.activeElement);
+
+      // The incoming photograph starts a little to the side it comes from;
+      // the outgoing one leaves the other way.
+      const incoming = photos[target];
+      incoming.classList.add("is-prep");
+      incoming.style.setProperty("--from", String(direction));
+      photos[previous].style.setProperty("--from", String(-direction));
+      void incoming.offsetWidth;
+      incoming.classList.remove("is-prep");
+
+      photos.forEach((photo, i) => {
+        photo.classList.toggle("is-active", i === target);
+        if (i === target) photo.removeAttribute("aria-hidden");
+        else photo.setAttribute("aria-hidden", "true");
+      });
+      copies.forEach((copy, i) => {
+        copy.classList.toggle("is-active", i === target);
+        copy.inert = i !== target;
+      });
+      // The prints beside a slide are the other campaigns, in order.
+      const others = prints.map((_, i) => i).filter((i) => i !== target);
+      prints.forEach((print, i) => {
+        const slot = i === target ? "off" : others.indexOf(i) === 0 ? "a" : "b";
+        const link = print.querySelector<HTMLAnchorElement>("a")!;
+        print.dataset.slot = slot;
+        if (slot === "off") {
+          link.tabIndex = -1;
+          link.setAttribute("aria-hidden", "true");
+        } else {
+          link.removeAttribute("tabindex");
+          link.removeAttribute("aria-hidden");
+        }
+      });
+      dots.forEach((dot, i) => (i === target ? dot.setAttribute("aria-current", "true") : dot.removeAttribute("aria-current")));
+      if (counter) counter.textContent = String(target + 1);
+
+      // Show this photograph's accents and draw them again.
+      hero.dataset.slide = ids[target];
+      hero.removeAttribute("data-draw");
+      void hero.offsetWidth;
+      hero.setAttribute("data-draw", "");
+
+      index = target;
+      if (hadFocus) copies[target].querySelector<HTMLAnchorElement>("a")?.focus({ preventScroll: true });
+      if (announce && live) live.textContent = `Slide ${target + 1} of ${count}: ${copies[target].querySelector(".hero__headline")?.textContent?.trim() ?? ""}`;
+      // Have the following photograph ready before it is asked for.
+      window.setTimeout(() => load(mod(target + 1)), 900);
+    };
+
+    const show = (to: number, direction: number, announce: boolean) => {
+      const target = mod(to);
+      const id = ++request;
+      if (target === index) return;
+      // Switch when the photograph can be painted, or after 1.5s at most.
+      // Only the latest request is honoured, so quick presses cannot stack.
+      let done = false;
+      const swap = () => {
+        if (done || id !== request) return;
+        done = true;
+        apply(target, direction, announce);
       };
-      hero.addEventListener("pointermove", (event) => {
-        const r = hero.getBoundingClientRect();
-        tx = ((event.clientX - r.left) / r.width) * 2 - 1;
-        ty = ((event.clientY - r.top) / r.height) * 2 - 1;
-        if (!prf) prf = requestAnimationFrame(step);
+      const fallback = window.setTimeout(swap, 1500);
+      load(target).then(() => {
+        window.clearTimeout(fallback);
+        swap();
       });
-      hero.addEventListener("pointerleave", () => {
-        tx = 0;
-        ty = 0;
-        if (!prf) prf = requestAnimationFrame(step);
-      });
+    };
+
+    // --- Autoplay ---------------------------------------------------------
+    const schedule = () => {
+      window.clearTimeout(timer);
+      const waiting = userPaused || holds.size > 0 || reducedMotion.matches;
+      hero.dataset.heroAutoplay = waiting ? "paused" : "running";
+      if (waiting) return;
+      // Always a full interval from now: nothing is caught up after a pause.
+      timer = window.setTimeout(() => {
+        show(index + 1, 1, false);
+        schedule();
+      }, INTERVAL);
+    };
+    const hold = (reason: string) => {
+      holds.add(reason);
+      schedule();
+    };
+    const release = (reason: string) => {
+      if (holds.delete(reason)) schedule();
+    };
+
+    // A move the visitor made: announce it and restart the countdown.
+    const go = (to: number, direction: number) => {
+      show(to, direction, true);
+      schedule();
+    };
+
+    controls.querySelector("[data-hero-prev]")?.addEventListener("click", () => go(index - 1, -1));
+    controls.querySelector("[data-hero-next]")?.addEventListener("click", () => go(index + 1, 1));
+    dots.forEach((dot, i) => dot.addEventListener("click", () => go(i, i < index ? -1 : 1)));
+
+    const showToggle = () => {
+      toggle.hidden = reducedMotion.matches; // nothing plays, so nothing to pause
+      toggle.setAttribute("aria-label", userPaused ? "Play slideshow" : "Pause slideshow");
+      toggle.classList.toggle("is-paused", userPaused);
+    };
+    toggle.addEventListener("click", () => {
+      // The visitor's own choice: it stays until they press Play.
+      userPaused = !userPaused;
+      showToggle();
+      schedule();
+    });
+
+    stage.addEventListener("keydown", (event) => {
+      if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+      if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+      event.preventDefault();
+      go(index + (event.key === "ArrowRight" ? 1 : -1), event.key === "ArrowRight" ? 1 : -1);
+    });
+
+    // Hover (mouse only), keyboard focus, a pressed pointer, a hidden tab and
+    // an off-screen hero each hold autoplay until they end.
+    stage.addEventListener("pointerenter", (event) => event.pointerType === "mouse" && hold("hover"));
+    stage.addEventListener("pointerleave", (event) => event.pointerType === "mouse" && release("hover"));
+    stage.addEventListener("focusin", (event) => (event.target as HTMLElement).matches(":focus-visible") && hold("focus"));
+    stage.addEventListener("focusout", (event) => !stage.contains(event.relatedTarget as Node | null) && release("focus"));
+    document.addEventListener("visibilitychange", () => (document.hidden ? hold("hidden") : release("hidden")));
+    if (document.hidden) holds.add("hidden");
+    new IntersectionObserver(([entry]) => (entry.isIntersecting ? release("offscreen") : hold("offscreen")), { threshold: 0.35 }).observe(stage);
+
+    // --- Touch swipe ------------------------------------------------------
+    // Vertical scrolling stays native (touch-action: pan-y); a gesture is a
+    // swipe only once it is clearly horizontal, and a swipe never follows a
+    // link under the finger. Mouse drags are left alone (text selection).
+    let pointerId = -1;
+    let startX = 0;
+    let startY = 0;
+    let swiping = false;
+    let swiped = false;
+
+    stage.addEventListener("pointerdown", (event) => {
+      if (event.pointerType === "mouse" || !event.isPrimary) return;
+      pointerId = event.pointerId;
+      startX = event.clientX;
+      startY = event.clientY;
+      swiping = false;
+      swiped = false;
+      hold("pointer");
+    });
+    stage.addEventListener("pointermove", (event) => {
+      if (event.pointerId !== pointerId || swiping) return;
+      const dx = event.clientX - startX;
+      if (Math.abs(dx) < 10 || Math.abs(dx) < Math.abs(event.clientY - startY) * 1.2) return;
+      swiping = true;
+      stage.setPointerCapture(pointerId);
+    });
+    const endPointer = (event: PointerEvent) => {
+      if (event.pointerId !== pointerId) return;
+      pointerId = -1;
+      if (swiping && event.type === "pointerup") {
+        const dx = event.clientX - startX;
+        swiped = true;
+        window.setTimeout(() => (swiped = false), 60);
+        if (Math.abs(dx) >= 40) show(index + (dx < 0 ? 1 : -1), dx < 0 ? 1 : -1, true);
+      }
+      swiping = false;
+      release("pointer");
+    };
+    stage.addEventListener("pointerup", endPointer);
+    stage.addEventListener("pointercancel", endPointer);
+    stage.addEventListener("dragstart", (event) => event.preventDefault());
+    stage.addEventListener(
+      "click",
+      (event) => {
+        if (!swiped) return;
+        swiped = false;
+        event.preventDefault();
+        event.stopPropagation();
+      },
+      true
+    );
+
+    reducedMotion.addEventListener("change", () => {
+      showToggle();
+      schedule();
+    });
+
+    // --- Start ------------------------------------------------------------
+    // After the first photograph has loaded, so nothing competes with it.
+    const start = () => {
+      hero.classList.add("is-slider");
+      hero.setAttribute("data-draw", "");
+      controls.hidden = false;
+      showToggle();
+      schedule();
+      load(1 % count);
+    };
+    const whenIdle = () => {
+      if ("requestIdleCallback" in window) window.requestIdleCallback(start, { timeout: 1200 });
+      else setTimeout(start, 200);
+    };
+    if (images[0].complete) whenIdle();
+    else {
+      images[0].addEventListener("load", whenIdle, { once: true });
+      images[0].addEventListener("error", whenIdle, { once: true });
     }
+  }
+
+  // ------------------------------------------------------------------
+  // Depth: the photograph and the prints follow a fine pointer by a few
+  // pixels and drift a little as the hero scrolls. One eased rAF loop that
+  // sleeps once it has settled and stops while the hero is out of view.
+  // ------------------------------------------------------------------
+  if (hero && stage) {
+    const finePointer = window.matchMedia("(hover: hover) and (pointer: fine)");
+    const target = { x: 0, y: 0, s: 0 };
+    const now = { x: 0, y: 0, s: 0 };
+    let frame = 0;
+    let visible = false;
+
+    const write = () => {
+      stage.style.setProperty("--px", now.x.toFixed(4));
+      stage.style.setProperty("--py", now.y.toFixed(4));
+      stage.style.setProperty("--ps", now.s.toFixed(4));
+    };
+    const tick = () => {
+      frame = 0;
+      now.x += (target.x - now.x) * 0.075;
+      now.y += (target.y - now.y) * 0.075;
+      now.s += (target.s - now.s) * 0.14;
+      const settled = Math.abs(target.x - now.x) < 0.001 && Math.abs(target.y - now.y) < 0.001 && Math.abs(target.s - now.s) < 0.001;
+      if (settled) Object.assign(now, target);
+      write();
+      if (!settled) wake();
+    };
+    const wake = () => {
+      if (!frame && visible && !reducedMotion.matches) frame = requestAnimationFrame(tick);
+    };
+    const onScroll = () => {
+      const rect = stage.getBoundingClientRect();
+      target.s = Math.min(1, Math.max(0, -rect.top / Math.max(1, rect.height)));
+      wake();
+    };
+    const onMove = (event: PointerEvent) => {
+      if (event.pointerType !== "mouse" || !finePointer.matches) return;
+      const rect = stage.getBoundingClientRect();
+      target.x = Math.min(1, Math.max(-1, ((event.clientX - rect.left) / rect.width) * 2 - 1));
+      target.y = Math.min(1, Math.max(-1, ((event.clientY - rect.top) / rect.height) * 2 - 1));
+      wake();
+    };
+    const rest = () => {
+      target.x = 0;
+      target.y = 0;
+      wake();
+    };
+    const reset = () => {
+      cancelAnimationFrame(frame);
+      frame = 0;
+      Object.assign(target, { x: 0, y: 0, s: 0 });
+      Object.assign(now, target);
+      write();
+    };
+
+    stage.addEventListener("pointermove", onMove);
+    stage.addEventListener("pointerleave", rest);
+    new IntersectionObserver(([entry]) => {
+      visible = entry.isIntersecting;
+      if (visible) {
+        window.addEventListener("scroll", onScroll, { passive: true });
+        onScroll();
+      } else {
+        window.removeEventListener("scroll", onScroll);
+        cancelAnimationFrame(frame);
+        frame = 0;
+      }
+    }).observe(stage);
+    reducedMotion.addEventListener("change", () => (reducedMotion.matches ? reset() : wake()));
   }
 </script>
 
 <style>
   .hero {
-    --hp: 0;
+    position: relative;
+    background: var(--color-ivory);
+  }
+
+  /* ---- Stage ------------------------------------------------------------
+     Phone first: the photograph on top, fading into the ivory copy below it
+     (one continuous hero). From 900px the photograph fills the stage and the
+     copy sits over its open left side. */
+  .hero__stage {
     --px: 0;
     --py: 0;
+    --ps: 0;
+    --gutter: clamp(16px, 4.4vw, 64px);
     position: relative;
+    isolation: isolate;
     overflow: clip;
-    background:
-      radial-gradient(90% 70% at 78% 30%, color-mix(in srgb, var(--color-rose) 26%, transparent), transparent 62%),
-      var(--color-ivory);
+    touch-action: pan-y;
   }
 
-  .hero__inner {
+  .hero__media {
+    position: relative;
+    height: clamp(270px, 66vw, 470px);
+    overflow: clip;
+  }
+
+  /* Wider than the screen and anchored right, so a phone shows the flowers
+     (the right two-thirds of each photograph) rather than the empty wall. */
+  .hero__scene {
+    position: absolute;
+    inset: 0 0 0 -45%;
+    transform: translate3d(0, calc(var(--ps) * 14px), 0);
+  }
+
+  .hero__photo {
+    position: absolute;
+    inset: 0;
+    background: var(--color-blush);
+  }
+
+  /* Without the script: the first photograph only. */
+  .hero__photo:not(.is-active) {
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  .hero__photo picture,
+  .hero__photo img {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .hero__photo img {
+    object-fit: cover;
+    object-position: var(--pos, 50% 50%);
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+
+  /* Each photograph keeps its own subject when the frame crops it. */
+  .hero__photo--bouquets {
+    --pos: 100% 22%;
+  }
+  .hero__photo--garlands {
+    --pos: 100% 68%;
+  }
+  .hero__photo--pooja {
+    --pos: 100% 78%;
+  }
+
+  /* With it: stacked, cross-fading, each arriving from the side it was asked
+     from (--from: 1 next, -1 previous). */
+  .hero.is-slider .hero__photo {
+    visibility: visible;
+    transform: translate3d(calc(var(--from, 1) * 26px), 0, 0) scale(1.015);
+    transition:
+      opacity 0.85s var(--ease-premium),
+      transform 0.85s var(--ease-premium);
+  }
+
+  .hero.is-slider .hero__photo.is-active {
+    opacity: 1;
+    transform: none;
+    z-index: 1;
+  }
+
+  .hero.is-slider .hero__photo.is-prep {
+    transition: none;
+  }
+
+  /* The photograph dissolves into the ivory copy area. */
+  .hero__veil {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    background: linear-gradient(180deg, transparent 52%, color-mix(in srgb, var(--color-ivory) 70%, transparent) 80%, var(--color-ivory) 97%);
+  }
+
+  /* ---- Copy ------------------------------------------------------------- */
+  .hero__content {
+    position: relative;
+    z-index: 5;
     display: grid;
-    max-width: 1440px;
-    margin: 0 auto;
-    padding: 0.9rem clamp(16px, 4vw, 56px) 1.5rem;
+    gap: 1rem;
+    margin-top: -2.9rem;
+    padding: 0 var(--gutter) 0.25rem;
   }
 
-  .hero__title {
-    margin: 0;
-    font-weight: inherit;
+  .hero__copies {
+    display: grid;
+  }
+
+  /* Every campaign's copy occupies the same cell, so the hero keeps one
+     height whichever is showing. */
+  .hero__copy {
+    grid-area: 1 / 1;
+    display: grid;
+    align-content: start;
+    justify-items: start;
+    gap: 0.85rem;
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  .hero__copy.is-active {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .hero.is-slider .hero__copy {
+    transform: translate3d(0, 10px, 0);
+    transition:
+      opacity 0.3s var(--ease-micro),
+      transform 0.3s var(--ease-micro),
+      visibility 0s linear 0.3s;
+  }
+
+  /* The text follows the photograph in. */
+  .hero.is-slider .hero__copy.is-active {
+    transform: none;
+    transition:
+      opacity 0.7s var(--ease-premium) 0.28s,
+      transform 0.7s var(--ease-premium) 0.28s,
+      visibility 0s;
   }
 
   .hero__eyebrow {
-    display: block;
-    margin-bottom: 0.6rem;
+    margin: 0;
     font-size: 11px;
     font-weight: 600;
-    letter-spacing: 0.2em;
+    letter-spacing: 0.26em;
     text-transform: uppercase;
-    color: var(--color-rose-deep);
+    color: var(--color-moss);
   }
 
-  .hero__display {
-    display: block;
+  .hero__headline {
+    margin: 0;
+    max-width: 16ch;
     font-family: var(--font-display);
-    font-weight: 360;
-    font-size: clamp(2.5rem, 1.6rem + 4.6vw, 6.4rem);
-    line-height: 0.93;
-    letter-spacing: -0.04em;
+    font-weight: 380;
+    font-size: clamp(2.25rem, 1.55rem + 3.3vw, 2.75rem);
+    line-height: 1.04;
+    letter-spacing: -0.03em;
     color: var(--color-ink);
     font-variation-settings: "opsz" 144;
+    text-wrap: balance;
   }
 
-  .hero__line {
-    display: block;
-  }
-
-  .hero__line--italic {
+  .hero__headline em {
     font-style: italic;
-    font-weight: 330;
+    font-weight: 350;
     color: var(--color-rose-deep);
-    padding-left: 0.04em;
   }
 
   .hero__body {
     margin: 0;
-    max-width: 30ch;
-    font-size: var(--step-1);
-    line-height: 1.45;
+    max-width: 34ch;
+    font-size: 1rem;
+    line-height: 1.5;
     color: var(--color-moss);
   }
 
@@ -232,368 +760,786 @@ const productHref = `/products/${slug}`;
     display: flex;
     flex-wrap: wrap;
     gap: 0.6rem;
+    margin-top: 0.25rem;
   }
 
-  .hero__note {
+  .hero__cta {
+    min-height: 50px;
+    padding-inline: 1.15rem;
+    font-size: 0.9375rem;
+    letter-spacing: 0.01em;
+    text-transform: none;
+  }
+
+  .hero__cta svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: transform 0.25s var(--ease-premium);
+  }
+
+  .hero__cta:hover svg {
+    transform: translateX(3px);
+  }
+
+  .hero__cta--quiet {
+    background: color-mix(in srgb, var(--color-ivory) 78%, transparent);
+  }
+
+  /* ---- Controls --------------------------------------------------------- */
+  .hero__controls {
+    display: flex;
+    align-items: center;
+    justify-self: start;
+    gap: 2px;
+    margin-left: -10px;
+  }
+
+  .hero__controls[hidden] {
+    display: none;
+  }
+
+  /* The script is on its way: keep the controls' place from the first paint,
+     so nothing moves when they appear. */
+  :global(html.js) .hero__controls[hidden] {
+    display: flex;
+    visibility: hidden;
+  }
+
+  .hero__btn,
+  .hero__dot {
+    display: inline-grid;
+    place-items: center;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--color-ink);
+    cursor: pointer;
+  }
+
+  .hero__btn {
+    width: 44px;
+    border-radius: 999px;
+    transition:
+      background-color 0.18s var(--ease-micro),
+      color 0.18s var(--ease-micro);
+  }
+
+  .hero__btn[hidden] {
+    display: none;
+  }
+
+  .hero__btn:hover {
+    background: var(--color-blush);
+    color: var(--color-berry);
+  }
+
+  .hero__btn:focus-visible,
+  .hero__dot:focus-visible {
+    outline: 3px solid var(--color-berry);
+    outline-offset: -3px;
+    border-radius: 999px;
+  }
+
+  .hero__btn svg {
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .hero__icon-play,
+  .hero__btn--toggle.is-paused .hero__icon-pause {
+    display: none;
+  }
+
+  .hero__btn--toggle.is-paused .hero__icon-play {
+    display: block;
+  }
+
+  .hero__icon-play path {
+    fill: currentColor;
+    stroke: none;
+  }
+
+  .hero__dots {
+    display: flex;
+  }
+
+  /* A 24x44 target around a small mark. */
+  .hero__dot {
+    width: 24px;
+  }
+
+  .hero__dot span {
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    background: var(--color-sage);
+    transition:
+      width 0.3s var(--ease-premium),
+      background-color 0.3s var(--ease-premium);
+  }
+
+  .hero__dot:hover span {
+    background: var(--color-moss);
+  }
+
+  .hero__dot[aria-current="true"] span {
+    width: 18px;
+    background: var(--color-berry);
+  }
+
+  .hero__count {
     margin: 0;
-    max-width: 38ch;
+    min-width: 3.2em;
+    padding-inline: 0.35rem;
+    font-size: var(--step--1);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+    color: var(--color-ink);
+  }
+
+  /* ---- Photo prints ------------------------------------------------------
+     Hidden on a phone, where they would sit on the flowers. Slot wrapper:
+     place and visibility (slide transition). Drift wrapper: parallax. */
+  .hero__prints {
+    display: none;
+  }
+
+  .hero__print-slot {
+    position: absolute;
+    top: var(--print-top, 1.5rem);
+    right: var(--gutter);
+    width: var(--print-w);
+    transition:
+      transform 0.9s var(--ease-premium),
+      opacity 0.5s var(--ease-micro),
+      visibility 0s;
+  }
+
+  .hero__print-slot[data-slot="b"] {
+    transform: translate3d(-14px, var(--print-drop), 0);
+  }
+
+  .hero__print-slot[data-slot="off"] {
+    opacity: 0;
+    visibility: hidden;
+    transform: translate3d(18px, calc(var(--print-drop) * 0.5), 0);
+    transition:
+      transform 0.9s var(--ease-premium),
+      opacity 0.4s var(--ease-micro),
+      visibility 0s linear 0.4s;
+  }
+
+  .hero__print-drift {
+    transform: translate3d(calc(var(--px) * -15px), calc(var(--py) * -12px + var(--ps) * -22px), 0) rotateX(calc(var(--py) * -1.6deg)) rotateY(calc(var(--px) * 1.6deg));
+  }
+
+  .hero__print {
+    display: block;
+    padding: 7px 7px 0;
+    background: #fffdf8;
+    border-radius: 3px;
+    color: var(--color-ink);
+    text-decoration: none;
+    pointer-events: auto;
+    box-shadow:
+      0 1px 2px rgba(39, 59, 50, 0.16),
+      0 18px 30px -18px rgba(39, 59, 50, 0.5);
+    transform: rotate(var(--tilt));
+    transition:
+      transform 0.9s var(--ease-premium),
+      box-shadow 0.3s var(--ease-micro);
+  }
+
+  .hero__print-slot[data-slot="a"] .hero__print {
+    --tilt: -5deg;
+  }
+
+  .hero__print-slot[data-slot="b"] .hero__print {
+    --tilt: 6deg;
+  }
+
+  .hero__print-slot[data-slot="off"] .hero__print {
+    --tilt: 0deg;
+  }
+
+  .hero__print:hover,
+  .hero__print:focus-visible {
+    transform: rotate(calc(var(--tilt) * 0.4)) translateY(-3px);
+    box-shadow:
+      0 1px 2px rgba(39, 59, 50, 0.16),
+      0 24px 34px -18px rgba(39, 59, 50, 0.55);
+  }
+
+  .hero__print:focus-visible {
+    outline: 3px solid var(--color-berry);
+    outline-offset: 3px;
+  }
+
+  .hero__print picture,
+  .hero__print img {
+    display: block;
+    width: 100%;
+  }
+
+  .hero__print img {
+    height: auto;
+    aspect-ratio: 5 / 6;
+    object-fit: cover;
+    background: var(--color-blush);
+  }
+
+  .hero__print-caption {
+    display: block;
+    padding: 0.45rem 0.1rem 0.6rem;
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 0.875rem;
+    line-height: 1.15;
+    text-align: center;
+  }
+
+  /* ---- Hand-drawn accents ----------------------------------------------- */
+  .hero__doodles {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    pointer-events: none;
+    transform: translate3d(calc(var(--px) * -10px), calc(var(--py) * -8px + var(--ps) * -12px), 0);
+  }
+
+  .hero__doodle-set {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      opacity 0.35s var(--ease-micro),
+      visibility 0s linear 0.35s;
+  }
+
+  .hero[data-slide="bouquets"] .hero__doodle-set--bouquets,
+  .hero[data-slide="garlands"] .hero__doodle-set--garlands,
+  .hero[data-slide="pooja"] .hero__doodle-set--pooja {
+    opacity: 1;
+    visibility: visible;
+    transition-delay: 0s;
+  }
+
+  .hero__doodle {
+    display: block;
+    overflow: visible;
+  }
+
+  .hero__doodle path {
+    fill: none;
+    stroke: var(--color-rose-deep);
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+    stroke-dasharray: 1;
+    stroke-dashoffset: 0;
+  }
+
+  .hero__doodle--sprig {
+    position: absolute;
+    left: 5%;
+    top: 9%;
+    width: 30px;
+    transform: rotate(-14deg);
+  }
+
+  .hero__doodle--sprig path {
+    stroke: color-mix(in srgb, var(--color-sage-deep) 78%, var(--color-sage));
+  }
+
+  /* The annotation needs open space beside the flowers: desktop only. */
+  .hero__note {
+    display: none;
+  }
+
+  .hero__doodle--flourish {
+    width: 64px;
+    margin-bottom: -0.2rem;
+  }
+
+  @keyframes hero-draw {
+    from {
+      stroke-dashoffset: 1;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  @keyframes hero-note-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  /* Drawn again each time a slide becomes active (the script re-sets
+     data-draw). */
+  @media (prefers-reduced-motion: no-preference) {
+    .hero[data-draw] .hero__doodles .hero__doodle path,
+    .hero[data-draw] .hero__copy.is-active .hero__doodle--flourish path {
+      animation: hero-draw 0.9s var(--ease-premium) both;
+      animation-delay: calc(0.35s + var(--d, 0s));
+    }
+
+    .hero[data-draw] .hero__note-text {
+      animation: hero-note-in 0.7s var(--ease-micro) 0.45s both;
+    }
+  }
+
+  /* ---- Shortcut strip --------------------------------------------------- */
+  .hero__strip {
+    position: relative;
+    z-index: 6;
+    margin: 1.1rem var(--strip-gutter, 16px) 0;
+    border: 1px solid color-mix(in srgb, var(--color-sage) 38%, transparent);
+    border-radius: 22px;
+    background: #fffdf9;
+    box-shadow:
+      0 1px 2px rgba(39, 59, 50, 0.05),
+      0 22px 40px -30px rgba(39, 59, 50, 0.5);
+    overflow: hidden;
+  }
+
+  /* A contained row: it scrolls sideways inside the strip, never the page. */
+  .hero__strip ul {
+    display: flex;
+    margin: 0;
+    padding: 6px;
+    list-style: none;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+  }
+
+  .hero__strip ul::-webkit-scrollbar {
+    display: none;
+  }
+
+  .hero__strip li {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    scroll-snap-align: start;
+  }
+
+  .hero__strip li + li::before {
+    content: "";
+    width: 1px;
+    height: 22px;
+    margin-inline: 4px;
+    background: var(--color-line);
+  }
+
+  .hero__strip a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    min-height: 46px;
+    padding: 0 0.95rem;
+    border-radius: 999px;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    color: var(--color-ink);
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background-color 0.18s var(--ease-micro);
+  }
+
+  .hero__strip a:hover {
+    background: var(--color-blush);
+  }
+
+  .hero__strip a:focus-visible {
+    outline: 3px solid var(--color-berry);
+    outline-offset: -3px;
+  }
+
+  .hero__strip svg {
+    flex: none;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .hero__strip-icon {
+    width: 21px;
+    height: 21px;
+    stroke-width: 1.5;
+    color: var(--color-rose-deep);
+  }
+
+  .hero__strip-arrow {
+    width: 15px;
+    height: 15px;
+    stroke-width: 1.6;
+    color: var(--color-moss);
+    transition: transform 0.25s var(--ease-premium);
+  }
+
+  .hero__strip a:hover .hero__strip-arrow {
+    transform: translateX(3px);
+  }
+
+  /* ---- Under the strip -------------------------------------------------- */
+  .hero__below {
+    display: grid;
+    gap: 0.15rem;
+    padding: 1rem clamp(16px, 4.4vw, 64px) 1.5rem;
     font-size: var(--step--1);
     color: var(--color-moss);
   }
 
-  /* Small shopping shortcuts; occasion visibility follows admin assignments. */
-  .hero__occasions {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: var(--step--1);
+  .hero__below p {
+    margin: 0;
   }
 
-  .hero__occasions a {
-    display: inline-flex;
-    align-items: center;
-    min-height: 44px;
-    padding: 0.45rem 0.85rem;
-    border: 1px solid var(--color-line);
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--color-paper) 70%, transparent);
-    font-weight: 700;
-    color: var(--color-ink);
-    text-decoration: none;
-  }
-
-  .hero__occasions a:hover {
-    border-color: var(--color-rose-deep);
-    background: var(--color-paper);
-  }
-
-  /* The bouquet in the photograph: name, published price, a plain link. */
-  .hero__caption {
-    position: relative;
-    z-index: 2;
-    display: inline-flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    justify-content: center;
-    gap: 0.15rem 0.6rem;
-    min-height: 44px;
-    margin-top: 1rem;
-    padding: 0.55rem 1rem;
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--color-paper) 88%, transparent);
-    color: var(--color-ink);
-    font-size: var(--step--1);
-    text-decoration: none;
-    box-shadow: 0 6px 18px -10px rgba(23, 61, 45, 0.45);
-  }
-
-  .hero__caption-name {
-    font-weight: 700;
-  }
-
-  .hero__caption-price {
-    color: var(--color-berry);
-    font-weight: 700;
-  }
-
-  .hero__caption-cta {
-    text-decoration: underline;
-    text-underline-offset: 0.2em;
-  }
-
-  .hero__caption:focus-visible {
-    outline: 3px solid var(--color-ink);
-    outline-offset: 3px;
-  }
-
-  .hero__note a {
+  .hero__links a {
     display: inline-block;
-    padding-block: 0.35rem;
+    padding-block: 0.4rem;
     font-weight: 700;
     color: var(--color-ink);
     text-underline-offset: 0.2em;
   }
 
-  /* Three or four shortcuts: two per row. */
-  .hero__actions[data-count="3"],
-  .hero__actions[data-count="4"] {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  /* ---- The 3D stage ---------------------------------------------------- */
-  .hero__scene {
-    --mask-h: 420px;
-    position: relative;
-    display: grid;
-    place-items: center;
-    perspective: 1300px;
-    perspective-origin: 50% 35%;
-  }
-
-  /* --sep: how far apart the planes are (entry → rest → scrolled). */
-  .hero__stage {
-    --sep: calc(1 + var(--hp) * 0.9);
-    position: relative;
-    height: var(--mask-h);
-    aspect-ratio: var(--photo-ar);
-    transform-style: preserve-3d;
-    transform:
-      translateY(calc(var(--hp) * -36px))
-      rotateX(calc(3deg + var(--hp) * 16deg - var(--py) * 4deg))
-      rotateY(calc(-9deg + var(--hp) * 8deg + var(--px) * 6deg));
-    will-change: transform;
-  }
-
-  .hero__back,
-  .hero__shade,
-  .hero__photo,
-  .hero__lens {
-    position: absolute;
-  }
-
-  /* Backing: a quiet rose panel, offset up and right, set well behind. */
-  .hero__back {
-    inset: -7% -16% 12% 22%;
-    border-radius: 999px 999px 10px 10px / 46% 46% 10px 10px;
-    background: linear-gradient(170deg, color-mix(in srgb, var(--color-rose) 55%, var(--color-ivory)), color-mix(in srgb, var(--color-rose) 80%, var(--color-ivory)));
-    border: 1px solid color-mix(in srgb, var(--color-rose-deep) 18%, transparent);
-    transform: translateZ(calc(-150px * var(--sep)));
-  }
-
-  /* Contact shadow between the back panel and the photograph. */
-  .hero__shade {
-    inset: 10% 4% -4% 6%;
-    border-radius: 50% 50% 18px 18px / 37% 37% 18px 18px;
-    background: rgba(23, 61, 45, 0.32);
-    filter: blur(22px);
-    transform: translateZ(calc(-40px * var(--sep))) translateY(calc(14px + var(--hp) * 30px));
-  }
-
-  /* The photograph, in an arch: rounded corners rather than clip-path so
-     the edge stays crisp and the stage keeps its depth. */
-  .hero__photo {
-    inset: 0;
-    overflow: hidden;
-    border-radius: 50% 50% 14px 14px / 37% 37% 14px 14px;
-    background: var(--color-linen);
-    transform: translateZ(0);
-  }
-
-  .hero__photo img {
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
-  /* Foreground detail: the same photograph's tulips, nearest the viewer. */
-  .hero__lens {
-    left: -14%;
-    bottom: 9%;
-    width: 34%;
-    aspect-ratio: 1;
-    border-radius: 50%;
-    overflow: hidden;
-    border: 5px solid var(--color-paper);
-    background: var(--color-linen);
-    box-shadow:
-      0 18px 34px -14px rgba(23, 61, 45, 0.5),
-      0 2px 6px rgba(23, 61, 45, 0.18);
-    transform: translateZ(calc(110px * var(--sep)));
-  }
-
-  /* The lens magnifies the flowers of the same photograph (same file). */
-  .hero__lens img {
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transform: scale(2.3);
-    transform-origin: 46% 36%;
-  }
-
-  /* Entry: held at a steeper angle with the planes pressed together until
-     the photograph is ready, then the stage turns and the planes separate.
-     Only the individual rotate/translate properties are animated (not the
-     scroll-driven transform), so the browser can run it off the main
-     thread. Type and buttons never move. */
-  :global(html.motion) .hero:not(.is-ready) .hero__stage {
-    rotate: 9 -14 0 16deg;
-  }
-  :global(html.motion) .hero:not(.is-ready) .hero__back {
-    translate: 0 0 150px;
-  }
-  :global(html.motion) .hero:not(.is-ready) .hero__shade {
-    translate: 0 0 40px;
-  }
-  :global(html.motion) .hero:not(.is-ready) .hero__lens {
-    translate: 0 0 -110px;
-  }
-
-  :global(html.motion) .hero.is-ready .hero__stage {
-    animation: hero-turn 1.8s var(--ease-premium) both;
-  }
-  :global(html.motion) .hero.is-ready .hero__back {
-    animation: hero-back 1.8s var(--ease-premium) both;
-  }
-  :global(html.motion) .hero.is-ready .hero__shade {
-    animation: hero-shade 1.8s var(--ease-premium) both;
-  }
-  :global(html.motion) .hero.is-ready .hero__lens {
-    animation: hero-lens 1.8s var(--ease-premium) both;
-  }
-
-  @keyframes hero-turn {
-    from {
-      rotate: 9 -14 0 16deg;
-    }
-    to {
-      rotate: 9 -14 0 0deg;
-    }
-  }
-  @keyframes hero-back {
-    from {
-      translate: 0 0 150px;
-    }
-    to {
-      translate: 0 0 0;
-    }
-  }
-  @keyframes hero-shade {
-    from {
-      translate: 0 0 40px;
-    }
-    to {
-      translate: 0 0 0;
-    }
-  }
-  @keyframes hero-lens {
-    from {
-      translate: 0 0 -110px;
-    }
-    to {
-      translate: 0 0 0;
-    }
-  }
-
-  /* ---- Narrow screens: one composition — headline, photograph, actions.
-     The copy wrapper dissolves so its children join the hero grid. ---- */
-  @media (max-width: 1023px) {
-    .hero__inner {
-      grid-template-areas: "title" "scene" "actions" "occasions" "body" "note" "links";
-      row-gap: 0.85rem;
+  /* ---- Large phones and small tablets: one print fits beside the flowers. */
+  @media (min-width: 640px) and (max-width: 899px) {
+    .hero__stage {
+      --print-w: 124px;
+      --print-drop: 0px;
     }
 
-    .hero__copy {
-      display: contents;
+    .hero__prints {
+      display: block;
+      position: absolute;
+      inset: 0;
+      z-index: 4;
+      pointer-events: none;
     }
 
-    .hero__title {
-      grid-area: title;
+    .hero__print-slot[data-slot="b"] {
+      display: none;
     }
 
-    .hero__scene {
-      grid-area: scene;
-      /* Photo height follows the space left in the first screen; the type
-         keeps its size. */
-      --mask-h: min(clamp(220px, calc(100svh - var(--header-h) - 20rem), 430px), calc(100vw - 4rem));
-      padding: 0.4rem 0 0.8rem;
-    }
-
-    .hero__actions {
-      grid-area: actions;
-      flex-wrap: nowrap;
-    }
-
-    .hero__actions > * {
-      flex: 1 1 0;
-      min-width: 0;
-      padding-inline: 0.75rem;
+    .hero__headline {
+      max-width: 18ch;
+      font-size: 2.75rem;
     }
 
     .hero__body {
-      grid-area: body;
-      font-size: 1rem;
-    }
-
-    /* Keep the side layers inside a phone's width. */
-    /* Perspective enlarges the nearest plane and pushes it outward, so on
-       a phone the lens starts inside the photograph's edge. */
-    .hero__lens {
-      left: 3%;
-      bottom: 5%;
-      width: 31%;
-    }
-
-    .hero__back {
-      right: -9%;
-    }
-
-    .hero__note {
-      grid-area: note;
-    }
-
-    .hero__occasions {
-      grid-area: occasions;
-      margin-top: -0.35rem;
-    }
-
-    .hero__caption {
-      margin-top: 0.7rem;
-    }
-
-    .hero__links {
-      grid-area: links;
+      max-width: 46ch;
     }
   }
 
-  /* Narrowest phones: tighter button padding and tracking keep both
-     labels on one line without shrinking the type. */
-  @media (max-width: 379px) {
-    .hero__actions > * {
-      padding-inline: 0.4rem;
-      letter-spacing: 0.04em;
+  /* ---- Desktop: the photograph is the whole stage. ---------------------- */
+  @media (min-width: 900px) {
+    .hero__stage {
+      --hero-h: clamp(600px, calc(100svh - var(--header-h) - 7.75rem), 740px);
+      --print-w: clamp(124px, 10vw, 150px);
+      --print-h: calc(var(--print-w) * 1.2 + 2.6rem);
+      --print-top: 1.75rem;
+      /* The lower print stops above the controls. */
+      --print-drop: calc(var(--hero-h) - 8.6rem - var(--print-h) - var(--print-top));
+      height: var(--hero-h);
+      perspective: 1200px;
     }
-  }
 
-  @media (min-width: 640px) and (max-width: 1023px) {
-    .hero__inner {
-      max-width: 640px;
+    .hero__media {
+      position: absolute;
+      inset: 0;
+      height: auto;
     }
-    .hero__actions > * {
-      flex: 0 1 auto;
-    }
-  }
 
-  @media (min-width: 1024px) {
-    .hero__inner {
-      grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr);
-      column-gap: clamp(2rem, 4vw, 4rem);
-      align-items: center;
-      min-height: min(48rem, calc(100svh - var(--header-h) - 44px));
-      padding-top: 1.5rem;
-      padding-bottom: 2.5rem;
+    /* A margin beyond the stage, so the parallax never shows an edge. */
+    .hero__scene {
+      inset: -14px -16px;
+      transform: translate3d(calc(var(--px) * -8px), calc(var(--py) * -6px + var(--ps) * 20px), 0);
+    }
+
+    .hero__photo--bouquets {
+      --pos: 86% 14%;
+    }
+    .hero__photo--garlands {
+      --pos: 88% 62%;
+    }
+    .hero__photo--pooja {
+      --pos: 90% 74%;
+    }
+
+    /* Ivory only where the type sits, and a soft floor for the strip. */
+    .hero__veil {
+      background:
+        linear-gradient(0deg, color-mix(in srgb, var(--color-ivory) 92%, transparent), transparent 22%),
+        linear-gradient(
+          90deg,
+          color-mix(in srgb, var(--color-ivory) 90%, transparent) 0%,
+          color-mix(in srgb, var(--color-ivory) 74%, transparent) 24%,
+          color-mix(in srgb, var(--color-ivory) 30%, transparent) 41%,
+          transparent 54%
+        );
+    }
+
+    .hero__content {
+      height: 100%;
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 0 var(--gutter) 3.25rem;
+      align-content: center;
+      pointer-events: none;
+    }
+
+    .hero__copies {
+      width: min(43%, 34rem);
+      pointer-events: auto;
     }
 
     .hero__copy {
-      display: grid;
-      gap: 1.3rem;
+      gap: 1.15rem;
     }
 
     .hero__eyebrow {
       font-size: 12px;
-      margin-bottom: 1rem;
     }
 
+    .hero__headline {
+      max-width: none;
+      font-size: clamp(2.6rem, 0.9rem + 3.3vw, 3.9rem);
+      line-height: 1.02;
+    }
+
+    .hero__body {
+      max-width: 31ch;
+      font-size: clamp(1.0625rem, 0.85rem + 0.55vw, 1.25rem);
+      line-height: 1.5;
+    }
+
+    .hero__actions {
+      gap: 0.8rem;
+      margin-top: 0.5rem;
+    }
+
+    .hero__cta {
+      min-height: 54px;
+      padding-inline: 1.9rem;
+      font-size: 1rem;
+    }
+
+    .hero__doodle--flourish {
+      width: 78px;
+    }
+
+    /* A discreet pill at the lower right, above the strip. */
+    .hero__controls {
+      position: absolute;
+      right: var(--gutter);
+      bottom: 4.1rem;
+      margin: 0;
+      padding: 2px 4px;
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--color-ivory) 86%, transparent);
+      box-shadow: 0 1px 2px rgba(39, 59, 50, 0.08);
+      backdrop-filter: blur(6px);
+      pointer-events: auto;
+    }
+
+    .hero__prints {
+      display: block;
+      position: absolute;
+      inset: 0;
+      z-index: 4;
+      pointer-events: none;
+      perspective: 900px;
+    }
+
+    /* Room for one print only. */
+    .hero__print-slot[data-slot="b"] {
+      display: none;
+    }
+
+    /* The accents move to each photograph's open areas. */
+    .hero__doodle--sprig {
+      left: 39.5%;
+      top: 8%;
+      width: 40px;
+      transform: rotate(16deg);
+    }
+
+    .hero__note {
+      display: block;
+      position: absolute;
+      left: 33.5%;
+      top: 79%;
+      width: 12.5rem;
+      transform: rotate(-7deg);
+    }
+
+    .hero__note-text {
+      margin: 0;
+      font-family: var(--font-display);
+      font-style: italic;
+      font-weight: 400;
+      font-size: 1.3rem;
+      line-height: 1.15;
+      color: var(--color-ink);
+      text-shadow:
+        0 0 10px var(--color-ivory),
+        0 0 22px var(--color-ivory);
+    }
+
+    .hero__doodle--heart {
+      position: absolute;
+      right: 0.4rem;
+      top: -0.9rem;
+      width: 22px;
+      transform: rotate(12deg);
+    }
+
+    .hero__doodle--arrow {
+      position: absolute;
+      left: 7.6rem;
+      top: 3.1rem;
+      width: 62px;
+    }
+
+    .hero__doodle-set--garlands .hero__note {
+      left: 43.5%;
+      top: 9%;
+    }
+
+    .hero__doodle-set--garlands .hero__doodle--sprig {
+      left: 38.5%;
+      top: 76%;
+      transform: rotate(-12deg);
+    }
+
+    .hero__doodle-set--pooja .hero__note {
+      left: 44%;
+      top: 10%;
+    }
+
+    .hero__doodle-set--pooja .hero__doodle--sprig {
+      left: 37%;
+      top: 77%;
+      transform: rotate(-10deg);
+    }
+
+    .hero__doodle-set--garlands .hero__doodle--arrow,
+    .hero__doodle-set--pooja .hero__doodle--arrow {
+      top: 3.3rem;
+      transform: scaleY(-1) rotate(-8deg);
+    }
+
+    /* The strip straddles the hero's lower edge. */
+    .hero__strip {
+      --strip-gutter: clamp(20px, 3vw, 44px);
+      width: fit-content;
+      max-width: calc(100% - 2 * var(--strip-gutter));
+      margin: -2.4rem auto 0;
+      border-radius: 999px;
+    }
+
+    .hero__strip ul {
+      padding: 8px 10px;
+    }
+
+    .hero__strip li + li::before {
+      margin-inline: 6px;
+    }
+
+    .hero__strip a {
+      min-height: 48px;
+      padding: 0 1.15rem;
+    }
+
+    .hero__below {
+      justify-items: center;
+      padding-top: 1.1rem;
+      padding-bottom: 1.25rem;
+      text-align: center;
+    }
+  }
+
+  /* Narrow desktops: the photograph is drawn a little wider than the stage
+     and held to its left edge, so the open wall still covers the copy; the
+     strip drops its arrows to fit on one line. */
+  @media (min-width: 900px) and (max-width: 1199px) {
     .hero__scene {
-      --mask-h: clamp(300px, calc(100svh - var(--header-h) - 12rem), 520px);
-      min-height: calc(var(--mask-h) + 6rem);
+      inset: -14px -15% -14px -16px;
     }
 
-    .hero__lens {
-      border-width: 6px;
+    .hero__photo--bouquets {
+      --pos: 0% 14%;
+    }
+    .hero__photo--garlands {
+      --pos: 0% 62%;
+    }
+    .hero__photo--pooja {
+      --pos: 0% 74%;
+    }
+
+    .hero__body {
+      max-width: 29ch;
+    }
+
+    .hero__cta {
+      padding-inline: 1.35rem;
+    }
+
+    .hero__strip-arrow {
+      display: none;
+    }
+
+    .hero__strip a {
+      padding: 0 0.85rem;
+    }
+  }
+
+  /* Wide screens: both prints. */
+  @media (min-width: 1280px) {
+    .hero__print-slot[data-slot="b"] {
+      display: block;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero.is-slider .hero__photo,
+    .hero.is-slider .hero__copy,
+    .hero.is-slider .hero__copy.is-active,
+    .hero__print-slot,
+    .hero__print-slot[data-slot="off"],
+    .hero__print,
+    .hero__doodle-set {
+      transition: none;
+    }
+
+    .hero.is-slider .hero__photo,
+    .hero.is-slider .hero__copy,
+    .hero__scene,
+    .hero__print-drift,
+    .hero__doodles {
+      transform: none;
     }
   }
 </style>

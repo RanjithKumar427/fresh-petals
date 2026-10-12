@@ -12,28 +12,50 @@
 @import "@fontsource-variable/jost/wght.css";
 
 /* ---------------------------------------------------------------------
-   Floral atelier design tokens. Contrast (WCAG) on ivory: ink 10.9:1,
-   moss 5.8:1, berry 8.7:1, apricot-deep 5.0:1, rose-deep 5.5:1.
-   apricot / rose / sage are decorative or large-text only.
+   Petal & Sage design tokens (12 Oct 2026). Five named colours and white:
+     Warm Ivory  #faf7f2  page, header and listing backgrounds
+     Petal Blush #f3e3e3  hero surfaces, featured sections, soft highlights
+     Sage Green  #a8b5a0  decorative accents, borders, botanical details
+     Deep Rose   #8a3f56  primary buttons, important links, active states
+     Forest Ink  #273b32  headings, navigation, body text, prices, footer
+     White                product cards, lettering on deep rose
+   The token names are the ones every template already uses; each now
+   resolves to one of those colours or a tint of one.
+   Contrast (WCAG): ink 11.2:1 on ivory, 9.6:1 on blush; moss 6.0:1 on
+   ivory; deep rose 6.7:1 on ivory and 7.2:1 under white lettering;
+   sage-deep 5.3:1 on white. Sage (2.0:1) and blush are surfaces, borders
+   and decoration only, never text on a light ground.
    --------------------------------------------------------------------- */
 @theme {
-  --color-ivory: #f7f3eb;
-  --color-paper: #fcfaf5;
-  --color-linen: #efe8dc;
-  --color-ink: #173d2d;
-  --color-ink-deep: #0f2a1f;
-  --color-moss: #4e6358;
-  --color-sage: #7d8f84;
-  --color-line: #e2d9c9;
-  --color-line-strong: #cbbfab;
-  --color-rose: #e8b7b2;
-  --color-rose-soft: #f4dcd7;
-  --color-rose-deep: #9a4a44;
-  --color-apricot: #d97a52;
-  --color-apricot-deep: #a6502c;
-  --color-berry: #7c243e;
-  --color-mint-soft: #eef3ec;
-  --color-mint-line: #cfdecf;
+  --color-ivory: #faf7f2;
+  /* Cards, panels and form fields: white. */
+  --color-paper: #ffffff;
+  /* Soft highlight panels, chips and photo mattes: Petal Blush. */
+  --color-linen: #f3e3e3;
+  --color-blush: #f3e3e3;
+  --color-ink: #273b32;
+  --color-ink-deep: #1c2a24;
+  /* Secondary text: Forest Ink, lightened. */
+  --color-moss: #52635a;
+  --color-sage: #a8b5a0;
+  /* Sage dark enough to read: placeholders and disabled labels. */
+  --color-sage-deep: #5f7062;
+  /* Fine borders: sage tinted into ivory; the strong border is sage itself. */
+  --color-line: #e0e2d8;
+  --color-line-strong: #a8b5a0;
+  /* Blush accent on dark grounds (7.1:1 on ink), selection, soft buttons. */
+  --color-rose: #e3bfc6;
+  --color-rose-soft: #f3e3e3;
+  --color-rose-deep: #8a3f56;
+  /* Decorative underlines (was apricot); focus rings use Deep Rose. */
+  --color-apricot: #c58a9b;
+  --color-apricot-deep: #8a3f56;
+  /* The primary action colour (the old "berry" name): Deep Rose, and its hover. */
+  --color-berry: #8a3f56;
+  --color-berry-deep: #723247;
+  /* Positive notices keep their own green tint, tuned toward sage. */
+  --color-mint-soft: #eef2ea;
+  --color-mint-line: #cdd8c6;
 
   --font-display: "Fraunces Variable", "Fraunces", Georgia, "Times New Roman", serif;
   --font-sans: "Jost Variable", "Jost", "Segoe UI", Arial, Helvetica, sans-serif;
@@ -66,7 +88,7 @@
   --step-5: clamp(3rem, 1.6rem + 6.4vw, 7.25rem);
 
   --radius-soft: 14px;
-  --shadow-paper: 0 1px 0 rgba(23, 61, 45, 0.04), 0 18px 40px -22px rgba(23, 61, 45, 0.28);
+  --shadow-paper: 0 1px 0 rgba(39, 59, 50, 0.04), 0 18px 40px -22px rgba(39, 59, 50, 0.24);
   --header-h: 64px;
 }
 
@@ -188,16 +210,18 @@ body {
   text-wrap: pretty;
 }
 
+/* Prices are Forest Ink everywhere; Deep Rose is kept for actions. */
 .fp-price {
   font-family: var(--font-sans);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-  color: var(--color-berry);
+  color: var(--color-ink);
 }
 
 /* ---------------------------------------------------------------------
-   Buttons. Every legacy class maps onto the same three atelier styles:
-   solid ink, outline ink, and a soft rose accent.
+   Buttons. Every legacy class maps onto the same three styles: solid Deep
+   Rose with white lettering (the primary Shop / Order / Add to basket
+   action), outline Forest Ink, and a soft blush accent.
    --------------------------------------------------------------------- */
 .fp-btn,
 .fp-btn-dark,
@@ -229,17 +253,17 @@ body {
 .fp-btn-dark,
 .fp-btn-pill-dark,
 .fp-btn-block {
-  background: var(--color-ink);
-  color: var(--color-ivory);
-  border: 1px solid var(--color-ink);
+  background: var(--color-berry);
+  color: #ffffff;
+  border: 1px solid var(--color-berry);
 }
 
 .fp-btn:hover,
 .fp-btn-dark:hover,
 .fp-btn-pill-dark:hover,
 .fp-btn-block:hover {
-  background: var(--color-ink-deep);
-  border-color: var(--color-ink-deep);
+  background: var(--color-berry-deep);
+  border-color: var(--color-berry-deep);
 }
 
 .fp-btn-outline {
@@ -293,7 +317,7 @@ body {
 }
 
 .fp-link:hover {
-  text-decoration-color: var(--color-apricot);
+  text-decoration-color: var(--color-berry);
 }
 
 a:focus-visible,
@@ -303,9 +327,28 @@ select:focus-visible,
 textarea:focus-visible,
 summary:focus-visible,
 [tabindex]:focus-visible {
-  outline: 2px solid var(--color-apricot-deep);
+  outline: 2px solid var(--color-berry);
   outline-offset: 3px;
   border-radius: 4px;
+}
+
+/* On Forest Ink or Deep Rose grounds a deep-rose ring would disappear. */
+.on-dark a:focus-visible,
+.on-dark button:focus-visible,
+.on-dark input:focus-visible,
+.on-dark summary:focus-visible,
+.fp-btn:focus-visible,
+.fp-btn-dark:focus-visible,
+.fp-btn-pill-dark:focus-visible,
+.fp-btn-block:focus-visible {
+  outline-color: var(--color-ink);
+}
+
+.on-dark a:focus-visible,
+.on-dark button:focus-visible,
+.on-dark input:focus-visible,
+.on-dark summary:focus-visible {
+  outline-color: var(--color-rose);
 }
 
 /* Paper surface used by cards, panels and forms. */

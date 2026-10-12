@@ -48,14 +48,21 @@ export type OccasionJourney = {
   enquiryNoun: string;
 };
 
-const NEUTRAL: Palette = { band: "#f4efe6", plane: "#e8dfcf", accent: "#6b5a43" };
+// Petal & Sage (src/styles/global.css): a blush band for gift occasions, a
+// sage-tinted one for ceremonies, and a quieter ivory for Condolence and
+// any other page. Accents are Deep Rose or Forest Ink tones, 4.5:1 or
+// better on their band.
+const ROSE: Palette = { band: "#f3e3e3", plane: "#e3bfc6", accent: "#8a3f56" };
+const SAGE: Palette = { band: "#eef0ea", plane: "#cbd3c5", accent: "#46584c" };
+const QUIET: Palette = { band: "#f6f4ee", plane: "#dfe3da", accent: "#52635a" };
+const NEUTRAL: Palette = QUIET;
 
 export const OCCASION_JOURNEYS: Record<string, OccasionJourney> = {
   birthday: {
     route: "birthday",
     label: "Birthday",
     kind: "gift",
-    palette: { band: "#fbf1cf", plane: "#f2dc8c", accent: "#7a5a00" },
+    palette: ROSE,
     question: "Which bouquet suits them — and what does it cost?",
     enquiryNoun: "birthday flowers",
   },
@@ -63,7 +70,7 @@ export const OCCASION_JOURNEYS: Record<string, OccasionJourney> = {
     route: "anniversary",
     label: "Anniversary",
     kind: "gift",
-    palette: { band: "#f6e6e4", plane: "#e3bcb8", accent: "#8c3f3a" },
+    palette: ROSE,
     question: "Roses or lilies, and in which colour?",
     enquiryNoun: "anniversary flowers",
   },
@@ -71,7 +78,7 @@ export const OCCASION_JOURNEYS: Record<string, OccasionJourney> = {
     route: "wedding",
     label: "Wedding",
     kind: "ceremony",
-    palette: { band: "#faf3e4", plane: "#f0c27a", accent: "#8a4b00" },
+    palette: SAGE,
     question: "Flowers for the ceremony, or a gift for the couple?",
     intents: { ceremony: "For the ceremony", gift: "Send a gift" },
     enquiryNoun: "wedding flowers",
@@ -80,7 +87,7 @@ export const OCCASION_JOURNEYS: Record<string, OccasionJourney> = {
     route: "engagement",
     label: "Engagement",
     kind: "ceremony",
-    palette: { band: "#eef2ea", plane: "#c9d6c2", accent: "#3f5a46" },
+    palette: SAGE,
     question: "Flowers for the ceremony, or a gift for the couple?",
     intents: { ceremony: "For the ceremony", gift: "Send a gift" },
     enquiryNoun: "engagement flowers",
@@ -89,7 +96,7 @@ export const OCCASION_JOURNEYS: Record<string, OccasionJourney> = {
     route: "housewarming",
     label: "Housewarming & Pooja",
     kind: "ceremony",
-    palette: { band: "#f8e9df", plane: "#e6b79d", accent: "#94431f" },
+    palette: SAGE,
     question: "Flowers for the home and pooja, or a housewarming gift?",
     intents: { ceremony: "For the home & pooja", gift: "Send a gift" },
     enquiryNoun: "housewarming flowers",
@@ -98,7 +105,7 @@ export const OCCASION_JOURNEYS: Record<string, OccasionJourney> = {
     route: "pooja",
     label: "Pooja",
     kind: "ceremony",
-    palette: { band: "#f8e9df", plane: "#e6b79d", accent: "#94431f" },
+    palette: SAGE,
     question: "Flowers for the pooja, or a gift?",
     intents: { ceremony: "For the pooja", gift: "Send a gift" },
     enquiryNoun: "pooja flowers",
@@ -107,7 +114,7 @@ export const OCCASION_JOURNEYS: Record<string, OccasionJourney> = {
     route: "mom-to-be",
     label: "Baby Shower / Seemantham",
     kind: "ceremony",
-    palette: { band: "#f3eef6", plane: "#d8cbe2", accent: "#5b4870" },
+    palette: ROSE,
     question: "Flowers for the ceremony, or a gift for the family?",
     intents: { ceremony: "For the ceremony", gift: "Send a gift" },
     enquiryNoun: "baby shower or naming ceremony flowers",
@@ -116,7 +123,7 @@ export const OCCASION_JOURNEYS: Record<string, OccasionJourney> = {
     route: "sympathy",
     label: "Condolence",
     kind: "calm",
-    palette: { band: "#f5f2ea", plane: "#e4ded1", accent: "#545e57" },
+    palette: QUIET,
     question: "Can flowers reach them in time?",
     enquiryNoun: "condolence flowers",
   },

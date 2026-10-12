@@ -1,7 +1,7 @@
 ---
 // Homepage — the floral atelier, built around the questions a shopper has
-// (docs/occasion-journeys.md, "Homepage structure"): hero with an
-// identifiable public bouquet → bouquets to choose from (budget shortcut,
+// (docs/occasion-journeys.md, "Homepage structure"): a full-width hero of
+// three campaign photographs → bouquets to choose from (budget shortcut,
 // availability helper) → the occasion carousel → what will arrive → how
 // ordering works → focused questions → assisted choice → footer. No
 // promotional claims: the delivery strip uses the confirmed initial areas.
@@ -22,7 +22,7 @@ import OrderJourney from "../components/atelier/OrderJourney.astro";
 import FinalInvite from "../components/atelier/FinalInvite.astro";
 import HomeFaq from "../components/atelier/HomeFaq.astro";
 import { HOME_LANDING } from "../data/seoLanding";
-import { HERO_SIZES, getArrivalBouquet, getBouquetBrowse, getBouquetEdit, getBudgetShortcut, getFeaturedBouquets, getHeroPhoto } from "../data/atelierHome";
+import { HERO_SCENE_SIZES, getArrivalBouquet, getBouquetBrowse, getBouquetEdit, getBudgetShortcut, getFeaturedBouquets, getHeroCampaigns } from "../data/atelierHome";
 import { catalogueSlugs } from "../data/occasionJourneys";
 import { garlandsPromoted } from "../data/launchCatalogue";
 import { loadGarlands, isListedGarland } from "../data/garlands";
@@ -45,9 +45,8 @@ const editProducts = getBouquetEdit(priceMap);
 const featuredProducts = getFeaturedBouquets(editProducts);
 const budget = getBudgetShortcut(priceMap);
 const publicGarlands = garlandsPromoted() ? (await loadGarlands()).map((product) => product.garland).filter(isListedGarland) : [];
-const hero = getHeroPhoto();
-// The hero bouquet's published price, exactly as its card and page show it.
-const heroPrice = editProducts.find((product) => product.slug === hero.slug)?.priceLabel;
+// The hero's campaign slides; the garland slide and its buttons need public garlands.
+const heroCampaigns = getHeroCampaigns({ garlandsPublic: publicGarlands.length > 0 });
 
 // Organization/WebSite structured data — only verified facts: the name,
 // the site URL, the WhatsApp number every order link on the site uses, and
@@ -89,11 +88,12 @@ const homeJsonLd = [
   <!-- Homepage only: the display serif sets the hero headline in the first
        viewport (measured: helps here, hurts listing pages, so not global). -->
   <link slot="head" rel="preload" href={frauncesUrl} as="font" type="font/woff2" crossorigin />
-  <!-- Same srcset/sizes as the hero <img> (HeroAtelier.astro). -->
-  <link slot="head" rel="preload" as="image" imagesrcset={hero.main.srcset} imagesizes={HERO_SIZES} fetchpriority="high" />
+  <!-- The first hero photograph only, with the same AVIF srcset/sizes as its
+       <picture> (HeroAtelier.astro); the other two are fetched after it. -->
+  {heroCampaigns[0] && <link slot="head" rel="preload" as="image" type="image/avif" imagesrcset={heroCampaigns[0].image.avif} imagesizes={HERO_SCENE_SIZES} fetchpriority="high" />}
 
   <main class="atelier-home">
-    <HeroAtelier membership={membership} heroPrice={heroPrice} publicGarlands={publicGarlands} budget={budget} />
+    <HeroAtelier membership={membership} campaigns={heroCampaigns} publicGarlands={publicGarlands} budget={budget} />
     <BouquetEdit products={featuredProducts} totalCount={editProducts.length} browse={getBouquetBrowse()} budget={budget} />
     <OccasionCarousel membership={membership} />
     <InsideBouquet bouquet={getArrivalBouquet(priceMap)} />
