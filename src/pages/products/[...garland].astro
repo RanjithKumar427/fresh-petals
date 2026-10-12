@@ -11,6 +11,7 @@ import GarlandCard from "../../components/GarlandCard.astro";
 import { isListedGarland, loadGarlands } from "../../data/garlands";
 import { TaxonomyService } from "../../server/services/TaxonomyService";
 import { garlandCacheHeaders } from "../../server/services/GarlandWebsite";
+import { GARLANDS_PATH, GARLAND_COLLECTIONS, GARLAND_GUIDE_PATH } from "../../data/garlandCollections";
 
 export const prerender = false;
 
@@ -21,30 +22,61 @@ const garlands = /^[a-z0-9-]+$/.test(slug) ? await loadGarlands() : [];
 const product = garlands.find((item) => item.slug === slug) ?? null;
 if (!product) Astro.response.status = 404;
 
+// Six alternatives sharing a flower filter, taken from the designs that
+// follow this one in the catalogue (wrapping round), so each design links to
+// its neighbours rather than every page linking to the same first six.
+const position = product ? garlands.indexOf(product) : -1;
 const related = product
-  ? garlands
-      .filter((item) => item.slug !== product.slug && item.garland.filters.some((key) => product.garland.filters.includes(key)))
+  ? [...garlands.slice(position + 1), ...garlands.slice(0, position)]
+      .filter((item) => item.garland.filters.some((key) => product.garland.filters.includes(key)))
       .slice(0, 6)
   : [];
 const occasionOptions = product ? await TaxonomyService.listOccasions() : [];
 const noindex = !product || !isListedGarland(product.garland);
-const breadcrumbJsonLd = product
-  ? {
-      "@type": "BreadcrumbList",
-      itemListElement: [
-        { "@type": "ListItem", position: 1, name: "Home", item: new URL("/", Astro.site).toString() },
-        { "@type": "ListItem", position: 2, name: "Garlands", item: new URL("/categories/garlands", Astro.site).toString() },
-        { "@type": "ListItem", position: 3, name: product.name, item: new URL(`/products/${product.slug}`, Astro.site).toString() },
-      ],
-    }
-  : null;
+const abs = (path: string) => new URL(path, Astro.site).toString();
+// The flower collections this design belongs to; the first leads the breadcrumb.
+const collections = product ? GARLAND_COLLECTIONS.filter((collection) => product.garland.filters.includes(collection.key)) : [];
+const trail = product
+  ? [
+      { name: "Home", path: "/" },
+      { name: "Garlands", path: GARLANDS_PATH },
+      ...(collections[0] ? [{ name: collections[0].label, path: collections[0].path }] : []),
+      { name: product.name, path: `/products/${product.slug}` },
+    ]
+  : [];
+// The photograph is the owner's own (confirmed before launch), so it is
+// credited. No Product/Offer data: garlands are quote-only and carry no
+// amount, rating or stock claim (src/shared/quoteOnly.ts).
+const jsonLd = product
+  ? [
+      { "@type": "BreadcrumbList", itemListElement: trail.map((step, index) => ({ "@type": "ListItem", position: index + 1, name: step.name, item: abs(step.path) })) },
+      {
+        "@type": "ImageObject",
+        contentUrl: abs(product.garland.image.path),
+        name: `${product.name} (${product.garland.code})`,
+        caption: product.garland.image.alt,
+        width: product.garland.image.width,
+        height: product.garland.image.height,
+        creditText: "Fresh Petals",
+        creator: { "@type": "Organization", name: "Fresh Petals", url: abs("/") },
+        copyrightNotice: "Fresh Petals",
+      },
+    ]
+  : [];
+// Search snippet: what the photograph shows (the only confirmed details),
+// the design code, and how it is sold. An admin-written description leads
+// when there is one; the catalogue's placeholder ("… — design FP-G001.") does not.
+const written = product && !/— design FP-G\d+\.$/.test(product.description) ? product.description.replace(/([^.!?])$/, "$1.") : "";
+const metaDescription = product
+  ? `${written || product.garland.image.alt.replace(/([^.!?])$/, "$1.")} Design ${product.garland.code}, made to order by Fresh Petals in Bengaluru. Price on WhatsApp.`
+  : "This page isn't available.";
 ---
 
 <BaseLayout
-  title={product ? `${product.name} (${product.garland.code}) – Garlands | Fresh Petals Bengaluru` : "Not available | Fresh Petals Bengaluru"}
-  description={product ? product.description : "This page isn't available."}
+  title={product ? `${product.name} (${product.garland.code}) | Fresh Petals Bengaluru` : "Not available | Fresh Petals Bengaluru"}
+  description={metaDescription}
   image={product?.image}
-  jsonLd={noindex || !breadcrumbJsonLd ? [] : [breadcrumbJsonLd]}
+  jsonLd={noindex ? [] : jsonLd}
   showCategoryCarousel={false}
   noindex={noindex}
 >
@@ -60,6 +92,13 @@ const breadcrumbJsonLd = product
                 <div class="mt-10 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
                   {related.map((item) => <GarlandCard product={item} />)}
                 </div>
+                <p class="mt-8 flex flex-wrap justify-center gap-2" data-garland-more>
+                  {collections.map((collection) => (
+                    <a href={collection.path} class="inline-flex min-h-[44px] items-center rounded-full border border-line bg-paper px-4 text-sm text-ink hover:border-ink">All {collection.label.toLowerCase()}</a>
+                  ))}
+                  <a href={GARLANDS_PATH} class="inline-flex min-h-[44px] items-center rounded-full border border-line bg-paper px-4 text-sm text-ink hover:border-ink">All garlands</a>
+                  <a href={GARLAND_GUIDE_PATH} class="inline-flex min-h-[44px] items-center rounded-full border border-line bg-paper px-4 text-sm text-ink hover:border-ink">How to choose a wedding garland</a>
+                </p>
               </div>
             </section>
           )}

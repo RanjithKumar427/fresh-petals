@@ -1,11 +1,13 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 
+import { WHATSAPP_NUMBER } from "../config/storefront";
+
 const whatsappText = encodeURIComponent(
   "Hi Fresh Petals, I want to know about loyalty benefits for repeat flower orders."
 );
 
-const whatsappHref = `https://wa.me/?text=${whatsappText}`;
+const whatsappHref = `https://wa.me/${WHATSAPP_NUMBER}?text=${whatsappText}`;
 
 const loyaltyTiers = [
   {
@@ -34,6 +36,7 @@ const notes = [
 ---
 
 <BaseLayout
+  noindex={true}
   title="Loyalty Points | Fresh Petals Bengaluru"
   description="Fresh Petals Bengaluru loyalty page for repeat flower orders, subscriptions, pooja flowers and bulk customers."
 >

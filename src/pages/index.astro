@@ -11,8 +11,7 @@
 // depth is CSS perspective plus small scripts. HeroReel.astro is kept but
 // not mounted: a second browsing carousel before the products duplicated
 // the occasion carousel and pushed the first price further down.
-// SEO title/description/structured data are unchanged from the previous
-// homepage (src/data/seoLanding.ts).
+// The SEO title and description come from src/data/seoLanding.ts.
 import BaseLayout from "../layouts/BaseLayout.astro";
 import HeroAtelier from "../components/atelier/HeroAtelier.astro";
 import OccasionCarousel from "../components/atelier/OccasionCarousel.astro";
@@ -61,6 +60,11 @@ const homeJsonLd = [
     alternateName: "Fresh Petals Bengaluru",
     url: siteUrl,
     sameAs: ["https://www.instagram.com/freshpetals.hyderabad/"],
+    // The published delivery coverage (src/data/seoLanding.ts AREA_FAQ).
+    areaServed: [
+      { "@type": "Place", name: "Chamarajpet, Bengaluru" },
+      { "@type": "Place", name: "Basavanagudi, Bengaluru" },
+    ],
     contactPoint: {
       "@type": "ContactPoint",
       telephone: "+91-96520-12274",

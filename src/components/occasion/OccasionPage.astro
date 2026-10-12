@@ -17,7 +17,7 @@ import type { OccasionMeta } from "../../data/occasionPages";
 import { photo, responsiveImage, type Photo } from "../../data/atelierHome";
 import { SERVICE_AREA_LINE, filterGroups, journeyEnquiryText, journeyFor } from "../../data/occasionJourneys";
 import { whatsappLink } from "../../config/storefront";
-import { OCCASION_LANDING, NOINDEX_OCCASION_SLUGS, lowestPrice } from "../../data/seoLanding";
+import { OCCASION_LANDING, NOINDEX_OCCASION_SLUGS, CEREMONY_INDEXABLE_OCCASIONS, WEDDING_LANDING, lowestPrice } from "../../data/seoLanding";
 import { GARLAND_OCCASION_ROUTES } from "../../data/launchCatalogue";
 
 interface Props {
@@ -45,18 +45,26 @@ const { occasion, products } = Astro.props;
 // copy and FAQs follow the products.
 const journey = journeyFor(occasion.slug);
 const landing = OCCASION_LANDING[occasion.slug];
-const pageTitle = landing?.title ?? `${occasion.name} Flowers | Fresh Petals Bengaluru`;
-const pageDescription =
-  products.length === 0
-    ? `Our ${journey.label.toLowerCase()} range isn't online yet. Ask Fresh Petals on WhatsApp.`
-    : (landing?.description ?? occasion.description);
-const pageHeading = landing?.h1 ?? (journey.kind === "calm" ? "Condolence & Sympathy Flowers" : `${occasion.name} Flowers`);
-const fromPrice = lowestPrice(products);
-const noindex = products.length === 0 || NOINDEX_OCCASION_SLUGS.has(occasion.slug);
 const ceremony = journey.kind === "ceremony" && journey.intents;
 // Live public ceremony designs are rendered in HTML too, with the same
 // suitability routes and gates used by shortcuts. Drafts stay private.
 const ceremonyDesigns = GARLAND_OCCASION_ROUTES.has(occasion.slug) ? (await loadGarlands()).filter((product) => isListedGarland(product.garland) && product.occasionTags?.includes(occasion.slug)) : [];
+// A ceremony page that lists public garlands is a populated page even with
+// no gift bouquets assigned; only the occasions named in
+// CEREMONY_INDEXABLE_OCCASIONS are offered to search on that basis.
+const ceremonyLanding = ceremonyDesigns.length > 0 && CEREMONY_INDEXABLE_OCCASIONS.has(occasion.slug) ? WEDDING_LANDING : null;
+const listsNothing = products.length === 0 && ceremonyDesigns.length === 0;
+const pageTitle = ceremonyLanding?.title ?? landing?.title ?? `${occasion.name} Flowers | Fresh Petals Bengaluru`;
+const pageDescription = ceremonyLanding
+  ? ceremonyLanding.description
+  : listsNothing
+    ? `Our ${journey.label.toLowerCase()} range isn't online yet. Ask Fresh Petals on WhatsApp.`
+    : products.length === 0
+      ? `${occasion.name} ceremony garlands from Fresh Petals Bengaluru, made to order. Price and availability on WhatsApp.`
+      : (landing?.description ?? occasion.description);
+const pageHeading = ceremonyLanding?.h1 ?? landing?.h1 ?? (journey.kind === "calm" ? "Condolence & Sympathy Flowers" : `${occasion.name} Flowers`);
+const fromPrice = lowestPrice(products);
+const noindex = NOINDEX_OCCASION_SLUGS.has(occasion.slug) || (products.length === 0 && !ceremonyLanding);
 const filters = withoutUnpricedBudget(parseShopFilters(Astro.url.searchParams), [...products, ...ceremonyDesigns].map((product) => shopItemData(product)));
 const giftSelected = !ceremony || filters.intent === "gift";
 const selectedProducts = giftSelected ? products : ceremonyDesigns;

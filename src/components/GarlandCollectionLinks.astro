@@ -1,0 +1,47 @@
+---
+// Plain links between the garland listing and its flower collections
+// (src/data/garlandCollections.ts). Only collections that currently list a
+// design are linked, each with its live count.
+import { GARLANDS_PATH, populatedCollections } from "../data/garlandCollections";
+
+interface Props {
+  garlands: { garland: { filters: string[] } }[];
+  /** Collection key of the page being shown, if any. */
+  current?: string;
+}
+
+const { garlands, current } = Astro.props;
+const entries = populatedCollections(garlands);
+const chip = "garland-link inline-flex min-h-[44px] shrink-0 items-center gap-1 rounded-full border border-line bg-paper px-4 text-[12px] font-semibold text-ink transition hover:border-ink";
+---
+
+{
+  entries.length > 0 && (
+    <nav
+      aria-label="Garland collections"
+      class="-mx-5 mb-6 flex gap-2 overflow-x-auto px-5 pb-1 [scrollbar-width:none] md:mx-0 md:flex-wrap md:overflow-visible md:px-0"
+      data-garland-collections
+    >
+      <a href={GARLANDS_PATH} class={chip}>
+        All garlands <span class="text-moss">({garlands.length})</span>
+      </a>
+      {entries.map(({ collection, count }) => (
+        <a href={collection.path} class={chip} aria-current={collection.key === current ? "page" : undefined}>
+          {collection.label} <span class="text-moss">({count})</span>
+        </a>
+      ))}
+    </nav>
+  )
+}
+
+<style>
+  .garland-link[aria-current="page"] {
+    border-color: var(--color-ink);
+    background: var(--color-ink);
+    color: var(--color-paper);
+  }
+  .garland-link[aria-current="page"] span {
+    color: inherit;
+    opacity: 0.8;
+  }
+</style>

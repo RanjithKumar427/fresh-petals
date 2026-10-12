@@ -1,0 +1,88 @@
+---
+// Search and enquiry measurement (docs/seo/measurement.md).
+//
+// Nothing is sent anywhere unless the owner sets PUBLIC_GA_MEASUREMENT_ID
+// (a Google Analytics 4 "G-…" ID) in the deployment's environment. Without
+// it this only defines window.fpTrack, which announces each event on the
+// page (a "fp:track" DOM event) and does no network request.
+//
+// Events. Page visits come from GA4's own page_view. On top of it:
+//   view_item_list         a collection page was opened ([data-track-list])
+//   view_item              a product page was opened ([data-track-item])
+//   whatsapp_enquiry_click a direct WhatsApp enquiry link or button was used
+//   basket_quote_request   the basket was sent on WhatsApp (sent by cart.astro)
+// Each carries the page path, the session's landing path (path only, no
+// query), a category and — where there is one — the design code or product
+// slug. An enquiry is a click, not an order: completed orders are recorded
+// by hand (scripts/seo/report.mjs).
+//
+// Never sent: names, phone numbers, addresses, recipient details, card
+// messages or the WhatsApp message text.
+const measurementId = (import.meta.env.PUBLIC_GA_MEASUREMENT_ID ?? "").trim();
+const enabled = /^G-[A-Z0-9]{4,}$/.test(measurementId);
+---
+
+{enabled && <script is:inline async src={`https://www.googletagmanager.com/gtag/js?id=${measurementId}`}></script>}
+<script is:inline define:vars={{ measurementId: enabled ? measurementId : "" }}>
+  (function () {
+    var path = function (value) {
+      return (value || "/").split("?")[0].split("#")[0].replace(/\/+$/, "") || "/";
+    };
+    var landing = path(location.pathname);
+    try {
+      landing = sessionStorage.getItem("fp_landing") || landing;
+      sessionStorage.setItem("fp_landing", landing);
+    } catch (e) {}
+
+    if (measurementId) {
+      window.dataLayer = window.dataLayer || [];
+      window.gtag = function () {
+        window.dataLayer.push(arguments);
+      };
+      window.gtag("js", new Date());
+      // No advertising features; the page URL is sent without its query string.
+      window.gtag("config", measurementId, {
+        allow_google_signals: false,
+        allow_ad_personalization_signals: false,
+        page_location: location.origin + location.pathname,
+      });
+    }
+
+    window.fpTrack = function (name, params) {
+      var data = { page_path: path(location.pathname), landing_path: landing };
+      for (var key in params || {}) if (params[key] !== undefined && params[key] !== null && params[key] !== "") data[key] = String(params[key]).slice(0, 100);
+      try {
+        document.dispatchEvent(new CustomEvent("fp:track", { detail: { name: name, params: data } }));
+      } catch (e) {}
+      if (measurementId && window.gtag) window.gtag("event", name, data);
+    };
+
+    var list = document.querySelector("[data-track-list]");
+    if (list) window.fpTrack("view_item_list", { item_category: list.getAttribute("data-track-list") });
+    var item = document.querySelector("[data-track-item]");
+    if (item) window.fpTrack("view_item", { item_id: item.getAttribute("data-track-item"), item_category: item.getAttribute("data-track-category") });
+
+    // Direct enquiries: any link or button that opens a WhatsApp chat with
+    // the shop. The basket's own button reports basket_quote_request instead.
+    document.addEventListener(
+      "click",
+      function (event) {
+        var target = event.target && event.target.closest ? event.target.closest("a[href], button") : null;
+        if (!target || target.hasAttribute("data-send-cart-whatsapp")) return;
+        var href = target.getAttribute("href") || "";
+        var direct = /^https:\/\/(wa\.me|api\.whatsapp\.com)\//.test(href) || href.indexOf("/garland-enquiry") === 0 || target.hasAttribute("data-simple-whatsapp") || target.hasAttribute("data-whatsapp-order-link") || target.hasAttribute("data-detailed-whatsapp");
+        if (!direct) return;
+        var scope = target.closest("[data-track-item]") || document.querySelector("[data-track-item]");
+        var card = target.closest("[data-garland-card], [data-product-card], article");
+        var code = target.getAttribute("data-garland-quote") || (href.match(/code=(FP-G\d+)/i) || [])[1];
+        var slug = card && card.querySelector ? ((card.querySelector('a[href^="/products/"]') || { getAttribute: function () {} }).getAttribute("href") || "").split("?")[0].replace("/products/", "") : "";
+        window.fpTrack("whatsapp_enquiry_click", {
+          item_id: code || slug || (scope && scope.getAttribute("data-track-item")) || "",
+          item_category: code ? "Garlands" : (scope && scope.getAttribute("data-track-category")) || (list && list.getAttribute("data-track-list")) || "general",
+          link_type: target.closest("header, footer") ? "site" : card ? "card" : "page",
+        });
+      },
+      true
+    );
+  })();
+</script>

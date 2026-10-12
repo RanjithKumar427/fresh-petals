@@ -9,6 +9,7 @@ import { TaxonomyService } from "../../server/services/TaxonomyService";
 import { loadAuthoritativePrices, withAuthoritativePrice } from "../../server/services/ProductPricing";
 import { slugify } from "../../server/utils/slugify";
 import imageVariants from "../../data/imageVariants.json";
+import imageDimensions from "../../data/imageDimensions.json";
 import { whatsappLink } from "../../config/storefront";
 import { QUOTE_ONLY_PRICE_LABEL, isQuoteOnly } from "../../shared/quoteOnly";
 
@@ -125,6 +126,14 @@ const mainVariants = (imageVariants as Record<string, Record<string, string>>)[p
 const mainSrcset = mainVariants
   ? [...Object.entries(mainVariants).map(([width, path]) => `${path} ${width}w`), `${product.image} 1200w`].join(", ")
   : undefined;
+const mainDimensions = (imageDimensions as Record<string, { width: number; height: number }>)[product.image];
+// Search snippet: what the product is, who makes it and where, and how the
+// price is given. Quote-only products never mention an amount.
+const quoteOnlyProduct = isQuoteOnly(product);
+const metaDescription = `${product.description.replace(/\s+$/, "").replace(/([^.!?])$/, "$1.")} ${
+  quoteOnlyProduct ? "Made by Fresh Petals in Bengaluru; price and availability on WhatsApp." : "From Fresh Petals in Bengaluru; availability confirmed on WhatsApp."
+}`;
+const imageAlt = `${product.name}: ${product.description.replace(/\.$/, "")}`;
 const breadcrumbJsonLd = {
   "@type": "BreadcrumbList",
   itemListElement: [
@@ -138,11 +147,11 @@ const breadcrumbJsonLd = {
 <BaseLayout
   title={`${product.name} – ${product.category} | Fresh Petals Bengaluru`}
   jsonLd={[breadcrumbJsonLd]}
-  description={product.description}
+  description={metaDescription}
   image={product.image}
   showCategoryCarousel={false}
 >
-  <main>
+  <main data-track-item={product.slug} data-track-category={product.category}>
   <!-- Main Product Section -->
   <section class="px-5 py-10 md:px-8 md:py-12">
     <div class="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[1.12fr_0.88fr] lg:items-start">
@@ -161,7 +170,9 @@ const breadcrumbJsonLd = {
             src={product.image}
             srcset={mainSrcset}
             sizes={mainSrcset ? "(min-width: 1024px) 52vw, 100vw" : undefined}
-            alt={product.name}
+            alt={imageAlt}
+            width={mainDimensions?.width}
+            height={mainDimensions?.height}
             class="aspect-[4/5] w-full object-cover lg:max-h-[calc(100vh-8rem)]"
             loading="eager"
             fetchpriority="high"

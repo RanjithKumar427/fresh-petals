@@ -88,7 +88,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
             </h2>
 
             <p class="mt-4 text-sm leading-7 text-moss">
-              When you tap "Send Cart on WhatsApp" in the cart, the website also saves a copy of that order request in our order records so we can follow it up: your name and phone number, the products and quantities, the delivery date, the recipient's name and phone number, the delivery landmark, the occasion, the delivery method and any delivery fee estimate shown. Our website is hosted on Vercel and these records are stored in our database with Supabase. We do not use advertising or analytics trackers on this website.
+              When you tap "Send Cart on WhatsApp" in the cart, the website also saves a copy of that order request in our order records so we can follow it up: your name and phone number, the products and quantities, the delivery date, the recipient's name and phone number, the delivery landmark, the occasion, the delivery method and any delivery fee estimate shown. Our website is hosted on Vercel and these records are stored in our database with Supabase. {import.meta.env.PUBLIC_GA_MEASUREMENT_ID ? "We use Google Analytics to count page visits and taps on our WhatsApp buttons, so we can see which pages are useful. It receives the page address and the product or design code, never your name, phone number, address or message. We do not use advertising trackers." : "We do not use advertising or analytics trackers on this website."}
             </p>
           </section>
 

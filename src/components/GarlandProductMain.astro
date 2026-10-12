@@ -12,6 +12,7 @@ import { QUOTE_ONLY_ENQUIRE_LABEL, QUOTE_ONLY_PRICE_LABEL } from "../shared/quot
 import { GARLAND_FILTERS, GARLAND_PREVIEW, formatGarlandPrice, garlandPhotoSrcset, isCartGarland, isListedGarland, optionValues, type GarlandProduct } from "../data/garlands";
 import { garlandEnquiryHref } from "../utils/garlandEnquiry";
 import JourneyNote from "./occasion/JourneyNote.astro";
+import { GARLANDS_PATH, garlandCollection } from "../data/garlandCollections";
 
 interface Props {
   product: GarlandProduct;
@@ -25,7 +26,12 @@ const price = formatGarlandPrice(design);
 const isDraft = !isListedGarland(design);
 const pageUrl = Astro.site ? new URL(`/products/${product.slug}`, Astro.site).toString() : `/products/${product.slug}`;
 const srcset = garlandPhotoSrcset(design.image);
-const filterChips = GARLAND_FILTERS.filter((filter) => design.filters.includes(filter.key));
+// A flower with its own collection page links there; the rest filter the listing.
+const filterChips = GARLAND_FILTERS.filter((filter) => design.filters.includes(filter.key)).map((filter) => ({
+  ...filter,
+  label: garlandCollection(filter.key)?.label ?? filter.label,
+  href: garlandCollection(filter.key)?.path ?? `${GARLANDS_PATH}?filter=${filter.key}`,
+}));
 const TBC = "To be confirmed on WhatsApp";
 const facts = [
   { label: "Sold as", value: design.soldUnit },
@@ -49,14 +55,14 @@ const chargeLabel = (charge: number | null) => (charge ? ` (+₹${charge.toLocal
 const quoteLabel = QUOTE_ONLY_ENQUIRE_LABEL;
 ---
 
-<section class="px-5 py-10 md:px-8 md:py-12" data-garland-product={design.code} data-garland-version={version}>
+<section class="px-5 py-10 md:px-8 md:py-12" data-garland-product={design.code} data-garland-version={version} data-track-item={design.code} data-track-category="Garlands">
   <div class="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
     <aside class="lg:sticky lg:top-28 lg:self-start">
       <div class="relative overflow-hidden rounded-[22px] bg-linen">
         <img
           src={design.image.path}
           srcset={srcset}
-          sizes={srcset ? "(min-width: 1024px) 50vw, 100vw" : undefined}
+          sizes={srcset ? "(min-width: 1280px) 640px, (min-width: 1024px) 50vw, 100vw" : undefined}
           width={design.image.width}
           height={design.image.height}
           alt={design.image.alt}
@@ -98,14 +104,20 @@ const quoteLabel = QUOTE_ONLY_ENQUIRE_LABEL;
 
       {filterChips.length > 0 && (
         <p class="mt-4 flex flex-wrap gap-2">
-          {filterChips.map(({ key, label }) => (
+          {filterChips.map(({ label, href }) => (
             <a
-              href={`/categories/garlands?filter=${key}`}
+              href={href}
               class="inline-flex min-h-[32px] items-center rounded-full border border-line px-3 text-[12px] font-semibold text-ink hover:border-ink"
             >
               {label}
             </a>
           ))}
+        </p>
+      )}
+
+      {design.image.alt && design.image.alt !== design.title && (
+        <p class="mt-5 text-sm leading-7 text-moss" data-garland-photo-note>
+          <span class="font-semibold text-ink">In the photograph:</span> {design.image.alt}
         </p>
       )}
 

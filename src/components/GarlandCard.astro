@@ -24,7 +24,7 @@ const design = product.garland;
 const cart = isCartGarland(design);
 const price = formatGarlandPrice(design);
 const href = journeyHref(`/products/${product.slug}`, journey);
-const srcset = garlandPhotoSrcset(design.image);
+const srcset = garlandPhotoSrcset(design.image, 720);
 const filterLabels = design.filters
   .map((key) => GARLAND_FILTERS.find((filter) => filter.key === key)?.label)
   .filter(Boolean)

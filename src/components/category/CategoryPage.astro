@@ -7,7 +7,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 import ProductCard from "../ProductCard.astro";
 import type { Product } from "../../data/productCatalog";
 import LandingDetails from "../LandingDetails.astro";
-import { CATEGORY_LANDING, NOINDEX_CATEGORY_SLUGS, lowestPrice } from "../../data/seoLanding";
+import { CATEGORY_LANDING, NOINDEX_CATEGORY_SLUGS, CANONICAL_CATEGORY, lowestPrice } from "../../data/seoLanding";
 import ShopFilters from "../occasion/ShopFilters.astro";
 import { parseShopFilters, withoutUnpricedBudget, matchesShopFilters, shopFilterUrl, countShopFacets } from "../../utils/shopFilters";
 import { makeJourney } from "../../utils/journey";
@@ -51,6 +51,7 @@ const pageDescription = landing?.description ?? category.description;
 const pageHeading = landing?.h1 ?? category.name;
 const fromPrice = landing ? lowestPrice(products) : null;
 const noindex = products.length === 0 || NOINDEX_CATEGORY_SLUGS.has(category.slug);
+const canonical = CANONICAL_CATEGORY[category.slug] ? `/categories/${CANONICAL_CATEGORY[category.slug]}` : undefined;
 // Launch categories (bouquets) can be narrowed by occasion, budget and
 // colour — derived from the products, shown only when they divide the list
 // (src/data/occasionJourneys.ts). Shareable: ?occasion=…&budget=…&colour=….
@@ -75,7 +76,8 @@ const breadcrumbJsonLd = {
   description={pageDescription}
   showCategoryCarousel={false}
   noindex={noindex}
-  jsonLd={noindex ? [] : [breadcrumbJsonLd]}
+  canonical={canonical}
+  jsonLd={noindex || canonical ? [] : [breadcrumbJsonLd]}
 >
   <main class="bg-ivory">
     <section class="px-5 py-10 md:px-8 md:py-16">

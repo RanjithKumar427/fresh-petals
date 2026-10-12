@@ -1,0 +1,29 @@
+---
+// Shown (with HTTP 404) for any address that doesn't exist, and by routes
+// that rewrite here for an unknown occasion or garland collection. Not
+// indexed; links back to the pages people usually want.
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+// On demand, like the routes that rewrite to it (a prebuilt page can't be the
+// target of a rewrite); the CDN keeps a copy briefly.
+export const prerender = false;
+Astro.response.status = 404;
+Astro.response.headers.set("Cache-Control", "public, max-age=0, s-maxage=300");
+---
+
+<BaseLayout title="Page not found | Fresh Petals Bengaluru" description="This page isn't available." showCategoryCarousel={false} noindex={true}>
+  <main>
+    <section class="px-5 py-20 text-center md:px-8" data-not-found>
+      <h1 class="fp-h1">This page isn't available</h1>
+      <p class="mx-auto mt-4 max-w-xl text-sm leading-7 text-moss">
+        The address may have changed, or the product is no longer listed. These pages are a good place to start again.
+      </p>
+      <p class="mt-7 flex flex-wrap justify-center gap-3">
+        <a href="/categories/bouquets" class="inline-flex min-h-[44px] items-center rounded-full bg-berry px-6 text-sm font-semibold text-white">Bouquets</a>
+        <a href="/categories/garlands" class="inline-flex min-h-[44px] items-center rounded-full border border-ink px-6 text-sm font-semibold text-ink">Wedding garlands</a>
+        <a href="/occasions" class="inline-flex min-h-[44px] items-center rounded-full border border-ink px-6 text-sm font-semibold text-ink">Flowers by occasion</a>
+        <a href="/" class="inline-flex min-h-[44px] items-center rounded-full border border-ink px-6 text-sm font-semibold text-ink">Home</a>
+      </p>
+    </section>
+  </main>
+</BaseLayout>

@@ -9,9 +9,11 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 import ProductCard from "../../components/ProductCard.astro";
 import GarlandListing from "../../components/GarlandListing.astro";
 import { productCatalog } from "../../data/productCatalog";
-import { GARLAND_CATEGORY, isListedGarland, loadGarlands } from "../../data/garlands";
+import { isListedGarland, loadGarlands } from "../../data/garlands";
 import { loadAuthoritativePrices, withAuthoritativePrice } from "../../server/services/ProductPricing";
 import { garlandCacheHeaders } from "../../server/services/GarlandWebsite";
+import LandingDetails from "../../components/LandingDetails.astro";
+import { GARLANDS_LANDING, populatedCollections } from "../../data/garlandCollections";
 
 export const prerender = false;
 
@@ -34,8 +36,17 @@ const unavailableCode = /^FP-G\d{3,}$/.test(unavailable) ? unavailable : null;
 if (unavailableCode) Astro.response.headers.set("Cache-Control", "no-store");
 
 const name = "Garlands";
+// With designs listed this is the wedding garland / poola mala search landing
+// (src/data/garlandCollections.ts); without any, the plain category copy.
 const description =
-  "Explore garlands from Fresh Petals Bengaluru. Final availability, pricing and delivery will be confirmed on WhatsApp.";
+  garlands.length > 0
+    ? GARLANDS_LANDING.description
+    : "Explore garlands from Fresh Petals Bengaluru. Final availability, pricing and delivery will be confirmed on WhatsApp.";
+const collections = populatedCollections(garlands);
+const landing = {
+  faqs: GARLANDS_LANDING.faqs,
+  links: [...collections.map((entry) => ({ href: entry.collection.path, label: entry.collection.label })), ...GARLANDS_LANDING.links],
+};
 const breadcrumbJsonLd = {
   "@type": "BreadcrumbList",
   itemListElement: [
@@ -46,13 +57,14 @@ const breadcrumbJsonLd = {
 ---
 
 <BaseLayout
-  title={`${name} | Fresh Petals Bengaluru`}
+  title={garlands.length > 0 ? GARLANDS_LANDING.title : `${name} | Fresh Petals Bengaluru`}
   description={description}
+  image={garlands[0]?.image}
   showCategoryCarousel={false}
   noindex={noindex}
   jsonLd={noindex ? [] : [breadcrumbJsonLd]}
 >
-  <main class="bg-ivory">
+  <main class="bg-ivory" data-track-list="garlands">
     <section class="px-5 py-10 md:px-8 md:py-16">
       <div class="mx-auto max-w-7xl">
         <div class="collection-head mb-10 md:mb-14">
@@ -60,16 +72,12 @@ const breadcrumbJsonLd = {
             <p class="fp-eyebrow">
               <a href="/" class="hover:underline">Home</a> <span aria-hidden="true">/</span> Collection
             </p>
-            <h1 class="fp-h1 mt-3">{garlands.length > 0 ? GARLAND_CATEGORY.label : name}</h1>
+            <h1 class="fp-h1 mt-3">{garlands.length > 0 ? "Wedding Garlands / Poola Mala" : name}</h1>
           </div>
           <div>
             {
               garlands.length > 0 ? (
-                <p class="max-w-2xl text-sm leading-7 text-moss md:text-base">
-                  Fresh flower garlands, made to order. Filter by the main flower, open a design to see it in full, and
-                  enquire on WhatsApp — the flowers, length and other details are confirmed with you there. No pincode or
-                  delivery slot is needed to browse.
-                </p>
+                <p class="max-w-2xl text-sm leading-7 text-moss md:text-base">{GARLANDS_LANDING.intro}</p>
               ) : (
                 <p class="max-w-2xl text-sm leading-7 text-moss md:text-base">{description}</p>
               )
@@ -132,6 +140,7 @@ const breadcrumbJsonLd = {
         }
       </div>
     </section>
+    {garlands.length > 0 && <LandingDetails content={landing} />}
   </main>
 </BaseLayout>
 

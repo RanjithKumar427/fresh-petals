@@ -1,11 +1,13 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 
+import { WHATSAPP_NUMBER } from "../config/storefront";
+
 const whatsappText = encodeURIComponent(
   "Hi Fresh Petals, I want to refer a friend and claim the referral reward."
 );
 
-const whatsappHref = `https://wa.me/?text=${whatsappText}`;
+const whatsappHref = `https://wa.me/${WHATSAPP_NUMBER}?text=${whatsappText}`;
 
 const steps = [
   {
@@ -37,6 +39,7 @@ const eligibleOrders = [
 ---
 
 <BaseLayout
+  noindex={true}
   title="Refer a Friend | Fresh Petals Bengaluru"
   description="Refer a friend to Fresh Petals Bengaluru and claim manual WhatsApp-confirmed rewards on eligible flower orders."
 >

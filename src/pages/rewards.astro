@@ -1,11 +1,13 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 
+import { WHATSAPP_NUMBER } from "../config/storefront";
+
 const whatsappText = encodeURIComponent(
   "Hi Fresh Petals, I want to know about your rewards, referral and fresh flower offers."
 );
 
-const whatsappHref = `https://wa.me/?text=${whatsappText}`;
+const whatsappHref = `https://wa.me/${WHATSAPP_NUMBER}?text=${whatsappText}`;
 
 const rewardCards = [
   {

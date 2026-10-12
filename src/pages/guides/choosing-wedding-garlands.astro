@@ -1,0 +1,330 @@
+---
+// The wedding garland buying guide. Rendered on request from the live garland
+// designs (same cache tag and admin purge as the garland pages), so every
+// example is a design that is public right now, with its own photograph and
+// link; an example that is unpublished simply drops out, and a section falls
+// back to the first designs of its collection.
+//
+// Copy rules (as src/data/garlandCollections.ts): only what the photographs
+// and titles show. No sample testing, durability, flower counts, weights or
+// preparation times are claimed — those are listed as points to confirm.
+// Readers anywhere can use the checklist; delivery is stated as published.
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { garlandPhotoSrcset, isListedGarland, loadGarlands, type GarlandProduct } from "../../data/garlands";
+import { GARLANDS_PATH, GARLAND_CONFIRM_POINTS, GARLAND_COVERAGE, GARLAND_GUIDE_PATH, garlandCollection, populatedCollections } from "../../data/garlandCollections";
+import { garlandCacheHeaders } from "../../server/services/GarlandWebsite";
+import { whatsappLink } from "../../config/storefront";
+
+export const prerender = false;
+for (const [name, value] of Object.entries(garlandCacheHeaders())) Astro.response.headers.set(name, value);
+
+const garlands = (await loadGarlands()).filter((product) => isListedGarland(product.garland));
+const noindex = garlands.length === 0;
+if (noindex) Astro.response.status = 404;
+const byCode = new Map(garlands.map((product) => [product.garland.code, product]));
+const counts = new Map<string, number>(populatedCollections(garlands).map((entry) => [entry.collection.key, entry.count]));
+
+type Example = { product: GarlandProduct; note: string };
+type Section = { id: string; heading: string; href: string; linkLabel: string; body: string[]; examples: Example[] };
+
+/** The named designs that are public, else the first designs carrying the filter. */
+function examples(filter: string, picks: [string, string][]): Example[] {
+  const chosen = picks.flatMap(([code, note]) => (byCode.has(code) ? [{ product: byCode.get(code)!, note }] : []));
+  if (chosen.length >= 2) return chosen;
+  return garlands
+    .filter((product) => product.garland.filters.includes(filter as never))
+    .slice(0, 3)
+    .map((product) => ({ product, note: product.garland.image.alt }));
+}
+
+const count = (key: string) => counts.get(key) ?? 0;
+const designs = (n: number) => `${n} design${n === 1 ? "" : "s"}`;
+
+const sections: Section[] = [
+  {
+    id: "rose",
+    heading: "Rose garlands",
+    href: garlandCollection("rose")!.path,
+    linkLabel: `See all ${designs(count("rose"))} in rose garlands`,
+    body: [
+      "Rose garlands carry the most colour. In our photographs they run from deep red through hot pink, blush and peach to ivory and white, and many combine two colours in alternating roses, rows or blocks.",
+      "What changes the look most is how the roses are divided. A garland of roses from top to bottom reads as one solid colour. Rings, bands or whole sections of baby's breath break it up and lighten it. The top is finished with pearl strands, gold-coloured bead strands or cord, and the ends with rose tassels or gold-coloured cones.",
+    ],
+    examples: examples("rose", [
+      ["FP-G001", "One colour throughout: red roses with fine pale bands and gold-coloured tassel details."],
+      ["FP-G034", "The same red, made slimmer and divided by rings of baby's breath, on pearl hangers."],
+      ["FP-G068", "Two colours in blocks: red and white roses alternate down the garland."],
+      ["FP-G051", "A pale version: white and peach roses with baby's breath and pearl hangers."],
+    ]),
+  },
+  {
+    id: "lotus",
+    heading: "Lotus garlands",
+    href: garlandCollection("lotus")!.path,
+    linkLabel: `See all ${designs(count("lotus"))} in lotus garlands`,
+    body: [
+      "Lotus garlands are mostly pink, and the first choice is between closed buds and opened flowers. Closed buds give a slim, even line of pointed buds. Opened lotus has its petals folded back, so each flower shows its layers and the garland looks fuller.",
+      "Lotus is also used as an accent. Several designs set a band of lotus, or lotus spaced along the length, into a white jasmine garland, and a few pair it with red roses. Many end in lotus tassels or clusters of buds. Lotus availability changes through the year, so confirm it for your date before you settle on one of these.",
+    ],
+    examples: examples("lotus", [
+      ["FP-G106", "Closed pink lotus buds in a slim line, ending in clusters of buds on pale stems."],
+      ["FP-G035", "Opened pink lotus with baby's breath, on pearl hangers with small lotus tassels."],
+      ["FP-G114", "Lotus as an accent: a white jasmine garland with pink lotus spaced along its length."],
+      ["FP-G103", "Lotus with roses: red rose sections, pink lotus and white-and-gold bands."],
+    ]),
+  },
+  {
+    id: "tuberose",
+    heading: "Tuberose garlands",
+    href: garlandCollection("tuberose")!.path,
+    linkLabel: `See all ${designs(count("tuberose"))} in tuberose garlands`,
+    body: [
+      "Tuberose (rajnigandha, sampangi) garlands are the dense white ones. The white body stays much the same from design to design, so the choice is in the bands: red and gold-coloured, blue, teal, green, or several colours together.",
+      "Some designs keep to narrow bands near the top and at the tassels. Others add a broad panel of red or pink roses or buds in the middle, which is what you see first from the front. If a pair should match the outfits rather than each other, ask for different band colours on each.",
+    ],
+    examples: examples("tuberose", [
+      ["FP-G086", "Nearly all white: tuberose dotted with gold-coloured accents, gold and white tassels."],
+      ["FP-G085", "Bands set the colour: blue, red and gold bands with blue-and-red tassels."],
+      ["FP-G088", "A flower panel: red rose panels edged in green, with red rose tassel balls."],
+    ]),
+  },
+  {
+    id: "designer",
+    heading: "Designer and mixed garlands",
+    href: `${GARLANDS_PATH}?filter=designer-mixed`,
+    linkLabel: "See the designer and mixed designs",
+    body: [
+      "The remaining designs are built around other flowers or around a pattern: orchids, chrysanthemums, carnations, jasmine striped with colour, lattice and chevron work, and garlands made almost entirely of baby's breath. Choose these by the pattern in the photograph, and ask us which flowers we can make it in for your date.",
+    ],
+    examples: examples("designer-mixed", [
+      ["FP-G135", "Jasmine with a purple orchid section and purple orchid tassels."],
+      ["FP-G132", "Pattern work: a red garland with a white chevron pattern and gold bow tops."],
+      ["FP-G156", "Baby's breath from top to bottom, shown worn by a couple."],
+    ]),
+  },
+].filter((section) => section.examples.length > 0);
+
+const comparison = [
+  { flower: "Rose", colour: "Red, pink, peach, ivory, white; often two colours", build: "Roses throughout, or divided by baby's breath rings, bands and blocks", ask: "Which rose colours are available for your date" },
+  { flower: "Lotus", colour: "Mostly pink; some white", build: "Closed buds or opened flowers; alone, or set into jasmine or roses", ask: "Whether lotus is available for your date" },
+  { flower: "Tuberose", colour: "White, with coloured bands", build: "Dense white body with narrow bands or a broad rose panel", ask: "The band colours you want on each garland" },
+];
+
+const title = "How to Choose a Wedding Garland";
+const description =
+  "Choosing a wedding garland (varmala, jaimala, poola mala): rose, lotus and tuberose designs compared in photographs, and what to confirm before ordering.";
+const enquiry = whatsappLink(
+  ["Hi Fresh Petals, I'd like help choosing a wedding garland.", "Ceremony date: ", "Single or pair: ", "Colours / outfits: ", "Delivery area: ", "", "Please share the prices and availability for these selections."].join("\n")
+);
+const abs = (path: string) => new URL(path, Astro.site).toString();
+const lead = sections[0]?.examples[0]?.product;
+const jsonLd = [
+  {
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: abs("/") },
+      { "@type": "ListItem", position: 2, name: "Garlands", item: abs(GARLANDS_PATH) },
+      { "@type": "ListItem", position: 3, name: "How to choose a wedding garland", item: abs(GARLAND_GUIDE_PATH) },
+    ],
+  },
+  {
+    "@type": "Article",
+    headline: "How to choose a wedding garland",
+    description,
+    inLanguage: "en-IN",
+    datePublished: "2026-10-12",
+    mainEntityOfPage: abs(GARLAND_GUIDE_PATH),
+    ...(lead ? { image: abs(lead.garland.image.path) } : {}),
+    author: { "@type": "Organization", name: "Fresh Petals", url: abs("/") },
+    publisher: { "@type": "Organization", name: "Fresh Petals", url: abs("/") },
+  },
+];
+---
+
+<BaseLayout title={`${title} | Fresh Petals`} description={description} image={lead?.image} showCategoryCarousel={false} noindex={noindex} jsonLd={noindex ? [] : jsonLd}>
+  <main class="bg-ivory" data-garland-guide data-track-list="guide/wedding-garlands">
+    <article class="px-5 py-10 md:px-8 md:py-16">
+      <div class="mx-auto max-w-4xl">
+        <p class="fp-eyebrow">
+          <a href="/" class="hover:underline">Home</a> <span aria-hidden="true">/</span>
+          <a href={GARLANDS_PATH} class="hover:underline">Garlands</a> <span aria-hidden="true">/</span> Guide
+        </p>
+        <h1 class="fp-h1 mt-3">How to choose a wedding garland</h1>
+        <p class="mt-5 max-w-3xl text-base leading-8 text-moss">
+          A wedding garland (varmala, jaimala, poola mala) is chosen by eye first: its colour, how full it looks and how it
+          is finished. This guide compares rose, lotus and tuberose garlands using photographs of designs Fresh Petals
+          makes in Bengaluru, then lists what to settle with any florist before you order.
+        </p>
+        {
+          noindex ? (
+            <p class="mt-6 text-sm leading-7 text-moss">
+              Our garland designs aren't listed at the moment. <a href="/custom-orders" class="font-semibold text-ink underline underline-offset-4">Ask us for a custom order</a>.
+            </p>
+          ) : (
+            <nav aria-label="In this guide" class="mt-6 flex flex-wrap gap-2">
+              {sections.map((section) => (
+                <a href={`#${section.id}`} class="inline-flex min-h-[44px] items-center rounded-full border border-line bg-paper px-4 text-sm text-ink hover:border-ink">{section.heading}</a>
+              ))}
+              <a href="#before-you-order" class="inline-flex min-h-[44px] items-center rounded-full border border-line bg-paper px-4 text-sm text-ink hover:border-ink">Before you order</a>
+            </nav>
+          )
+        }
+
+        {
+          !noindex && (
+            <>
+              <section class="guide-section" aria-labelledby="first-title">
+                <h2 id="first-title" class="fp-serif text-2xl text-ink md:text-3xl">Three things to decide first</h2>
+                <ol class="mt-5 list-decimal space-y-3 pl-5 text-sm leading-7 text-moss">
+                  <li><strong class="font-semibold text-ink">One garland or a pair.</strong> The exchange needs two. Decide whether they should match each other or each match one outfit.</li>
+                  <li><strong class="font-semibold text-ink">The colours of the outfits.</strong> A garland in the same colour as the outfit disappears against it; a contrast, or white with coloured bands, stands out in photographs.</li>
+                  <li><strong class="font-semibold text-ink">The date.</strong> Flowers depend on the season and the market that week. Fix the date before you fix the flower.</li>
+                </ol>
+              </section>
+
+              {sections.map((section) => (
+                <section class="guide-section" id={section.id} aria-labelledby={`${section.id}-title`}>
+                  <h2 id={`${section.id}-title`} class="fp-serif text-2xl text-ink md:text-3xl">{section.heading}</h2>
+                  {section.body.map((paragraph) => <p class="mt-4 text-sm leading-7 text-moss">{paragraph}</p>)}
+                  <ul class="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4" role="list">
+                    {section.examples.map(({ product, note }) => {
+                      const photo = product.garland.image;
+                      const srcset = garlandPhotoSrcset(photo, 720);
+                      return (
+                        <li>
+                          <figure class="flex h-full flex-col overflow-hidden rounded-[18px] border border-line bg-paper">
+                            <a href={`/products/${product.slug}`} class="block aspect-[4/5] bg-linen" data-guide-example={product.garland.code}>
+                              <img
+                                src={photo.path}
+                                srcset={srcset}
+                                sizes={srcset ? "(min-width: 768px) 220px, 46vw" : undefined}
+                                width={photo.width}
+                                height={photo.height}
+                                alt={photo.alt}
+                                loading="lazy"
+                                decoding="async"
+                                class="h-full w-full object-contain"
+                              />
+                            </a>
+                            <figcaption class="flex flex-1 flex-col px-3 pb-3 pt-2.5">
+                              <a href={`/products/${product.slug}`} class="text-[13px] font-semibold leading-snug text-ink hover:text-berry">{product.name}</a>
+                              <span class="mt-0.5 text-[11px] tracking-[0.1em] text-moss">{product.garland.code}</span>
+                              <span class="mt-2 text-[12px] leading-5 text-moss">{note}</span>
+                            </figcaption>
+                          </figure>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                  <p class="mt-5">
+                    <a href={section.href} class="text-sm font-semibold text-ink underline underline-offset-4">{section.linkLabel}</a>
+                  </p>
+                </section>
+              ))}
+
+              <section class="guide-section" aria-labelledby="compare-title">
+                <h2 id="compare-title" class="fp-serif text-2xl text-ink md:text-3xl">Rose, lotus and tuberose side by side</h2>
+                <div class="mt-5 overflow-x-auto rounded-[18px] border border-line bg-paper">
+                  <table class="w-full min-w-[560px] text-left text-sm leading-6">
+                    <thead>
+                      <tr class="border-b border-line text-ink">
+                        <th scope="col" class="px-4 py-3 font-semibold">Flower</th>
+                        <th scope="col" class="px-4 py-3 font-semibold">Colours in our photographs</th>
+                        <th scope="col" class="px-4 py-3 font-semibold">How it is built</th>
+                        <th scope="col" class="px-4 py-3 font-semibold">Ask before ordering</th>
+                      </tr>
+                    </thead>
+                    <tbody class="text-moss">
+                      {comparison.map((row) => (
+                        <tr class="border-b border-line last:border-0">
+                          <th scope="row" class="px-4 py-3 font-semibold text-ink">{row.flower}</th>
+                          <td class="px-4 py-3">{row.colour}</td>
+                          <td class="px-4 py-3">{row.build}</td>
+                          <td class="px-4 py-3">{row.ask}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+
+              <section class="guide-section" id="before-you-order" aria-labelledby="before-title">
+                <h2 id="before-title" class="fp-serif text-2xl text-ink md:text-3xl">What to settle before you order</h2>
+                <p class="mt-4 text-sm leading-7 text-moss">
+                  A photograph fixes the look, not the order. Whichever florist you use, get these agreed in writing before anything is made.
+                </p>
+                <dl class="mt-5 grid gap-x-8 gap-y-4 sm:grid-cols-2">
+                  {GARLAND_CONFIRM_POINTS.map((point) => (
+                    <div>
+                      <dt class="text-sm font-semibold text-ink">{point.label}</dt>
+                      <dd class="mt-0.5 text-sm leading-6 text-moss">{point.detail}</dd>
+                    </div>
+                  ))}
+                  <div>
+                    <dt class="text-sm font-semibold text-ink">Substitutions</dt>
+                    <dd class="mt-0.5 text-sm leading-6 text-moss">Ask what happens if a flower or colour isn't available on the day, and agree the replacement in advance.</dd>
+                  </div>
+                  <div>
+                    <dt class="text-sm font-semibold text-ink">Collection or delivery</dt>
+                    <dd class="mt-0.5 text-sm leading-6 text-moss">Agree where and when the garlands reach you, and how long before the ceremony.</dd>
+                  </div>
+                </dl>
+              </section>
+
+              <section class="guide-section" aria-labelledby="catalogue-title">
+                <h2 id="catalogue-title" class="fp-serif text-2xl text-ink md:text-3xl">What our catalogue tells you, and what it doesn't</h2>
+                <div class="mt-5 grid gap-6 sm:grid-cols-2">
+                  <div class="rounded-[18px] border border-line bg-paper p-5">
+                    <h3 class="text-sm font-semibold text-ink">Shown on each design page</h3>
+                    <ul class="mt-3 list-disc space-y-1.5 pl-5 text-sm leading-6 text-moss">
+                      <li>The whole photograph, uncropped</li>
+                      <li>A design code (FP-G…) to quote when you enquire</li>
+                      <li>A description of the colours, bands, hangers and tassels in the photograph</li>
+                      <li>The flower group, assigned from the photograph</li>
+                    </ul>
+                  </div>
+                  <div class="rounded-[18px] border border-line bg-paper p-5">
+                    <h3 class="text-sm font-semibold text-ink">Confirmed with you on WhatsApp</h3>
+                    <ul class="mt-3 list-disc space-y-1.5 pl-5 text-sm leading-6 text-moss">
+                      <li>The exact flowers and any substitutions</li>
+                      <li>Length and thickness</li>
+                      <li>Single, pair or set</li>
+                      <li>Preparation time for your date</li>
+                      <li>The price</li>
+                    </ul>
+                  </div>
+                </div>
+              </section>
+
+              <section class="guide-section" aria-labelledby="coverage-title">
+                <h2 id="coverage-title" class="fp-serif text-2xl text-ink md:text-3xl">Where Fresh Petals delivers</h2>
+                <p class="mt-4 text-sm leading-7 text-moss">{GARLAND_COVERAGE}</p>
+                <p class="mt-3 text-sm leading-7 text-moss">
+                  We do not deliver outside Bengaluru. If you are reading from another city, the comparisons and the checklist above
+                  apply to any florist: take a design photograph and the list of points to confirm with you.
+                </p>
+                <p class="mt-6 flex flex-wrap gap-3">
+                  <a href={GARLANDS_PATH} class="inline-flex min-h-[48px] items-center rounded-full bg-berry px-6 text-sm font-semibold text-white transition hover:bg-berry-deep">Browse all {garlands.length} garland designs</a>
+                  <a href={enquiry} target="_blank" rel="noopener noreferrer" data-whatsapp-enquiry class="inline-flex min-h-[48px] items-center rounded-full border border-ink px-6 text-sm font-semibold text-ink">Enquire on WhatsApp</a>
+                </p>
+                <p class="mt-5 text-sm leading-7 text-moss">
+                  Also see <a href="/occasions/wedding" class="font-semibold text-ink underline underline-offset-4">wedding flowers</a> and
+                  <a href="/custom-orders" class="font-semibold text-ink underline underline-offset-4">custom orders</a>.
+                </p>
+              </section>
+            </>
+          )
+        }
+      </div>
+    </article>
+  </main>
+</BaseLayout>
+
+<style>
+  .guide-section {
+    margin-top: 3rem;
+    padding-top: 2.5rem;
+    border-top: 1px solid var(--color-line);
+    scroll-margin-top: 6rem;
+  }
+</style>

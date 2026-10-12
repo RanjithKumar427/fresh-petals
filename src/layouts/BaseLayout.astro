@@ -7,6 +7,7 @@ import "../styles/global.css";
 import SiteHeader from "../components/atelier/SiteHeader.astro";
 import SiteFooter from "../components/atelier/SiteFooter.astro";
 import RoundCategoryCarousel from "../components/RoundCategoryCarousel.astro";
+import Analytics from "../components/Analytics.astro";
 
 
 const {
@@ -27,6 +28,9 @@ const {
   // Only facts the page itself shows or that are verified (see
   // src/data/seoLanding.ts) belong here.
   jsonLd = [],
+  // A page that duplicates another names that page's path here (see
+  // CANONICAL_CATEGORY in src/data/seoLanding.ts). Default: this page.
+  canonical = undefined,
 } = Astro.props;
 
 // Astro.site comes from astro.config.mjs's `site` value (see that file's
@@ -38,7 +42,13 @@ const {
 // every internal link already use the slash-less form, and both forms
 // return 200 on Vercel, so a slashed canonical sent Google conflicting
 // signals about which URL to index.
-const canonicalPath = Astro.url.pathname.length > 1 ? Astro.url.pathname.replace(/\/+$/, "") : "/";
+// Query strings never enter the canonical: filter and tracking variants
+// (?filter=, ?budget=, ?for=…) all point at the page's own path.
+const canonicalPath = canonical ?? (Astro.url.pathname.length > 1 ? Astro.url.pathname.replace(/\/+$/, "") : "/");
+// Search-engine ownership checks. Set by the owner in the deployment's
+// environment (docs/seo/owner-checklist.md); absent until then.
+const googleVerification = (import.meta.env.PUBLIC_GOOGLE_SITE_VERIFICATION ?? "").trim();
+const bingVerification = (import.meta.env.PUBLIC_BING_SITE_VERIFICATION ?? "").trim();
 const canonicalUrl = new URL(canonicalPath, Astro.site);
 const absoluteImageUrl = new URL(image, Astro.site);
 ---
@@ -51,7 +61,9 @@ const absoluteImageUrl = new URL(image, Astro.site);
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <link rel="canonical" href={canonicalUrl} />
-    {noindex && <meta name="robots" content="noindex, follow" />}
+    {noindex ? <meta name="robots" content="noindex, follow" /> : <meta name="robots" content="max-image-preview:large" />}
+    {googleVerification && <meta name="google-site-verification" content={googleVerification} />}
+    {bingVerification && <meta name="msvalidate.01" content={bingVerification} />}
 
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" href="/favicon.ico" sizes="48x48" />
@@ -119,6 +131,7 @@ const absoluteImageUrl = new URL(image, Astro.site);
       <slot />
     </div>
     <SiteFooter />
+    <Analytics />
 
     <script is:inline>
       (function () {

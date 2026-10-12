@@ -289,3 +289,67 @@ test('bouquets and garlands are quote-only: no amount in labels, price maps, fil
   assert.ok(!/₹|Listed price/.test(text));
   assert.ok(text.endsWith('Please share the prices and availability for these selections.'));
 });
+
+test('garland collections: live membership, counts and links; an empty collection is never advertised; copy carries no amount or delivery promise', () => {
+  const collections = load('src/data/garlandCollections.ts');
+  const design = (code, filters) => ({ slug: code.toLowerCase(), garland: { code, filters } });
+  const garlands = [design('FP-G001', ['rose']), design('FP-G002', ['rose', 'designer-mixed']), design('FP-G014', ['lotus']), design('FP-G020', ['designer-mixed'])];
+  const populated = collections.populatedCollections(garlands);
+  assert.deepEqual(json(populated.map((entry) => [entry.collection.key, entry.count])), [['rose', 2], ['lotus', 1]]);
+  assert.equal(collections.populatedCollections([]).length, 0);
+  assert.deepEqual(json(collections.GARLAND_COLLECTIONS.map((c) => c.path)), ['/categories/garlands/rose', '/categories/garlands/lotus', '/categories/garlands/tuberose']);
+  assert.equal(collections.garlandCollection('designer-mixed'), null);
+  assert.equal(collections.garlandCollection('marigold'), null);
+  const titles = [collections.GARLANDS_LANDING.title, ...collections.GARLAND_COLLECTIONS.map((c) => c.title)];
+  assert.equal(new Set(titles).size, titles.length);
+  const copy = JSON.stringify([collections.GARLAND_COLLECTIONS, collections.GARLANDS_LANDING, collections.GARLAND_CONFIRM_POINTS, collections.GARLAND_COVERAGE]);
+  assert(!/₹|Rs\.?\s?\d|same[- ]day|express|guarantee|\d+\s?(hours|days)|free delivery|rated|stars/i.test(copy));
+  assert(/Chamarajpet and Basavanagudi/.test(collections.GARLAND_COVERAGE));
+  const page = readFileSync('src/pages/categories/garlands/[flower].astro', 'utf8');
+  assert(/garlandCacheHeaders\(\)/.test(page) && /if \(empty\) Astro\.response\.status = 404/.test(page) && /noindex = empty \|\| drafts/.test(page));
+  const sitemap = readFileSync('src/pages/sitemap-garlands.xml.ts', 'utf8');
+  assert(/populatedCollections\(garlands\)/.test(sitemap) && /isListedGarland/.test(sitemap));
+});
+
+test('stored garland photographs: resized copies only on a Vercel deployment, at configured widths, never wider than the original', () => {
+  const rules = sourceLoader({ globals: { process } })('src/data/garlandRules.ts');
+  const photo = { path: 'https://hjhmetomcaskrrwkgrbp.supabase.co/storage/v1/object/public/media/products/a.jpg', width: 720, height: 1600, alt: 'x' };
+  const before = process.env.VERCEL;
+  delete process.env.VERCEL;
+  assert.equal(rules.garlandPhotoSrcset(photo), undefined);
+  process.env.VERCEL = '1';
+  const srcset = rules.garlandPhotoSrcset(photo);
+  assert.deepEqual(srcset.split(', ').map((part) => part.split(' ')[1]), ['240w', '480w', '720w']);
+  assert(srcset.startsWith('/_vercel/image?url=https%3A%2F%2Fhjhmetomcaskrrwkgrbp.supabase.co'));
+  assert.equal(rules.garlandPhotoSrcset(photo, 480).split(', ').length, 2);
+  assert.equal(rules.garlandPhotoSrcset({ ...photo, path: '/images/garlands/a.jpg' }), undefined);
+  assert.equal(rules.garlandPhotoSrcset({ ...photo, path: '/images/a.jpg', variants: { 240: '/images/a-240w.webp' } }), '/images/a-240w.webp 240w, /images/a.jpg 720w');
+  if (before === undefined) delete process.env.VERCEL; else process.env.VERCEL = before;
+  const config = readFileSync('astro.config.mjs', 'utf8');
+  assert(config.includes(`sizes: [${rules.STORED_PHOTO_WIDTHS.join(', ')}]`));
+});
+
+test('search indexing rules: one page per intent, duplicates canonicalised, thin reward pages and private routes out of the sitemap', () => {
+  const seo = load('src/data/seoLanding.ts');
+  const titles = [seo.HOME_LANDING.title, seo.WEDDING_LANDING.title, ...Object.values(seo.CATEGORY_LANDING).map((c) => c.title), ...Object.values(seo.OCCASION_LANDING).map((c) => c.title)];
+  assert.equal(new Set(titles).size, titles.length);
+  assert(titles.every((title) => title.length <= 70 && !/₹/.test(title)));
+  assert.deepEqual(json(seo.CANONICAL_CATEGORY), { 'flower-strings-torans': 'floral-torans-and-strings', diy: 'diy-kits' });
+  assert(seo.NOINDEX_STATIC_PAGES.has('/loyalty') && seo.NOINDEX_STATIC_PAGES.has('/refer-a-friend') && !seo.NOINDEX_STATIC_PAGES.has('/reviews'));
+  assert(seo.CEREMONY_INDEXABLE_OCCASIONS.has('wedding') && !seo.CEREMONY_INDEXABLE_OCCASIONS.has('engagement'));
+  const sitemap = readFileSync('src/pages/sitemap.xml.ts', 'utf8');
+  assert(/NOINDEX_STATIC_PAGES\.has\(path\)/.test(sitemap) && /CANONICAL_CATEGORY\[entry\.params\.slug\]/.test(sitemap) && !/"\/cart"|"\/admin|"\/saved"|"\/search"/.test(sitemap));
+  const robots = readFileSync('src/pages/robots.txt.ts', 'utf8');
+  assert(/Disallow: \/admin/.test(robots) && /Disallow: \/api/.test(robots));
+  for (const page of ['rewards', 'loyalty', 'refer-a-friend']) assert(!/wa\.me\/\?text/.test(readFileSync(`src/pages/${page}.astro`, 'utf8')));
+});
+
+test('measurement: no tracker without an owner-supplied ID; events carry paths and codes, never customer details', () => {
+  const analytics = readFileSync('src/components/Analytics.astro', 'utf8');
+  assert(/PUBLIC_GA_MEASUREMENT_ID/.test(analytics) && /\{enabled && <script/.test(analytics));
+  assert(/whatsapp_enquiry_click/.test(analytics) && /view_item_list/.test(analytics) && /landing_path/.test(analytics));
+  assert(!/customer|recipient|phone|message:|text=/i.test(analytics.split('---')[2]));
+  const cart = readFileSync('src/pages/cart.astro', 'utf8');
+  const event = cart.slice(cart.indexOf('fpTrack?.("basket_quote_request"'), cart.indexOf('fpTrack?.("basket_quote_request"') + 420);
+  assert(/item_id/.test(event) && /request_type/.test(event) && !/name\.value|phone|pincode|note|message/i.test(event.replace('item.name', '')));
+});

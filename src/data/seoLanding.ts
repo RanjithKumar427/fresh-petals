@@ -71,9 +71,9 @@ export const HOME_FAQS: (LandingFaq & { link?: LandingLink })[] = [
 ];
 
 export const HOME_LANDING: LandingContent = {
-  title: "Flowers & Bouquets in Bangalore | Fresh Petals Bengaluru",
+  title: "Flowers in Bengaluru | Bouquets & Garlands | Fresh Petals",
   description:
-    "Hand-tied rose, lily and mixed-flower bouquets in Bengaluru (Bangalore), starting with Chamarajpet and Basavanagudi. Choose online, confirm price and delivery on WhatsApp.",
+    "Fresh flowers in Bengaluru (Bangalore): hand-tied bouquets and made-to-order wedding garlands, starting with Chamarajpet and Basavanagudi. Price on WhatsApp.",
   h1: "Flowers & Bouquets in Bengaluru",
   intro: [
     "Fresh Petals is a WhatsApp-first flower shop in Bengaluru (Bangalore), starting with deliveries in Chamarajpet and Basavanagudi. Browse hand-tied rose, lily and mixed-flower bouquets, add what you like to your cart, and send it to us on WhatsApp.",
@@ -86,15 +86,16 @@ export const HOME_LANDING: LandingContent = {
     { href: "/categories/bouquets#lilies", label: "Lily bouquets" },
     { href: "/occasions/birthday", label: "Birthday flowers" },
     { href: "/occasions/anniversary", label: "Anniversary flowers" },
+    { href: "/categories/garlands", label: "Wedding garlands" },
     { href: "/custom-orders", label: "Custom orders" },
   ],
 };
 
 export const CATEGORY_LANDING: Record<string, LandingContent> = {
   bouquets: {
-    title: "Flower Bouquets in Bangalore | Fresh Petals Bengaluru",
+    title: "Flower Bouquets in Bengaluru | Rose & Lily | Fresh Petals",
     description:
-      "Hand-tied rose, lily and mixed-flower bouquets in Bengaluru (Bangalore), starting with Chamarajpet and Basavanagudi. Choose online, confirm on WhatsApp.",
+      "Hand-tied rose, lily and mixed-flower bouquets in Bengaluru (Bangalore), starting with Chamarajpet and Basavanagudi. Choose online, get the price on WhatsApp.",
     h1: "Flower Bouquets in Bengaluru",
     intro: [
       "Our launch range: rose bouquets, mixed-flower bouquets with gerberas, sunflowers, chrysanthemums and daisies, and lily bouquets, each wrapped and finished by hand. Deliveries start in Chamarajpet and Basavanagudi.",
@@ -201,6 +202,38 @@ export const OCCASION_LANDING: Record<string, LandingContent> = {
     ],
   },
 };
+
+/**
+ * /occasions/wedding once ceremony garlands are public. The page for wider
+ * wedding flower needs; /categories/garlands is the page for garland searches.
+ */
+export const WEDDING_LANDING = {
+  title: "Wedding Flowers in Bengaluru | Garlands & Bouquets | Fresh Petals",
+  description:
+    "Wedding flowers in Bengaluru (Bangalore): made-to-order ceremony garlands with photographs, and gift bouquets. Tell us the date; price and availability on WhatsApp.",
+  h1: "Wedding Flowers in Bengaluru",
+};
+
+/**
+ * Ceremony occasions that are indexable on the strength of their public
+ * garlands alone. Engagement lists the same garlands as wedding, so it stays
+ * out of search until it has its own gift range.
+ */
+export const CEREMONY_INDEXABLE_OCCASIONS = new Set(["wedding"]);
+
+/**
+ * Tag pages that list exactly the same products as another category page
+ * (checked on the live site, 12 Oct 2026). They stay reachable; their
+ * canonical names the page to index and they are left out of sitemap.xml.
+ */
+export const CANONICAL_CATEGORY: Record<string, string> = {
+  "flower-strings-torans": "floral-torans-and-strings",
+  diy: "diy-kits",
+};
+
+// Reward pages that only restate /rewards (manual referral and loyalty, no
+// programme details of their own). Reachable, not indexed.
+export const NOINDEX_STATIC_PAGES = new Set(["/loyalty", "/refer-a-friend"]);
 
 // Pages kept for navigation but excluded from search: /categories/same-day
 // promises a delivery speed not confirmed for Bengaluru, and

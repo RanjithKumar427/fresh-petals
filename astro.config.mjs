@@ -161,7 +161,20 @@ export default defineConfig({
   // which is a separate, deliberately out-of-scope decision for this
   // milestone — do not enable `isr` here without addressing that upgrade
   // first.
-  adapter: vercel(),
+  //
+  // Image optimisation is on for one purpose: garland photographs uploaded
+  // in the admin are stored as full-size JPEGs (served `no-cache` by the
+  // storage host). garlandPhotoSrcset() asks for them through
+  // /_vercel/image at exactly these widths, as WebP, cached for 31 days.
+  // Keep `sizes` equal to STORED_PHOTO_WIDTHS in src/data/garlandRules.ts.
+  adapter: vercel({
+    imagesConfig: {
+      sizes: [240, 480, 720, 1080],
+      formats: ['image/webp'],
+      minimumCacheTTL: 2678400,
+      remotePatterns: [{ protocol: 'https', hostname: 'hjhmetomcaskrrwkgrbp.supabase.co', pathname: '/storage/v1/object/public/media/**' }],
+    },
+  }),
 
   vite: {
     plugins: [tailwindcss()],

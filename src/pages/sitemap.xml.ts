@@ -1,7 +1,7 @@
 import type { APIRoute } from "astro";
 import { productCatalog, type Product } from "../data/productCatalog";
 import { getStaticPaths as getCategoryStaticPaths } from "./categories/[slug].astro";
-import { NOINDEX_CATEGORY_SLUGS } from "../data/seoLanding";
+import { CANONICAL_CATEGORY, NOINDEX_CATEGORY_SLUGS, NOINDEX_STATIC_PAGES } from "../data/seoLanding";
 
 // Prerendered — built once at build time from the exact same real data
 // every other page already uses, not a second, parallel catalogue.
@@ -56,14 +56,17 @@ export const GET: APIRoute = async ({ site }) => {
   // what URLs are produced.
   const hasPublicProducts = (products: Product[]) => products.length > 0;
   const categoryPaths = (await getCategoryStaticPaths())
-    .filter((entry) => hasPublicProducts(entry.props.products) && !NOINDEX_CATEGORY_SLUGS.has(entry.params.slug))
+    .filter((entry) => hasPublicProducts(entry.props.products) && !NOINDEX_CATEGORY_SLUGS.has(entry.params.slug) && !CANONICAL_CATEGORY[entry.params.slug])
     .map((entry) => `/categories/${entry.params.slug}`);
   const productPaths = productCatalog.map((product) => `/products/${product.slug}`);
 
   // /categories/bouquets and /categories/garlands are rendered on request
   // and always list products; the occasion pages follow the admin's
   // assignments and are listed by the live sitemap-occasions.xml.
-  const paths = [...staticPages, "/categories/bouquets", ...categoryPaths, "/categories/garlands", ...productPaths];
+  // The garland listing, its flower collections and the garland guide follow
+  // garland publication, so the live sitemap-garlands.xml lists them. No
+  // <lastmod>: prebuilt pages carry no reliable modification date.
+  const paths = [...staticPages.filter((path) => !NOINDEX_STATIC_PAGES.has(path)), "/categories/bouquets", ...categoryPaths, ...productPaths];
 
   const urlEntries = paths
     .map((path) => `  <url><loc>${new URL(path, site).toString()}</loc></url>`)

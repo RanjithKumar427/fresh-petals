@@ -116,11 +116,31 @@ export function formatGarlandPrice(design: GarlandDesign): string | null {
   return design.currency === "INR" ? `₹${amount}` : `${design.currency} ${amount}`;
 }
 
-/** srcset for a garland photo from its own recorded derivatives (none for stored uploads). */
-export function garlandPhotoSrcset(photo: GarlandPhoto): string | undefined {
+/**
+ * Widths the deployment's image optimiser may be asked for. Must match
+ * `imagesConfig.sizes` in astro.config.mjs exactly: Vercel refuses any other.
+ */
+export const STORED_PHOTO_WIDTHS = [240, 480, 720, 1080];
+
+/** Stored uploads are resized by Vercel's image optimiser, which exists only on a Vercel deployment. */
+const optimiserAvailable = () => typeof process !== "undefined" && process.env?.VERCEL === "1";
+
+/** A stored photograph at one of STORED_PHOTO_WIDTHS (WebP where the browser accepts it), cached by the CDN. */
+export const storedPhotoUrl = (url: string, width: number) => `/_vercel/image?url=${encodeURIComponent(url)}&w=${width}&q=75`;
+
+/**
+ * srcset for a garland photo: its own recorded derivatives (catalogue
+ * files), or — for a stored upload on a Vercel deployment — resized copies
+ * no wider than the original (or than `maxWidth`, for small card slots). Elsewhere a stored upload has none and the
+ * original in `src` is used.
+ */
+export function garlandPhotoSrcset(photo: GarlandPhoto, maxWidth = Infinity): string | undefined {
   const variants = Object.entries(photo.variants ?? {});
-  if (!variants.length) return undefined;
-  return [...variants.map(([width, path]) => `${path} ${width}w`), `${photo.path} ${photo.width}w`].join(", ");
+  if (variants.length) return [...variants.map(([width, path]) => `${path} ${width}w`), `${photo.path} ${photo.width}w`].join(", ");
+  if (!/^https:\/\//.test(photo.path) || !optimiserAvailable()) return undefined;
+  const widths = STORED_PHOTO_WIDTHS.filter((width) => width <= photo.width && width <= maxWidth);
+  if (!widths.length) return undefined;
+  return widths.map((width) => `${storedPhotoUrl(photo.path, width)} ${width}w`).join(", ");
 }
 
 /** Public on the live site: approved (isPublicGarland), not archived, and photographed in the site's image storage. */

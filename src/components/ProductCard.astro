@@ -1,5 +1,6 @@
 ---
 import imageVariants from "../data/imageVariants.json";
+import imageDimensions from "../data/imageDimensions.json";
 import { journeyHref, journeyLines, type Journey } from "../utils/journey";
 import { QUOTE_ONLY_CLOSING, isQuoteOnlyLabel } from "../shared/quoteOnly";
 
@@ -44,6 +45,7 @@ const cartId = id || slug || name.toLowerCase().replaceAll(" ", "-");
 // Responsive variants (240/480/720w) from the existing manifest, so grid
 // cards stop downloading the 1200px originals on phones.
 const variants = (imageVariants as Record<string, Record<string, string>>)[image];
+const dimensions = (imageDimensions as Record<string, { width: number; height: number }>)[image];
 const srcset = variants
   ? Object.entries(variants)
       .map(([width, path]) => `${path} ${width}w`)
@@ -95,6 +97,8 @@ const priceBadgeShort =
         srcset={srcset}
         sizes={srcset ? "(min-width: 1024px) 23vw, (min-width: 768px) 31vw, 48vw" : undefined}
         alt={name}
+        width={dimensions?.width}
+        height={dimensions?.height}
         loading="lazy"
         decoding="async"
         class="h-full w-full object-cover transition duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-105"

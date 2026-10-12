@@ -1261,6 +1261,15 @@ ${priceRequest ? quoteOnly.closing : "Please confirm availability, final price, 
           return;
         }
 
+        // Measurement only: which products, never who or the message.
+        const sent = getCartItems();
+        window.fpTrack?.("basket_quote_request", {
+          item_id: sent.map((item) => item.slug || item.name).join(",").slice(0, 100),
+          item_category: [...new Set(sent.map((item) => item.category))].join(","),
+          item_count: sent.reduce((sum, item) => sum + (Number(item.quantity) || 1), 0),
+          request_type: hasQuoteOnlyItems(sent) ? "price_request" : "order_request",
+        });
+
         if (whatsappTab) {
           whatsappTab.location.href = url;
         } else {

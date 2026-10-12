@@ -6,7 +6,7 @@
 import type { LandingContent } from "../data/seoLanding";
 
 interface Props {
-  content: LandingContent;
+  content: Pick<LandingContent, "faqs" | "links">;
 }
 
 const { content } = Astro.props;

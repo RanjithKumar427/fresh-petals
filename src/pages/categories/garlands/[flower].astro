@@ -1,0 +1,181 @@
+---
+// Flower-specific garland collections: /categories/garlands/rose, /lotus and
+// /tuberose (src/data/garlandCollections.ts). Rendered on request from the
+// same live garland data, cache tag and admin purge as /categories/garlands,
+// so publishing or unpublishing a design changes the collection, its count
+// and its sitemap entry together. Only the matching designs are in the HTML.
+//
+// A collection with no public design answers 404 (noindex) and is left out
+// of the sitemap and of every collection link. Query variants canonicalise
+// to this path (BaseLayout).
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+import GarlandCard from "../../../components/GarlandCard.astro";
+import GarlandCollectionLinks from "../../../components/GarlandCollectionLinks.astro";
+import LandingDetails from "../../../components/LandingDetails.astro";
+import { isListedGarland, loadGarlands } from "../../../data/garlands";
+import { GARLANDS_PATH, GARLAND_CONFIRM_POINTS, GARLAND_COVERAGE, GARLAND_GUIDE_PATH, garlandCollection, populatedCollections } from "../../../data/garlandCollections";
+import { garlandCacheHeaders } from "../../../server/services/GarlandWebsite";
+
+export const prerender = false;
+
+const collection = garlandCollection(Astro.params.flower ?? "");
+if (!collection) return Astro.rewrite("/404");
+
+for (const [name, value] of Object.entries(garlandCacheHeaders())) Astro.response.headers.set(name, value);
+
+const all = await loadGarlands();
+const garlands = all.filter((product) => product.garland.filters.includes(collection.key));
+const drafts = garlands.some((product) => !isListedGarland(product.garland));
+const empty = garlands.length === 0;
+if (empty) Astro.response.status = 404;
+const noindex = empty || drafts;
+const others = populatedCollections(all).filter((entry) => entry.collection.key !== collection.key);
+
+const abs = (path: string) => new URL(path, Astro.site).toString();
+const jsonLd = [
+  {
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: abs("/") },
+      { "@type": "ListItem", position: 2, name: "Garlands", item: abs(GARLANDS_PATH) },
+      { "@type": "ListItem", position: 3, name: collection.label, item: abs(collection.path) },
+    ],
+  },
+  {
+    "@type": "ItemList",
+    name: collection.h1,
+    numberOfItems: garlands.length,
+    itemListElement: garlands.map((product, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name: `${product.name} (${product.garland.code})`,
+      url: abs(`/products/${product.slug}`),
+    })),
+  },
+];
+const landing = {
+  faqs: collection.faqs,
+  links: [
+    ...others.map((entry) => ({ href: entry.collection.path, label: entry.collection.label })),
+    { href: GARLANDS_PATH, label: "All garlands" },
+    { href: GARLAND_GUIDE_PATH, label: "How to choose a wedding garland" },
+    { href: "/occasions/wedding", label: "Wedding flowers" },
+  ],
+};
+---
+
+<BaseLayout
+  title={empty ? `${collection.label} | Fresh Petals` : collection.title}
+  description={empty ? `No ${collection.label.toLowerCase()} are listed at the moment.` : collection.description}
+  image={garlands[0]?.image}
+  showCategoryCarousel={false}
+  noindex={noindex}
+  jsonLd={noindex ? [] : jsonLd}
+>
+  <main class="bg-ivory" data-garland-collection={collection.key} data-track-list={`garlands/${collection.key}`}>
+    <section class="px-5 py-10 md:px-8 md:py-16">
+      <div class="mx-auto max-w-7xl">
+        <div class="collection-head mb-8 md:mb-10">
+          <div>
+            <p class="fp-eyebrow">
+              <a href="/" class="hover:underline">Home</a> <span aria-hidden="true">/</span>
+              <a href={GARLANDS_PATH} class="hover:underline">Garlands</a>
+            </p>
+            <h1 class="fp-h1 mt-3">{collection.h1}</h1>
+          </div>
+          <div>
+            {
+              empty ? (
+                <p class="max-w-2xl text-sm leading-7 text-moss md:text-base">
+                  No {collection.label.toLowerCase()} are listed at the moment. Browse the garlands we are making now, or
+                  ask us for a custom order.
+                </p>
+              ) : (
+                <p class="max-w-2xl text-sm leading-7 text-moss md:text-base">{collection.intro}</p>
+              )
+            }
+            {!empty && (
+              <p class="mt-5 flex max-w-2xl flex-wrap items-center gap-2">
+                <span class="rounded-full border border-line bg-linen px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-berry" data-collection-count={garlands.length}>
+                  {garlands.length} design{garlands.length === 1 ? "" : "s"}
+                </span>
+                <span class="rounded-full border border-mint-soft bg-mint-soft px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-ink">
+                  Price on WhatsApp
+                </span>
+              </p>
+            )}
+          </div>
+        </div>
+
+        <GarlandCollectionLinks garlands={all} current={collection.key} />
+
+        {
+          empty ? (
+            <p class="mt-8 flex flex-wrap gap-3">
+              <a href={GARLANDS_PATH} class="inline-flex min-h-[44px] items-center rounded-full bg-berry px-6 text-sm font-semibold text-white">See all garlands</a>
+              <a href="/custom-orders" class="inline-flex min-h-[44px] items-center rounded-full border border-ink px-6 text-sm font-semibold text-ink">Custom orders</a>
+            </p>
+          ) : (
+            <div class="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-4" data-collection-grid>
+              {garlands.map((product, index) => <GarlandCard product={product} eager={index < 4} />)}
+            </div>
+          )
+        }
+      </div>
+    </section>
+
+    {
+      !empty && (
+        <section class="border-t border-line bg-paper px-5 py-12 md:px-8 md:py-14" aria-labelledby="collection-guidance-title">
+          <div class="mx-auto grid max-w-5xl gap-10 md:grid-cols-[1.3fr_1fr]">
+            <div>
+              <h2 id="collection-guidance-title" class="fp-serif text-xl text-ink md:text-2xl">Choosing among these designs</h2>
+              <dl class="mt-6 space-y-5">
+                {collection.guidance.map((item) => (
+                  <div>
+                    <dt class="text-sm font-semibold text-ink">{item.heading}</dt>
+                    <dd class="mt-2 text-sm leading-7 text-moss">{item.body}</dd>
+                  </div>
+                ))}
+              </dl>
+              <p class="mt-6 text-sm leading-7 text-moss">
+                Comparing flowers? Read <a href={GARLAND_GUIDE_PATH} class="font-semibold text-ink underline underline-offset-4">how to choose a wedding garland</a>.
+              </p>
+            </div>
+            <div>
+              <h2 class="fp-serif text-xl text-ink md:text-2xl">What we confirm on WhatsApp</h2>
+              <dl class="mt-6 space-y-3">
+                {GARLAND_CONFIRM_POINTS.map((point) => (
+                  <div>
+                    <dt class="text-sm font-semibold text-ink">{point.label}</dt>
+                    <dd class="mt-0.5 text-sm leading-6 text-moss">{point.detail}</dd>
+                  </div>
+                ))}
+              </dl>
+              <p class="mt-5 text-sm leading-6 text-moss">{GARLAND_COVERAGE}</p>
+            </div>
+          </div>
+        </section>
+      )
+    }
+
+    {!empty && <LandingDetails content={landing} />}
+  </main>
+</BaseLayout>
+
+<style>
+  .collection-head {
+    display: grid;
+    gap: 1.25rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--color-line);
+  }
+
+  @media (min-width: 1024px) {
+    .collection-head {
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+      align-items: end;
+      gap: 3rem;
+    }
+  }
+</style>
