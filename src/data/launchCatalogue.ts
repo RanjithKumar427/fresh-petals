@@ -39,17 +39,18 @@ export const LAUNCH_CATEGORIES: LaunchCategory[] = [
     ],
   },
   {
-    // 25 draft designs (FP-G001–FP-G025) live in src/data/garlands.ts. They
-    // show on /categories/garlands in a local preview only, until each
-    // design is published with photo permission and a verified sample.
+    // Launched 12 October 2026: the owner confirmed the 156 photographs
+    // (FP-G001–FP-G156) are their own. The designs are made to order through
+    // WhatsApp enquiry and are read live from the database
+    // (src/data/garlands.ts), so this entry lists no slugs.
     id: "garlands",
     label: "Garlands / Poola Mala",
     href: "/categories/garlands",
-    ready: false,
+    ready: true,
     groups: [],
+    // Still unrecorded; customers see "To be confirmed on WhatsApp" meanwhile.
     pending: [
-      "Photo-publication permission for the supplier-catalogue photos, or your own photos of the samples",
-      "For each design: single or pair, length, exact flowers, finish/tassels, price or quotation, preparation time",
+      "For each design: single or pair, length, exact flowers, finish/tassels, preparation time",
       "Which designs suit groom, wedding and engagement use, and the delivery area for garlands",
     ],
   },

@@ -1,5 +1,6 @@
 import type { ProductDraft } from "./types";
 import { getPublishBlockers } from "./publishReadiness";
+import { garlandSampleRequired } from "../../../data/garlandRules";
 
 export type SectionStatus = "complete" | "warning" | "unavailable";
 
@@ -78,7 +79,9 @@ export function getSectionStatus(
       return draft.seoTitle || draft.seoDescription ? "complete" : "unavailable";
 
     case "garland-details":
-      return draft.garland && draft.garland.photoPermission === "granted" && draft.garland.sampleVerified ? "complete" : "warning";
+      return draft.garland && draft.garland.photoPermission === "granted" && (draft.garland.sampleVerified || !garlandSampleRequired(draft.garland.sellingMode))
+        ? "complete"
+        : "warning";
 
     case "options":
       return draft.options.length > 0 ? "complete" : "unavailable";

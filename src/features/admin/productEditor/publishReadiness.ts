@@ -1,4 +1,5 @@
 import type { ProductDraft } from "./types";
+import { garlandSampleRequired } from "../../../data/garlandRules";
 
 /**
  * Client-side mirror of ProductService.getPublishBlockers — used for
@@ -25,8 +26,8 @@ export function getPublishBlockers(draft: ProductDraft, uncategorizedCategoryId:
     if (draft.garland.photoPermission !== "granted") {
       blockers.push("Record photo-publication permission (or use your own photographs) before publishing this garland.");
     }
-    if (!draft.garland.sampleVerified) {
-      blockers.push("Verify a made sample of this garland before publishing it.");
+    if (garlandSampleRequired(draft.garland.sellingMode) && !draft.garland.sampleVerified) {
+      blockers.push("Verify a made sample of this garland before publishing it in cart mode.");
     }
     if (draft.garland.sellingMode === "cart" && (!draft.garland.readyForSale || draft.priceType !== "fixed" || !draft.sellingPrice)) {
       blockers.push("Cart mode needs a fixed price and 'Ready for sale' — or switch back to WhatsApp enquiry.");
