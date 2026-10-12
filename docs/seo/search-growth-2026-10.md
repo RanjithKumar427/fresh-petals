@@ -7,7 +7,8 @@ What was found on the live site, what changed, and which page answers which sear
 | Source | Status |
 |---|---|
 | Production HTML of 30 priority URLs, robots.txt and the three sitemaps (fetched 12 Oct 2026, no JavaScript) | Used. This is the baseline below. |
-| Google Search Console, Bing Webmaster Tools | **No access and no verification tag in the code.** No impressions, clicks, positions or index coverage are known. |
+| Google Search Console | A verified Domain property for `onlyfreshpetals.in` exists (seen in the owner's browser, 12 Oct 2026). Every report read "Processing data, please check again in a day or so" and no sitemap had been submitted. **No impressions, clicks, positions or index coverage are available yet.** |
+| Bing Webmaster Tools | Not signed in; no site added as far as could be seen. No data. |
 | Analytics | **None installed** before this release. No visit or enquiry counts exist. |
 | Search results | Four generic web searches on 12 Oct 2026 through a US-based search tool, no location or device set. They are *not* Bengaluru rankings and Fresh Petals' position was not measured. |
 
@@ -72,8 +73,27 @@ Flagged, not replaced: **FP-G083** (a phone screenshot), and designs photographe
 
 ## Next review
 
-First review 28 days after Search Console is verified. Until then there is no data to rank priorities by. Candidates to test against data, three at most per cycle:
+First review once Search Console holds 28 complete days of data (the property was still processing on 12 Oct 2026). Until then there is no data to rank priorities by. Candidates to test against data, three at most per cycle:
 
 1. Which garland collection or design pages get impressions without clicks (titles and descriptions).
 2. Whether `/categories/garlands` and `/occasions/wedding` appear for the same queries, and which one searchers choose.
 3. Whether the thin tag pages receive any impressions; if not, remove them from the sitemap.
+
+## Release record
+
+- Commits on `main`: `7401e5a` (release), `68fccdc` (empty commit to start the production build), `97fe339` (card photographs at 480 px).
+- Live checks on 12 Oct 2026: 50 of 50 search checks, 75 of 76 quote-only checks (the one flag is the priced pooja-flower suggestions on the Event Garlands page, as before), 7 of 7 basket and draft checks, 156 garland codes on the listing.
+- IndexNow: 329 sitemap URLs submitted on 12 Oct 2026, answered HTTP 200 (received). This is a notification; it does not show that any page was crawled or indexed.
+
+Mobile loading on the live site (one run each; 390 px phone, 1.6 Mbps, 150 ms latency, 4× slower CPU; a lab measurement, not field data):
+
+| Page | Largest paint | Layout shift | Transferred |
+|---|---:|---:|---:|
+| `/` | 2.2 s | 0.005 | 673 KB |
+| `/categories/bouquets` | 2.1 s | 0.018 | 503 KB |
+| `/categories/garlands` | 2.0 s | 0.001 | 1,467 KB (2,151 KB with 720 px cards) |
+| `/categories/garlands/rose` | 1.6 s | 0.001 | 1,428 KB (2,356 KB with 720 px cards) |
+| `/guides/choosing-wedding-garlands` | 1.0 s | 0.017 | 629 KB |
+| `/products/classic-red-rose-garland` | 4.2 s | 0 | 795 KB |
+
+The design page is the slow one: its main photograph is the full-width original (about 230 KB for this design) because a phone asks for the 1,080 px copy. Smaller source photographs or a tighter crop would bring it down; it was left as is so the photograph stays sharp when enlarged.

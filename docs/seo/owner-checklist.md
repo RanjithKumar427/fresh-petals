@@ -4,17 +4,15 @@ Steps that need the owner's accounts or decisions. Nothing here is done automati
 
 ## 1. Google Search Console (about 15 minutes)
 
-1. Go to search.google.com/search-console and add the property `onlyfreshpetals.in`.
-   - Best: a **Domain** property, verified with a DNS TXT record at the domain registrar. Covers every host and needs no code.
-   - Otherwise: a **URL-prefix** property for `https://onlyfreshpetals.in`, verified with the HTML tag. Copy the tag's `content` value into the Vercel project as `PUBLIC_GOOGLE_SITE_VERIFICATION` (Production) and redeploy; the site then prints the tag on every page.
-2. Under Sitemaps, submit all three: `sitemap.xml`, `sitemap-garlands.xml`, `sitemap-occasions.xml`.
+1. Done already: a verified Domain property for `onlyfreshpetals.in` exists. (The `PUBLIC_GOOGLE_SITE_VERIFICATION` setting is only needed if a URL-prefix property is ever added.)
+2. **Still to do:** under Sitemaps, submit all three: `sitemap.xml`, `sitemap-garlands.xml`, `sitemap-occasions.xml`. None was submitted as of 12 Oct 2026.
 3. Use URL Inspection → Request indexing for `/categories/garlands`, the three collections, `/guides/choosing-wedding-garlands` and `/occasions/wedding`.
 
-Needed from you: access to the domain's DNS, or to the Vercel project's environment variables.
+Needed from you: two minutes in Search Console. Reports there were still "processing" on 12 Oct 2026; data usually appears within a few days.
 
 ## 2. Bing Webmaster Tools (about 10 minutes)
 
-1. Go to bing.com/webmasters and sign in. Choose **Import from Google Search Console** once step 1 is done; it copies the property and sitemaps.
+1. Go to bing.com/webmasters and sign in with a Microsoft account (the browser was not signed in on 12 Oct 2026). Choose **Import from Google Search Console**; it copies the verified property and its sitemaps, so do step 1 first.
 2. Without the import: add the site, choose the meta-tag method, put the `content` value in Vercel as `PUBLIC_BING_SITE_VERIFICATION` and redeploy. Then submit the three sitemaps.
 3. IndexNow needs no account. After a release, run `node scripts/seo/indexnow.mjs` to see what would be sent and add `--submit` to send it. Bing's IndexNow report then shows the submissions.
 

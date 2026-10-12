@@ -62,4 +62,4 @@ Reading it:
 
 ## Baseline
 
-As of 12 October 2026 there is no Search Console property, no analytics and therefore no measured baseline for impressions, clicks, enquiries or orders. The technical baseline (titles, canonicals, indexing, structured data, images) is in `search-growth-2026-10.md`. The measured baseline starts on the first full 28 days after verification.
+As of 12 October 2026 the Search Console property exists but holds no data yet ("processing"), there is no analytics, and therefore there is no measured baseline for impressions, clicks, enquiries or orders. The technical baseline (titles, canonicals, indexing, structured data, images) is in `search-growth-2026-10.md`. The measured baseline is the first full 28 days of Search Console data.
