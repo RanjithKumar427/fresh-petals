@@ -189,7 +189,7 @@ const jsonLd = [
                   <ul class="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4" role="list">
                     {section.examples.map(({ product, note }) => {
                       const photo = product.garland.image;
-                      const srcset = garlandPhotoSrcset(photo, 720);
+                      const srcset = garlandPhotoSrcset(photo, 480);
                       return (
                         <li>
                           <figure class="flex h-full flex-col overflow-hidden rounded-[18px] border border-line bg-paper">

@@ -24,7 +24,9 @@ const design = product.garland;
 const cart = isCartGarland(design);
 const price = formatGarlandPrice(design);
 const href = journeyHref(`/products/${product.slug}`, journey);
-const srcset = garlandPhotoSrcset(design.image, 720);
+// Cards are small: 480px is sharp enough for a two-column phone grid and
+// roughly halves the bytes of the 720px copy (measured on the live site).
+const srcset = garlandPhotoSrcset(design.image, 480);
 const filterLabels = design.filters
   .map((key) => GARLAND_FILTERS.find((filter) => filter.key === key)?.label)
   .filter(Boolean)
