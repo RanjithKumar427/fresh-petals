@@ -1,6 +1,6 @@
 # National coverage release, 13 October 2026
 
-The first national release: the site now says where Fresh Petals takes orders (59 cities, confirmed by the owner), has a directory of those cities, five city pages, and carries the recipient city from a city page through to the WhatsApp draft. It is a local commit and preview. Nothing in this document claims a ranking, traffic or enquiry result.
+The first national release: the site now says where Fresh Petals takes orders (59 cities, confirmed by the owner), has a directory of those cities, five city pages, and carries the recipient city from a city page through to the WhatsApp draft. It went live on 13 October 2026 (see "Release record"). Nothing in this document claims a ranking, traffic or enquiry result.
 
 Base: `origin/main` at `366df38` (which already contains the live release `297aa03`: pooja discovery links and bouquet and pooja guidance). Those changes were checked in the base and are not reapplied here.
 
@@ -109,9 +109,8 @@ No tracking was added and nothing is sent until `PUBLIC_GA_MEASUREMENT_ID` is se
 **Baseline for this release, kept separate from `297aa03` (live 13 Oct 2026, 12:08 IST).**
 
 - Search Console, owner's screenshot taken 13 Oct 2026, 10:09 IST (24-hour view, Web, "last update 8.5 hours ago"): 4 clicks, 20 impressions, average position 8.3. Queries listed, one impression each: "pooja flowers online bangalore" (1 click), "fragrant lily", "flower subscription", "fresh flowers for vase", "red flowers for pooja". 24-hour figures are preliminary.
-- This corrects the earlier release record, which said the property still showed "Processing data" with no impressions. The property held data before that release went live; the statement in `search-expansion-2026-10.md` was wrong and is marked there.
-- Search Console was not opened again during this work. Pages, 28-day totals and indexing counts were therefore not recorded: **UNKNOWN**, to be exported before this release is deployed.
-- Sitemap submission status: **UNKNOWN** (not checked). The three sitemaps are `https://onlyfreshpetals.in/sitemap.xml`, `https://onlyfreshpetals.in/sitemap-garlands.xml` and `https://onlyfreshpetals.in/sitemap-occasions.xml`. Submitting them helps discovery; it does not start data collection and does not guarantee indexing or ranking.
+- Search Console opened 13 Oct 2026, about 15:55 IST, after this release went live. The 28-day Performance view (Web, by page) still reads "Processing data, please check again in a day or so" with no rows, so there was nothing to export: no 28-day totals, page list or indexing counts exist yet. The 24-hour view is where the figures above appear. The earlier release record saw the same "Processing data" message; it was right about the 28-day view and wrong to conclude there was no data at all.
+- Sitemaps report, same time: all three are **submitted** (12 Oct 2026), last read 12 Oct 2026, status Success, with 157, 161 and 11 discovered pages. Google had not yet re-read `sitemap.xml` since this release, so the six new URLs are not counted there yet. Nothing was changed in the account. The three sitemaps are `https://onlyfreshpetals.in/sitemap.xml`, `https://onlyfreshpetals.in/sitemap-garlands.xml` and `https://onlyfreshpetals.in/sitemap-occasions.xml`. Submitting them helps discovery; it does not start data collection and does not guarantee indexing or ranking.
 - No city page existed before this release, so city-page impressions start from zero by definition.
 
 **Read weekly, after deployment** (complete weeks, ending at least three days before the export):
@@ -154,15 +153,41 @@ The 203 checks cover: exactly 59 unique registry cities; the directory without s
 
 Comparison limits: untouched behaviour was compared with the live site's public pages (pooja prices, the `sitemap.xml` entries, one product label) and with the base source. The previous deployment's own URL was not used.
 
-## Deployment handoff
+## Release record
 
-Not pushed, merged or deployed. When publishing is authorised:
+| | |
+|---|---|
+| Release commit | `46c47a6` on `main`, fast-forward from `366df38` (the rollback reference); no force-push |
+| Pushed | 13 Oct 2026, 15:44:09 IST (10:14:09 UTC) |
+| Vercel deployment | `fresh-petals-4lmjfymb1`, target production, status Ready, created 15:44:12 IST, aliased to `onlyfreshpetals.in` and `www.onlyfreshpetals.in`. GitHub deployment 7035814214 records commit `46c47a6`, state success. |
+| First seen serving the release | 13 Oct 2026, 15:45:27 IST (10:15:27 UTC), on `https://onlyfreshpetals.in/locations/mumbai` |
+| New URLs | `/locations`, `/locations/bengaluru`, `/locations/hyderabad`, `/locations/chennai`, `/locations/pune`, `/locations/mumbai` |
+| Changed | `/` (title, coverage sentence), collection, occasion, garland, product and policy pages (wording, titles), the header strip and footer on every page, the basket, `sitemap.xml` |
 
-1. Export Search Console (Queries and Pages, 28 days, Web and Image) first, so this release has a proper baseline.
-2. Fast-forward `main` to this branch; push `main` alone and wait for the Production deployment before pushing the branch.
-3. Check live: `/`, `/locations`, the five city pages, `/locations/delhi` (404), `/sitemap.xml` (163 URLs), a basket draft with a city (captured, not sent).
-4. Then, in Search Console: confirm or submit the three sitemaps and request indexing for `/locations` and the five city pages.
-5. Optional: `node scripts/seo/indexnow.mjs` for the six new URLs and the pages whose titles changed.
+Two checks before publishing, both passed with no code change:
+
+- **Unconfirmed Hyderabad zones.** The delivery API returns `serviceable: false` and "Delivery charges will be confirmed on WhatsApp" for Hyderabad pincodes (500032, 500081), with no area, fee, slot promise or same-day flag, on the preview and on production. No interface or draft quotes them. No database record was changed.
+- **Preview-only blocking.** The guard that refused inquiry and admin routes lived only in the scratch preview server. The repository, the build output and this commit contain none of it; `src/pages/api`, `src/pages/admin` and `src/server` are unchanged apart from one message string.
+
+Live verification, 13 Oct 2026 (drafts captured, nothing sent; inquiry requests aborted in the browser; no product, admin or database write):
+
+| Check | Result |
+|---|---|
+| Six new routes return 200 with their titles, one H1, self-canonicals, breadcrumbs and public products | PASS |
+| `sitemap.xml` lists the six new URLs with `lastmod` 2026-10-13: 163 URLs; 161 and 11 in the other two; 335 unique | PASS |
+| Directory: 59 cities, five hub links, 54 city-specific WhatsApp actions; works without JavaScript | PASS |
+| Unpublished and unknown cities 404; `/locations/bangalore` redirects to `/locations/bengaluru` | PASS |
+| National title and coverage sentence on the homepage; discovery footer; `/occasions` from the menu | PASS |
+| Recipient city from city page to product draft, basket and basket draft; refused silent change; explicit change; invalid parameter; old basket | PASS |
+| Hero (three slides, headline), bouquet and pooja improvements, 156 garlands with linked names, Event Garlands | PASS |
+| Quote-only products show no amount in cards, drafts or structured data; pooja products keep their prices | PASS |
+| No broken images or horizontal overflow at 375, 390, 768 and 1440 px | PASS |
+| `/admin` redirects to the sign-in page, `/api/admin/products` answers 401 without a session, no preview guard present | PASS |
+| Full live run of the check script | 200 of 201 |
+
+The one miss is a check written for the local preview: it reads the `Vercel-Cache-Tag` and `s-maxage` response headers, which Vercel removes before a response leaves its network. The city page is served from the shared cache (`X-Vercel-Cache` present), so caching is working; whether a tag purge reaches the city pages was not exercised, because that needs an admin save.
+
+Still to do in Search Console, by the owner: request indexing for the six new URLs (optional), and export Queries and Pages once the 28-day view has data. Optional: `node scripts/seo/indexnow.mjs` for the six new URLs and the pages whose titles changed.
 
 Titles and H1s of the homepage, the bouquet, pooja and subscription collections, the birthday, anniversary and wedding pages and the garland pages no longer contain "Bengaluru" or "Bangalore". Bengaluru searches are now answered by `/locations/bengaluru`. Expect those pages' Bengaluru impressions to move to the city page over some weeks; that movement is a consequence of this release, not a loss to diagnose.
 
