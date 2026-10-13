@@ -13,10 +13,10 @@
 // credentials, a street address, branches, opening hours, ratings, delivery
 // times. Structured data is an Organization, never a LocalBusiness.
 //
-// Open point for the owner (not resolved here): the site says the shop began
-// in Bengaluru, while the Instagram handle and the published customer
-// feedback are labelled Hyderabad. Both are kept as they are until the owner
-// says which account of the history is right.
+// Where the business started is not stated anywhere on the site: the owner
+// has not confirmed it (an earlier About page said Bengaluru, while the
+// Instagram handle and the published feedback are labelled Hyderabad). The
+// 59 cities are delivery coverage, never branches.
 import { WHATSAPP_NUMBER } from "../config/storefront";
 import { serviceCityCount, serviceableCities } from "./serviceCities";
 

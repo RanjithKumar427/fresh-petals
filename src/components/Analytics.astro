@@ -59,18 +59,25 @@ const enabled = /^G-[A-Z0-9]{4,}$/.test(measurementId);
     }
 
     // Known assistant hostnames only. Anything else is left unlabelled.
-    var AI_HOSTS = { "chatgpt.com": "chatgpt", "chat.openai.com": "chatgpt", "perplexity.ai": "perplexity", "www.perplexity.ai": "perplexity", "copilot.microsoft.com": "copilot", "gemini.google.com": "gemini", "claude.ai": "claude" };
+    var AI_HOSTS = { "chatgpt.com": "chatgpt", "chat.openai.com": "chatgpt", "perplexity.ai": "perplexity", "www.perplexity.ai": "perplexity", "copilot.microsoft.com": "copilot", "gemini.google.com": "gemini", "claude.ai": "claude", "search.chatgpt.com": "chatgpt", "meta.ai": "meta-ai", "www.meta.ai": "meta-ai" };
     var aiReferrer = "";
+    var aiMethod = "";
     try {
       aiReferrer = sessionStorage.getItem("fp_ai_ref") || "";
+      aiMethod = sessionStorage.getItem("fp_ai_method") || "";
       if (!aiReferrer) {
         var refHost = "";
         try {
           refHost = document.referrer ? new URL(document.referrer).hostname.toLowerCase() : "";
         } catch (e) {}
         var utm = (new URLSearchParams(location.search).get("utm_source") || "").toLowerCase();
+        // "referrer": the browser named the assistant. "campaign": the link carried an allowlisted utm_source.
+        aiMethod = AI_HOSTS[refHost] ? "referrer" : AI_HOSTS[utm] ? "campaign" : "";
         aiReferrer = AI_HOSTS[refHost] || AI_HOSTS[utm] || "";
-        if (aiReferrer) sessionStorage.setItem("fp_ai_ref", aiReferrer);
+        if (aiReferrer) {
+          sessionStorage.setItem("fp_ai_ref", aiReferrer);
+          sessionStorage.setItem("fp_ai_method", aiMethod);
+        }
       }
     } catch (e) {}
 
@@ -92,7 +99,10 @@ const enabled = /^G-[A-Z0-9]{4,}$/.test(measurementId);
       var data = { page_path: path(location.pathname), landing_path: landing };
       var city = destinationCity();
       if (city) data.destination_city = city;
-      if (aiReferrer) data.ai_referrer = aiReferrer;
+      if (aiReferrer) {
+        data.ai_referrer = aiReferrer;
+        data.ai_attribution = aiMethod || "referrer";
+      }
       for (var key in params || {}) if (params[key] !== undefined && params[key] !== null && params[key] !== "") data[key] = String(params[key]).slice(0, 100);
       try {
         document.dispatchEvent(new CustomEvent("fp:track", { detail: { name: name, params: data } }));

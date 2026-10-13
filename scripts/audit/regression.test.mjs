@@ -610,6 +610,9 @@ test('business profile: one source of verified facts; one Organization id; no ad
     assert(/organizationNode\(Astro\.site\)/.test(source) && !/"@type": "Organization"/.test(source) && !/LocalBusiness/.test(source), file);
   }
   assert(!/Astro's default mark/.test(readFileSync('src/pages/index.astro', 'utf8')));
+  // The unconfirmed origin is not stated; coverage is described as delivery cities, not branches.
+  const about = readFileSync('src/pages/about.astro', 'utf8');
+  assert(!/began in|began with|Chamarajpet|Basavanagudi|founded|since \d{4}/i.test(about) && /not shops or branches/.test(about));
 });
 
 test('guides: four published guides, one registry; real products only; no price for quote-only examples, no invented specification, no instruction to assistants', () => {
@@ -633,6 +636,7 @@ test('guides: four published guides, one registry; real products only; no price 
   assert(/loadAuthoritativePrices/.test(pages['jasmine-pooja-flowers-and-gajra']) && /publishedHubs|hasHub/.test(pages['sending-flowers-to-another-city']));
   assert(/isListedGarland/.test(pages['choosing-wedding-garlands']) && /garlandCacheHeaders/.test(pages['choosing-wedding-garlands']));
   // Quote-only examples never render an amount; the card decides by product identity.
+  assert(/\{quoteOnly \? "Request a quote" : "Order on WhatsApp"\}/.test(card) && /Price shown: \$\{product\.priceLabel\}/.test(card));
   assert(/quoteOnly \? QUOTE_ONLY_PRICE_LABEL : product\.priceLabel/.test(card) && /loading="lazy"/.test(card) && /width=\{size\?\.width\}/.test(card));
   const prose = Object.values(pages).join('\n').replace(/^\/\/.*$/gm, '');
   assert(!/₹\s?\d/.test(prose));
@@ -660,7 +664,7 @@ test('guides: four published guides, one registry; real products only; no price 
 test('assistant referrals: labelled from a known hostname only; no referrer path, query or prompt is read into an event', () => {
   const analytics = readFileSync('src/components/Analytics.astro', 'utf8');
   const script = analytics.split('---')[2];
-  assert(/AI_HOSTS = \{ "chatgpt\.com": "chatgpt"/.test(script) && /new URL\(document\.referrer\)\.hostname/.test(script) && /data\.ai_referrer = aiReferrer/.test(script));
+  assert(/AI_HOSTS = \{ "chatgpt\.com": "chatgpt"/.test(script) && /new URL\(document\.referrer\)\.hostname/.test(script) && /data\.ai_referrer = aiReferrer/.test(script) && /data\.ai_attribution = aiMethod/.test(script) && /"referrer" : AI_HOSTS\[utm\] \? "campaign"/.test(script));
   // The referrer is used for its hostname and nowhere else; google.com is not an AI host.
   assert.equal(script.match(/document\.referrer/g).length, 2);
   assert(!/google\.com": "|"bing\.com"/.test(script.replace('gemini.google.com', '')));

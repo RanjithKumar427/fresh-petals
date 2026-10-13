@@ -14,6 +14,7 @@ import { garlandPhotoSrcset, isListedGarland, loadGarlands, type GarlandProduct 
 import { GARLANDS_PATH, GARLAND_CONFIRM_POINTS, GARLAND_COVERAGE, GARLAND_GUIDE_PATH, garlandCollection, populatedCollections } from "../../data/garlandCollections";
 import { garlandCacheHeaders } from "../../server/services/GarlandWebsite";
 import { whatsappLink } from "../../config/storefront";
+import { garlandEnquiryHref } from "../../utils/garlandEnquiry";
 import { GARLAND_GUIDE, GUIDES, GUIDES_PATH } from "../../data/guides";
 import { organizationRef, publisherNode } from "../../data/businessProfile";
 
@@ -287,7 +288,8 @@ const otherGuides = GUIDES.filter((entry) => entry.slug !== GARLAND_GUIDE.slug);
                   {coded.map((product) => (
                     <li>
                       <strong class="text-ink">{product.garland.code}</strong>{" "}
-                      <a href={`/products/${product.slug}`} class="font-semibold text-ink underline underline-offset-4">{product.garland.title}</a>: {product.garland.image.alt}
+                      <a href={`/products/${product.slug}`} class="font-semibold text-ink underline underline-offset-4">{product.garland.title}</a>: {product.garland.image.alt}{" "}
+                      <a href={garlandEnquiryHref({ code: product.garland.code, quantity: 1 })} target="_blank" rel="noopener noreferrer" data-garland-quote={product.garland.code} class="font-semibold text-berry underline underline-offset-4">Request a quote for {product.garland.code}</a>
                     </li>
                   ))}
                 </ul>

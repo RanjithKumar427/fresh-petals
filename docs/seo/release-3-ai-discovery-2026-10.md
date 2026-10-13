@@ -34,7 +34,7 @@ Base: `origin/main` at `4ad6312`. Companion documents: `assistant-benchmark.md` 
 
 Not stated anywhere, because none is verified: a founding date, registrations, credentials, an address, branches, hours, ratings or delivery times. It is an Organization, not a LocalBusiness.
 
-**Open point, not resolved here.** About says the shop began with deliveries in Chamarajpet and Basavanagudi, Bengaluru. The Instagram handle (`freshpetals.hyderabad`) and the published customer feedback are labelled Hyderabad. Both are left exactly as they were. The owner needs to say which account of the history is right before either is changed. The old alternate name "Fresh Petals Bengaluru" was dropped from markup for the same reason: it asserted one side of that question.
+**Origin: removed, not replaced.** An earlier About page said the shop began with deliveries in Chamarajpet and Basavanagudi, Bengaluru, while the Instagram handle (`freshpetals.hyderabad`) and the published feedback are labelled Hyderabad. The owner has not confirmed either account, so the origin sentences were removed from About (three places) and nothing was written in their place. The old alternate name "Fresh Petals Bengaluru" was dropped from markup for the same reason. About now says the 59 cities are cities delivered to, not shops or branches. If the owner confirms the history, one sentence can be added back.
 
 Existing feedback keeps its Hyderabad labels and is not presented as verified completed-order reviews.
 
@@ -84,6 +84,15 @@ The preview read the production database; inquiry and admin routes were refused 
 Covered by the Release 3 checks: five guide URLs with unique titles, one H1, self-canonicals with and without query parameters, breadcrumbs, catalogue social images; one Organization node with the shared id on every guide and identical facts on the homepage, About and Contact; Article markup with dates and no person, rating or offer; all eight bouquets as quote-only cards with no amount; pooja products showing the same price as their own pages and Event Garlands still quote-only; the two pooja boxes told apart; shared photographs labelled; the fifteen city pages linked from the sending guide; every internal link in the guides resolving; footer, collection, product and city-section links to the guides; `sitemap.xml` keeping every live entry and adding only the four guide URLs; robots.txt unchanged; no `llms.txt`; a ChatGPT referrer labelled by hostname with nothing else kept, and direct and Google visits not labelled; a city page to guide to product draft naming the recipient city; no overflow or broken images.
 
 Screenshots read by eye: the bouquet guide on desktop, the jasmine and pooja guide on mobile (before and after a fix), and the sending guide on mobile. Two issues were found there and fixed: the two-box comparison was a table that cut off its last column on phones (now two stacked cards), and the city links in the sending guide were not styled as links. The garland guide, the directory and the remaining desktop and mobile views were checked by script only.
+
+## Final review before publication
+
+- **Quote wording.** Every product example in the guides has an action: quote-only products (bouquets, lilies, garlands, Event Garlands) say "Request a quote" and draft a message naming the product and its page with no amount; publicly priced pooja products say "Order on WhatsApp" and state the price shown. The garland guide's coded designs each have "Request a quote for FP-G…" through the live enquiry check. Catalogue prices and the quote-only rule are unchanged.
+- **Attribution.** `ai_referrer` is now sent with `ai_attribution`: `referrer` when the browser named a recognised assistant host, `campaign` when the link carried an allowlisted `utm_source` (for example `chatgpt.com`). Recognised hosts: chatgpt.com, chat.openai.com, search.chatgpt.com, perplexity.ai, copilot.microsoft.com, gemini.google.com, claude.ai, meta.ai. Ordinary Google visits are never labelled.
+- **WhatsApp clicks** report the page path and the product slug or design code, and nothing about the customer. A click is an enquiry, not an order.
+- **`PUBLIC_GA_MEASUREMENT_ID` is not set** in `.env.local` or in the Vercel production environment, so nothing is collected. This is the one missing input for measurement.
+- **Screenshots read by eye:** the directory (mobile), the bouquet guide (desktop and mobile), the jasmine and pooja guide (desktop and mobile), the sending guide (mobile) and the garland guide (mobile). The directory, garland guide and sending guide on desktop were checked by script only.
+- **Checks on the final build:** regression suite 37 of 37; Release 3 checks 88 of 88; type check 20 errors in the same three untouched files, none new.
 
 ## Handoff
 
