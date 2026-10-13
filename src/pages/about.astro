@@ -1,4 +1,6 @@
 ---
+import { BUSINESS, businessSummary, organizationNode, organizationRef } from "../data/businessProfile";
+const pageJsonLd = [organizationNode(Astro.site), { "@type": "AboutPage", name: "About Fresh Petals", url: new URL("/about", Astro.site).toString(), inLanguage: "en-IN", about: organizationRef(Astro.site) }];
 import { serviceCityCount } from "../data/serviceCities";
 const cityCount = serviceCityCount();
 // About: only verified facts about how Fresh Petals works today. No founding
@@ -28,6 +30,7 @@ const facts = [
 ---
 
 <BaseLayout
+  jsonLd={pageJsonLd}
   title="About Fresh Petals | Flowers Ordered on WhatsApp"
   description={`Fresh Petals is a WhatsApp-first flower shop that began in Bengaluru and now takes orders for ${cityCount} cities across India: hand-tied bouquets, wedding garlands and pooja flowers.`}
   showCategoryCarousel={false}
@@ -41,6 +44,9 @@ const facts = [
           <p class="mt-5 text-sm leading-7 text-moss md:text-base">
             Fresh Petals began in Bengaluru and now takes flower orders for cities across India. You choose online, and we confirm everything with you in
             a WhatsApp chat before you pay.
+          </p>
+          <p class="mt-4 text-sm leading-7 text-moss md:text-base" data-business-facts>
+            {businessSummary()} Reach us on WhatsApp at {BUSINESS.whatsappDisplay}, or on <a href={BUSINESS.instagram} target="_blank" rel="noopener noreferrer" class="font-semibold text-ink underline underline-offset-4">Instagram</a>. You may also see the name written as {BUSINESS.alternateName}.
           </p>
         </div>
 

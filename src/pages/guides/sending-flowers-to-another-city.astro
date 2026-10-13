@@ -1,0 +1,98 @@
+---
+// Sending flowers to someone in another city: how the recipient city, the
+// design, the receiving details and the WhatsApp confirmation fit together.
+// City links come from the registry (published pages only); the three
+// bouquets are the first of each launch group. Nothing here promises a
+// delivery time, a fee or every address.
+import GuideShell from "../../components/GuideShell.astro";
+import GuideProductCard from "../../components/GuideProductCard.astro";
+import { SENDING_GUIDE } from "../../data/guides";
+import { launchGroups } from "../../data/launchCatalogue";
+import { bouquetLine, bouquetPhotoAlt } from "../../data/collectionGuidance";
+import { LOCATIONS_PATH, citiesByRegion, hubPath, hasHub, serviceCityCount } from "../../data/serviceCities";
+
+const examples = launchGroups("bouquets").flatMap(({ products }) => products.slice(0, 1));
+const regions = citiesByRegion().map((region) => ({ ...region, hubs: region.cities.filter(hasHub) })).filter((region) => region.hubs.length > 0);
+const cityCount = serviceCityCount();
+const contents = [
+  { id: "city", label: "The recipient city" },
+  { id: "design", label: "The design" },
+  { id: "receiving", label: "Receiving details" },
+  { id: "changing", label: "Changing the city" },
+  { id: "confirmation", label: "Before you pay" },
+];
+---
+
+<GuideShell
+  guide={SENDING_GUIDE}
+  image={examples[0]?.image}
+  track="guide/sending"
+  contents={contents}
+  lead={[
+    "You do not have to be in the same city as the person receiving the flowers. What matters is that the order is marked with the right recipient city, that we have what we need to hand the flowers over, and that you know what is confirmed before any money changes hands.",
+    `Fresh Petals takes orders for ${cityCount} cities across India. This guide follows an order from choosing the city to the confirmation on WhatsApp.`,
+  ]}
+>
+  <section class="guide-section" id="city" aria-labelledby="city-title" data-guide-section="city">
+    <h2 id="city-title" class="fp-serif text-2xl text-ink md:text-3xl">1. Choose the recipient city</h2>
+    <p>
+      The recipient city is where the flowers are going, not where you are. Check it against the <a href={LOCATIONS_PATH}>list of {cityCount} delivery cities</a>. Neighbouring cities are listed separately (Delhi, Noida, Greater Noida and Gurugram are four different entries; so are Mumbai, Thane and Navi Mumbai), so choose the one the address is actually in.
+    </p>
+    <p>Being on the list means we take orders for that city. Whether we can deliver to a particular address on a particular date is confirmed for each order. A pincode is not needed to start.</p>
+    <div class="guide-prose mt-5 space-y-3" data-guide-hubs>
+      {regions.map((region) => (
+        <p class="!mt-0 text-[0.9375rem] leading-7 text-moss">
+          <strong class="text-ink">{region.label}:</strong>{" "}
+          {region.hubs.map((city, index) => <>{index > 0 && ", "}<a href={hubPath(city)}>{city.name}</a></>)}
+        </p>
+      ))}
+    </div>
+    <p>These cities have their own page with designs and advice for that city. Every other city on the list can be ordered for in the same way.</p>
+  </section>
+
+  <section class="guide-section" id="design" aria-labelledby="design-title" data-guide-section="design">
+    <h2 id="design-title" class="fp-serif text-2xl text-ink md:text-3xl">2. Choose the design</h2>
+    <p>
+      Start from the occasion if you know it: <a href="/occasions/birthday">birthday</a>, <a href="/occasions/anniversary">anniversary</a>, or <a href="/occasions">another occasion</a>. Start from the flower if you know the person's taste. The <a href="/guides/choosing-a-flower-bouquet">bouquet guide</a> compares roses, lilies and mixed bouquets; these three show the range.
+    </p>
+    <ul class="mt-6 grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5">
+      {examples.map((product) => <li><GuideProductCard product={product} line={bouquetLine(product)} alt={bouquetPhotoAlt(product)} /></li>)}
+    </ul>
+    <p>For a ceremony, <a href="/categories/garlands">wedding garlands</a> are chosen by design code and <a href="/categories/pooja-flowers">pooja flowers</a> by form; each has its own guide.</p>
+  </section>
+
+  <section class="guide-section" id="receiving" aria-labelledby="receiving-title" data-guide-section="receiving">
+    <h2 id="receiving-title" class="fp-serif text-2xl text-ink md:text-3xl">3. Give the receiving details</h2>
+    <p>The basket asks for these when you send your order:</p>
+    <ul class="mt-4 list-disc space-y-2 pl-5 text-[0.9375rem] leading-7 text-moss">
+      <li>The recipient's name and a phone number that will be answered at the address.</li>
+      <li>The full address with a landmark. For a flat, the building and flat number; for an office, the company, the floor and the hours someone can accept a delivery.</li>
+      <li>The date, and the time of day you would prefer.</li>
+      <li>A card message if you want one, signed, so the recipient knows who sent it.</li>
+      <li>Whether the flowers are a surprise.</li>
+    </ul>
+    <p>A preferred time is a request. We do not promise same-day or timed delivery on the website; what is possible for that address and date is part of the confirmation.</p>
+  </section>
+
+  <section class="guide-section" id="changing" aria-labelledby="changing-title" data-guide-section="changing">
+    <h2 id="changing-title" class="fp-serif text-2xl text-ink md:text-3xl">Changing the recipient city</h2>
+    <p>
+      Your order has one recipient city. It is shown on product pages and in the basket, and you can change it there at any time. Looking at another city's page does not change it once your basket has something in it: the page asks whether you want to send the order there instead, and the city changes only if you say so.
+    </p>
+    <p>If you are sending to two cities, send two orders. One basket goes to one city.</p>
+  </section>
+
+  <section class="guide-section" id="confirmation" aria-labelledby="confirmation-title" data-guide-section="confirmation">
+    <h2 id="confirmation-title" class="fp-serif text-2xl text-ink md:text-3xl">4. What is confirmed before you pay</h2>
+    <p>Sending your basket opens a WhatsApp message with your selection, the recipient city and the details you entered. It is a request, not an order. We reply to you, the sender, with:</p>
+    <ul class="mt-4 list-disc space-y-2 pl-5 text-[0.9375rem] leading-7 text-moss">
+      <li>Whether the flowers are available for your date, and any substitution.</li>
+      <li>The price. Bouquets and garlands are quoted; other products confirm the price shown.</li>
+      <li>Whether we can deliver to that address on that date, and the delivery charge.</li>
+      <li>How to pay. Nothing is paid on this website, and we never ask for OTPs or banking passwords.</li>
+    </ul>
+    <p>
+      The order is accepted only after you agree to these. See <a href="/shipping">delivery information</a> and <a href="/refunds">refunds</a> for the policies, or <a href="/contact">contact us</a> with a question first.
+    </p>
+  </section>
+</GuideShell>

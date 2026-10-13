@@ -4,6 +4,7 @@ import { getStaticPaths as getCategoryStaticPaths } from "./categories/[slug].as
 import { CANONICAL_CATEGORY, NOINDEX_CATEGORY_SLUGS, NOINDEX_STATIC_PAGES } from "../data/seoLanding";
 import { LOCATIONS_PATH, hubPath, publishedHubs } from "../data/serviceCities";
 import { CITY_HUBS, cityHub } from "../data/cityHubs";
+import { GUIDES, GUIDES_PATH } from "../data/guides";
 
 // Prerendered — built once at build time from the exact same real data
 // every other page already uses, not a second, parallel catalogue.
@@ -80,10 +81,17 @@ export const GET: APIRoute = async ({ site }) => {
   });
   const latest = CITY_HUBS.map((hub) => hub.updated).sort().at(-1);
   const cityEntries = [{ path: LOCATIONS_PATH, lastmod: latest }, ...hubs];
+  // The guides directory and the guides built with the site. The wedding
+  // garland guide follows garland publication and stays in the live
+  // sitemap-garlands.xml, so it is not repeated here.
+  const guideEntries = [
+    { path: GUIDES_PATH, lastmod: GUIDES.map((guide) => guide.updated).sort().at(-1) },
+    ...GUIDES.filter((guide) => !guide.liveSitemap).map((guide) => ({ path: guide.path, lastmod: guide.updated })),
+  ];
 
   const urlEntries = [
     ...paths.map((path) => `  <url><loc>${new URL(path, site).toString()}</loc></url>`),
-    ...cityEntries.map(({ path, lastmod }) => `  <url><loc>${new URL(path, site).toString()}</loc>${lastmod ? `<lastmod>${lastmod}</lastmod>` : ""}</url>`),
+    ...[...cityEntries, ...guideEntries].map(({ path, lastmod }) => `  <url><loc>${new URL(path, site).toString()}</loc>${lastmod ? `<lastmod>${lastmod}</lastmod>` : ""}</url>`),
   ].join("\n");
 
   const body = `<?xml version="1.0" encoding="UTF-8"?>

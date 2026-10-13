@@ -8,7 +8,8 @@
 import Wordmark from "./Wordmark.astro";
 import { POOJA_FLOWERS_LINK, OCCASIONS_HREF } from "../../data/navigation";
 import { garlandsPromoted, readyCategories } from "../../data/launchCatalogue";
-import { GARLANDS_PATH, GARLAND_COLLECTIONS, GARLAND_GUIDE_PATH } from "../../data/garlandCollections";
+import { GARLANDS_PATH, GARLAND_COLLECTIONS } from "../../data/garlandCollections";
+import { GUIDES, GUIDES_PATH } from "../../data/guides";
 import { LOCATIONS_PATH, hubPath, publishedHubs, serviceCityCount } from "../../data/serviceCities";
 import { whatsappLink } from "../../config/storefront";
 
@@ -36,7 +37,8 @@ const cities: Link[] = [
   { label: `All ${cityCount} delivery cities`, href: LOCATIONS_PATH },
 ];
 const choosing: Link[] = [
-  { label: "Choosing a wedding garland", href: GARLAND_GUIDE_PATH },
+  ...GUIDES.map((guide) => ({ label: guide.label, href: guide.path })),
+  { label: "All guides", href: GUIDES_PATH },
   { label: "Custom orders", href: "/custom-orders" },
   { label: "FAQs", href: "/faqs" },
 ];

@@ -18,6 +18,14 @@
 // are going, not where the visitor is. An enquiry is a click, not an order:
 // completed orders are recorded by hand (scripts/seo/report.mjs).
 //
+// A visit that arrives from a known AI assistant is labelled once per session
+// as ai_referrer ("chatgpt", "perplexity", "copilot", "gemini", "claude"),
+// from the referring hostname alone, or from a utm_source that is exactly one
+// of those hostnames. Nothing else of the referrer or the URL is read or
+// kept: no path, no query, no prompt. A visit with no referrer is direct,
+// never "AI"; a google.com referrer is Google Search, and is not counted as
+// Google's AI features, which cannot be told apart this way.
+//
 // Never sent: names, phone numbers, addresses, recipient details, card
 // messages or the WhatsApp message text.
 const measurementId = (import.meta.env.PUBLIC_GA_MEASUREMENT_ID ?? "").trim();
@@ -50,6 +58,22 @@ const enabled = /^G-[A-Z0-9]{4,}$/.test(measurementId);
       });
     }
 
+    // Known assistant hostnames only. Anything else is left unlabelled.
+    var AI_HOSTS = { "chatgpt.com": "chatgpt", "chat.openai.com": "chatgpt", "perplexity.ai": "perplexity", "www.perplexity.ai": "perplexity", "copilot.microsoft.com": "copilot", "gemini.google.com": "gemini", "claude.ai": "claude" };
+    var aiReferrer = "";
+    try {
+      aiReferrer = sessionStorage.getItem("fp_ai_ref") || "";
+      if (!aiReferrer) {
+        var refHost = "";
+        try {
+          refHost = document.referrer ? new URL(document.referrer).hostname.toLowerCase() : "";
+        } catch (e) {}
+        var utm = (new URLSearchParams(location.search).get("utm_source") || "").toLowerCase();
+        aiReferrer = AI_HOSTS[refHost] || AI_HOSTS[utm] || "";
+        if (aiReferrer) sessionStorage.setItem("fp_ai_ref", aiReferrer);
+      }
+    } catch (e) {}
+
     // Destination city: the stored choice, else the city page in view. Only a
     // lower-case slug ever leaves here; never an address or a pincode.
     var destinationCity = function () {
@@ -68,6 +92,7 @@ const enabled = /^G-[A-Z0-9]{4,}$/.test(measurementId);
       var data = { page_path: path(location.pathname), landing_path: landing };
       var city = destinationCity();
       if (city) data.destination_city = city;
+      if (aiReferrer) data.ai_referrer = aiReferrer;
       for (var key in params || {}) if (params[key] !== undefined && params[key] !== null && params[key] !== "") data[key] = String(params[key]).slice(0, 100);
       try {
         document.dispatchEvent(new CustomEvent("fp:track", { detail: { name: name, params: data } }));

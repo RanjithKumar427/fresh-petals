@@ -1,0 +1,125 @@
+---
+// The jasmine and pooja flowers guide. Products are catalogue records at this
+// deployment's published prices, the same as their own pages. A product that
+// leaves the catalogue drops out of its section; the guidance stays.
+//
+// Copy rules: no jasmine variety or origin, no pack size, weight, length or
+// count, no delivery time. Several products share one photograph; each shared
+// photograph is labelled on the card and explained in its own section.
+import GuideShell from "../../components/GuideShell.astro";
+import GuideProductCard from "../../components/GuideProductCard.astro";
+import { POOJA_GUIDE } from "../../data/guides";
+import { productCatalog, type Product } from "../../data/productCatalog";
+import { loadAuthoritativePrices, withAuthoritativePrice } from "../../server/services/ProductPricing";
+
+const priceMap = await loadAuthoritativePrices();
+const pick = (slugs: string[]): Product[] => slugs.flatMap((slug) => productCatalog.filter((product) => product.slug === slug)).map((product) => withAuthoritativePrice(product, priceMap));
+
+const jasmine = pick(["jasmine-malli", "jasmine-gajra"]);
+const boxes = pick(["pooja-flower-box", "pooja-flowerbox"]);
+const daily = pick(["daily-pooja-flowers", "pooja-basket"]);
+const bulk = pick(["temple-bulk-flowers", "event-garlands"]);
+const everything = [...jasmine, ...boxes, ...daily, ...bulk];
+
+// Photographs used by more than one product on this page.
+const users = new Map<string, Product[]>();
+for (const product of everything) users.set(product.image, [...(users.get(product.image) ?? []), product]);
+const shared = [...users.values()].filter((list) => list.length > 1);
+const photoNote = (product: Product) => ((users.get(product.image)?.length ?? 0) > 1 ? "Shared photograph: shows the kind of flower, not this exact product" : null);
+const names = (list: Product[]) => list.map((product) => product.name).join(", ").replace(/, ([^,]*)$/, " and $1");
+const contents = [
+  { id: "jasmine", label: "Loose jasmine or gajra" },
+  { id: "boxes", label: "The two pooja boxes" },
+  { id: "daily", label: "Daily flowers and baskets" },
+  { id: "bulk", label: "Bulk and ceremony" },
+  { id: "photographs", label: "About the photographs" },
+  { id: "tell-us", label: "What to tell us" },
+];
+---
+
+<GuideShell
+  guide={POOJA_GUIDE}
+  image={jasmine[0]?.image}
+  track="guide/pooja"
+  contents={contents}
+  lead={[
+    "With pooja flowers the usual mistake is ordering the right flower in the wrong form. Jasmine comes loose or already strung. Pooja flowers come loose, boxed or in a basket, and the two boxes on this website are different products with different prices.",
+    "This guide sets the forms side by side, with the price each one lists. Where a product says market price, the day's price is quoted on WhatsApp before you confirm.",
+  ]}
+>
+  <section class="guide-section" id="jasmine" aria-labelledby="jasmine-title" data-guide-section="jasmine">
+    <h2 id="jasmine-title" class="fp-serif text-2xl text-ink md:text-3xl">Loose jasmine, or finished gajra</h2>
+    <p>
+      Loose jasmine (malli, mallige) is for offering, or for stringing yourself to the length you want. Gajra is jasmine already strung, ready for hair or to hang. They are not interchangeable: loose flowers cannot be worn without stringing, and a gajra cannot be scattered as an offering.
+    </p>
+    <p>For loose jasmine, tell us roughly how much you need. For gajra, tell us how many and how long. Neither quantity is fixed on the website, and we do not state a variety or where the jasmine is grown.</p>
+    <ul class="mt-6 grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5">
+      {jasmine.map((product) => <li><GuideProductCard product={product} line={product.description} photoNote={photoNote(product)} /></li>)}
+    </ul>
+  </section>
+
+  <section class="guide-section" id="boxes" aria-labelledby="boxes-title" data-guide-section="boxes">
+    <h2 id="boxes-title" class="fp-serif text-2xl text-ink md:text-3xl">The two pooja flower boxes</h2>
+    <p>Two products carry almost the same name. They are separate listings, and the simplest way to tell them apart is the price each shows.</p>
+    {/* Side by side on wide screens, stacked on phones: nothing is cut off or scrolled sideways. */}
+    <ul class="mt-6 grid gap-3 sm:grid-cols-2" data-guide-table="boxes">
+      {boxes.map((product) => (
+        <li class="rounded-[18px] border border-line bg-paper p-5" data-guide-box={product.slug}>
+          <h3 class="text-sm font-semibold text-ink"><a href={`/products/${product.slug}`} class="underline decoration-line underline-offset-4 hover:text-berry">{product.name}</a></h3>
+          <dl class="mt-3 space-y-2 text-sm leading-6 text-moss">
+            <div><dt class="inline font-semibold text-ink">Price shown: </dt><dd class="inline font-semibold text-ink" data-guide-box-price>{product.priceLabel}</dd></div>
+            <div><dt class="inline font-semibold text-ink">Listed under: </dt><dd class="inline">{product.category}</dd></div>
+            <div><dt class="inline font-semibold text-ink">Described as: </dt><dd class="inline">{product.description}</dd></div>
+          </dl>
+        </li>
+      ))}
+    </ul>
+    <p>If you are not sure which you need, describe the pooja and we suggest one. What goes into a box depends on the day's flowers and is confirmed with you first.</p>
+  </section>
+
+  <section class="guide-section" id="daily" aria-labelledby="daily-title" data-guide-section="daily">
+    <h2 id="daily-title" class="fp-serif text-2xl text-ink md:text-3xl">Daily pooja flowers and baskets</h2>
+    <p>
+      Daily pooja flowers are a loose mix for the day's pooja at home. A basket is packed to carry or to give, for a visit, a housewarming or a festival. For flowers on a regular schedule, <a href="/categories/subscriptions">subscriptions</a> are listed separately and each plan is agreed on WhatsApp before it starts.
+    </p>
+    <ul class="mt-6 grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5">
+      {daily.map((product) => <li><GuideProductCard product={product} line={product.description} photoNote={photoNote(product)} /></li>)}
+    </ul>
+  </section>
+
+  <section class="guide-section" id="bulk" aria-labelledby="bulk-title" data-guide-section="bulk">
+    <h2 id="bulk-title" class="fp-serif text-2xl text-ink md:text-3xl">Bulk and ceremony requirements</h2>
+    <p>
+      For a temple, a function or a ceremony, flowers are quoted for the quantity and the date, not bought as a pack. Send what the event is, the date and time, the venue and what you need. Wedding garlands for the couple are a different order again, chosen by design code: see the <a href="/guides/choosing-wedding-garlands">wedding garland guide</a>.
+    </p>
+    <ul class="mt-6 grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5">
+      {bulk.map((product) => <li><GuideProductCard product={product} line={product.description} photoNote={photoNote(product)} /></li>)}
+    </ul>
+  </section>
+
+  <section class="guide-section" id="photographs" aria-labelledby="photographs-title" data-guide-section="photographs">
+    <h2 id="photographs-title" class="fp-serif text-2xl text-ink md:text-3xl">About the photographs</h2>
+    <p>
+      Not every product here has its own photograph yet. Where one picture is used for several products it is labelled on the card, and it shows the kind of flower, not the exact product, form or pack.
+    </p>
+    {shared.length > 0 && (
+      <ul class="mt-4 list-disc space-y-2 pl-5 text-[0.9375rem] leading-7 text-moss" data-guide-shared-photos>
+        {shared.map((list) => <li>One photograph is shared by {names(list)}.</li>)}
+      </ul>
+    )}
+    <p>What you receive depends on the day's market, and is confirmed with you on WhatsApp before you pay.</p>
+  </section>
+
+  <section class="guide-section" id="tell-us" aria-labelledby="tell-us-title" data-guide-section="tell-us">
+    <h2 id="tell-us-title" class="fp-serif text-2xl text-ink md:text-3xl">What to tell us</h2>
+    <ul class="mt-4 list-disc space-y-2 pl-5 text-[0.9375rem] leading-7 text-moss">
+      <li>What it is for: daily pooja, a festival, a housewarming, a temple offering or a function.</li>
+      <li>The form: loose, a box, a basket, strung, or in bulk.</li>
+      <li>Roughly how much, or how many and how long for strings.</li>
+      <li>The date, the time you need the flowers by, and the recipient city and address.</li>
+    </ul>
+    <p>
+      <a href="/categories/pooja-flowers">Browse all pooja flowers</a>, grouped the same way, or read about <a href="/guides/sending-flowers-to-another-city">sending flowers to another city</a>.
+    </p>
+  </section>
+</GuideShell>

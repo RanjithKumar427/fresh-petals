@@ -1,0 +1,53 @@
+---
+// A catalogue product used as an example in a guide: its own photograph
+// (responsive, with dimensions, lazy), its name as a link to its page, one
+// line read from its record, and its public price label. Quote-only products
+// (bouquets, lilies, garlands) show "Price on WhatsApp", never an amount.
+import type { Product } from "../data/productCatalog";
+import { photoDimensions, photoVariants } from "../data/photoManifest";
+import { QUOTE_ONLY_PRICE_LABEL, isQuoteOnly } from "../shared/quoteOnly";
+
+interface Props {
+  product: Product;
+  /** One line under the name, from the product's record. */
+  line?: string | null;
+  alt?: string;
+  /** A note shown on the photograph (e.g. that it is shared with another product). */
+  photoNote?: string | null;
+}
+
+const { product, line = null, alt, photoNote = null } = Astro.props;
+const variants = photoVariants[product.image];
+const srcset = variants ? Object.entries(variants).map(([width, path]) => `${path} ${width}w`).join(", ") : undefined;
+const size = photoDimensions[product.image];
+const quoteOnly = isQuoteOnly(product);
+---
+
+<article class="guide-card relative flex h-full flex-col overflow-hidden rounded-[18px] border border-line bg-paper" data-guide-card={product.slug} data-quote-only={quoteOnly ? "true" : "false"}>
+  <div class="relative aspect-square bg-linen">
+    <img src={product.image} srcset={srcset} sizes={srcset ? "(min-width: 768px) 280px, 46vw" : undefined} width={size?.width} height={size?.height} alt={alt ?? product.name} loading="lazy" decoding="async" class="absolute inset-0 h-full w-full object-cover" />
+    {photoNote && <span class="absolute inset-x-2 bottom-2 rounded-lg bg-paper/95 px-2 py-1 text-[11px] leading-4 text-ink">{photoNote}</span>}
+  </div>
+  <div class="flex flex-1 flex-col px-3 pb-3 pt-2.5">
+    <h3 class="text-[14px] font-semibold leading-snug text-ink">
+      <a href={`/products/${product.slug}`} class="guide-card__link hover:text-berry">{product.name}</a>
+    </h3>
+    {line && <p class="mt-1.5 text-[13px] leading-5 text-moss">{line}</p>}
+    <p class="mt-2 text-[13px] font-semibold text-ink" data-guide-card-price>{quoteOnly ? QUOTE_ONLY_PRICE_LABEL : product.priceLabel}</p>
+  </div>
+</article>
+
+<style>
+  .guide-card__link::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+  }
+  .guide-card:has(.guide-card__link:focus-visible) {
+    outline: 2px solid var(--color-berry);
+    outline-offset: 2px;
+  }
+  .guide-card__link:focus-visible {
+    outline: none;
+  }
+</style>

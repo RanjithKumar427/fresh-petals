@@ -1,4 +1,6 @@
 ---
+import { BUSINESS, businessSummary, organizationNode, organizationRef } from "../data/businessProfile";
+const pageJsonLd = [organizationNode(Astro.site), { "@type": "ContactPage", name: "Contact Fresh Petals", url: new URL("/contact", Astro.site).toString(), inLanguage: "en-IN", about: organizationRef(Astro.site) }];
 import { serviceCityCount } from "../data/serviceCities";
 const cityCount = serviceCityCount();
 import BaseLayout from "../layouts/BaseLayout.astro";
@@ -39,6 +41,7 @@ const enquiryTypes = ["Bouquet order", "Custom bouquet", "Small ceremony order",
 ---
 
 <BaseLayout
+  jsonLd={pageJsonLd}
   title="Contact Fresh Petals"
   description="Contact Fresh Petals on WhatsApp for bouquet, garland and pooja flower orders, custom orders and delivery questions for any of our service cities."
 >

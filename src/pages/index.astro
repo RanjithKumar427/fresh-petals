@@ -25,7 +25,7 @@ import { HERO_SCENE_SIZES, getArrivalBouquet, getBouquetBrowse, getBouquetEdit, 
 import { catalogueSlugs } from "../data/occasionJourneys";
 import { garlandsPromoted } from "../data/launchCatalogue";
 import { loadGarlands, isListedGarland } from "../data/garlands";
-import { serviceableCities } from "../data/serviceCities";
+import { organizationNode, websiteNode } from "../data/businessProfile";
 import { loadOccasionMembership } from "../server/services/OccasionMembership";
 import { loadAuthoritativePrices } from "../server/services/ProductPricing";
 import { OCCASION_INDEX_TAG, occasionCacheHeaders } from "../server/services/GarlandWebsite";
@@ -48,38 +48,12 @@ const publicGarlands = garlandsPromoted() ? (await loadGarlands()).map((product)
 // The hero's campaign slides; the garland slide and its buttons need public garlands.
 const heroCampaigns = getHeroCampaigns({ garlandsPublic: publicGarlands.length > 0 });
 
-// Organization/WebSite structured data — only verified facts: the name,
-// the site URL, the WhatsApp number every order link on the site uses, the
-// business's own Instagram account, and the owner-confirmed service cities
-// (src/data/serviceCities.ts). An Organization, not a LocalBusiness: no
-// address, branch, opening hours, rating or logo is verified
-// (public/favicon.* is Astro's default mark).
-const siteUrl = new URL("/", Astro.site).toString();
-const homeJsonLd = [
-  {
-    "@type": "Organization",
-    "@id": `${siteUrl}#organization`,
-    name: "Fresh Petals",
-    alternateName: "Fresh Petals Bengaluru",
-    url: siteUrl,
-    sameAs: ["https://www.instagram.com/freshpetals.hyderabad/"],
-    // The cities orders are taken for, from the registry.
-    areaServed: serviceableCities().map((city) => ({ "@type": "City", name: city.name })),
-    contactPoint: {
-      "@type": "ContactPoint",
-      telephone: "+91-96520-12274",
-      contactType: "customer service",
-    },
-  },
-  {
-    "@type": "WebSite",
-    "@id": `${siteUrl}#website`,
-    name: "Fresh Petals",
-    url: siteUrl,
-    inLanguage: "en-IN",
-    publisher: { "@id": `${siteUrl}#organization` },
-  },
-];
+// Organization and WebSite structured data come from the shared business
+// profile (src/data/businessProfile.ts): the name, the site, the WhatsApp
+// number, the Instagram account, the FP mark and the service cities. It is
+// an Organization only: no address, branch, hours or rating
+// is verified.
+const homeJsonLd = [organizationNode(Astro.site), websiteNode(Astro.site)];
 ---
 
 <BaseLayout

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { sourceLoader } from './source-loader.mjs';
 
 const load = sourceLoader();
@@ -582,4 +582,88 @@ test('discovery: footer groups, /occasions from the menu, linked garland names, 
   assert.equal(landing.HOME_LANDING.title, 'Flower Delivery Across India | Bouquets & Garlands | Fresh Petals');
   assert(/across our 59 service cities/.test(landing.HOME_LANDING.intro[0]));
   assert(!/Chamarajpet|Basavanagudi|in Bengaluru|in Bangalore/.test(JSON.stringify([landing.HOME_LANDING, landing.CATEGORY_LANDING, landing.OCCASION_LANDING, landing.WEDDING_LANDING, landing.HOME_FAQS])));
+});
+
+// ---------------------------------------------------------------------------
+// Release 3: business profile, buying guides, assistant referrals
+// ---------------------------------------------------------------------------
+
+test('business profile: one source of verified facts; one Organization id; no address, hours, rating or LocalBusiness', () => {
+  const profile = load('src/data/businessProfile.ts');
+  const site = 'https://onlyfreshpetals.in';
+  const org = json(profile.organizationNode(site));
+  assert.equal(org['@id'], 'https://onlyfreshpetals.in/#organization');
+  assert.equal(json(profile.websiteNode(site))['@id'], 'https://onlyfreshpetals.in/#website');
+  assert.deepEqual(json(profile.organizationRef(site)), { '@id': org['@id'] });
+  assert.equal(org.name, 'Fresh Petals');
+  assert.equal(org.alternateName, 'FreshPetals');
+  assert.equal(org.logo, 'https://onlyfreshpetals.in/apple-touch-icon.png');
+  assert.deepEqual(org.sameAs, ['https://www.instagram.com/freshpetals.hyderabad/']);
+  assert.equal(org.areaServed.length, 59);
+  assert.equal(org['@type'], 'Organization');
+  for (const absent of ['address', 'aggregateRating', 'review', 'openingHours', 'openingHoursSpecification', 'foundingDate', 'founder', 'geo', 'priceRange']) assert(!(absent in org), absent);
+  assert(profile.BUSINESS.whatsappNumber === '919652012274' && /96520 12274/.test(profile.BUSINESS.whatsappDisplay));
+  assert(!/₹|same[- ]day|rated|since \d{4}|est\./i.test(JSON.stringify([profile.BUSINESS, profile.businessSummary()])));
+  // The pages that describe the business all build from it; nobody retypes the node.
+  for (const file of ['src/pages/index.astro', 'src/pages/about.astro', 'src/pages/contact.astro']) {
+    const source = readFileSync(file, 'utf8');
+    assert(/organizationNode\(Astro\.site\)/.test(source) && !/"@type": "Organization"/.test(source) && !/LocalBusiness/.test(source), file);
+  }
+  assert(!/Astro's default mark/.test(readFileSync('src/pages/index.astro', 'utf8')));
+});
+
+test('guides: four published guides, one registry; real products only; no price for quote-only examples, no invented specification, no instruction to assistants', () => {
+  const guides = load('src/data/guides.ts');
+  assert.deepEqual(json(guides.GUIDES.map((guide) => guide.path).sort()), ['/guides/choosing-a-flower-bouquet', '/guides/choosing-wedding-garlands', '/guides/jasmine-pooja-flowers-and-gajra', '/guides/sending-flowers-to-another-city']);
+  for (const field of ['title', 'description', 'heading', 'label']) assert.equal(new Set(guides.GUIDES.map((guide) => guide[field])).size, 4, field);
+  for (const guide of guides.GUIDES) {
+    assert(existsSync(`src/pages${guide.path}.astro`), guide.path);
+    assert(/^\d{4}-\d{2}-\d{2}$/.test(guide.published) && guide.updated >= guide.published);
+  }
+  assert(existsSync('src/pages/guides/index.astro'));
+  assert.equal(guides.guideForCategory('Bouquets').slug, 'choosing-a-flower-bouquet');
+  assert.equal(guides.guideForCategory('Lilies').slug, 'choosing-a-flower-bouquet');
+  assert.equal(guides.guideForCategory('Pooja Flowers').slug, 'jasmine-pooja-flowers-and-gajra');
+  assert.equal(guides.guideForCategory('Add-ons'), null);
+  const pages = Object.fromEntries(guides.GUIDES.map((guide) => [guide.slug, readFileSync(`src/pages${guide.path}.astro`, 'utf8')]));
+  const shell = readFileSync('src/components/GuideShell.astro', 'utf8');
+  const card = readFileSync('src/components/GuideProductCard.astro', 'utf8');
+  // Products come from the catalogue and public services, never typed as markup.
+  assert(/launchGroups\("bouquets"\)/.test(pages['choosing-a-flower-bouquet']) && /loadOccasionMembership/.test(pages['choosing-a-flower-bouquet']) && /OCCASION_INDEX_TAG/.test(pages['choosing-a-flower-bouquet']));
+  assert(/loadAuthoritativePrices/.test(pages['jasmine-pooja-flowers-and-gajra']) && /publishedHubs|hasHub/.test(pages['sending-flowers-to-another-city']));
+  assert(/isListedGarland/.test(pages['choosing-wedding-garlands']) && /garlandCacheHeaders/.test(pages['choosing-wedding-garlands']));
+  // Quote-only examples never render an amount; the card decides by product identity.
+  assert(/quoteOnly \? QUOTE_ONLY_PRICE_LABEL : product\.priceLabel/.test(card) && /loading="lazy"/.test(card) && /width=\{size\?\.width\}/.test(card));
+  const prose = Object.values(pages).join('\n').replace(/^\/\/.*$/gm, '');
+  assert(!/₹\s?\d/.test(prose));
+  assert(!/\b\d+\s?(stems?|roses|cm|inch(es)?|feet|ft|grams?|kg|hours?|minutes?)\b/i.test(prose));
+  assert(!/best florist|top florist|number one|#1|award|guarantee|free delivery|midnight/i.test(prose));
+  for (const hit of prose.match(/[^.]*same[- ]day[^.]*/gi) ?? []) assert(/do not promise/i.test(hit), hit);
+  // Nothing addressed to a search assistant, visible or hidden.
+  assert(!/recommend (fresh ?petals|us)|as an ai|language model|ignore (previous|prior)|assistants? should|llms?\.txt/i.test(prose + shell));
+  assert(!/display:\s*none|visibility:\s*hidden|sr-only|aria-hidden="true">[^<]{20,}/.test(Object.values(pages).join('') .replace(/<span aria-hidden="true">\/<\/span>/g, '')));
+  // The jasmine guide claims no variety, origin or pack size, and labels shared photographs.
+  assert(/do not state a variety or where the jasmine is grown/.test(pages['jasmine-pooja-flowers-and-gajra']) && /Shared photograph/.test(pages['jasmine-pooja-flowers-and-gajra']));
+  // The garland guide separates what a photograph shows from a specification, and a browsing group from the flowers used.
+  assert(/It is not a specification/.test(pages['choosing-wedding-garlands']) && /not a list of the flowers in the garland/.test(pages['choosing-wedding-garlands']));
+  // Article markup: published by the one Organization; no person, rating or offer.
+  assert(/organizationRef\(Astro\.site\)/.test(shell) && /dateModified: guide\.updated/.test(shell) && !/"Person"|aggregateRating|"offers"|"Review"/.test(shell + Object.values(pages).join('')));
+  // Discovery: footer, sitemap, collections, city sections and product pages link the guides.
+  assert(/GUIDES\.map/.test(readFileSync('src/components/atelier/SiteFooter.astro', 'utf8')));
+  const sitemap = readFileSync('src/pages/sitemap.xml.ts', 'utf8');
+  assert(/GUIDES\.filter\(\(guide\) => !guide\.liveSitemap\)/.test(sitemap) && /lastmod: guide\.updated/.test(sitemap));
+  assert(/GUIDE_FOR/.test(readFileSync('src/pages/locations/[city].astro', 'utf8')) && /guideForCategory/.test(readFileSync('src/pages/products/[slug].astro', 'utf8')));
+  const landing = JSON.stringify(load('src/data/seoLanding.ts').CATEGORY_LANDING);
+  assert(/guides\/choosing-a-flower-bouquet/.test(landing) && /guides\/jasmine-pooja-flowers-and-gajra/.test(landing));
+});
+
+test('assistant referrals: labelled from a known hostname only; no referrer path, query or prompt is read into an event', () => {
+  const analytics = readFileSync('src/components/Analytics.astro', 'utf8');
+  const script = analytics.split('---')[2];
+  assert(/AI_HOSTS = \{ "chatgpt\.com": "chatgpt"/.test(script) && /new URL\(document\.referrer\)\.hostname/.test(script) && /data\.ai_referrer = aiReferrer/.test(script));
+  // The referrer is used for its hostname and nowhere else; google.com is not an AI host.
+  assert.equal(script.match(/document\.referrer/g).length, 2);
+  assert(!/google\.com": "|"bing\.com"/.test(script.replace('gemini.google.com', '')));
+  assert(!/location\.href|location\.search\)\.toString|pathname \+ location\.search/.test(script));
+  assert(/A visit with no referrer is direct/.test(analytics));
 });

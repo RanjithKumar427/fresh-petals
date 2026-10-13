@@ -1,0 +1,127 @@
+---
+// The bouquet buying guide. Every example is a launch bouquet read from the
+// catalogue (the same groups as /categories/bouquets); flowers and wrapping
+// come from each product's record, occasions from the admin's assignments.
+// Rendered on request with the occasion index tag, so a changed assignment
+// reaches this page like the bouquet collection.
+//
+// Copy rules: no stem counts, sizes, vase life in days, freshness tests or
+// delivery times; bouquets are quote-only, so no amount appears.
+import GuideShell from "../../components/GuideShell.astro";
+import GuideProductCard from "../../components/GuideProductCard.astro";
+import { BOUQUET_GUIDE } from "../../data/guides";
+import { launchGroups } from "../../data/launchCatalogue";
+import { giftProducts, launchSlugs } from "../../data/occasionJourneys";
+import { BOUQUET_GROUP_GUIDANCE, bouquetLine, bouquetPhotoAlt, bouquetPresentation, isVaseArrangement } from "../../data/collectionGuidance";
+import { loadOccasionMembership } from "../../server/services/OccasionMembership";
+import { OCCASION_INDEX_TAG, occasionCacheHeaders, occasionTag } from "../../server/services/GarlandWebsite";
+
+export const prerender = false;
+for (const [name, value] of Object.entries(occasionCacheHeaders([OCCASION_INDEX_TAG, occasionTag("birthday"), occasionTag("anniversary")]))) Astro.response.headers.set(name, value);
+
+const groups = launchGroups("bouquets");
+const all = groups.flatMap(({ products }) => products);
+const membership = await loadOccasionMembership(launchSlugs());
+const occasions = [
+  { route: "birthday", label: "a birthday", href: "/occasions/birthday", products: giftProducts("birthday", membership) },
+  { route: "anniversary", label: "an anniversary", href: "/occasions/anniversary", products: giftProducts("anniversary", membership) },
+].filter((occasion) => occasion.products.length > 0);
+const wrapped = all.filter((product) => !isVaseArrangement(product) && bouquetPresentation(product));
+const vases = all.filter(isVaseArrangement);
+// How the wrapped designs are finished, from their records ("in kraft wrapping" …).
+const wrappings = [...new Set(wrapped.map((product) => bouquetPresentation(product)!.replace(/^in /, "")))];
+const GROUP_NOTES: Record<string, string> = {
+  roses: "Choose roses when the colour is the message. Compare the colours listed for each design; little else separates them.",
+  mixed: "Choose a mixed bouquet when you are unsure of the person's taste, or want something bright and informal. Look at which flower leads each one.",
+  lilies: "Choose lilies for a quieter, more formal gift. They are fewer, larger flowers, and usually arrive with some buds closed that open over the following days.",
+};
+const contents = [
+  ...groups.map(({ group }) => ({ id: group.id, label: group.label })),
+  { id: "presentation", label: "Wrapped or in a vase" },
+  ...(occasions.length ? [{ id: "occasion", label: "By occasion" }] : []),
+  { id: "unavailable", label: "If a flower is unavailable" },
+];
+---
+
+<GuideShell
+  guide={BOUQUET_GUIDE}
+  image={all[0]?.image}
+  track="guide/bouquets"
+  contents={contents}
+  lead={[
+    "A bouquet is easier to choose once you know what actually differs between designs. Three things do: the kind of flower, how the bouquet is presented, and the occasion it is for. This guide takes them in that order, using the bouquets Fresh Petals lists, with the flowers and wrapping recorded for each.",
+    "Bouquet prices are not shown on the website. You get the price for your date on WhatsApp, and nothing is charged until you agree to it.",
+  ]}
+>
+  {groups.map(({ group, products }) => (
+    <section class="guide-section" id={group.id} aria-labelledby={`${group.id}-title`} data-guide-section={group.id}>
+      <h2 id={`${group.id}-title`} class="fp-serif text-2xl text-ink md:text-3xl">{group.label}</h2>
+      <p>{GROUP_NOTES[group.id] ?? BOUQUET_GROUP_GUIDANCE[group.id]?.intro}</p>
+      <ul class="mt-6 grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5">
+        {products.map((product) => <li><GuideProductCard product={product} line={bouquetLine(product)} alt={bouquetPhotoAlt(product)} /></li>)}
+      </ul>
+      <p><a href={`/categories/bouquets#${group.id}`}>See {group.label.toLowerCase()} in the collection</a></p>
+    </section>
+  ))}
+
+  <section class="guide-section" id="presentation" aria-labelledby="presentation-title" data-guide-section="presentation">
+    <h2 id="presentation-title" class="fp-serif text-2xl text-ink md:text-3xl">Wrapped, or in a vase</h2>
+    <p>
+      Most of these bouquets are hand-wrapped{wrappings.length > 0 && <>: the records list {wrappings.join(", ")}</>}. A wrapped bouquet is handed over as a gift and then needs a vase and water at the other end.
+    </p>
+    {vases.length > 0 && (
+      <p>
+        {vases.length === 1 ? "One design" : `${vases.length} designs`} ({vases.map((product, index) => <>{index > 0 && ", "}<a href={`/products/${product.slug}`}>{product.name}</a></>)}) {vases.length === 1 ? "is" : "are"} arranged in a glass vase and can go straight onto a table or a desk. That matters when the flowers are going to an office, or to someone who may not have a vase to hand.
+      </p>
+    )}
+    <p>A vase can also be added to a wrapped bouquet; ask when you send your order. The wrapping and ribbon in a photograph are what the record lists, and a different finish can be requested.</p>
+    <div class="mt-6 overflow-x-auto">
+      <table class="w-full border-collapse text-left text-sm" data-guide-table="presentation">
+        <thead>
+          <tr class="border-b border-line text-ink"><th class="py-2 pr-4 font-semibold">Design</th><th class="py-2 pr-4 font-semibold">Group</th><th class="py-2 font-semibold">Presentation on record</th></tr>
+        </thead>
+        <tbody>
+          {groups.flatMap(({ group, products }) => products.map((product) => (
+            <tr class="border-b border-line text-moss">
+              <td class="py-2 pr-4"><a href={`/products/${product.slug}`} class="font-semibold text-ink underline decoration-line underline-offset-4">{product.name}</a></td>
+              <td class="py-2 pr-4">{group.label}</td>
+              <td class="py-2">{bouquetPresentation(product)?.replace(/^in (a )?/, "").replace(/^./, (c) => c.toUpperCase()) ?? "Not recorded; confirmed on WhatsApp"}</td>
+            </tr>
+          )))}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  {occasions.length > 0 && (
+    <section class="guide-section" id="occasion" aria-labelledby="occasion-title" data-guide-section="occasion">
+      <h2 id="occasion-title" class="fp-serif text-2xl text-ink md:text-3xl">Choosing by occasion</h2>
+      <p>
+        If you know the occasion but not the person's taste, start from the designs the shop currently lists for that occasion. These lists are maintained by the shop and change over time; the occasion pages always show the current ones.
+      </p>
+      <ul class="mt-4 space-y-3 text-[0.9375rem] leading-7 text-moss">
+        {occasions.map((occasion) => (
+          <li data-guide-occasion={occasion.route}>
+            <strong class="text-ink">For {occasion.label}:</strong>{" "}
+            {occasion.products.map((product, index) => <>{index > 0 && ", "}<a href={`/products/${product.slug}`} class="font-semibold text-ink underline decoration-line underline-offset-4">{product.name}</a></>)}.{" "}
+            <a href={occasion.href} class="underline underline-offset-4">All flowers for {occasion.label}</a>
+          </li>
+        ))}
+      </ul>
+      <p>For a thank-you, a new home, a recovery or a condolence, see <a href="/occasions">all occasions</a>. If none fits, describe the occasion in your message and we suggest from what is available.</p>
+    </section>
+  )}
+
+  <section class="guide-section" id="unavailable" aria-labelledby="unavailable-title" data-guide-section="unavailable">
+    <h2 id="unavailable-title" class="fp-serif text-2xl text-ink md:text-3xl">If a flower is unavailable</h2>
+    <p>
+      Flowers depend on what is fresh on the day, and they vary naturally in shade, size and how open they are. A photograph shows the design, not a promise about each stem.
+    </p>
+    <p>
+      If a flower in the bouquet you chose is not available for your date, we tell you before you pay and suggest an alternative, or you can cancel. You can also ask for a change yourself: a different colour, or leaving a flower out. Any change, and the price with it, is confirmed on WhatsApp first.
+    </p>
+    <p>
+      Ready to choose? <a href="/categories/bouquets">Browse all bouquets</a>, or read about <a href="/guides/sending-flowers-to-another-city">sending flowers to another city</a>.
+    </p>
+  </section>
+</GuideShell>

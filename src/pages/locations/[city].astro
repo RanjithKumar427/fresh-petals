@@ -26,6 +26,7 @@ import { bouquetLine, bouquetPhotoAlt, bouquetPresentation, isVaseArrangement } 
 import { QUOTE_ONLY_ENQUIRE_LABEL, QUOTE_ONLY_PRICE_LABEL, isQuoteOnly } from "../../shared/quoteOnly";
 import { photoDimensions, photoVariants } from "../../data/photoManifest";
 import { cityEnquiryHref, cityProductEnquiryHref } from "../../utils/cityEnquiry";
+import { BOUQUET_GUIDE, GARLAND_GUIDE, POOJA_GUIDE, SENDING_GUIDE, type Guide } from "../../data/guides";
 import { GARLAND_CACHE_TAG, OCCASION_INDEX_TAG, occasionCacheHeaders, occasionTag } from "../../server/services/GarlandWebsite";
 
 export const prerender = false;
@@ -146,8 +147,15 @@ function cardsFor(source: HubSource): Card[] {
   }
 }
 
+// The guide that helps with what a section shows, added to its links once.
+const GUIDE_FOR: Record<HubSource["kind"], Guide> = { "bouquet-mix": BOUQUET_GUIDE, "bouquet-group": BOUQUET_GUIDE, occasion: BOUQUET_GUIDE, presentation: BOUQUET_GUIDE, garlands: GARLAND_GUIDE, pooja: POOJA_GUIDE };
+const withGuides = (section: (typeof hub.sections)[number]) => {
+  const guides = [...new Set(section.sources.map((source) => GUIDE_FOR[source.kind]))].filter((guide) => !section.links.some((link) => link.href === guide.path));
+  return [...section.links, ...guides.map((guide) => ({ href: guide.path, label: `Guide: ${guide.label.charAt(0).toLowerCase()}${guide.label.slice(1)}` }))];
+};
+
 // A section with nothing public is not shown.
-const sections = hub.sections.map((section) => ({ ...section, cards: section.sources.flatMap(cardsFor) })).filter((section) => section.cards.length > 0);
+const sections = hub.sections.map((section) => ({ ...section, links: withGuides(section), cards: section.sources.flatMap(cardsFor) })).filter((section) => section.cards.length > 0);
 
 // Regional cross-links: only to hubs that are published, each its own city.
 const nearby = (hub.nearby ?? []).map((slug) => findCity(slug)).filter((other): other is NonNullable<typeof other> => !!other && hasHub(other) && other.slug !== city.slug);
@@ -302,7 +310,7 @@ const steps = [
           ))}
         </ol>
         <p class="mt-6 max-w-3xl text-sm leading-7 text-moss">
-          We do not promise same-day or timed delivery on this website, and delivery charges are not fixed here: both are confirmed for your address and date on WhatsApp. {HUB_PHOTO_NOTE}
+          We do not promise same-day or timed delivery on this website, and delivery charges are not fixed here: both are confirmed for your address and date on WhatsApp. {HUB_PHOTO_NOTE} Ordering for someone else? Read <a href={SENDING_GUIDE.path} class="font-semibold text-ink underline underline-offset-4">sending flowers to another city</a>.
         </p>
         <div class="mt-6 flex flex-wrap gap-3">
           <a href={enquiryHref} target="_blank" rel="noopener noreferrer" data-city-enquiry={city.slug} class="inline-flex min-h-[48px] items-center justify-center rounded-full bg-berry px-6 text-sm font-semibold text-white transition hover:bg-berry-deep">

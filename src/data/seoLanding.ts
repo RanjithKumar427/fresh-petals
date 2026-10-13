@@ -92,6 +92,7 @@ export const HOME_LANDING: LandingContent = {
     { href: "/categories/garlands", label: "Wedding garlands" },
     { href: "/categories/pooja-flowers", label: "Pooja flowers" },
     { href: "/locations", label: "Delivery cities" },
+    { href: "/guides", label: "Guides to choosing flowers" },
     { href: "/custom-orders", label: "Custom orders" },
   ],
 };
@@ -125,8 +126,10 @@ export const CATEGORY_LANDING: Record<string, LandingContent> = {
       AREA_FAQ,
     ],
     links: [
+      { href: "/guides/choosing-a-flower-bouquet", label: "How to choose a bouquet" },
       { href: "/occasions/birthday", label: "Birthday flowers" },
       { href: "/occasions/anniversary", label: "Anniversary flowers" },
+      { href: "/guides/sending-flowers-to-another-city", label: "Sending to another city" },
       { href: "/custom-orders", label: "Custom orders" },
     ],
   },
@@ -149,6 +152,7 @@ export const CATEGORY_LANDING: Record<string, LandingContent> = {
       AREA_FAQ,
     ],
     links: [
+      { href: "/guides/jasmine-pooja-flowers-and-gajra", label: "Jasmine, pooja flowers and gajra: which to order" },
       { href: "/categories/garlands", label: "Wedding garlands" },
       { href: "/categories/subscriptions", label: "Pooja flower subscriptions" },
       { href: "/categories/flowerbox", label: "Flower boxes" },

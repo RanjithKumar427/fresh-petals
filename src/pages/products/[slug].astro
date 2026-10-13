@@ -1,5 +1,6 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
+import { guideForCategory } from "../../data/guides";
 import ProductOptions from "../../components/ProductOptions.astro";
 import JourneyNote from "../../components/occasion/JourneyNote.astro";
 import ProductCard from "../../components/ProductCard.astro";
@@ -529,6 +530,11 @@ const breadcrumbJsonLd = {
 
       <!-- No reward amount here: none is verified. The referral page explains
            the current manual, WhatsApp-confirmed process. -->
+      {guideForCategory(product.category) && (
+        <p class="mt-4 text-sm leading-7 text-moss" data-product-guide>
+          Not sure this is the right one? Read <a href={guideForCategory(product.category)!.path} class="font-semibold text-ink underline underline-offset-4">{guideForCategory(product.category)!.label.charAt(0).toLowerCase() + guideForCategory(product.category)!.label.slice(1)}</a>.
+        </p>
+      )}
       <p class="mt-4 text-sm leading-7 text-moss">
         Know someone who needs fresh flowers? Share Fresh Petals with them.
       </p>

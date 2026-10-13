@@ -14,6 +14,8 @@ import { garlandPhotoSrcset, isListedGarland, loadGarlands, type GarlandProduct 
 import { GARLANDS_PATH, GARLAND_CONFIRM_POINTS, GARLAND_COVERAGE, GARLAND_GUIDE_PATH, garlandCollection, populatedCollections } from "../../data/garlandCollections";
 import { garlandCacheHeaders } from "../../server/services/GarlandWebsite";
 import { whatsappLink } from "../../config/storefront";
+import { GARLAND_GUIDE, GUIDES, GUIDES_PATH } from "../../data/guides";
+import { organizationRef, publisherNode } from "../../data/businessProfile";
 
 export const prerender = false;
 for (const [name, value] of Object.entries(garlandCacheHeaders())) Astro.response.headers.set(name, value);
@@ -114,7 +116,7 @@ const title = "How to Choose a Wedding Garland";
 const description =
   "Choosing a wedding garland (varmala, jaimala, poola mala): rose, lotus and tuberose designs compared in photographs, and what to confirm before ordering.";
 const enquiry = whatsappLink(
-  ["Hi Fresh Petals, I'd like help choosing a wedding garland.", "Ceremony date: ", "Single or pair: ", "Colours / outfits: ", "Delivery area: ", "", "Please share the prices and availability for these selections."].join("\n")
+  ["Hi Fresh Petals, I'd like help choosing a wedding garland.", "Ceremony date: ", "Single or pair: ", "Colours / outfits: ", "Recipient city: ", "", "Please share the prices and availability for these selections."].join("\n")
 );
 const abs = (path: string) => new URL(path, Astro.site).toString();
 const lead = sections[0]?.examples[0]?.product;
@@ -123,7 +125,7 @@ const jsonLd = [
     "@type": "BreadcrumbList",
     itemListElement: [
       { "@type": "ListItem", position: 1, name: "Home", item: abs("/") },
-      { "@type": "ListItem", position: 2, name: "Garlands", item: abs(GARLANDS_PATH) },
+      { "@type": "ListItem", position: 2, name: "Guides", item: abs(GUIDES_PATH) },
       { "@type": "ListItem", position: 3, name: "How to choose a wedding garland", item: abs(GARLAND_GUIDE_PATH) },
     ],
   },
@@ -132,13 +134,18 @@ const jsonLd = [
     headline: "How to choose a wedding garland",
     description,
     inLanguage: "en-IN",
-    datePublished: "2026-10-12",
+    datePublished: GARLAND_GUIDE.published,
+    dateModified: GARLAND_GUIDE.updated,
     mainEntityOfPage: abs(GARLAND_GUIDE_PATH),
     ...(lead ? { image: abs(lead.garland.image.path) } : {}),
-    author: { "@type": "Organization", name: "Fresh Petals", url: abs("/") },
-    publisher: { "@type": "Organization", name: "Fresh Petals", url: abs("/") },
+    author: organizationRef(Astro.site),
+    publisher: organizationRef(Astro.site),
   },
+  publisherNode(Astro.site),
 ];
+// Three public designs to show what a code refers to, taken from the examples above.
+const coded = sections.flatMap((section) => section.examples.slice(0, 1)).map((example) => example.product);
+const otherGuides = GUIDES.filter((entry) => entry.slug !== GARLAND_GUIDE.slug);
 ---
 
 <BaseLayout title={`${title} | Fresh Petals`} description={description} image={lead?.image} showCategoryCarousel={false} noindex={noindex} jsonLd={noindex ? [] : jsonLd}>
@@ -147,7 +154,7 @@ const jsonLd = [
       <div class="mx-auto max-w-4xl">
         <p class="fp-eyebrow">
           <a href="/" class="hover:underline">Home</a> <span aria-hidden="true">/</span>
-          <a href={GARLANDS_PATH} class="hover:underline">Garlands</a> <span aria-hidden="true">/</span> Guide
+          <a href={GUIDES_PATH} class="hover:underline">Guides</a> <span aria-hidden="true">/</span> Choosing a wedding garland
         </p>
         <h1 class="fp-h1 mt-3">How to choose a wedding garland</h1>
         <p class="mt-5 max-w-3xl text-base leading-8 text-moss">
@@ -271,6 +278,24 @@ const jsonLd = [
                 </dl>
               </section>
 
+              <section class="guide-section" id="design-codes" aria-labelledby="codes-title" data-guide-section="design-codes">
+                <h2 id="codes-title" class="fp-serif text-2xl text-ink md:text-3xl">Choosing by design code</h2>
+                <p class="mt-4 text-sm leading-7 text-moss">
+                  Every design has a code, such as {coded[0]?.garland.code ?? "FP-G001"}, shown on its photograph and on its own page. The code identifies one photograph exactly, so quote it when you enquire. If two designs are close, send both codes and say what you like in each.
+                </p>
+                <ul class="mt-4 space-y-2 text-sm leading-7 text-moss" data-guide-codes>
+                  {coded.map((product) => (
+                    <li>
+                      <strong class="text-ink">{product.garland.code}</strong>{" "}
+                      <a href={`/products/${product.slug}`} class="font-semibold text-ink underline underline-offset-4">{product.garland.title}</a>: {product.garland.image.alt}
+                    </li>
+                  ))}
+                </ul>
+                <p class="mt-4 text-sm leading-7 text-moss">
+                  A description like these says what can be seen in the photograph: colours, bands, hangers and tassels. It is not a specification. Photographs often show two garlands, but a code does not fix whether you receive one or a pair, and it does not fix a length; say which you need and we quote for that.
+                </p>
+              </section>
+
               <section class="guide-section" aria-labelledby="catalogue-title">
                 <h2 id="catalogue-title" class="fp-serif text-2xl text-ink md:text-3xl">What our catalogue tells you, and what it doesn't</h2>
                 <div class="mt-5 grid gap-6 sm:grid-cols-2">
@@ -280,7 +305,7 @@ const jsonLd = [
                       <li>The whole photograph, uncropped</li>
                       <li>A design code (FP-G…) to quote when you enquire</li>
                       <li>A description of the colours, bands, hangers and tassels in the photograph</li>
-                      <li>The flower group, assigned from the photograph</li>
+                      <li>The group it is browsed under (rose, lotus, tuberose or designer). This is a way of sorting the photographs, not a list of the flowers in the garland</li>
                     </ul>
                   </div>
                   <div class="rounded-[18px] border border-line bg-paper p-5">
@@ -311,6 +336,17 @@ const jsonLd = [
                   Also see <a href="/occasions/wedding" class="font-semibold text-ink underline underline-offset-4">wedding flowers</a> and
                   <a href="/custom-orders" class="font-semibold text-ink underline underline-offset-4">custom orders</a>.
                 </p>
+              </section>
+              <section class="guide-section" aria-labelledby="more-guides-title">
+                <h2 id="more-guides-title" class="fp-serif text-2xl text-ink md:text-3xl">More guides</h2>
+                <ul class="mt-5 grid gap-3 sm:grid-cols-2">
+                  {otherGuides.map((entry) => (
+                    <li class="rounded-[18px] border border-line bg-paper p-5">
+                      <a href={entry.path} class="text-sm font-semibold text-ink underline decoration-line underline-offset-4 hover:text-berry">{entry.label}</a>
+                      <p class="mt-2 text-sm leading-6 text-moss">{entry.summary}</p>
+                    </li>
+                  ))}
+                </ul>
               </section>
             </>
           )

@@ -1,0 +1,59 @@
+---
+// /guides: the directory of buying guides (src/data/guides.ts).
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { GUIDES, GUIDES_PATH } from "../../data/guides";
+import { organizationRef, publisherNode } from "../../data/businessProfile";
+
+const abs = (path: string) => new URL(path, Astro.site).toString();
+const title = "Flower Buying Guides | Bouquets, Garlands & Pooja Flowers | Fresh Petals";
+const description = "Guides to choosing flowers: bouquets, wedding garlands, jasmine and pooja flowers, and sending flowers to someone in another city.";
+const jsonLd = [
+  {
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: abs("/") },
+      { "@type": "ListItem", position: 2, name: "Guides", item: abs(GUIDES_PATH) },
+    ],
+  },
+  publisherNode(Astro.site),
+  {
+    "@type": "CollectionPage",
+    name: "Flower buying guides",
+    description,
+    url: abs(GUIDES_PATH),
+    inLanguage: "en-IN",
+    publisher: organizationRef(Astro.site),
+    mainEntity: { "@type": "ItemList", itemListElement: GUIDES.map((guide, index) => ({ "@type": "ListItem", position: index + 1, name: guide.heading, url: abs(guide.path) })) },
+  },
+];
+---
+
+<BaseLayout title={title} description={description} showCategoryCarousel={false} jsonLd={jsonLd}>
+  <main class="bg-ivory" data-guides-index>
+    <section class="px-5 py-10 md:px-8 md:py-16">
+      <div class="mx-auto max-w-4xl">
+        <nav aria-label="Breadcrumb">
+          <p class="fp-eyebrow"><a href="/" class="hover:underline">Home</a> <span aria-hidden="true">/</span> <span aria-current="page">Guides</span></p>
+        </nav>
+        <h1 class="fp-h1 mt-3">Guides to choosing flowers</h1>
+        <p class="mt-5 max-w-3xl text-base leading-8 text-moss">
+          Each guide takes one decision and works through it with the designs we actually list: what differs between them, what the photographs show, and what is confirmed with you on WhatsApp before you order.
+        </p>
+        <ul class="mt-8 grid gap-4 sm:grid-cols-2">
+          {GUIDES.map((guide) => (
+            <li class="rounded-[18px] border border-line bg-paper p-6" data-guide-entry={guide.slug}>
+              <h2 class="fp-serif text-xl text-ink"><a href={guide.path} class="underline decoration-line underline-offset-4 hover:text-berry">{guide.heading}</a></h2>
+              <p class="mt-3 text-sm leading-7 text-moss">{guide.summary}</p>
+            </li>
+          ))}
+        </ul>
+        <p class="mt-8 text-sm leading-7 text-moss">
+          Looking for the flowers themselves? <a href="/categories/bouquets" class="font-semibold text-ink underline underline-offset-4">Bouquets</a>,
+          <a href="/categories/garlands" class="font-semibold text-ink underline underline-offset-4">wedding garlands</a>,
+          <a href="/categories/pooja-flowers" class="font-semibold text-ink underline underline-offset-4">pooja flowers</a> and the
+          <a href="/locations" class="font-semibold text-ink underline underline-offset-4">cities we deliver to</a>.
+        </p>
+      </div>
+    </section>
+  </main>
+</BaseLayout>
