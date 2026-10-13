@@ -409,7 +409,7 @@ test('pooja sections: every product on the page appears exactly once; unknown pr
 
 const OWNER_CITIES = 'Bengaluru, Mumbai, Delhi, Hyderabad, Chennai, Pune, Kolkata, Ahmedabad, Jaipur, Coimbatore, Visakhapatnam, Vijayawada, Gurugram, Noida, Mysuru, Surat, Lucknow, Indore, Chandigarh, Kochi, Bhubaneswar, Nagpur, Nashik, Vadodara, Rajkot, Bhopal, Patna, Guwahati, Thiruvananthapuram, Ludhiana, Faridabad, Ghaziabad, Navi Mumbai, Kalyan-Dombivli, Greater Noida, Thane, Varanasi, Udaipur, Madurai, Tirupati, Mangaluru, Kanpur, Meerut, Dehradun, Raipur, Ranchi, Mira-Bhayandar, Vasai-Virar, Tiruppur, Jamshedpur, Manipal, Belagavi, Hubballi-Dharwad, Guntur, Salem, Warangal, Kolhapur, Siliguri, Agra'.split(', ');
 
-test('service-city registry: exactly the 59 owner-confirmed cities, unique, all serviceable; aliases never make a second city; five hubs and ten queued', () => {
+test('service-city registry: exactly the 59 owner-confirmed cities, unique, all serviceable; aliases never make a second city; fifteen hubs, 44 without a page', () => {
   const registry = load('src/data/serviceCities.ts');
   const cities = registry.SERVICE_CITIES;
   assert.equal(OWNER_CITIES.length, 59);
@@ -428,12 +428,14 @@ test('service-city registry: exactly the 59 owner-confirmed cities, unique, all 
   assert.equal(registry.normalizeCity('Navi Mumbai'), 'navi-mumbai');
   for (const bad of ['', null, undefined, 'paris', '<script>', 'bengaluru/../admin', 'x'.repeat(200), 'mumbai?x=1']) assert.equal(registry.normalizeCity(bad), null, String(bad));
   // Coverage, pages and measured demand are separate facts.
-  assert.deepEqual(json(registry.publishedHubs().map((city) => city.slug).sort()), ['bengaluru', 'chennai', 'hyderabad', 'mumbai', 'pune']);
-  assert.deepEqual(json(registry.queuedHubs().map((city) => city.name).sort()), ['Ahmedabad', 'Coimbatore', 'Delhi', 'Gurugram', 'Jaipur', 'Kolkata', 'Mysuru', 'Noida', 'Vijayawada', 'Visakhapatnam']);
+  assert.deepEqual(json(registry.publishedHubs().map((city) => city.slug).sort()), ['ahmedabad', 'bengaluru', 'chennai', 'coimbatore', 'delhi', 'gurugram', 'hyderabad', 'jaipur', 'kolkata', 'mumbai', 'mysuru', 'noida', 'pune', 'vijayawada', 'visakhapatnam']);
+  assert.equal(registry.queuedHubs().length, 0);
   assert.equal(cities.filter((city) => city.hub === 'none').length, 44);
   assert.deepEqual(json(cities.filter((city) => city.demand === 'measured').map((city) => city.slug)), ['bengaluru']);
   // A page path exists only for a published hub.
-  assert.equal(registry.hubPath(registry.findCity('delhi')), null);
+  assert.equal(registry.hubPath(registry.findCity('greater noida')), null);
+  assert.equal(registry.hubPath(registry.findCity('gurgaon')), '/locations/gurugram');
+  assert.notEqual(registry.normalizeCity('Greater Noida'), registry.normalizeCity('Noida'));
   assert.equal(registry.hubPath(registry.findCity('bangalore')), '/locations/bengaluru');
   assert.equal(registry.citiesByRegion().reduce((sum, region) => sum + region.cities.length, 0), 59);
 });
@@ -442,7 +444,7 @@ test('city hubs: one authored page per published hub, distinct copy, real source
   const registry = load('src/data/serviceCities.ts');
   const hubs = load('src/data/cityHubs.ts');
   assert.deepEqual(json(hubs.CITY_HUBS.map((hub) => hub.slug).sort()), json(registry.publishedHubs().map((city) => city.slug).sort()));
-  for (const field of ['title', 'description', 'h1', 'emphasis']) assert.equal(new Set(hubs.CITY_HUBS.map((hub) => hub[field])).size, 5, field);
+  for (const field of ['title', 'description', 'h1', 'emphasis']) assert.equal(new Set(hubs.CITY_HUBS.map((hub) => hub[field])).size, 15, field);
   // Not city-name substitution: with every city name removed, no paragraph or answer is shared between two hubs.
   const strip = (text) => registry.SERVICE_CITIES.reduce((out, city) => out.replaceAll(city.name, '#'), text);
   const seen = new Map();
@@ -458,6 +460,18 @@ test('city hubs: one authored page per published hub, distinct copy, real source
     for (const section of hub.sections) assert(section.sources.length > 0 && section.links.length > 0, section.id);
   }
   assert(hubs.CITY_HUBS.find((hub) => hub.slug === 'bengaluru').title.includes('Bangalore'));
+  // Pages differ in what they are built from, not only in wording: no two hubs share the same sequence of sections and sources.
+  const shape = (hub) => JSON.stringify(hub.sections.map((section) => [section.id, section.sources]));
+  assert.equal(new Set(hubs.CITY_HUBS.map(shape)).size, 15);
+  // Regional cross-links: a few, to published hubs only, never to itself.
+  for (const hub of hubs.CITY_HUBS) {
+    assert((hub.nearby ?? []).length <= 3, hub.slug);
+    for (const slug of hub.nearby ?? []) assert(slug !== hub.slug && registry.hubPath(registry.findCity(slug)) === `/locations/${slug}`, `${hub.slug} -> ${slug}`);
+  }
+  // No origin, variety, recipe, size or preparation-time claim.
+  const claims = JSON.stringify(hubs.CITY_HUBS.map((hub) => [hub.intro, hub.sections.map((section) => section.body)]));
+  assert(!/locally grown|grown in|famous for|\b\d+\s?(feet|ft|inch|days?|hours?|kg|grams?)\b/i.test(claims));
+  assert(/do not claim a variety or an origin/.test(JSON.stringify(hubs.CITY_HUBS.find((hub) => hub.slug === 'mysuru').faqs)));
   const copy = JSON.stringify([hubs.CITY_HUBS, hubs.HUB_PHOTO_NOTE]);
   assert(!/₹|Rs\.?\s?\d|free delivery|guarantee|within \d|\d+\s?(hours|minutes|mins|stems|cm|inches)|midnight|rated|stars|reviews?\b|our (shop|store|branch) in/i.test(copy));
   // Same-day is only ever mentioned to say it is not promised.

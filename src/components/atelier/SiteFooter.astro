@@ -66,7 +66,7 @@ const groups: { title: string; label: string; links: Link[] }[] = [
 
     {
       groups.map((group) => (
-        <nav aria-label={group.label} class="site-footer__col" data-footer-group={group.label}>
+        <nav aria-label={group.label} class:list={["site-footer__col", { "site-footer__col--cities": group.label === "Delivery cities" }]} data-footer-group={group.label}>
           <p class="site-footer__title">{group.title}</p>
           <ul>{group.links.map((link) => <li><a href={link.href}>{link.label}</a></li>)}</ul>
         </nav>
@@ -122,7 +122,38 @@ const groups: { title: string; label: string; links: Link[] }[] = [
   @media (min-width: 1100px) {
     .site-footer__inner {
       gap: 2.5rem 2rem;
-      grid-template-columns: repeat(6, minmax(0, 1fr));
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+    }
+  }
+
+  /* The published city pages: a compact multi-column list, so fifteen links
+     take a few rows, not one long column. The full list is on /locations. */
+  .site-footer__col--cities {
+    grid-column: 1 / -1;
+  }
+
+  .site-footer__col--cities ul {
+    columns: 2;
+    column-gap: 2rem;
+  }
+
+  .site-footer__col--cities li {
+    break-inside: avoid;
+  }
+
+  @media (min-width: 700px) {
+    .site-footer__col--cities ul {
+      columns: 4;
+    }
+  }
+
+  @media (min-width: 1100px) {
+    .site-footer__col--cities {
+      grid-column: span 2;
+    }
+
+    .site-footer__col--cities ul {
+      columns: 2;
     }
   }
 
