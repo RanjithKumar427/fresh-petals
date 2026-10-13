@@ -1,6 +1,6 @@
 # City hubs, release 2 (ten more city pages), 13 October 2026
 
-Ten more city pages, built on the national release (`46c47a6`, first live 13 Oct 2026, 15:45:27 IST; see `national-coverage-2026-10.md`). This is a local commit and preview: not pushed, merged or deployed. Nothing here claims a ranking, traffic or enquiry result.
+Ten more city pages, built on the national release (`46c47a6`, first live 13 Oct 2026, 15:45:27 IST; see `national-coverage-2026-10.md`). It went live on 13 October 2026 (see "Release record"). Nothing here claims a ranking, traffic or enquiry result.
 
 Base: `origin/main` at `951d6d7`.
 
@@ -131,8 +131,35 @@ Desktop and mobile screenshots of Delhi, Gurugram, Coimbatore and Mysuru were re
 
 Not changed: photographs are uncropped for garlands and square-cropped for bouquets as elsewhere on the site; a section with three cards leaves one card alone on the last phone row.
 
-## Handoff
+## Release record
 
-When publication is approved: fast-forward `main` to this branch, push `main` alone, wait for the Production deployment, then push the branch. Check the ten new routes, `/locations` (15 links, 44 actions), `/locations/greater-noida` (404), `/sitemap.xml` (173) and one captured basket draft. Then request indexing for the ten new URLs if wanted; the sitemaps are already submitted and need no action.
+| | |
+|---|---|
+| Release commits | `5cfa692` (ten hubs, footer, cross-links) and `a43775a` (screenshot-review fixes and documentation corrections), on `main` as a fast-forward from `951d6d7` (the rollback reference); no force-push |
+| Pushed | 13 Oct 2026, 17:02:43 IST (11:32:43 UTC) |
+| Vercel deployment | `fresh-petals-5ifyatdsb`, target production, status Ready, created 17:02:46 IST, aliased to `onlyfreshpetals.in` and `www.onlyfreshpetals.in`. GitHub deployment 7037338521 records commit `a43775a`, state success. |
+| First seen serving the release | 13 Oct 2026, 17:04:23 IST (11:34:23 UTC), on `https://onlyfreshpetals.in/locations/mysuru` and `/locations/coimbatore` |
+| New URLs | `/locations/delhi`, `/gurugram`, `/noida`, `/kolkata`, `/ahmedabad`, `/jaipur`, `/coimbatore`, `/visakhapatnam`, `/vijayawada`, `/mysuru` |
+| Changed | The first five city pages (nearby links, garland comparison lines, card heights), the footer on every page, `/locations` (15 links, 44 actions), `sitemap.xml` |
+
+Live verification, 13 Oct 2026 (drafts captured, nothing sent; inquiry requests aborted in the browser; no product, admin, database or storage write):
+
+| Check | Result |
+|---|---|
+| Ten new routes return 200 with unique titles, one H1, self-canonicals, breadcrumbs and server-rendered public products | PASS |
+| Aliases redirect to their published page (`gurgaon`, `calcutta`, `mysore`, `vizag`, `kovai`, `amdavad`, `new-delhi`, and the earlier ones); `/locations/greater-noida` and other unpublished cities answer 404 | PASS |
+| `sitemap.xml` 173 URLs with the ten new pages (`lastmod` 2026-10-13); `sitemap-garlands.xml` 161; `sitemap-occasions.xml` 11; 345 unique | PASS |
+| Directory: 59 cities, 15 hub links, 44 city-specific WhatsApp actions, with and without scripts | PASS |
+| Grouped footer with fifteen city links and the directory link; all footer links resolve | PASS |
+| Recipient city from city page to product draft, basket and basket draft; refused silent change; explicit change; old basket | PASS |
+| Quote-only products show no amount in cards, drafts or structured data; pooja products keep their prices | PASS |
+| Hero (three slides, headline), 156 garlands with linked names, Event Garlands, bouquet and pooja collections | PASS |
+| No broken images or horizontal overflow at 375, 390, 768 and 1440 px across all fifteen city pages and the main shop pages | PASS |
+| `/admin` redirects to sign-in; `/api/admin/products` answers 401 without a session | PASS |
+| Full live run of the check script | 344 of 345 |
+
+The one miss is the same as in the first release: a check that reads cache headers Vercel removes before a response leaves its network. Three checks that compare the preview with the live site do not apply to a live run.
+
+Search Console, after publication: the ten new URLs were not inspected. The direct inspection address did not open and working through the search box for ten URLs was not attempted, so no indexing request was made and no account setting was changed. Follow-up for the owner: inspect each of the ten new URLs and request indexing. The three sitemaps were already submitted on 12 Oct 2026 (status Success) and need no action; Google will pick up the new entries when it next reads sitemap.xml.
 
 Still open from the first release: whether every product is offered in all 59 cities, confirmed delivery zones for any city, and the Instagram account's name.
