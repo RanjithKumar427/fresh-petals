@@ -1,6 +1,6 @@
 # Release 3: discovery in Google and search assistants, 13 October 2026
 
-Makes the site easier for search engines and search assistants to understand and to quote accurately: one consistent set of business facts, four buying guides with a directory, and honest measurement. It is a local commit and preview: not pushed, merged or deployed.
+Makes the site easier for search engines and search assistants to understand and to quote accurately: one consistent set of business facts, four buying guides with a directory, and honest measurement. It went live on 13 October 2026 (see "Release record").
 
 Nothing in this release can guarantee a first-place result or a recommendation in Google, ChatGPT or any other assistant, and nothing here claims one.
 
@@ -94,6 +94,29 @@ Screenshots read by eye: the bouquet guide on desktop, the jasmine and pooja gui
 - **Screenshots read by eye:** the directory (mobile), the bouquet guide (desktop and mobile), the jasmine and pooja guide (desktop and mobile), the sending guide (mobile) and the garland guide (mobile). The directory, garland guide and sending guide on desktop were checked by script only.
 - **Checks on the final build:** regression suite 37 of 37; Release 3 checks 88 of 88; type check 20 errors in the same three untouched files, none new.
 
-## Handoff
+## Release record
 
-When publication is approved: fast-forward `main` to this branch, push `main` alone, wait for the Production deployment, then push the branch. Check the five guide URLs, the footer, `/sitemap.xml` (177), the homepage's structured data and one captured draft. Afterwards, for the owner: request indexing for `/guides` and the three new guides; set `PUBLIC_GA_MEASUREMENT_ID` if analytics is wanted; run the benchmark from a fresh guest session; read Search Console's AI reports; and work through the evidence queue, starting with the jasmine and gajra photographs.
+| | |
+|---|---|
+| Release commits | `4a21120` (guides, business profile, referral labels) and `c64c96d` (origin removed, quote actions, attribution method), on `main` as a fast-forward from `4ad6312` (the rollback reference); no force-push |
+| Pushed | 13 Oct 2026, 20:14:46 IST (14:44:46 UTC) |
+| Vercel deployment | `fresh-petals-b01l58m5c`, production, aliased to `onlyfreshpetals.in`. GitHub deployment 7041643061 records commit `c64c96d`, state success. |
+| First seen serving the release | 13 Oct 2026, 20:15:54 IST (14:45:54 UTC), on `/guides/choosing-a-flower-bouquet` |
+| New URLs | `/guides`, `/guides/choosing-a-flower-bouquet`, `/guides/jasmine-pooja-flowers-and-gajra`, `/guides/sending-flowers-to-another-city` |
+
+Live verification, 13 Oct 2026 (drafts captured, nothing sent, inquiry requests aborted, no database or admin write): the Release 3 checks passed 86 of 88 against production. Neither miss is a site fault. One compares the build's sitemap with the live sitemap, which are now the same file. The other, the city page to guide to product draft, failed on timing in the suite and passed when repeated with longer waits: the draft read "Recipient city: Pune" with the product's canonical link and no amount. Confirmed live: the five guide URLs return 200 with their canonicals and structured data; `sitemap.xml` has 177 URLs (349 unique across the three); guide actions read "Request a quote" or "Order on WhatsApp"; About no longer states an origin; 156 garlands; `/admin` redirects to sign-in.
+
+Not done, and why:
+
+- **Real OAI-SearchBot access: not verified.** The deployment's available runtime logs contained no OpenAI crawler request in the window read, which shows nothing either way. No firewall setting was opened. Simulated user-agent requests are not evidence and are not offered as such.
+- **Search Console:** no export, no URL inspection or indexing request for the four new URLs, and the generative AI inclusion status and reports were not read in this session.
+- **Assistant benchmark: NOT RUN.** No fresh, independent assistant session was available.
+- **Analytics:** `PUBLIC_GA_MEASUREMENT_ID` is not set anywhere, so no visit, click or assistant referral is being recorded yet.
+
+## Owner actions
+
+1. Set `PUBLIC_GA_MEASUREMENT_ID` in Vercel (Production) and redeploy, if analytics is wanted.
+2. In Search Console: request indexing for the four new URLs, export Queries and Pages, and note the generative AI inclusion status and any AI report.
+3. In Vercel: check the firewall and bot settings, and look for `OAI-SearchBot` requests in the logs against https://openai.com/searchbot.json.
+4. Run `assistant-benchmark.md` from a fresh guest session.
+5. Confirm where the business began, if it should be stated; and work through the evidence queue, starting with separate jasmine and gajra photographs.
