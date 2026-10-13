@@ -727,3 +727,28 @@ test('product titles and facts: flower and form from the record; model names kep
   const page = readFileSync('src/pages/products/[slug].astro', 'utf8');
   assert(/title=\{productTitle\(product\)\}/.test(page) && /const stemCount = isBouquet \? product\.stemCount \?\? null : null/.test(page) && /\{stemCount && \(/.test(page) && !/careLevel/.test(page) && /A listed range, not a count of the bouquet as made/.test(page));
 });
+
+// ---------------------------------------------------------------------------
+// City catalogue: every city, the whole public catalogue
+// ---------------------------------------------------------------------------
+
+test('city catalogue: one shared source with no sample limits or per-city restriction; a noindex shop view per city; SSR pagination; city kept in links and drafts', () => {
+  const service = readFileSync('src/server/services/CityCatalogue.ts', 'utf8');
+  // Sources are the shop's own: category pages, launch bouquets, listed garlands; nothing is sliced or limited.
+  assert(/getCategoryStaticPaths\(\)/.test(service) && /launchGroups\("bouquets"\)/.test(service) && /isListedGarland/.test(service) && /loadAuthoritativePrices/.test(service));
+  assert(!/\.slice\(0|limit|each:/.test(service.replace(/^\s*\/\/.*$/gm, '')));
+  assert(/quoteOnly \? QUOTE_ONLY_PRICE_LABEL : product\.priceLabel/.test(service) && /price: QUOTE_ONLY_PRICE_LABEL,\s+quoteOnly: true,\s+category: "Garlands"/.test(service));
+  assert(/seen\.has\(item\.key\)/.test(service) && /collection\.items\.length > 0/.test(service));
+  const shop = readFileSync('src/pages/locations/[city]/shop.astro', 'utf8');
+  assert(/prerender = false/.test(shop) && /if \(!city \|\| !city\.serviceable\) return Astro\.rewrite\("\/404"\)/.test(shop) && /Astro\.redirect\(base, 301\)/.test(shop));
+  assert(/noindex=\{true\} canonical=\{base\}/.test(shop) && /GARLAND_CACHE_TAG, OCCASION_INDEX_TAG/.test(shop) && /data-city-context=\{city\.slug\}/.test(shop));
+  assert(/rel="prev"/.test(shop) && /rel="next"/.test(shop) && /aria-current=\{number === page \? "page" : undefined\}/.test(shop) && /loading=\{index < 4 \? "eager" : "lazy"\}/.test(shop));
+  assert(/garlandEnquiryHref\(\{ code: item\.code, quantity: 1, city: city\.slug \}\)/.test(shop) && /cityProductEnquiryHref/.test(shop) && /withCity\(item\.path\)/.test(shop));
+  assert.equal(shop.match(/<h1/g).length, 1);
+  assert(!/₹|same[- ]day delivery in|branch|store in/i.test(shop.replace('We do not promise same-day or timed delivery', '')));
+  // One address per city: collections and pages are query parameters, not routes.
+  assert(!existsSync('src/pages/locations/[city]/[collection].astro'));
+  assert(!/\/shop/.test(readFileSync('src/pages/sitemap.xml.ts', 'utf8')));
+  // City pages link the whole catalogue; the directory gives every city without a page its shop view.
+  assert(/loadCityCatalogue\(\)/.test(readFileSync('src/pages/locations/[city].astro', 'utf8')) && /data-city-shop-link=\{city\.slug\}/.test(readFileSync('src/pages/locations/index.astro', 'utf8')));
+});

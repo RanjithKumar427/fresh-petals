@@ -59,7 +59,7 @@ const breadcrumbJsonLd = {
 
         <section class="mt-10" aria-labelledby="city-pages">
           <h2 id="city-pages" class="fp-h2">City pages</h2>
-          <p class="mt-2 max-w-2xl text-sm leading-7 text-moss">These {hubs.length} cities have their own page, with designs and advice chosen for that city. More are being written.</p>
+          <p class="mt-2 max-w-2xl text-sm leading-7 text-moss">These {hubs.length} cities have their own page, with designs and advice chosen for that city. Every city on this list has the full catalogue: use Shop beside its name.</p>
           <ul class="mt-5 flex flex-wrap gap-2">
             {hubs.map((city) => (
               <li>
@@ -95,7 +95,10 @@ const breadcrumbJsonLd = {
                       {hub ? (
                         <a href={hub} aria-label={`Flowers for ${city.name}: city page`} class="inline-flex min-h-[44px] shrink-0 items-center rounded-full border border-ink px-4 text-xs font-semibold text-ink transition hover:bg-ink hover:text-paper">City page</a>
                       ) : (
-                        <a href={cityEnquiryHref(city.name)} target="_blank" rel="noopener noreferrer" data-city-enquiry={city.slug} aria-label={`Ask about flowers for ${city.name} on WhatsApp`} class="inline-flex min-h-[44px] shrink-0 items-center rounded-full bg-berry px-4 text-xs font-semibold text-white transition hover:bg-berry-deep">Ask on WhatsApp</a>
+                        <span class="flex shrink-0 flex-wrap justify-end gap-2">
+                          <a href={`${LOCATIONS_PATH}/${city.slug}/shop`} data-city-shop-link={city.slug} aria-label={`Shop the full catalogue for ${city.name}`} class="inline-flex min-h-[44px] items-center rounded-full border border-ink px-4 text-xs font-semibold text-ink transition hover:bg-ink hover:text-paper">Shop</a>
+                          <a href={cityEnquiryHref(city.name)} target="_blank" rel="noopener noreferrer" data-city-enquiry={city.slug} aria-label={`Ask about flowers for ${city.name} on WhatsApp`} class="inline-flex min-h-[44px] shrink-0 items-center rounded-full bg-berry px-4 text-xs font-semibold text-white transition hover:bg-berry-deep">Ask on WhatsApp</a>
+                        </span>
                       )}
                     </li>
                   );

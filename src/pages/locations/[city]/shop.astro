@@ -1,0 +1,179 @@
+---
+// /locations/<city>/shop: the whole public catalogue for one recipient city.
+// Every serviceable city has it (59), with the same collections and products
+// (src/server/services/CityCatalogue.ts). One address per city: the
+// collection and the page are query parameters, so there is no city URL per
+// collection. It is a shopping view, not a landing page: noindex, follow,
+// canonical to itself, and not in the sitemap. The city's own page
+// (/locations/<city>), where one is published, stays the indexable page.
+//
+// Works without scripts: collections, pagination and product links are plain
+// links, 24 products a page, photographs lazy-loaded.
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+import DestinationCity from "../../../components/DestinationCity.astro";
+import { CITY_PARAM, LOCATIONS_PATH, findCity, hasHub, serviceCityCount } from "../../../data/serviceCities";
+import { CITY_SHOP_PAGE_SIZE, loadCityCatalogue, type CatalogueItem } from "../../../server/services/CityCatalogue";
+import { cityEnquiryHref, cityProductEnquiryHref } from "../../../utils/cityEnquiry";
+import { garlandEnquiryHref } from "../../../utils/garlandEnquiry";
+import { QUOTE_ONLY_ENQUIRE_LABEL } from "../../../shared/quoteOnly";
+import { GARLAND_CACHE_TAG, OCCASION_INDEX_TAG, occasionCacheHeaders } from "../../../server/services/GarlandWebsite";
+
+export const prerender = false;
+
+const requested = Astro.params.city ?? "";
+const city = findCity(requested);
+if (!city || !city.serviceable) return Astro.rewrite("/404");
+const base = `${LOCATIONS_PATH}/${city.slug}/shop`;
+if (city.slug !== requested) return Astro.redirect(base, 301);
+
+for (const [name, value] of Object.entries(occasionCacheHeaders([GARLAND_CACHE_TAG, OCCASION_INDEX_TAG]))) Astro.response.headers.set(name, value);
+
+const { collections, all } = await loadCityCatalogue();
+const wanted = Astro.url.searchParams.get("collection") ?? "";
+const collection = collections.find((entry) => entry.id === wanted) ?? null;
+// An unknown collection is not an error page: it shows everything.
+const items: CatalogueItem[] = collection ? collection.items : all;
+const pages = Math.max(1, Math.ceil(items.length / CITY_SHOP_PAGE_SIZE));
+const page = Math.min(pages, Math.max(1, Math.floor(Number(Astro.url.searchParams.get("page"))) || 1));
+const shown = items.slice((page - 1) * CITY_SHOP_PAGE_SIZE, page * CITY_SHOP_PAGE_SIZE);
+
+const href = (id: string | null, pageNumber = 1) => {
+  const params = new URLSearchParams();
+  if (id) params.set("collection", id);
+  if (pageNumber > 1) params.set("page", String(pageNumber));
+  const query = params.toString();
+  return query ? `${base}?${query}` : base;
+};
+const origin = Astro.site ?? Astro.url;
+const withCity = (path: string) => `${path}?${CITY_PARAM}=${city.slug}`;
+const action = (item: CatalogueItem) =>
+  item.code
+    ? { href: garlandEnquiryHref({ code: item.code, quantity: 1, city: city.slug }), label: QUOTE_ONLY_ENQUIRE_LABEL }
+    : { href: cityProductEnquiryHref({ name: item.name, url: new URL(item.path, origin).toString(), cityName: city.name, quoteOnly: item.quoteOnly, priceLabel: item.price }), label: item.quoteOnly ? QUOTE_ONLY_ENQUIRE_LABEL : "Order on WhatsApp" };
+
+const heading = collection ? `${collection.label} in ${city.name}` : `All flowers and products for delivery in ${city.name}`;
+const title = `${collection ? collection.label : "Full Catalogue"} for Delivery in ${city.name}${page > 1 ? `, page ${page}` : ""} | Fresh Petals`;
+const description = `${collection ? collection.label : "Every bouquet, garland and pooja flower product"} available to order for delivery in ${city.name}. Availability, price and delivery details are confirmed on WhatsApp.`;
+const primary = collections.filter((entry) => entry.primary);
+const others = collections.filter((entry) => !entry.primary);
+const hub = hasHub(city);
+const first = (page - 1) * CITY_SHOP_PAGE_SIZE + 1;
+const chip = "inline-flex min-h-[44px] items-center gap-1 rounded-full border px-4 text-[13px] font-semibold transition";
+const chipClass = (current: boolean) => [chip, current ? "border-ink bg-ink text-paper" : "border-line bg-paper text-ink hover:border-berry hover:text-berry"];
+---
+
+<BaseLayout title={title} description={description} image={shown[0]?.image.src} showCategoryCarousel={false} noindex={true} canonical={base}>
+  <main class="bg-ivory" data-city-context={city.slug} data-city-shop={city.slug} data-track-list={`city-shop:${city.slug}`}>
+    <section class="px-5 py-10 md:px-8 md:py-14">
+      <div class="mx-auto max-w-7xl">
+        <nav aria-label="Breadcrumb">
+          <p class="fp-eyebrow">
+            <a href="/" class="hover:underline">Home</a> <span aria-hidden="true">/</span>
+            <a href={LOCATIONS_PATH} class="hover:underline">Delivery cities</a> <span aria-hidden="true">/</span>
+            {hub ? <a href={`${LOCATIONS_PATH}/${city.slug}`} class="hover:underline">{city.name}</a> : <span>{city.name}</span>} <span aria-hidden="true">/</span>
+            <span aria-current="page">Shop</span>
+          </p>
+        </nav>
+
+        <div class="mt-3 grid gap-8 md:grid-cols-[1.3fr_1fr] md:gap-14">
+          <div>
+            <h1 class="fp-h1" data-shop-heading>{heading}</h1>
+            <p class="mt-4 max-w-2xl text-sm leading-7 text-moss md:text-base">
+              {collection ? `All ${collection.items.length} ${collection.items.length === 1 ? "product" : "products"} in this collection.` : `The whole public catalogue: ${all.length} products in ${collections.length} collections.`}
+              {" "}Every product can be ordered for {city.name}; the catalogue is the same for each of the {serviceCityCount()} cities we take orders for. Availability for your date, the price and the delivery details are confirmed on WhatsApp before you pay.
+            </p>
+            {collection && (
+              <p class="mt-3 text-sm leading-7 text-moss">
+                {collection.id.startsWith("garlands-") && "These groups sort the garland photographs for browsing; they are not a list of the flowers used. "}
+                <a href={collection.href} class="font-semibold text-ink underline underline-offset-4">About {collection.label.toLowerCase()}</a>
+              </p>
+            )}
+          </div>
+          <div class="rounded-[18px] border border-line bg-paper p-5 md:self-start md:p-6">
+            <h2 class="fp-serif text-lg text-ink">Ordering for {city.name}</h2>
+            <p class="mt-2 text-sm leading-6 text-moss">Orders from this page are marked for {city.name}. You can change the recipient city here at any time.</p>
+            <DestinationCity class="mt-4" label="Recipient city for your order" />
+            <a href={cityEnquiryHref(city.name)} target="_blank" rel="noopener noreferrer" data-city-enquiry={city.slug} class="mt-4 inline-flex min-h-[44px] items-center justify-center rounded-full border border-ink px-5 text-sm font-semibold text-ink transition hover:bg-ink hover:text-paper">
+              Ask about flowers for {city.name}
+            </a>
+          </div>
+        </div>
+
+        <nav aria-label={`Collections for ${city.name}`} class="mt-8" data-shop-collections>
+          <ul class="flex flex-wrap gap-2">
+            <li><a href={href(null)} class:list={chipClass(!collection)} aria-current={!collection ? "page" : undefined} data-shop-collection="all">All products <span class="font-normal opacity-80">({all.length})</span></a></li>
+            {primary.map((entry) => (
+              <li><a href={href(entry.id)} class:list={chipClass(collection?.id === entry.id)} aria-current={collection?.id === entry.id ? "page" : undefined} data-shop-collection={entry.id}>{entry.label} <span class="font-normal opacity-80">({entry.items.length})</span></a></li>
+            ))}
+          </ul>
+          {others.length > 0 && (
+            <details class="mt-3" open={Boolean(collection && !collection.primary)}>
+              <summary class="inline-flex min-h-[44px] cursor-pointer items-center text-sm font-semibold text-ink underline underline-offset-4">More collections ({others.length})</summary>
+              <ul class="mt-3 flex flex-wrap gap-2">
+                {others.map((entry) => (
+                  <li><a href={href(entry.id)} class:list={chipClass(collection?.id === entry.id)} aria-current={collection?.id === entry.id ? "page" : undefined} data-shop-collection={entry.id}>{entry.label} <span class="font-normal opacity-80">({entry.items.length})</span></a></li>
+                ))}
+              </ul>
+            </details>
+          )}
+        </nav>
+
+        <p class="mt-8 text-sm text-moss" data-shop-range role="status">
+          Showing {first}–{first + shown.length - 1} of {items.length}{pages > 1 && `, page ${page} of ${pages}`}
+        </p>
+
+        <ul class="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5 lg:grid-cols-4" data-shop-grid>
+          {shown.map((item, index) => {
+            const cta = action(item);
+            return (
+              <li>
+                <article class="shop-card group relative flex h-full flex-col overflow-hidden rounded-[18px] border border-line bg-paper" data-shop-card={item.key} data-quote-only={item.quoteOnly ? "true" : "false"}>
+                  <div class:list={["relative bg-linen", item.image.contain ? "aspect-[4/5]" : "aspect-square"]}>
+                    <img src={item.image.src} srcset={item.image.srcset} sizes={item.image.srcset ? "(min-width: 1024px) 23vw, (min-width: 768px) 31vw, 48vw" : undefined} width={item.image.width} height={item.image.height} alt={item.image.alt} loading={index < 4 ? "eager" : "lazy"} decoding="async" class:list={["absolute inset-0 h-full w-full", item.image.contain ? "object-contain" : "object-cover"]} />
+                    {item.code && <span class="absolute left-2 top-2 rounded-full bg-paper/95 px-2.5 py-1 text-[10px] font-semibold tracking-[0.12em] text-ink">{item.code}</span>}
+                  </div>
+                  <div class="flex flex-1 flex-col px-3 pb-3 pt-2.5">
+                    <h2 class="text-[14px] font-semibold leading-snug text-ink"><a href={withCity(item.path)} class="shop-card__link group-hover:text-berry">{item.name}</a></h2>
+                    <p class="mt-1.5 text-[13px] font-semibold text-ink" data-shop-card-price>{item.price}</p>
+                    <a href={cta.href} target="_blank" rel="noopener noreferrer" data-garland-quote={item.code} class="relative z-20 inline-flex min-h-[44px] items-center justify-center rounded-full bg-berry px-3 text-center text-[11px] font-semibold leading-tight text-white transition hover:bg-berry-deep" style="margin-top:auto;padding-top:0;margin-block-start:0.75rem">{cta.label}</a>
+                  </div>
+                </article>
+              </li>
+            );
+          })}
+        </ul>
+
+        {pages > 1 && (
+          <nav aria-label="Pages" class="mt-10 flex flex-wrap items-center gap-2" data-shop-pages>
+            {page > 1 && <a href={href(collection?.id ?? null, page - 1)} rel="prev" class:list={chipClass(false)}>← Previous</a>}
+            {Array.from({ length: pages }, (_, index) => index + 1).map((number) => (
+              <a href={href(collection?.id ?? null, number)} class:list={chipClass(number === page)} aria-current={number === page ? "page" : undefined} aria-label={`Page ${number}`}>{number}</a>
+            ))}
+            {page < pages && <a href={href(collection?.id ?? null, page + 1)} rel="next" class:list={chipClass(false)}>Next →</a>}
+          </nav>
+        )}
+
+        <p class="mt-10 max-w-3xl text-sm leading-7 text-moss">
+          We do not promise same-day or timed delivery on this website, and delivery charges are not fixed here: both are confirmed for your address and date on WhatsApp. Photographs show our designs; they are not pictures of orders delivered in {city.name}.
+          {hub ? <> For advice on choosing, see <a href={`${LOCATIONS_PATH}/${city.slug}`} class="font-semibold text-ink underline underline-offset-4">flowers for {city.name}</a>.</> : <> See <a href="/guides" class="font-semibold text-ink underline underline-offset-4">our guides to choosing flowers</a>.</>}
+        </p>
+      </div>
+    </section>
+  </main>
+</BaseLayout>
+
+<style>
+  .shop-card__link::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+  }
+  .shop-card__link:focus-visible {
+    outline: none;
+  }
+  .shop-card:has(.shop-card__link:focus-visible) {
+    outline: 2px solid var(--color-berry);
+    outline-offset: 2px;
+  }
+</style>
