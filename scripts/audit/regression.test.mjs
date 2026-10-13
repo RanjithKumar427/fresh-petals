@@ -481,6 +481,8 @@ test('city hubs: one authored page per published hub, distinct copy, real source
   for (const slug of copy.match(/\/locations\/[a-z-]+/g) ?? []) assert(registry.hubPath(registry.findCity(slug.split('/').pop())), slug);
   const page = readFileSync('src/pages/locations/[city].astro', 'utf8');
   assert(/prerender = false/.test(page) && /Astro\.rewrite\("\/404"\)/.test(page) && /GARLAND_CACHE_TAG, OCCASION_INDEX_TAG/.test(page) && /isListedGarland/.test(page) && /giftProducts\(source\.route, membership\)/.test(page));
+  // Garland comparisons describe the photograph and name a browsing group; they never present the group as the flowers used.
+  assert(/design\.image\.alt/.test(page) && /Browse under:/.test(page) && !/Main flower/.test(page));
   // One H1, visible breadcrumbs, self-canonical (no canonical override), no rating or LocalBusiness markup.
   assert.equal(page.match(/<h1/g).length, 1);
   assert(/aria-label="Breadcrumb"/.test(page) && !/canonical=/.test(page) && !/LocalBusiness|aggregateRating|PostalAddress/.test(page));

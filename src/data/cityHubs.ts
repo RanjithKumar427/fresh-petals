@@ -818,7 +818,7 @@ export const CITY_HUBS: CityHub[] = [
         heading: "Jasmine and pooja flowers: which form",
         body: [
           "The same flower is sold in different forms, and ordering the wrong one is the common mistake. Loose jasmine is for offering or stringing yourself. Gajra is already strung. Daily pooja flowers are a loose mix; a basket is packed to carry.",
-          "Tell us the form and roughly how much. Pack sizes are not fixed on the website.",
+          "Tell us the form and roughly how much. Pack sizes are not fixed on the website. Some photographs here are shared between products and show the kind of flower, not the exact form or pack.",
         ],
         compareHeading: "Four forms compared",
         sources: [{ kind: "pooja", slugs: ["jasmine-malli", "jasmine-gajra", "daily-pooja-flowers", "pooja-basket"] }],
@@ -981,7 +981,7 @@ export const CITY_HUBS: CityHub[] = [
         heading: "Loose jasmine, or strings and gajra",
         body: [
           "Loose jasmine (mallige) is what you want for offering or for stringing at home to your own length. Gajra and strings arrive ready to wear or to hang. A doorway toran is a different product again, made for the entrance.",
-          "For loose flowers tell us the quantity; for strings, the number and the length you need.",
+          "For loose flowers tell us the quantity; for strings, the number and the length you need. The jasmine and gajra entries below share one photograph of loose jasmine: it shows the flower, not the strung form.",
         ],
         compareHeading: "Three forms compared",
         sources: [{ kind: "pooja", slugs: ["jasmine-malli", "jasmine-gajra", "fresh-flower-toran"] }],

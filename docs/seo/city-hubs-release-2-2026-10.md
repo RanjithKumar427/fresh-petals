@@ -34,7 +34,7 @@ A buyer task, not a claim about what sells in the city or about measured demand.
 | Vijayawada | Three answers settle a poola mala order | Design code; one or a pair; ceremony date and other requirements |
 | Mysuru | Loose jasmine or strings | Jasmine forms; what to tell us for a pooja (both boxes, a basket); a bouquet to give |
 
-No two of the fifteen pages share the same sequence of sections and sources (a regression test checks this, along with the existing test that no paragraph or answer is shared once city names are removed). The layout and the ordering steps are shared on purpose.
+Two regression tests guard against the pages collapsing into one template: no two of the fifteen may share the same sequence of sections and sources, and no paragraph or answer may be shared once city names are removed. These are guards against a regression, nothing more. They do not show that a page is useful or that it will perform in search; that rests on whether the buyer task, the comparisons and the links on each page actually help, which only reading the pages and later search data can tell. The layout and the ordering steps are shared on purpose.
 
 One new product source was added, `bouquet-group`: the bouquets of one launch group, read from the same launch catalogue as `/categories/bouquets`. No static assignment or fallback was introduced. Each product still appears once per page, and a section with nothing public is not shown.
 
@@ -48,7 +48,7 @@ Deliberately not said anywhere: where jasmine is grown or its variety (the Mysur
 |---|---|---|
 | A national florist's Delhi page | Menus by occasion, flower type, colour, presentation and recipient; filters by flower type; FAQs mostly about delivery cut-offs; store addresses | Delhi offers the same two entry points buyers are used to (occasion, flower). Our FAQs answer what to send us instead of cut-off times, and say Delhi, Gurugram and Noida are separate cities. No addresses: we have none to state. |
 | A national gift site's Kolkata page | Recipient links (mother, father, wife, friend) and personality tags; no question-and-answer section | Kolkata is organised around who the flowers are for, with advice for parents and older relatives, in our own words. |
-| Search: flowers to an office in Gurgaon | Results are gift-site listings; nothing addresses receiving at an office or a gated society | Gurugram leads with the receiving question and the details that matter for a home or an office. |
+| Search: flowers to an office in Gurgaon | The handful of pages sampled (one unlocalised search and the gift-site listings it returned) did not address receiving at an office or a gated society. This is an observation about those pages only, not about what competitors or the market offer in general. | Gurugram leads with the receiving question and the details that matter for a home or an office. |
 | A Vijayawada garland seller's site | Garlands by category and name with photographs; no codes, sizes, pair or single, or lead time; enquiry by WhatsApp with the product name | Vijayawada is built on the three things such listings leave open: the design code, one or a pair, and the date. We also do not publish sizes or lead times, and say they are confirmed. |
 | A garland specialist's site | Garlands organised by flower type; name and photograph only | Coimbatore shows garlands one browsing group at a time, and states that a group is not an ingredient list. |
 | Both national sites | Same-day, midnight and timed-delivery claims on cards and in titles | None repeated. Every page states that same-day and timed delivery are not promised. |
@@ -115,9 +115,21 @@ The preview read the production database; inquiry and admin routes were refused 
 | Production build | PASS |
 | Regression suite | PASS, 34 of 34 (registry and hub tests extended for fifteen hubs) |
 | Type check | 20 errors, all in three files this release does not touch (`SubscriptionConfigurator.astro` 15, `DiscoveryPostCard.astro` 4, `MobileBottomBar.astro` 1): the same errors as the base. No new error. |
-| Browser and HTML checks at 375, 390, 768 and 1440 px | PASS, 346 of 346 |
+| Browser and HTML checks at 375, 390, 768 and 1440 px | PASS, 348 of 348 (346 before the screenshot review, plus two for its fixes) |
 
 Covered: metadata, one H1, self-canonical (with and without query parameters), breadcrumbs and server-rendered linked products on all fifteen pages; alias redirects and 404s; 59 cities, 15 hub links and 44 city-specific WhatsApp actions, with and without scripts; the first five pages unchanged apart from the nearby links; city to product to basket to captured draft, an explicit destination change, a refused silent change and an old basket; quote-only by product with pooja prices equal to the live site; 156 garlands, the hero and the footer; sitemap membership and counts; no broken images or horizontal overflow; no script errors.
+
+## Screenshot review before publication
+
+Desktop and mobile screenshots of Delhi, Gurugram, Coimbatore and Mysuru were read for wrapping, photographs, comparisons, controls and spacing. Three issues were found and fixed; nothing else was changed.
+
+| Found | Fix |
+|---|---|
+| Garland comparison lists repeated one line ("Main flower: Rose.") for every design, which compared nothing and presented a browsing group as the flower used | Each line is now the photograph's recorded description, followed by "Browse under: <group>". Applies to every city page that lists garlands, including Bengaluru, Hyderabad and Chennai. |
+| Mysuru lists two products both named "Pooja Flower Box", indistinguishable in the comparison; the jasmine and gajra entries share one photograph | Priced products show their price label beside the name in comparisons ("From ₹299", "Market price today"). The Mysuru and Coimbatore text says the photograph is shared and shows the flower, not the strung form. |
+| On desktop the ordering card and the comparison card stretched to the height of the column beside them, leaving empty space | Both keep their own height. |
+
+Not changed: photographs are uncropped for garlands and square-cropped for bouquets as elsewhere on the site; a section with three cards leaves one card alone on the last phone row.
 
 ## Handoff
 

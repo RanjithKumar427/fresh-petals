@@ -103,7 +103,10 @@ function garlandCard(product: GarlandProduct): Card {
     image: { src: design.image.path, srcset: garlandPhotoSrcset(design.image, 480), width: design.image.width, height: design.image.height, alt: design.image.alt, contain: true },
     code: design.code,
     price: QUOTE_ONLY_PRICE_LABEL,
-    line: flowers ? `Main flower: ${flowers}.` : null,
+    // What the photograph shows (its recorded description), then the group it
+    // is browsed under. The group is a browsing classification, not a list of
+    // the flowers in the garland.
+    line: [design.image.alt.trim().replace(/([^.!?])$/, "$1."), flowers ? `Browse under: ${flowers}.` : ""].filter(Boolean).join(" ") || null,
     // Through the live enquiry check, like every garland card.
     enquiryHref: garlandEnquiryHref({ code: design.code, quantity: 1, city: city!.slug }),
     enquiryLabel: QUOTE_ONLY_ENQUIRE_LABEL,
@@ -187,7 +190,7 @@ const steps = [
             </div>
           </div>
 
-          <div class="rounded-[18px] border border-line bg-paper p-5 md:p-6" data-city-order>
+          <div class="rounded-[18px] border border-line bg-paper p-5 md:self-start md:p-6" data-city-order>
             <h2 class="fp-serif text-lg text-ink">Ordering for {city.name}</h2>
             <p class="mt-2 text-sm leading-6 text-moss">
               {city.name} is one of {serviceCityCount()} cities we take orders for. Share the date and the address; we confirm availability, price and delivery details on WhatsApp.
@@ -224,7 +227,7 @@ const steps = [
                 </div>
               </div>
               {section.cards.some((card) => card.line) && (
-                <div class="rounded-[18px] border border-line bg-paper p-5 md:p-6" data-city-compare>
+                <div class="rounded-[18px] border border-line bg-paper p-5 md:self-start md:p-6" data-city-compare>
                   <h3 class="text-sm font-semibold text-ink">{section.compareHeading}</h3>
                   <dl class="mt-3 space-y-3 text-sm leading-6">
                     {section.cards.filter((card) => card.line).map((card) => (
@@ -232,6 +235,7 @@ const steps = [
                         <dt class="font-semibold text-ink">
                           <a href={card.href} class="underline decoration-line underline-offset-4 hover:text-berry">{card.name}</a>
                           {card.code && <span class="font-normal text-moss"> · {card.code}</span>}
+                          {!card.code && card.price !== QUOTE_ONLY_PRICE_LABEL && <span class="font-normal text-moss"> · {card.price}</span>}
                         </dt>
                         <dd class="text-moss">{card.line}</dd>
                       </div>
