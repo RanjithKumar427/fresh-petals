@@ -107,6 +107,16 @@ export const CATEGORY_LANDING: Record<string, LandingContent> = {
         answer:
           "Yes. Mention the change when you send your cart on WhatsApp. Flowers depend on what is fresh that day, so we confirm any substitutions and the final price with you before you pay.",
       },
+      {
+        question: "Roses, lilies or mixed flowers: how do I choose?",
+        answer:
+          "Roses give one clear colour, so choose them when the colour carries the message. Lilies are fewer, larger flowers and suit a quieter, more formal gift. Mixed bouquets are the brightest and the most informal. Each section above lists the flowers in every design.",
+      },
+      {
+        question: "How do I get a price for a particular date?",
+        answer:
+          "Add the bouquets you like to your basket with the delivery date, or tap Enquire on WhatsApp on any design. We reply with the price and whether those flowers are available for that date. Nothing is charged on this website.",
+      },
       AREA_FAQ,
     ],
     links: [
@@ -122,7 +132,7 @@ export const CATEGORY_LANDING: Record<string, LandingContent> = {
       "Daily pooja flowers, jasmine (malli / mallige), pooja flower boxes, baskets and temple bulk flowers in Bengaluru, priced on the day's flower market.",
     h1: "Pooja Flowers in Bengaluru",
     intro: [
-      "Fresh flowers for daily pooja, festivals and temple offerings in Bengaluru (Bangalore): daily pooja flower packs, jasmine (malli / mallige), pooja flower boxes, pooja baskets and temple bulk flowers.",
+      "Fresh flowers for daily pooja, festivals and temple offerings in Bengaluru (Bangalore): loose pooja flowers, jasmine (malli / mallige), pooja flower boxes and baskets, gajra and torans, and bulk flowers for temples and functions.",
       "Loose and pooja flower prices move with the daily flower market, so items marked “market price” are quoted on WhatsApp for your date. For regular pooja flowers, see our flower subscriptions.",
     ],
     faqs: [
@@ -134,6 +144,7 @@ export const CATEGORY_LANDING: Record<string, LandingContent> = {
       AREA_FAQ,
     ],
     links: [
+      { href: "/categories/garlands", label: "Wedding garlands" },
       { href: "/categories/subscriptions", label: "Pooja flower subscriptions" },
       { href: "/categories/flowerbox", label: "Flower boxes" },
       { href: "/categories/baskets", label: "Flower baskets" },

@@ -13,6 +13,7 @@ import { parseShopFilters, withoutUnpricedBudget, matchesShopFilters, shopFilter
 import { makeJourney } from "../../utils/journey";
 import { whatsappLink } from "../../config/storefront";
 import { filterGroups, shopItemData, type Membership } from "../../data/occasionJourneys";
+import { BOUQUET_GROUP_GUIDANCE, POOJA_ENQUIRY_HREF, POOJA_ENQUIRY_POINTS, POOJA_PHOTO_NOTE, bouquetLine, bouquetPhotoAlt, isVaseArrangement } from "../../data/collectionGuidance";
 
 type CategoryMeta = {
   name: string;
@@ -28,9 +29,14 @@ interface Props {
   membership?: Membership | null;
   /** A sentence on what the listed prices cover (launch categories). */
   priceNote?: string;
+  /**
+   * Plain sections by product form (the pooja collection): jump links and a
+   * note per section, no filters. Every listed product is in exactly one.
+   */
+  sections?: { id: string; label: string; note: string | null; products: Product[] }[];
 }
 
-const { category, products: listedProducts, groups: listedGroups = [], membership = null, priceNote } = Astro.props;
+const { category, products: listedProducts, groups: listedGroups = [], membership = null, priceNote, sections = [] } = Astro.props;
 
 // Launch categories: each bouquet's occasions come from the admin's
 // assignments (product_occasions), never the catalogue's original tags; the
@@ -62,6 +68,9 @@ const shown = products.filter(matches).length;
 const contextualJourney = makeJourney(filters.occasion, filters.intent ?? "gift", shopFilterUrl(Astro.url.pathname, filters));
 const facets = countShopFacets(shopGroups, products.map((product) => shopItemData(product)), filters);
 const helpHref = whatsappLink("Hi Fresh Petals, please help me choose flowers.\nOccasions: " + (contextualJourney?.occasionLabel ?? "Please advise") + "\nPlease confirm availability, delivery and the complete price before I accept the order.");
+// Bouquet groups: how the designs in a group differ, read from their records.
+const guidanceFor = (groupId: string) => (category.slug === "bouquets" ? BOUQUET_GROUP_GUIDANCE[groupId] : undefined);
+const vaseArrangements = category.slug === "bouquets" ? products.filter(isVaseArrangement) : [];
 const breadcrumbJsonLd = {
   "@type": "BreadcrumbList",
   itemListElement: [
@@ -79,7 +88,7 @@ const breadcrumbJsonLd = {
   canonical={canonical}
   jsonLd={noindex || canonical ? [] : [breadcrumbJsonLd]}
 >
-  <main class="bg-ivory">
+  <main class="bg-ivory" data-track-list={landing ? category.slug : undefined}>
     <section class="px-5 py-10 md:px-8 md:py-16">
       <div class="mx-auto max-w-7xl">
         <div class="collection-head mb-10 md:mb-14">
@@ -153,7 +162,25 @@ const breadcrumbJsonLd = {
             <div class="space-y-14">
               {groups.map((group) => (
                 <section id={group.id} aria-labelledby={`${group.id}-title`} class="scroll-mt-28" data-shop-group hidden={!group.products.some(matches)}>
-                  <h2 id={`${group.id}-title`} class="fp-serif mb-5 text-2xl text-ink md:text-3xl">{group.label}</h2>
+                  <h2 id={`${group.id}-title`} class={`fp-serif text-2xl text-ink md:text-3xl ${guidanceFor(group.id) ? "mb-3" : "mb-5"}`}>{group.label}</h2>
+                  {guidanceFor(group.id) && (
+                    <div class="mb-6 max-w-3xl text-sm leading-7 text-moss" data-group-guidance={group.id}>
+                      <p>{guidanceFor(group.id)!.intro}</p>
+                      <ul class="mt-2 space-y-1">
+                        {group.products.map((product) => bouquetLine(product) && (
+                          <li>
+                            <a href={`/products/${product.slug}`} class="font-semibold text-ink underline underline-offset-4">{product.name}</a>: {bouquetLine(product)}
+                          </li>
+                        ))}
+                      </ul>
+                      <p class="mt-2">
+                        Often chosen for:{" "}
+                        {guidanceFor(group.id)!.links.map((link, index) => (
+                          <Fragment>{index > 0 && ", "}<a href={link.href} class="text-ink underline underline-offset-4">{link.label.toLowerCase()}</a></Fragment>
+                        ))}.
+                      </p>
+                    </div>
+                  )}
                   <div class="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
                     {group.products.map((product) => {
                       const data = shopItemData(product);
@@ -164,6 +191,7 @@ const breadcrumbJsonLd = {
                           id={product.id}
                             name={product.name}
                             image={product.image}
+                            imageAlt={category.slug === "bouquets" ? bouquetPhotoAlt(product) : undefined}
                             priceLabel={product.priceLabel}
                             priceType={product.priceType}
                             category={product.category}
@@ -185,10 +213,78 @@ const breadcrumbJsonLd = {
                   <a class="fp-btn" href={helpHref} data-filter-help target="_blank" rel="noopener noreferrer">Ask on WhatsApp</a>
                 </p>
               </div>
+              {category.slug === "bouquets" && (
+                <div class="max-w-3xl rounded-[24px] border border-line bg-paper p-6 text-sm leading-7 text-moss" data-presentation-note>
+                  <h2 class="text-base font-semibold text-ink">Wrapped bouquet or vase arrangement</h2>
+                  <p class="mt-2">
+                    {vaseArrangements.length > 0
+                      ? <Fragment>{vaseArrangements.map((product, index) => <Fragment>{index > 0 && ", "}<a href={`/products/${product.slug}`} class="font-semibold text-ink underline underline-offset-4">{product.name}</a></Fragment>)}{vaseArrangements.length === 1 ? " is" : " are"} arranged in a glass vase and can be placed straight on a table. The other bouquets are wrapped and tied, ready to hand over, and need a vase at home.</Fragment>
+                      : "These bouquets are wrapped and tied, ready to hand over, and need a vase at home."}{" "}
+                    A vase can be added to a wrapped bouquet when you choose its options. Say on WhatsApp if you would like a different wrapping.
+                  </p>
+                </div>
+              )}
               <p class="text-sm leading-7 text-moss">
                 Looking for something else?{" "}
                 <a href="/custom-orders" class="font-semibold text-ink underline underline-offset-4">Ask for a custom bouquet</a>.
               </p>
+            </div>
+          ) : sections.length > 0 ? (
+            <div data-form-sections>
+              <nav aria-label={`${category.name} by form`} class="-mx-1 mb-8 flex gap-2 overflow-x-auto px-1 py-1 md:flex-wrap md:overflow-visible">
+                {sections.map((section) => (
+                  <a href={`#${section.id}`} class="inline-flex min-h-[44px] shrink-0 items-center gap-1 rounded-full border border-line bg-paper px-4 text-[12px] font-semibold text-ink transition hover:border-ink">
+                    {section.label} <span class="text-moss">({section.products.length})</span>
+                  </a>
+                ))}
+              </nav>
+              <div class="space-y-14">
+                {sections.map((section) => (
+                  <section id={section.id} aria-labelledby={`${section.id}-title`} class="scroll-mt-28" data-form-section={section.id}>
+                    <h2 id={`${section.id}-title`} class="fp-serif mb-3 text-2xl text-ink md:text-3xl">{section.label}</h2>
+                    {section.note && <p class="mb-6 max-w-3xl text-sm leading-7 text-moss">{section.note}{section.id === "bulk" && <Fragment>{" "}For wedding garlands with photographs, see the <a href="/categories/garlands" class="font-semibold text-ink underline underline-offset-4">garland designs</a>.</Fragment>}</p>}
+                    <div class="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+                      {section.products.map((product) => (
+                        <ProductCard
+                          id={product.id}
+                          name={product.name}
+                          image={product.image}
+                          priceLabel={product.priceLabel}
+                          priceType={product.priceType}
+                          category={product.category}
+                          description={product.description}
+                          slug={product.slug}
+                          isAvailable={product.isAvailable}
+                        />
+                      ))}
+                    </div>
+                  </section>
+                ))}
+                <div class="grid max-w-5xl gap-6 md:grid-cols-[1.3fr_1fr]" data-pooja-enquiry>
+                  <div class="rounded-[24px] border border-line bg-paper p-6">
+                    <h2 class="text-base font-semibold text-ink">What to send us on WhatsApp</h2>
+                    <dl class="mt-3 space-y-3 text-sm leading-6">
+                      {POOJA_ENQUIRY_POINTS.map((point) => (
+                        <div>
+                          <dt class="font-semibold text-ink">{point.label}</dt>
+                          <dd class="text-moss">{point.detail}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                    <a href={POOJA_ENQUIRY_HREF} target="_blank" rel="noopener noreferrer" data-whatsapp-enquiry class="mt-5 inline-flex min-h-[44px] items-center rounded-full bg-berry px-6 text-sm font-semibold text-white transition hover:bg-berry-deep">
+                      Ask about pooja flowers on WhatsApp
+                    </a>
+                  </div>
+                  <div class="rounded-[24px] border border-line bg-linen p-6 text-sm leading-7 text-moss">
+                    <h2 class="text-base font-semibold text-ink">Loose flowers or a string?</h2>
+                    <p class="mt-2">
+                      Choose <a href="/products/jasmine-malli" class="font-semibold text-ink underline underline-offset-4">loose jasmine</a> if you will offer the flowers as they are or string them yourself, and
+                      <a href="/products/jasmine-gajra" class="font-semibold text-ink underline underline-offset-4"> jasmine gajra</a> if you want them already strung.
+                    </p>
+                    <p class="mt-3">{POOJA_PHOTO_NOTE}</p>
+                  </div>
+                </div>
+              </div>
             </div>
           ) : products.length > 0 ? (
             <div class="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">

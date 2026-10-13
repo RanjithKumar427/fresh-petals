@@ -193,7 +193,7 @@ export function getHeroCampaigns({ garlandsPublic }: { garlandsPublic: boolean }
       headline: { before: "Flowers for a beautiful ", accent: "beginning", after: "." },
       text: "Housewarming, pooja or a family celebration? Tell us what you’re planning and we’ll discuss the flowers with you on WhatsApp.",
       primary: { label: "Plan your flowers", href: "/custom-orders" },
-      secondary: garlandsPublic ? garlands : null,
+      secondary: { label: "Browse pooja flowers", href: "/categories/pooja-flowers" },
       image: scene("hero-pooja", "A basket of marigolds and white flowers beside a brass lamp and pooja tray, with marigold strings on a doorway behind."),
       print: { caption: "Beautiful beginnings", href: "/custom-orders", image: heroPicture(images["hero-pooja"].print) },
     },

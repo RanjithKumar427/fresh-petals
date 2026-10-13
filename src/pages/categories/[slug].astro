@@ -3,6 +3,7 @@ import { productCatalog, type Product } from "../../data/productCatalog";
 import { loadAuthoritativePrices, withAuthoritativePrice } from "../../server/services/ProductPricing";
 import { launchGroups } from "../../data/launchCatalogue";
 import CategoryPage from "../../components/category/CategoryPage.astro";
+import { poojaSections } from "../../data/collectionGuidance";
 
 type CategoryMeta = {
   name: string;
@@ -351,6 +352,8 @@ export async function getStaticPaths() {
   });
 }
 
+// The pooja collection is shown by product form (src/data/collectionGuidance.ts).
+const sections = Astro.params.slug === "pooja-flowers" ? poojaSections((Astro.props as { products: Product[] }).products) : [];
 const { category, products, groups } = Astro.props as {
   category: CategoryMeta;
   products: Product[];
@@ -358,4 +361,4 @@ const { category, products, groups } = Astro.props as {
 };
 ---
 
-<CategoryPage category={category} products={products} groups={groups} />
+<CategoryPage category={category} products={products} groups={groups} sections={sections} />

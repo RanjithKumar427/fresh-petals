@@ -209,7 +209,7 @@ test('hero campaigns: three slides with real destinations; garland routes only w
   const home = sourceLoader({ mocks: { 'src/server/services/ProductPricing.ts': { withAuthoritativePrice: (product) => product } } })('src/data/atelierHome.ts');
   const slides = json(home.getHeroCampaigns({ garlandsPublic: true }));
   assert.deepEqual(slides.map((slide) => slide.id), ['bouquets', 'garlands', 'pooja']);
-  assert.deepEqual(slides.map((slide) => [slide.primary.href, slide.secondary?.href]), [['/categories/bouquets', '/occasions'], ['/categories/garlands', '/custom-orders'], ['/custom-orders', '/categories/garlands']]);
+  assert.deepEqual(slides.map((slide) => [slide.primary.href, slide.secondary?.href]), [['/categories/bouquets', '/occasions'], ['/categories/garlands', '/custom-orders'], ['/custom-orders', '/categories/pooja-flowers']]);
   assert.equal(slides[0].headline.before + slides[0].headline.accent + slides[0].headline.after, 'Flowers that feel as special as the moment.');
   for (const slide of slides) {
     // Campaign imagery: no price, no delivery promise, and every file exists.
@@ -352,4 +352,52 @@ test('measurement: no tracker without an owner-supplied ID; events carry paths a
   const cart = readFileSync('src/pages/cart.astro', 'utf8');
   const event = cart.slice(cart.indexOf('fpTrack?.("basket_quote_request"'), cart.indexOf('fpTrack?.("basket_quote_request"') + 420);
   assert(/item_id/.test(event) && /request_type/.test(event) && !/name\.value|phone|pincode|note|message/i.test(event.replace('item.name', '')));
+});
+
+test('pooja discovery: menu, footer, homepage shortcut and the third hero slide link to the public pooja collection', () => {
+  const nav = load('src/data/navigation.ts');
+  const shop = nav.SITE_NAV.find((item) => item.label === 'Shop Flowers');
+  assert(shop.links.some((link) => link.href === '/categories/pooja-flowers' && link.label === 'Pooja flowers'));
+  assert(shop.links.some((link) => link.href === '/categories/bouquets') && shop.links.some((link) => link.href === '/categories/garlands'));
+  assert(journeys.homeShortcuts(empty()).some((link) => link.href === '/categories/pooja-flowers'));
+  assert(productCatalog.some((product) => product.collectionTags?.includes('pooja-flowers')));
+  // A link only: pooja is not a launch category, so no homepage range or occasion page changes.
+  assert(!load('src/data/launchCatalogue.ts').LAUNCH_CATEGORIES.some((category) => category.id === 'pooja'));
+});
+
+test('bouquet guidance is read from product records: flowers, wrapping or vase; no stems, sizes or amounts', () => {
+  const guide = load('src/data/collectionGuidance.ts');
+  const bySlug = (slug) => productCatalog.find((product) => product.slug === slug);
+  assert.equal(guide.bouquetPhotoAlt(bySlug('red-affair')), 'Red Affair: red roses and fresh rose foliage, in premium white wrapping');
+  assert.equal(guide.bouquetPresentation(bySlug('colour-pop-love')), 'in a glass vase');
+  assert.equal(guide.isVaseArrangement(bySlug('colour-pop-love')), true);
+  const launch = load('src/data/launchCatalogue.ts');
+  const bouquets = launch.launchProducts();
+  assert.deepEqual(json(bouquets.filter(guide.isVaseArrangement).map((product) => product.slug)), ['colour-pop-love']);
+  for (const product of bouquets) {
+    const line = guide.bouquetLine(product);
+    assert(line && !/₹|\d|stem/i.test(line), `${product.slug}: ${line}`);
+    for (const flower of product.flowerTypes) assert(line.toLowerCase().includes(flower.toLowerCase()));
+  }
+  assert.equal(guide.bouquetPhotoAlt({ name: 'Plain', flowerTypes: [], whatsIncluded: [] }), 'Plain');
+  assert.deepEqual(json(Object.keys(guide.BOUQUET_GROUP_GUIDANCE).sort()), json(launch.launchGroups('bouquets').map(({ group }) => group.id).sort()));
+  assert(!/₹|same[- ]day|express|guarantee|\d+\s?(stems|roses|hours)/i.test(JSON.stringify(guide.BOUQUET_GROUP_GUIDANCE)));
+});
+
+test('pooja sections: every product on the page appears exactly once; unknown products are kept; no pack size, price or delivery promise in the copy', () => {
+  const guide = load('src/data/collectionGuidance.ts');
+  const page = productCatalog.filter((product) => product.collectionTags?.includes('pooja-flowers') || product.category === 'Pooja Flowers');
+  const sections = guide.poojaSections(page);
+  const placed = sections.flatMap((section) => section.products.map((product) => product.slug));
+  assert.equal(placed.length, page.length);
+  assert.equal(new Set(placed).size, page.length);
+  assert(!sections.some((section) => section.id === 'more'), `unassigned: ${sections.find((section) => section.id === 'more')?.products.map((p) => p.slug)}`);
+  // Both similarly named boxes stay, as separate products.
+  assert(placed.includes('pooja-flower-box') && placed.includes('pooja-flowerbox'));
+  const withNew = guide.poojaSections([...page, { slug: 'new-pooja-item' }]);
+  assert.deepEqual(json(withNew.at(-1).products), [{ slug: 'new-pooja-item' }]);
+  assert.equal(guide.poojaSections([]).length, 0);
+  const copy = JSON.stringify([guide.POOJA_SECTIONS, guide.POOJA_ENQUIRY_POINTS, guide.POOJA_PHOTO_NOTE]);
+  assert(!/₹|\d+\s?(g|gm|grams|kg|ft|cm|pieces)|same[- ]day|every day|guarantee|free delivery/i.test(copy));
+  assert(/wa\.me\/919652012274/.test(guide.POOJA_ENQUIRY_HREF) && !/%E2%82%B9/.test(guide.POOJA_ENQUIRY_HREF));
 });

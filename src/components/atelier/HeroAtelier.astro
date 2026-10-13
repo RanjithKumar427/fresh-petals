@@ -44,12 +44,14 @@ const many = campaigns.length > 1;
 const needs = homeShortcuts(Astro.props.membership, Astro.props.publicGarlands);
 const garlands = needs.find((item) => item.href === "/categories/garlands");
 const ceremony = needs.find((item) => item.href.includes("for=ceremony"));
+const pooja = needs.find((item) => item.href === "/categories/pooja-flowers");
 const strip: { label: string; href: string; icon: string }[] = [
   ...heroOccasionLinks(Astro.props.membership)
     .filter((link) => link.href !== "/occasions")
     .map((link) => ({ ...link, icon: link.href.endsWith("/birthday") ? "cake" : "heart" })),
   ...(garlands ? [{ label: "Garlands", href: garlands.href, icon: "garland" }] : []),
   ...(ceremony ? [{ label: ceremony.href.includes("/wedding") ? "Wedding flowers" : "Engagement flowers", href: ceremony.href, icon: "rings" }] : []),
+  ...(pooja ? [{ label: pooja.label, href: pooja.href, icon: "lamp" }] : []),
   { label: "Custom orders", href: "/custom-orders", icon: "pencil" },
   ...(budget ? [{ label: "Under ₹1,500", href: budget.href, icon: "tag" }] : []),
 ];
@@ -59,6 +61,7 @@ const ICONS: Record<string, string[]> = {
   heart: ["M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.4A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"],
   garland: ["M4 4c0 9 3.5 15 8 15s8-6 8-15", "M6.2 11.2a1.3 1.3 0 1 0 .1 0", "M9.3 16.3a1.3 1.3 0 1 0 .1 0", "M14.7 16.3a1.3 1.3 0 1 0 .1 0", "M17.8 11.2a1.3 1.3 0 1 0 .1 0"],
   rings: ["M9 20a5 5 0 1 0 0-10 5 5 0 0 0 0 10z", "M15 20a5 5 0 1 0 0-10 5 5 0 0 0 0 10z", "M10.5 6.5 12 4l1.5 2.5L12 8z"],
+  lamp: ["M4 14h16c0 3.3-3.6 6-8 6s-8-2.7-8-6z", "M12 11c1.6-1.7 1.6-3.9 0-6-1.6 2.1-1.6 4.3 0 6z"],
   pencil: ["M4 20l1-4.5L15.5 5a2 2 0 0 1 2.8 0l.7.7a2 2 0 0 1 0 2.8L8.5 19z", "M13.5 7l3.5 3.5"],
   tag: ["M4 12.5V5.5A1.5 1.5 0 0 1 5.5 4h7l7.5 7.5a1.5 1.5 0 0 1 0 2.1l-5.4 5.4a1.5 1.5 0 0 1-2.1 0z", "M8.5 8.5h.01"],
 };

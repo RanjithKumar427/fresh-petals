@@ -18,6 +18,8 @@ interface Props {
   isAvailable?: boolean;
   whatsappText?: string;
   journey?: Journey | null;
+  /** Description of the photograph; the product name when not given. */
+  imageAlt?: string;
 }
 
 const {
@@ -32,6 +34,7 @@ const {
   isAvailable = true,
   whatsappText,
   journey = null,
+  imageAlt,
 } = Astro.props;
 
 const whatsappNumber = "919652012274";
@@ -96,7 +99,7 @@ const priceBadgeShort =
         src={image}
         srcset={srcset}
         sizes={srcset ? "(min-width: 1024px) 23vw, (min-width: 768px) 31vw, 48vw" : undefined}
-        alt={name}
+        alt={imageAlt ?? name}
         width={dimensions?.width}
         height={dimensions?.height}
         loading="lazy"

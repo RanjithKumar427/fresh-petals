@@ -369,6 +369,8 @@ export function homeShortcuts(_membership: Membership, publicGarlands: GarlandDe
     ...(bouquets ? [{ label: "Browse bouquets", href: "/categories/bouquets", primary: true }] : []),
     ...(garlands ? [{ label: "Choose garlands", href: "/categories/garlands" }] : []),
     ...(ceremonyRoute ? [{ label: "Flowers for a ceremony", href: `/occasions/${ceremonyRoute}?for=ceremony` }] : []),
+    // The pooja collection is a prebuilt public page (src/data/navigation.ts).
+    { label: "Pooja flowers", href: "/categories/pooja-flowers" },
     { label: "Help me choose", href: "/occasions" },
   ];
 }
