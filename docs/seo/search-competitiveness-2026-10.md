@@ -1,6 +1,6 @@
 # Search-competitiveness release, 13 October 2026
 
-Follows the "FreshPetals versus FNP: search visibility gap audit" (13 Oct 2026). Local commit and preview only: not pushed, merged or deployed. No ranking is promised or claimed, and a passing check here is not evidence of search improvement.
+Follows the "FreshPetals versus FNP: search visibility gap audit" (13 Oct 2026). It went live on 13 October 2026 (see "Release record"). No ranking is promised or claimed, and a passing check here is not evidence of search improvement.
 
 Base: `origin/main` at `b55f3c0`.
 
@@ -76,6 +76,32 @@ No page was redirected and no cannibalisation is asserted; that needs query-by-p
 4. Flowers on record for the three bouquets whose titles stayed plain.
 5. Separate photographs for loose jasmine, gajra and the pooja packs; better originals for small garland photographs.
 6. Genuine completed-order feedback, with consent.
+
+## Release record
+
+| | |
+|---|---|
+| Release commit | `6fd99e1` on `main`, fast-forward from `b55f3c0` (the rollback reference); no force-push |
+| Pushed | 13 Oct 2026, 21:22:54 IST (15:52:54 UTC) |
+| Vercel deployment | `https://fresh-petals-84mpbc7hr-ranjiths-projects-1491695d.vercel.app`, production, serving `https://onlyfreshpetals.in`. GitHub deployment 7043273842 records commit `6fd99e1`, state success. |
+| First seen serving the release | 13 Oct 2026, 21:24:10 IST (15:54:10 UTC), on the homepage |
+
+Live verification, 13 Oct 2026 (drafts captured, nothing sent; inquiry requests aborted in the browser; no database or admin write):
+
+| Check | Result |
+|---|---|
+| Release checks against production at 375, 390, 768 and 1440 px | PASS, 28 of 28 |
+| All Flowers first in Shop Flowers on desktop and mobile, in the footer, and linked from the homepage and the bouquet collection | PASS |
+| All Flowers: 51 products in five groups (32, 9, 6, 2, 2), each once, with jump links | PASS |
+| "View our 8 featured bouquets" on the homepage; hero unchanged | PASS |
+| Titles on Red Affair, Blush Lily Letter, First Love and Jasmine / Malli; garland title keeps its FP-G code | PASS |
+| Stem range only on bouquets and qualified; no stem line on loose jasmine or gajra; care notes in place of a grade | PASS |
+| Quote-only labels with no amount; priced products keep their labels; All Flowers to product draft names the product, its link and the recipient city | PASS |
+| GA4: one tag per page on five pages; page views and WhatsApp clicks accepted (204); page URLs without queries; only the referring site's origin sent | PASS |
+| No broken photographs or horizontal overflow | PASS |
+| 156 garlands, fifteen city links, `sitemap.xml` unchanged, `/admin` redirects to sign-in | PASS |
+
+A first attempt at the live run failed because of a brief network drop on the checking machine; the site answered normally a minute later and the run above is the repeat.
 
 ## Deployment handoff
 
