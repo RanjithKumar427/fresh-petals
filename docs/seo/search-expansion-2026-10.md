@@ -75,3 +75,33 @@ Record the release date (13 October 2026) beside the first export. Search Consol
 - Pack sizes or units for the pooja products (grams, length, pieces). Until recorded, the page says they are confirmed on WhatsApp.
 - Own photographs for the pooja products that share a category picture: Daily Pooja Flowers, Temple Bulk Flowers, Pooja Basket and Event Garlands share one; Jasmine / Malli, Pooja Flower Box (flowerbox), Jasmine / Malli Subscription and Jasmine Gajra share another.
 - Whether subscriptions, torans and gajra are offered now. They are listed and priced in the catalogue, but the launch notes mark torans and veni as not yet ready. If they are not offered, they should be unpublished rather than hidden from this page.
+
+## Release record
+
+| | |
+|---|---|
+| Release commit | `297aa03` on `main` (fast-forward from `d5349f1`, no force-push) |
+| Pushed | 13 Oct 2026, 12:06:48 IST (06:36:48 UTC) |
+| Vercel deployment | `fresh-petals-1po1qlabm`, target production, status Ready, created 12:06:52 IST (06:36:52 UTC). GitHub deployment 7031836126 records commit `297aa03`. |
+| First seen serving the release | 13 Oct 2026, 12:08:21 IST (06:38:21 UTC), on `https://onlyfreshpetals.in/categories/pooja-flowers` |
+| Affected URLs | `/`, `/categories/bouquets`, `/categories/pooja-flowers`; the menu and footer on every page |
+
+Live verification, 13 Oct 2026 (after go-live):
+
+| Check | Result |
+|---|---|
+| HTTP 200, titles, H1s, canonicals and robots on the three pages equal to the baseline table above | PASS |
+| `sitemap.xml` identical to the verified build (157 URLs) | PASS |
+| Pooja flowers link in the desktop menu, mobile menu, footer and shortcut strip; slide three's "Browse pooja flowers" opens the collection; links work without JavaScript | PASS |
+| Bouquets: 8 designs, three groups with guidance and occasion links, photograph descriptions, no amounts in the HTML | PASS |
+| Pooja: 11 products, prices equal to the pre-release list, five sections, jump links, WhatsApp draft to the shop's number with no amount | PASS |
+| No horizontal overflow at 360, 390, 768 and 1440 px on the three pages; all 11 pooja photographs load | PASS |
+| Hero: three slides and headline; Garlands menu link; 156 garland codes on the listing | PASS |
+| Quote-only suite | 75 of 76. The one flag is the long-standing one: priced pooja suggestions under "You may also like" on the Event Garlands page. |
+| Basket and draft suite (drafts captured, nothing sent or recorded) | 7 of 7 |
+| Previous search-release suite | 50 of 50 |
+| Comparison against the previous production deployment's own URL | BLOCKED: that URL requires a Vercel login. The baseline table and the pre-release price list were used instead. |
+
+Search Console baseline, 13 Oct 2026: **unavailable**. The verified Domain property still shows "Processing data, please check again in a day or so" with no queries, pages or impressions. No sitemap had been submitted when last checked (12 Oct). There is therefore no pre-release figure for non-brand impressions, query coverage or landing-page coverage.
+
+For the first comparison, use two equal and complete periods that both end at least three days before the export, with 13 October 2026 marked as the release date. If Search Console's data begins after the release, the first period is a starting point, not a before-and-after. Measure non-brand impressions, the number of query families with impressions, and the number of landing pages with impressions, as described above. No search improvement is claimed from this release.
