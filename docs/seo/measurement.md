@@ -12,9 +12,9 @@ Nothing is recorded until the owner sets `PUBLIC_GA_MEASUREMENT_ID` (see `owner-
 | `whatsapp_enquiry_click` | a direct WhatsApp enquiry link or button is tapped | `item_id`, `item_category`, `link_type` (`card`, `page`, `site`) |
 | `basket_quote_request` | the basket is sent on WhatsApp | `item_id` (slugs), `item_category`, `item_count`, `request_type` (`price_request` or `order_request`) |
 
-Every event also carries `page_path` and `landing_path` (the first page of the visit, path only). Never sent: names, phone numbers, addresses, recipient details, card messages or the WhatsApp text.
+Every event also carries `page_path` and `landing_path` (the first page of the visit, path only). From the national-coverage release, an event also carries `destination_city` (a city slug such as `mumbai`) when the visitor has chosen a recipient city or is on a city page; city pages report `view_item_list` with `item_category` `city:<slug>`. The city is where the flowers are going, not where the visitor is. Never sent: names, phone numbers, addresses, recipient details, card messages or the WhatsApp text.
 
-In GA4, once the property exists: register `landing_path`, `item_category`, `link_type` and `request_type` as event-scoped custom dimensions, and mark `whatsapp_enquiry_click` and `basket_quote_request` as key events.
+In GA4, once the property exists: register `landing_path`, `item_category`, `link_type`, `request_type` and `destination_city` as event-scoped custom dimensions, and mark `whatsapp_enquiry_click` and `basket_quote_request` as key events.
 
 ## Enquiries are not orders
 

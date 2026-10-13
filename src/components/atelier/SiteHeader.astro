@@ -5,7 +5,7 @@
 // existing menu entry. Menu data: src/data/navigation.ts.
 import Wordmark from "./Wordmark.astro";
 import { SITE_NAV } from "../../data/navigation";
-import { whatsappLink } from "../../config/storefront";
+import { LOCATIONS_PATH, serviceCityCount } from "../../data/serviceCities";
 
 interface Props {
   /** A compact homepage header; other pages keep their existing navigation. */
@@ -13,7 +13,6 @@ interface Props {
 }
 const { home = false } = Astro.props;
 const primaryNav = home ? SITE_NAV.filter((item) => item.href !== "/about" && item.href !== "/contact") : SITE_NAV;
-const deliveryHref = whatsappLink("Hi Fresh Petals, can you deliver to my address?\nDelivery area: \nDate: ");
 
 const path = Astro.url.pathname.replace(/\/+$/, "") || "/";
 const isCurrent = (href: string) => path === href || (href !== "/" && path.startsWith(href + "/"));
@@ -24,10 +23,10 @@ const isCurrent = (href: string) => path === href || (href !== "/" && path.start
 </a>
 
 {home && (
-  <aside class="delivery-notice" aria-label="Initial delivery areas">
-    <a href={deliveryHref} target="_blank" rel="noopener noreferrer">
-      <span>Bengaluru · Chamarajpet &amp; Basavanagudi</span>
-      <span class="delivery-notice__check">Check your address <span aria-hidden="true">↗</span></span>
+  <aside class="delivery-notice" aria-label="Delivery cities">
+    <a href={LOCATIONS_PATH} data-delivery-notice>
+      <span data-delivery-notice-text>Delivery across India · {serviceCityCount()} cities</span>
+      <span class="delivery-notice__check"><span data-delivery-notice-action>See the cities</span> <span aria-hidden="true">→</span></span>
     </a>
   </aside>
 )}
@@ -39,7 +38,7 @@ const isCurrent = (href: string) => path === href || (href !== "/" && path.start
         Menu
       </button>
     )}
-    <a href="/" class="site-header__brand" aria-label="Fresh Petals Bengaluru — home">
+    <a href="/" class="site-header__brand" aria-label="Fresh Petals — home">
       <Wordmark />
     </a>
 
@@ -160,6 +159,35 @@ const isCurrent = (href: string) => path === href || (href !== "/" && path.start
 <script>
   import { getCartCount } from "../../utils/cart";
   import { getSavedCount, SAVED_UPDATED_EVENT } from "../../utils/saved";
+  import { DESTINATION_UPDATED_EVENT, cityName, getDestination, resolveDestination } from "../../utils/destination";
+
+  // Recipient city ------------------------------------------------------
+  // Runs on every page: a shop link opened with ?city=<slug>, or a city page,
+  // sets the destination when none is decided (src/utils/destination.ts).
+  // Garland enquiry links then carry it to the live enquiry check, and the
+  // homepage strip names it.
+  resolveDestination();
+  function applyDestination() {
+    const destination = getDestination();
+    document.querySelectorAll<HTMLAnchorElement>('a[href^="/garland-enquiry"]').forEach((link) => {
+      const url = new URL(link.href);
+      if (url.searchParams.get("city") === destination) return;
+      if (destination) url.searchParams.set("city", destination);
+      else url.searchParams.delete("city");
+      link.href = url.pathname + url.search;
+    });
+    const text = document.querySelector("[data-delivery-notice-text]");
+    const action = document.querySelector("[data-delivery-notice-action]");
+    const name = cityName(destination);
+    if (text && action && name) {
+      text.textContent = `Delivering to ${name}`;
+      action.textContent = "Change city";
+    }
+  }
+  applyDestination();
+  window.addEventListener(DESTINATION_UPDATED_EVENT, applyDestination);
+  // Listings that add garland cards later (filters, "show more").
+  document.addEventListener("fresh-petals-shop-updated", applyDestination);
 
   // Counts -------------------------------------------------------------
   let previousCount = -1;

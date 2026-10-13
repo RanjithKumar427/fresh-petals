@@ -1,13 +1,15 @@
-// The city this storefront serves. Delivery lookups only honour
-// delivery_zones rows whose `city` matches, so zones seeded for any other
-// city (the existing rows are all Hyderabad) are never presented to a
-// customer as deliverable here — they fall through to the same
-// "we'll confirm manually on WhatsApp" answer as an unknown pincode.
+// The city whose delivery_zones rows the website's delivery ESTIMATOR will
+// quote. This is not the service area: orders are taken for every city in
+// src/data/serviceCities.ts. The estimator is narrower on purpose. It only
+// quotes a fee or a slot from a delivery_zones row whose `city` matches, and
+// the existing rows (all Hyderabad, seeded for an earlier storefront with
+// fees and same-day flags nobody has confirmed since) are never quoted.
 //
-// Bengaluru delivery zones (pincodes, fees, same-day/morning capability)
-// are a pending business decision: none are invented in code or seeded.
-// Once they exist in delivery_zones with city "Bengaluru" (or "Bangalore"),
-// the pincode checker and homepage area list pick them up with no code
+// So for every pincode today the estimator answers "Delivery charges will be
+// confirmed on WhatsApp", which is a statement about the estimate, never
+// that a city is unavailable. No fee, pincode or same-day capability is
+// invented in code or seeded. When the owner confirms zones for a city, add
+// its rows (and its name here) and the checker quotes them with no other
 // change.
 export const STOREFRONT_CITY = "Bengaluru";
 

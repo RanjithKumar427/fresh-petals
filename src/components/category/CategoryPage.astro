@@ -46,13 +46,13 @@ const withOccasions = (product: Product): Product => (membership ? { ...product,
 const products = listedProducts.map(withOccasions);
 const groups = listedGroups.map((group) => ({ ...group, products: group.products.map(withOccasions) }));
 
-// Search landing copy for the categories mapped to a distinct Bengaluru
+// Search landing copy for the categories mapped to a distinct
 // search intent (src/data/seoLanding.ts); every other category keeps its
 // existing title/description. Empty categories stay reachable from the
 // menu but are noindexed (and left out of sitemap.xml) — a page with no
 // products is not a useful search result.
 const landing = CATEGORY_LANDING[category.slug];
-const pageTitle = landing?.title ?? `${category.name} | Fresh Petals Bengaluru`;
+const pageTitle = landing?.title ?? `${category.name} | Fresh Petals`;
 const pageDescription = landing?.description ?? category.description;
 const pageHeading = landing?.h1 ?? category.name;
 const fromPrice = landing ? lowestPrice(products) : null;
@@ -130,7 +130,7 @@ const breadcrumbJsonLd = {
             </span>
 
             <span class="rounded-full border border-line bg-paper px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-moss">
-              Delivery area confirmed on WhatsApp
+              Recipient city and delivery confirmed on WhatsApp
             </span>
           </div>
           </div>

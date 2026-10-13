@@ -2,6 +2,8 @@ import type { APIRoute } from "astro";
 import { productCatalog, type Product } from "../data/productCatalog";
 import { getStaticPaths as getCategoryStaticPaths } from "./categories/[slug].astro";
 import { CANONICAL_CATEGORY, NOINDEX_CATEGORY_SLUGS, NOINDEX_STATIC_PAGES } from "../data/seoLanding";
+import { LOCATIONS_PATH, hubPath, publishedHubs } from "../data/serviceCities";
+import { CITY_HUBS, cityHub } from "../data/cityHubs";
 
 // Prerendered — built once at build time from the exact same real data
 // every other page already uses, not a second, parallel catalogue.
@@ -65,12 +67,24 @@ export const GET: APIRoute = async ({ site }) => {
   // assignments and are listed by the live sitemap-occasions.xml.
   // The garland listing, its flower collections and the garland guide follow
   // garland publication, so the live sitemap-garlands.xml lists them. No
-  // <lastmod>: prebuilt pages carry no reliable modification date.
+  // <lastmod> for these: prebuilt pages carry no reliable modification date.
   const paths = [...staticPages.filter((path) => !NOINDEX_STATIC_PAGES.has(path)), "/categories/bouquets", ...categoryPaths, ...productPaths];
 
-  const urlEntries = paths
-    .map((path) => `  <url><loc>${new URL(path, site).toString()}</loc></url>`)
-    .join("\n");
+  // The city directory and the published city pages only: a city without a
+  // page has no URL to list. Their <lastmod> is the date their content was
+  // last written (src/data/cityHubs.ts), not the time of the build.
+  const hubs = publishedHubs().flatMap((city) => {
+    const hub = cityHub(city.slug);
+    const path = hubPath(city);
+    return hub && path ? [{ path, lastmod: hub.updated }] : [];
+  });
+  const latest = CITY_HUBS.map((hub) => hub.updated).sort().at(-1);
+  const cityEntries = [{ path: LOCATIONS_PATH, lastmod: latest }, ...hubs];
+
+  const urlEntries = [
+    ...paths.map((path) => `  <url><loc>${new URL(path, site).toString()}</loc></url>`),
+    ...cityEntries.map(({ path, lastmod }) => `  <url><loc>${new URL(path, site).toString()}</loc>${lastmod ? `<lastmod>${lastmod}</lastmod>` : ""}</url>`),
+  ].join("\n");
 
   const body = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">

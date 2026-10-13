@@ -68,12 +68,12 @@ const jsonLd = product
 // when there is one; the catalogue's placeholder ("… — design FP-G001.") does not.
 const written = product && !/— design FP-G\d+\.$/.test(product.description) ? product.description.replace(/([^.!?])$/, "$1.") : "";
 const metaDescription = product
-  ? `${written || product.garland.image.alt.replace(/([^.!?])$/, "$1.")} Design ${product.garland.code}, made to order by Fresh Petals in Bengaluru. Price on WhatsApp.`
+  ? `${written || product.garland.image.alt.replace(/([^.!?])$/, "$1.")} Design ${product.garland.code}, made to order by Fresh Petals. Price on WhatsApp.`
   : "This page isn't available.";
 ---
 
 <BaseLayout
-  title={product ? `${product.name} (${product.garland.code}) | Fresh Petals Bengaluru` : "Not available | Fresh Petals Bengaluru"}
+  title={product ? `${product.name} (${product.garland.code}) | Fresh Petals` : "Not available | Fresh Petals"}
   description={metaDescription}
   image={product?.image}
   jsonLd={noindex ? [] : jsonLd}

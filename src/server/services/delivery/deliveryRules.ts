@@ -108,7 +108,7 @@ export function evaluateDeliveryMethod(
 
   if (!zone) {
     return unavailable(
-      "We couldn't confirm delivery for this pincode yet. Please continue on WhatsApp and we'll confirm manually."
+      "Delivery charges will be confirmed on WhatsApp. No estimate is available for this pincode on the website."
     );
   }
 

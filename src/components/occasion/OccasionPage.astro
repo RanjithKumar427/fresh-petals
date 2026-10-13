@@ -54,13 +54,13 @@ const ceremonyDesigns = GARLAND_OCCASION_ROUTES.has(occasion.slug) ? (await load
 // CEREMONY_INDEXABLE_OCCASIONS are offered to search on that basis.
 const ceremonyLanding = ceremonyDesigns.length > 0 && CEREMONY_INDEXABLE_OCCASIONS.has(occasion.slug) ? WEDDING_LANDING : null;
 const listsNothing = products.length === 0 && ceremonyDesigns.length === 0;
-const pageTitle = ceremonyLanding?.title ?? landing?.title ?? `${occasion.name} Flowers | Fresh Petals Bengaluru`;
+const pageTitle = ceremonyLanding?.title ?? landing?.title ?? `${occasion.name} Flowers | Fresh Petals`;
 const pageDescription = ceremonyLanding
   ? ceremonyLanding.description
   : listsNothing
     ? `Our ${journey.label.toLowerCase()} range isn't online yet. Ask Fresh Petals on WhatsApp.`
     : products.length === 0
-      ? `${occasion.name} ceremony garlands from Fresh Petals Bengaluru, made to order. Price and availability on WhatsApp.`
+      ? `${occasion.name} ceremony garlands from Fresh Petals, made to order for delivery across India. Price and availability on WhatsApp.`
       : (landing?.description ?? occasion.description);
 const pageHeading = ceremonyLanding?.h1 ?? landing?.h1 ?? (journey.kind === "calm" ? "Condolence & Sympathy Flowers" : `${occasion.name} Flowers`);
 const fromPrice = lowestPrice(products);
@@ -135,7 +135,7 @@ const breadcrumbJsonLd = {
 
 <BaseLayout title={pageTitle} description={pageDescription} noindex={noindex} jsonLd={noindex ? [] : [breadcrumbJsonLd]} showCategoryCarousel={false}>
   <main class="occ" style={`--band:${journey.palette.band};--accent:${journey.palette.accent}`}>
-    <OccasionHeader journey={journey} heading={pageHeading} eyebrow={journey.kind === "calm" ? "With sympathy" : `${journey.label} · Bengaluru`} lede={lede} photo={headerPhoto} todayHref={todayEnquiry} />
+    <OccasionHeader journey={journey} heading={pageHeading} eyebrow={journey.kind === "calm" ? "With sympathy" : `${journey.label} · Delivery across India`} lede={lede} photo={headerPhoto} todayHref={todayEnquiry} />
 
     <div
       class="occ__shop"

@@ -1,0 +1,147 @@
+---
+// /locations: every city we take orders for, from the registry
+// (src/data/serviceCities.ts). Cities with a published page link to it; every
+// other city has a WhatsApp enquiry that names it. No link ever points at a
+// city page that does not exist. Everything works without scripts; the name
+// filter and the recipient-city control are enhancements.
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import DestinationCity from "../../components/DestinationCity.astro";
+import { LOCATIONS_PATH, citiesByRegion, hubPath, publishedHubs, serviceCityCount } from "../../data/serviceCities";
+import { cityEnquiryHref } from "../../utils/cityEnquiry";
+
+const regions = citiesByRegion();
+const count = serviceCityCount();
+const hubs = publishedHubs();
+const title = "Flower Delivery Cities in India | Fresh Petals";
+const description = `The ${count} cities Fresh Petals takes flower orders for, by region. Choose the recipient city, then confirm availability, price and delivery details on WhatsApp.`;
+const breadcrumbJsonLd = {
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Home", item: new URL("/", Astro.site).toString() },
+    { "@type": "ListItem", position: 2, name: "Delivery cities", item: new URL(LOCATIONS_PATH, Astro.site).toString() },
+  ],
+};
+---
+
+<BaseLayout title={title} description={description} showCategoryCarousel={false} jsonLd={[breadcrumbJsonLd]}>
+  <main class="bg-ivory" data-locations>
+    <section class="px-5 py-10 md:px-8 md:py-14">
+      <div class="mx-auto max-w-7xl">
+        <nav aria-label="Breadcrumb">
+          <p class="fp-eyebrow">
+            <a href="/" class="hover:underline">Home</a> <span aria-hidden="true">/</span> <span aria-current="page">Delivery cities</span>
+          </p>
+        </nav>
+
+        <div class="mt-3 grid gap-8 md:grid-cols-[1.2fr_1fr] md:gap-14">
+          <div>
+            <h1 class="fp-h1">Cities we deliver flowers to</h1>
+            <div class="mt-4 max-w-2xl space-y-3 text-sm leading-7 text-moss md:text-base">
+              <p>
+                We take orders for bouquets, wedding garlands and pooja flowers in <strong class="text-ink" data-city-count>{count}</strong> cities across India. Find the recipient's city below.
+              </p>
+              <p>
+                Being listed means we take orders for that city. It is not a promise of same-day delivery, a fixed delivery charge or every address: share the date and the address, and we confirm availability, price and delivery details on WhatsApp before you pay.
+              </p>
+            </div>
+          </div>
+
+          <div class="rounded-[18px] border border-line bg-paper p-5 md:p-6">
+            <h2 class="fp-serif text-lg text-ink">Where are the flowers going?</h2>
+            <DestinationCity class="mt-3" label="Recipient city" />
+            <p class="mt-4 text-sm leading-6 text-moss">
+              Then choose from <a href="/categories/bouquets" class="underline underline-offset-4 hover:text-berry">bouquets</a>,
+              <a href="/categories/garlands" class="underline underline-offset-4 hover:text-berry">wedding garlands</a> or
+              <a href="/categories/pooja-flowers" class="underline underline-offset-4 hover:text-berry">pooja flowers</a>. The city goes with your order.
+            </p>
+          </div>
+        </div>
+
+        <section class="mt-10" aria-labelledby="city-pages">
+          <h2 id="city-pages" class="fp-h2">City pages</h2>
+          <p class="mt-2 max-w-2xl text-sm leading-7 text-moss">These {hubs.length} cities have their own page, with designs and advice chosen for that city. More are being written.</p>
+          <ul class="mt-5 flex flex-wrap gap-2">
+            {hubs.map((city) => (
+              <li>
+                <a href={hubPath(city)} class="inline-flex min-h-[44px] items-center rounded-full border border-ink bg-paper px-5 text-sm font-semibold text-ink transition hover:bg-ink hover:text-paper">
+                  Flowers for {city.name}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <div class="locations-filter mt-10" data-city-filter-wrap>
+          <label for="city-filter" class="block text-[10px] font-bold uppercase tracking-[0.22em] text-berry">Find a city</label>
+          <input id="city-filter" type="search" autocomplete="off" placeholder="Type a city name, e.g. Mysuru or Mysore" data-city-filter class="mt-2 w-full max-w-md rounded-full border border-line-strong bg-paper px-5 py-3 text-sm text-ink outline-none placeholder:text-sage-deep focus:border-berry" />
+          <p class="mt-2 text-sm text-moss" data-city-filter-status role="status" aria-live="polite"></p>
+        </div>
+
+        {
+          regions.map((region) => (
+            <section class="mt-10" aria-labelledby={`region-${region.key}`} data-city-region>
+              <h2 id={`region-${region.key}`} class="fp-h2">
+                {region.label} <span class="text-base font-normal text-moss">· {region.cities.length} cities</span>
+              </h2>
+              <ul class="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {region.cities.map((city) => {
+                  const hub = hubPath(city);
+                  return (
+                    <li class="flex items-center justify-between gap-3 rounded-[14px] border border-line bg-paper px-4 py-3" data-city={city.slug} data-city-names={[city.name, ...city.aliases].join("|").toLowerCase()}>
+                      <div class="min-w-0">
+                        <h3 class="text-sm font-semibold text-ink">{hub ? <a href={hub} class="underline decoration-line underline-offset-4 hover:text-berry">{city.name}</a> : city.name}</h3>
+                        <p class="text-xs text-moss">{city.state}</p>
+                      </div>
+                      {hub ? (
+                        <a href={hub} aria-label={`Flowers for ${city.name}: city page`} class="inline-flex min-h-[44px] shrink-0 items-center rounded-full border border-ink px-4 text-xs font-semibold text-ink transition hover:bg-ink hover:text-paper">City page</a>
+                      ) : (
+                        <a href={cityEnquiryHref(city.name)} target="_blank" rel="noopener noreferrer" data-city-enquiry={city.slug} aria-label={`Ask about flowers for ${city.name} on WhatsApp`} class="inline-flex min-h-[44px] shrink-0 items-center rounded-full bg-berry px-4 text-xs font-semibold text-white transition hover:bg-berry-deep">Ask on WhatsApp</a>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          ))
+        }
+
+        <section class="mt-12 max-w-3xl">
+          <h2 class="fp-h2">A city that is not listed</h2>
+          <p class="mt-3 text-sm leading-7 text-moss">
+            Ask us. Send the city, the date and what you would like, and we tell you whether we can take the order.
+          </p>
+          <a href="/contact" class="mt-4 inline-flex min-h-[44px] items-center rounded-full border border-ink px-5 text-sm font-semibold text-ink transition hover:bg-ink hover:text-paper">Contact Fresh Petals</a>
+        </section>
+      </div>
+    </section>
+  </main>
+</BaseLayout>
+
+<style>
+  /* The filter only works with scripts; without them the full list is the page. */
+  .locations-filter {
+    display: none;
+  }
+  :global(html.js) .locations-filter {
+    display: block;
+  }
+</style>
+
+<script>
+  const input = document.querySelector<HTMLInputElement>("[data-city-filter]");
+  const status = document.querySelector<HTMLElement>("[data-city-filter-status]");
+  const items = [...document.querySelectorAll<HTMLElement>("[data-city]")];
+  const regions = [...document.querySelectorAll<HTMLElement>("[data-city-region]")];
+  input?.addEventListener("input", () => {
+    const query = input.value.trim().toLowerCase();
+    let shown = 0;
+    for (const item of items) {
+      const match = !query || (item.dataset.cityNames ?? "").split("|").some((name) => name.includes(query));
+      item.style.display = match ? "" : "none";
+      item.toggleAttribute("data-city-hidden", !match);
+      if (match) shown++;
+    }
+    for (const region of regions) region.hidden = !region.querySelector("[data-city]:not([data-city-hidden])");
+    if (status) status.textContent = query ? (shown ? `${shown} ${shown === 1 ? "city matches" : "cities match"}.` : "No listed city matches. Ask us on WhatsApp and we will tell you.") : "";
+  });
+</script>

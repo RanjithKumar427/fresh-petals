@@ -13,8 +13,10 @@
 //   basket_quote_request   the basket was sent on WhatsApp (sent by cart.astro)
 // Each carries the page path, the session's landing path (path only, no
 // query), a category and — where there is one — the design code or product
-// slug. An enquiry is a click, not an order: completed orders are recorded
-// by hand (scripts/seo/report.mjs).
+// slug, and the recipient city (a registry slug such as "mumbai") when the
+// visitor has chosen one or is on a city page. The city is where the flowers
+// are going, not where the visitor is. An enquiry is a click, not an order:
+// completed orders are recorded by hand (scripts/seo/report.mjs).
 //
 // Never sent: names, phone numbers, addresses, recipient details, card
 // messages or the WhatsApp message text.
@@ -48,8 +50,24 @@ const enabled = /^G-[A-Z0-9]{4,}$/.test(measurementId);
       });
     }
 
+    // Destination city: the stored choice, else the city page in view. Only a
+    // lower-case slug ever leaves here; never an address or a pincode.
+    var destinationCity = function () {
+      var slug = "";
+      try {
+        slug = localStorage.getItem("fresh_petals_destination_city") || "";
+      } catch (e) {}
+      if (!slug) {
+        var context = document.querySelector("[data-city-context]");
+        slug = (context && context.getAttribute("data-city-context")) || "";
+      }
+      return /^[a-z][a-z-]{1,40}$/.test(slug) ? slug : "";
+    };
+
     window.fpTrack = function (name, params) {
       var data = { page_path: path(location.pathname), landing_path: landing };
+      var city = destinationCity();
+      if (city) data.destination_city = city;
       for (var key in params || {}) if (params[key] !== undefined && params[key] !== null && params[key] !== "") data[key] = String(params[key]).slice(0, 100);
       try {
         document.dispatchEvent(new CustomEvent("fp:track", { detail: { name: name, params: data } }));

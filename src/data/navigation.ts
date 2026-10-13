@@ -29,7 +29,10 @@ const shopLinks: NavLink[] = [
   ...(GARLAND_PREVIEW ? [{ label: "Garlands / Poola Mala — draft preview", href: "/categories/garlands" }] : []),
 ];
 
-const occasionLinks: NavLink[] = populatedOccasions().map(({ label, href }) => ({ label, href }));
+// The occasion index leads the menu, so "Shop by Occasion" always has a real
+// destination of its own (/occasions), whatever the assignments are.
+export const OCCASIONS_HREF = "/occasions";
+const occasionLinks: NavLink[] = [{ label: "All occasions", href: OCCASIONS_HREF }, ...populatedOccasions().map(({ label, href }) => ({ label, href }))];
 
 export const CUSTOM_ORDERS_HREF = "/custom-orders";
 
@@ -37,7 +40,7 @@ export const SITE_NAV: NavItem[] = [
   { label: "Shop Flowers", href: readyCategories()[0]?.href ?? "/categories/bouquets", links: shopLinks },
   {
     label: "Shop by Occasion",
-    href: occasionLinks[0]?.href ?? CUSTOM_ORDERS_HREF,
+    href: OCCASIONS_HREF,
     links: occasionLinks,
     extra: { label: "Another occasion? Ask for a custom order", href: CUSTOM_ORDERS_HREF },
   },

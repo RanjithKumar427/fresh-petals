@@ -22,11 +22,13 @@ export type GarlandEnquiry = {
   occasion?: string | null;
   /** What it's for, e.g. "For the ceremony" (optional). */
   purpose?: string | null;
+  /** Recipient city's display name, from the registry (optional). */
+  city?: string | null;
 };
 
 const UNIT_WORDS = { single: ["garland", "garlands"], pair: ["pair", "pairs"], set: ["set", "sets"] } as const;
 
-export function garlandEnquiryText({ code, title, quantity, unit = null, options = [], url, occasion = null, purpose = null }: GarlandEnquiry): string {
+export function garlandEnquiryText({ code, title, quantity, unit = null, options = [], url, occasion = null, purpose = null, city = null }: GarlandEnquiry): string {
   const count = Math.max(1, Math.floor(quantity) || 1);
   const unitWord = unit ? ` ${UNIT_WORDS[unit][count === 1 ? 0 : 1]}` : "";
   const lines = [
@@ -39,6 +41,7 @@ export function garlandEnquiryText({ code, title, quantity, unit = null, options
   );
   if (url) lines.push(`Link: ${url}`);
   if (purpose) lines.push(`For: ${purpose}`);
+  if (city) lines.push(`Recipient city: ${city}`);
   lines.push(occasion ? `Occasion: ${occasion}` : "Occasion: ", "Date (optional): ", "Delivery area (optional): ", "", QUOTE_ONLY_CLOSING);
   return lines.join("\n");
 }
@@ -58,6 +61,7 @@ export function garlandEnquiryHref({
   options = [],
   occasion,
   purpose,
+  city,
 }: {
   code: string;
   quantity?: number;
@@ -65,10 +69,13 @@ export function garlandEnquiryHref({
   /** Occasion route the shopper came from (validated by the enquiry check). */
   occasion?: string | null;
   purpose?: "ceremony" | "gift" | null;
+  /** Recipient city slug (validated against the registry by the enquiry check). */
+  city?: string | null;
 }): string {
   const params = new URLSearchParams({ code, qty: String(Math.max(1, Math.floor(quantity) || 1)) });
   for (const option of options) params.append("opt", `${option.name}::${option.value}`);
   if (occasion) params.set("occ", occasion);
   if (purpose) params.set("for", purpose);
+  if (city) params.set("city", city);
   return `${GARLAND_ENQUIRY_PATH}?${params.toString()}`;
 }

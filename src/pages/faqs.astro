@@ -1,4 +1,6 @@
 ---
+import { serviceCityCount } from "../data/serviceCities";
+const cityCount = serviceCityCount();
 import BaseLayout from "../layouts/BaseLayout.astro";
 
 const faqs = [
@@ -13,9 +15,8 @@ const faqs = [
       "Bouquet and garland prices are sent to you on WhatsApp once you choose a design. Pooja flowers, jasmine, bulk flowers, and event flowers depend on the daily flower market price. Final price is confirmed on WhatsApp before payment.",
   },
   {
-    question: "Do you deliver across Bengaluru?",
-    answer:
-      "Not yet. We're starting with Chamarajpet and Basavanagudi. If you're nearby, message us on WhatsApp: we confirm whether we can deliver to your address, the delivery timing and the final total including delivery before you pay.",
+    question: "Which cities do you deliver to?",
+    answer: `We take orders for ${cityCount} cities across India, listed on the delivery cities page (/locations). Tell us the recipient city, the address and the date on WhatsApp: we confirm whether we can deliver there on that date, and the final total including delivery, before you pay. We do not promise same-day delivery or a fixed delivery charge on this website.`,
   },
   {
     question: "Can I order pooja flowers daily?",
@@ -56,15 +57,15 @@ const faqs = [
 ---
 
 <BaseLayout
-  title="FAQs | Fresh Petals Bengaluru"
-  description="Frequently asked questions about Fresh Petals Bengaluru flower delivery, pooja flowers, bouquets, jasmine, garlands, bulk orders and WhatsApp ordering."
+  title="FAQs | Fresh Petals"
+  description="Frequently asked questions about Fresh Petals flower delivery across India, pooja flowers, bouquets, jasmine, garlands, bulk orders and WhatsApp ordering."
 >
   <main class="bg-ivory">
     <section class="px-5 py-12 md:px-8 md:py-16">
       <div class="mx-auto max-w-4xl">
         <div class="mb-10 text-center">
           <p class="fp-eyebrow">
-            Fresh Petals Bengaluru
+            Fresh Petals
           </p>
 
           <h1 class="fp-h1 mt-3">

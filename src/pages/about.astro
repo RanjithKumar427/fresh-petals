@@ -1,4 +1,6 @@
 ---
+import { serviceCityCount } from "../data/serviceCities";
+const cityCount = serviceCityCount();
 // About: only verified facts about how Fresh Petals works today. No founding
 // story, address, team, ratings or claims — those need the owner's own
 // words (listed in the launch report) before they can be added here.
@@ -15,8 +17,8 @@ const facts = [
     text: "Choose online, then send your basket on WhatsApp. We confirm availability, delivery timing and the final total, including delivery, before you pay. No payment is taken on this website.",
   },
   {
-    title: "Starting close to home",
-    text: "Deliveries start in Chamarajpet and Basavanagudi, Bengaluru. If you're nearby, ask — we'll tell you whether we can reach your address.",
+    title: "From two neighbourhoods to cities across India",
+    text: `We began with deliveries in Chamarajpet and Basavanagudi, Bengaluru. We now take orders for ${cityCount} cities across India; tell us the recipient city and address and we confirm whether we can deliver there.`,
   },
   {
     title: "Made for your occasion",
@@ -26,8 +28,8 @@ const facts = [
 ---
 
 <BaseLayout
-  title="About Fresh Petals | Flowers in Bengaluru"
-  description="Fresh Petals is a WhatsApp-first flower shop in Bengaluru making hand-tied rose, lily and mixed-flower bouquets, starting with Chamarajpet and Basavanagudi."
+  title="About Fresh Petals | Flowers Ordered on WhatsApp"
+  description={`Fresh Petals is a WhatsApp-first flower shop that began in Bengaluru and now takes orders for ${cityCount} cities across India: hand-tied bouquets, wedding garlands and pooja flowers.`}
   showCategoryCarousel={false}
 >
   <main class="bg-ivory">
@@ -37,7 +39,7 @@ const facts = [
           <p class="fp-eyebrow">About Fresh Petals</p>
           <h1 class="fp-serif mt-4 text-3xl leading-tight text-ink md:text-5xl">A small flower shop, ordered on WhatsApp</h1>
           <p class="mt-5 text-sm leading-7 text-moss md:text-base">
-            Fresh Petals makes hand-tied bouquets in Bengaluru. You choose online, and we confirm everything with you in
+            Fresh Petals began in Bengaluru and now takes flower orders for cities across India. You choose online, and we confirm everything with you in
             a WhatsApp chat before you pay.
           </p>
         </div>

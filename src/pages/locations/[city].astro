@@ -1,0 +1,328 @@
+---
+// /locations/<city>: a city page for a published hub in the registry
+// (src/data/serviceCities.ts). Words: src/data/cityHubs.ts. Products are read
+// when the page is rendered from the same public sources as the rest of the
+// shop (launch bouquet groups, the admin's occasion assignments, public
+// garland designs, pooja records), so nothing unpublished is listed and the
+// page carries the cache tags an admin save already purges.
+//
+// A city without a published hub, an unknown name, or anything else answers
+// 404. An alias of a published hub (/locations/bangalore) redirects to its
+// one canonical page.
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import LandingDetails from "../../components/LandingDetails.astro";
+import DestinationCity from "../../components/DestinationCity.astro";
+import { HUB_PHOTO_NOTE, cityHub, type HubSource } from "../../data/cityHubs";
+import { CITY_PARAM, LOCATIONS_PATH, findCity, hasHub, serviceCityCount } from "../../data/serviceCities";
+import { launchGroups } from "../../data/launchCatalogue";
+import { productCatalog, type Product } from "../../data/productCatalog";
+import { giftProducts, launchSlugs } from "../../data/occasionJourneys";
+import { loadOccasionMembership } from "../../server/services/OccasionMembership";
+import { loadAuthoritativePrices, withAuthoritativePrice } from "../../server/services/ProductPricing";
+import { isListedGarland, loadGarlands, type GarlandProduct } from "../../data/garlands";
+import { GARLAND_FILTER_LABELS, garlandPhotoSrcset } from "../../data/garlandRules";
+import { garlandEnquiryHref } from "../../utils/garlandEnquiry";
+import { bouquetLine, bouquetPhotoAlt, bouquetPresentation, isVaseArrangement } from "../../data/collectionGuidance";
+import { QUOTE_ONLY_ENQUIRE_LABEL, QUOTE_ONLY_PRICE_LABEL, isQuoteOnly } from "../../shared/quoteOnly";
+import { photoDimensions, photoVariants } from "../../data/photoManifest";
+import { cityEnquiryHref, cityProductEnquiryHref } from "../../utils/cityEnquiry";
+import { GARLAND_CACHE_TAG, OCCASION_INDEX_TAG, occasionCacheHeaders, occasionTag } from "../../server/services/GarlandWebsite";
+
+export const prerender = false;
+
+// Any other spelling of a published hub ("Mumbai", "bangalore") goes to its one address.
+const requested = Astro.params.city ?? "";
+const city = findCity(requested);
+if (city && hasHub(city) && city.slug !== requested) return Astro.redirect(`${LOCATIONS_PATH}/${city.slug}`, 301);
+const hub = city && hasHub(city) ? cityHub(city.slug) : null;
+if (!city || !hub) return Astro.rewrite("/404");
+
+// Fresh for the same reasons as the pages these products come from: garland
+// publication and occasion assignments change without a deployment.
+const occasionRoutes = [...new Set(hub.sections.flatMap((section) => section.sources).flatMap((source) => (source.kind === "occasion" ? [source.route] : [])))];
+for (const [name, value] of Object.entries(occasionCacheHeaders([GARLAND_CACHE_TAG, OCCASION_INDEX_TAG, ...occasionRoutes.map(occasionTag)]))) Astro.response.headers.set(name, value);
+
+const needsGarlands = hub.sections.some((section) => section.sources.some((source) => source.kind === "garlands"));
+const [priceMap, membership, garlands] = await Promise.all([
+  loadAuthoritativePrices(),
+  loadOccasionMembership(launchSlugs()),
+  needsGarlands ? loadGarlands().then((list) => list.filter((product) => isListedGarland(product.garland))) : Promise.resolve([] as GarlandProduct[]),
+]);
+
+type Card = {
+  key: string;
+  name: string;
+  href: string;
+  image: { src: string; srcset?: string; width?: number; height?: number; alt: string; contain: boolean };
+  /** A design code (garlands). */
+  code?: string;
+  /** Price label: the quote-only label, or the product's published price. */
+  price: string;
+  /** One line for the comparison list, from the record. */
+  line: string | null;
+  enquiryHref: string;
+  enquiryLabel: string;
+  garland: boolean;
+};
+
+const origin = Astro.site ?? Astro.url;
+const withCity = (path: string) => `${path}?${CITY_PARAM}=${city.slug}`;
+
+function productCard(product: Product): Card {
+  const priced = withAuthoritativePrice(product, priceMap);
+  const quoteOnly = isQuoteOnly(product);
+  const isBouquet = /^(bouquets|lilies)$/i.test(product.category);
+  const variants = photoVariants[product.image];
+  return {
+    key: product.slug,
+    name: product.name,
+    href: withCity(`/products/${product.slug}`),
+    image: {
+      src: product.image,
+      srcset: variants ? Object.entries(variants).map(([width, path]) => `${path} ${width}w`).join(", ") : undefined,
+      width: photoDimensions[product.image]?.width,
+      height: photoDimensions[product.image]?.height,
+      alt: isBouquet ? bouquetPhotoAlt(product) : product.name,
+      contain: false,
+    },
+    price: quoteOnly ? QUOTE_ONLY_PRICE_LABEL : priced.priceLabel,
+    line: isBouquet ? bouquetLine(product) : product.description,
+    enquiryHref: cityProductEnquiryHref({ name: product.name, url: new URL(`/products/${product.slug}`, origin).toString(), cityName: city!.name, quoteOnly, priceLabel: priced.priceLabel }),
+    enquiryLabel: quoteOnly ? QUOTE_ONLY_ENQUIRE_LABEL : "Order on WhatsApp",
+    garland: false,
+  };
+}
+
+function garlandCard(product: GarlandProduct): Card {
+  const design = product.garland;
+  const flowers = design.filters.map((key) => GARLAND_FILTER_LABELS.find((filter) => filter.key === key)?.label).filter(Boolean).join(" · ");
+  return {
+    key: product.slug,
+    name: design.title,
+    href: withCity(`/products/${product.slug}`),
+    image: { src: design.image.path, srcset: garlandPhotoSrcset(design.image, 480), width: design.image.width, height: design.image.height, alt: design.image.alt, contain: true },
+    code: design.code,
+    price: QUOTE_ONLY_PRICE_LABEL,
+    line: flowers ? `Main flower: ${flowers}.` : null,
+    // Through the live enquiry check, like every garland card.
+    enquiryHref: garlandEnquiryHref({ code: design.code, quantity: 1, city: city!.slug }),
+    enquiryLabel: QUOTE_ONLY_ENQUIRE_LABEL,
+    garland: true,
+  };
+}
+
+const bouquetGroups = launchGroups("bouquets");
+const bySlug = (slug: string) => productCatalog.find((product) => product.slug === slug);
+
+// Each product once per page: a source picks from what the page has not
+// shown yet, so two occasions that share a bouquet still list different ones.
+const seen = new Set<string>();
+const fresh = <T extends { slug: string }>(products: T[], limit = Infinity): T[] => {
+  const picked = products.filter((product) => !seen.has(product.slug)).slice(0, limit);
+  for (const product of picked) seen.add(product.slug);
+  return picked;
+};
+
+function cardsFor(source: HubSource): Card[] {
+  switch (source.kind) {
+    case "bouquet-mix":
+      return bouquetGroups.flatMap(({ products }) => fresh(products, source.each)).map(productCard);
+    case "occasion":
+      return fresh(giftProducts(source.route, membership), source.limit).map(productCard);
+    case "presentation": {
+      const bouquets = bouquetGroups.flatMap(({ products }) => products);
+      const wrapped = fresh(bouquets.filter((product) => !isVaseArrangement(product) && bouquetPresentation(product)), 1);
+      return [...wrapped, ...fresh(bouquets.filter(isVaseArrangement), 1)].map(productCard);
+    }
+    case "garlands":
+      return source.filters.flatMap((filter) => fresh(garlands.filter((product) => product.garland.filters.includes(filter)), source.each)).map(garlandCard);
+    case "pooja":
+      return fresh(source.slugs.map(bySlug).filter((product): product is Product => !!product)).map(productCard);
+  }
+}
+
+// A section with nothing public is not shown.
+const sections = hub.sections.map((section) => ({ ...section, cards: section.sources.flatMap(cardsFor) })).filter((section) => section.cards.length > 0);
+
+const path = `${LOCATIONS_PATH}/${city.slug}`;
+const enquiryHref = cityEnquiryHref(city.name);
+const breadcrumbJsonLd = {
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Home", item: new URL("/", Astro.site).toString() },
+    { "@type": "ListItem", position: 2, name: "Delivery cities", item: new URL(LOCATIONS_PATH, Astro.site).toString() },
+    { "@type": "ListItem", position: 3, name: city.name, item: new URL(path, Astro.site).toString() },
+  ],
+};
+const steps = [
+  { label: "Choose", detail: "Open a design from this page or from the collections and add it to your basket, or enquire about it directly." },
+  { label: "Tell us where and when", detail: `Your order is marked for ${city.name}. Add the date and the recipient's address when you send it. No pincode is needed to start.` },
+  { label: "We confirm on WhatsApp", detail: "Availability for your date, the price and the delivery charge are confirmed before you pay. Nothing is charged on this website." },
+];
+---
+
+<BaseLayout title={hub.title} description={hub.description} image={sections[0]?.cards[0]?.image.src} showCategoryCarousel={false} jsonLd={[breadcrumbJsonLd]}>
+  <main class="bg-ivory" data-city-context={city.slug} data-track-list={`city:${city.slug}`}>
+    <section class="px-5 py-10 md:px-8 md:py-14">
+      <div class="mx-auto max-w-7xl">
+        <nav aria-label="Breadcrumb">
+          <p class="fp-eyebrow">
+            <a href="/" class="hover:underline">Home</a> <span aria-hidden="true">/</span>
+            <a href={LOCATIONS_PATH} class="hover:underline">Delivery cities</a> <span aria-hidden="true">/</span>
+            <span aria-current="page">{city.name}</span>
+          </p>
+        </nav>
+
+        <div class="mt-3 grid gap-8 md:grid-cols-[1.2fr_1fr] md:gap-14">
+          <div>
+            <h1 class="fp-h1">{hub.h1}</h1>
+            <p class="mt-4 text-sm font-semibold leading-7 text-ink md:text-base">{hub.emphasis}</p>
+            <div class="mt-3 max-w-2xl space-y-3 text-sm leading-7 text-moss md:text-base">
+              {hub.intro.map((paragraph) => <p>{paragraph}</p>)}
+            </div>
+          </div>
+
+          <div class="rounded-[18px] border border-line bg-paper p-5 md:p-6" data-city-order>
+            <h2 class="fp-serif text-lg text-ink">Ordering for {city.name}</h2>
+            <p class="mt-2 text-sm leading-6 text-moss">
+              {city.name} is one of {serviceCityCount()} cities we take orders for. Share the date and the address; we confirm availability, price and delivery details on WhatsApp.
+            </p>
+            <a href={enquiryHref} target="_blank" rel="noopener noreferrer" data-city-enquiry={city.slug} class="mt-4 inline-flex min-h-[48px] items-center justify-center rounded-full bg-berry px-6 text-sm font-semibold text-white transition hover:bg-berry-deep">
+              Ask about flowers for {city.name} on WhatsApp
+            </a>
+            <DestinationCity class="mt-5" label="Recipient city for your order" />
+          </div>
+        </div>
+
+        <nav aria-label="On this page" class="mt-8 flex flex-wrap gap-2">
+          {
+            sections.map((section) => (
+              <a href={`#${section.id}`} class="inline-flex min-h-[44px] items-center rounded-full border border-line bg-paper px-4 text-sm text-ink transition hover:border-berry hover:text-berry">
+                {section.heading}
+              </a>
+            ))
+          }
+          <a href="#ordering" class="inline-flex min-h-[44px] items-center rounded-full border border-line bg-paper px-4 text-sm text-ink transition hover:border-berry hover:text-berry">How ordering works</a>
+        </nav>
+      </div>
+    </section>
+
+    {
+      sections.map((section) => (
+        <section id={section.id} class="scroll-mt-24 border-t border-line px-5 py-10 md:px-8 md:py-14" data-city-section={section.id}>
+          <div class="mx-auto max-w-7xl">
+            <div class="grid gap-6 md:grid-cols-[1fr_1.1fr] md:gap-14">
+              <div>
+                <h2 class="fp-h2">{section.heading}</h2>
+                <div class="mt-4 space-y-3 text-sm leading-7 text-moss md:text-base">
+                  {section.body.map((paragraph) => <p>{paragraph}</p>)}
+                </div>
+              </div>
+              {section.cards.some((card) => card.line) && (
+                <div class="rounded-[18px] border border-line bg-paper p-5 md:p-6" data-city-compare>
+                  <h3 class="text-sm font-semibold text-ink">{section.compareHeading}</h3>
+                  <dl class="mt-3 space-y-3 text-sm leading-6">
+                    {section.cards.filter((card) => card.line).map((card) => (
+                      <div>
+                        <dt class="font-semibold text-ink">
+                          <a href={card.href} class="underline decoration-line underline-offset-4 hover:text-berry">{card.name}</a>
+                          {card.code && <span class="font-normal text-moss"> · {card.code}</span>}
+                        </dt>
+                        <dd class="text-moss">{card.line}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </div>
+              )}
+            </div>
+
+            <ul class="mt-8 grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5 lg:grid-cols-4">
+              {section.cards.map((card) => (
+                <li>
+                  <article class="city-card group relative flex h-full flex-col overflow-hidden rounded-[18px] border border-line bg-paper" data-city-card={card.key} data-quote-only={card.price === QUOTE_ONLY_PRICE_LABEL ? "true" : "false"}>
+                    <div class:list={["relative bg-linen", card.garland ? "aspect-[4/5]" : "aspect-square"]}>
+                      <img
+                        src={card.image.src}
+                        srcset={card.image.srcset}
+                        sizes={card.image.srcset ? "(min-width: 1024px) 23vw, (min-width: 768px) 31vw, 48vw" : undefined}
+                        width={card.image.width}
+                        height={card.image.height}
+                        alt={card.image.alt}
+                        loading="lazy"
+                        decoding="async"
+                        class:list={["absolute inset-0 h-full w-full", card.image.contain ? "object-contain" : "object-cover"]}
+                      />
+                      {card.code && <span class="absolute left-2 top-2 rounded-full bg-paper/95 px-2.5 py-1 text-[10px] font-semibold tracking-[0.12em] text-ink">{card.code}</span>}
+                    </div>
+                    <div class="flex flex-1 flex-col px-3 pb-3 pt-2.5">
+                      <h3 class="text-[14px] font-semibold leading-snug text-ink">
+                        <a href={card.href} class="city-card__link group-hover:text-berry">{card.name}</a>
+                      </h3>
+                      <p class="mt-1.5 text-[13px] font-semibold text-ink" data-city-card-price>{card.price}</p>
+                      <a href={card.enquiryHref} target="_blank" rel="noopener noreferrer" data-garland-quote={card.code} class="relative z-20 mt-auto inline-flex min-h-[44px] items-center justify-center rounded-full bg-berry px-3 pt-0 text-center text-[11px] font-semibold leading-tight text-white transition hover:bg-berry-deep" style="margin-top:0.75rem">
+                        {card.enquiryLabel}
+                      </a>
+                    </div>
+                  </article>
+                </li>
+              ))}
+            </ul>
+
+            <ul class="mt-6 flex flex-wrap gap-2">
+              {section.links.map((link) => (
+                <li>
+                  <a href={link.href} class="inline-flex min-h-[44px] items-center rounded-full border border-line px-4 text-sm text-moss transition hover:border-berry hover:text-berry">{link.label}</a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+      ))
+    }
+
+    <section id="ordering" class="scroll-mt-24 border-t border-line bg-paper px-5 py-10 md:px-8 md:py-14">
+      <div class="mx-auto max-w-5xl">
+        <h2 class="fp-h2">How ordering works for {city.name}</h2>
+        <ol class="mt-6 grid gap-5 md:grid-cols-3">
+          {steps.map((step, index) => (
+            <li class="rounded-[18px] border border-line bg-ivory p-5">
+              <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-berry">Step {index + 1}</p>
+              <h3 class="mt-2 text-base font-semibold text-ink">{step.label}</h3>
+              <p class="mt-2 text-sm leading-6 text-moss">{step.detail}</p>
+            </li>
+          ))}
+        </ol>
+        <p class="mt-6 max-w-3xl text-sm leading-7 text-moss">
+          We do not promise same-day or timed delivery on this website, and delivery charges are not fixed here: both are confirmed for your address and date on WhatsApp. {HUB_PHOTO_NOTE}
+        </p>
+        <div class="mt-6 flex flex-wrap gap-3">
+          <a href={enquiryHref} target="_blank" rel="noopener noreferrer" data-city-enquiry={city.slug} class="inline-flex min-h-[48px] items-center justify-center rounded-full bg-berry px-6 text-sm font-semibold text-white transition hover:bg-berry-deep">
+            Ask about flowers for {city.name} on WhatsApp
+          </a>
+          <a href={LOCATIONS_PATH} class="inline-flex min-h-[48px] items-center justify-center rounded-full border border-ink px-6 text-sm font-semibold text-ink transition hover:bg-ink hover:text-paper">
+            All {serviceCityCount()} delivery cities
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <LandingDetails content={{ faqs: hub.faqs, links: hub.links }} />
+  </main>
+</BaseLayout>
+
+<style>
+  /* The name is the link; its hit area covers the card (one link, one tab stop). */
+  .city-card__link::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+  }
+  .city-card__link:focus-visible {
+    outline: none;
+  }
+  .city-card:has(.city-card__link:focus-visible) {
+    outline: 2px solid var(--color-berry);
+    outline-offset: 2px;
+  }
+</style>

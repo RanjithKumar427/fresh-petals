@@ -13,6 +13,7 @@
 // /api/delivery/check, same DELIVERY_METHOD_OPTIONS, same fail-closed
 // behavior. See src/utils/deliveryCheck.ts for the shared fetch helper.
 import { DELIVERY_METHOD_OPTIONS } from "../server/services/delivery/DeliveryService";
+import DestinationCity from "./DestinationCity.astro";
 import { productCatalog, type Product } from "../data/productCatalog";
 import { loadAuthoritativePrices, withAuthoritativePrice } from "../server/services/ProductPricing";
 import { isQuoteOnly } from "../shared/quoteOnly";
@@ -90,11 +91,9 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
   data-product-category={product.category}
   data-whatsapp-number={whatsappNumber}
 >
-  <!-- Area context — purely storefront display of what AreaSelector
-       already wrote to localStorage; never the delivery decision. -->
-  <p data-area-context class="mb-3 hidden items-center gap-1.5 text-xs font-medium text-moss">
-    📍 Delivering to <span data-area-context-name class="font-semibold text-ink"></span>
-  </p>
+  <!-- Recipient city: visible, editable, never required. One value for the
+       product draft and the basket (src/utils/destination.ts). -->
+  <DestinationCity class="mb-4" label="Recipient city" />
 
   <!-- Journey A — Simple Order: no fields, just product + area. -->
   <button
@@ -202,7 +201,7 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
         data-delivery-status
         class="mt-3 rounded-2xl border border-line bg-paper px-4 py-2 text-center text-sm text-moss"
       >
-        Enter your pincode to check delivery
+        Enter the pincode for a delivery charge estimate, where one is available
       </p>
 
       <!-- Time slot — revealed once a date is chosen; real methods, real
@@ -445,7 +444,7 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
 <script>
   import { addToCart } from "../utils/cart";
   import { QUOTE_ONLY_CLOSING, isQuoteOnly } from "../shared/quoteOnly";
-  import { getSelectedArea, AREA_UPDATED_EVENT } from "../utils/area";
+  import { cityName, getDestination } from "../utils/destination";
   import { checkDeliveryMethod } from "../utils/deliveryCheck";
   import { journeyLines, readJourney, makeJourney, journeyHref } from "../utils/journey";
 
@@ -542,28 +541,8 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
     };
   }
 
-  // ---------------------------------------------------------------------
-  // Area context (display only — never the delivery decision)
-  // ---------------------------------------------------------------------
-  function renderAreaContext(area: string | null) {
-    const context = document.querySelector<HTMLElement>("[data-area-context]");
-    const nameEl = document.querySelector<HTMLElement>("[data-area-context-name]");
-    if (!context || !nameEl) return;
-
-    if (area) {
-      nameEl.textContent = area;
-      context.classList.remove("hidden");
-      context.classList.add("flex");
-    } else {
-      context.classList.add("hidden");
-      context.classList.remove("flex");
-    }
-  }
-
-  renderAreaContext(getSelectedArea());
-  window.addEventListener(AREA_UPDATED_EVENT, ((event: CustomEvent<{ area: string }>) => {
-    renderAreaContext(event.detail.area);
-  }) as EventListener);
+  // The recipient city's name for drafts, or null when none is chosen.
+  const recipientCity = () => cityName(getDestination());
 
   // ---------------------------------------------------------------------
   // Journey A — Simple Order: "Order on WhatsApp", no fields.
@@ -590,14 +569,14 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
       return;
     }
 
-    const area = getSelectedArea();
+    const area = recipientCity();
 
     const quoteLines = [
       `Hi Fresh Petals, I'd like to enquire about ${meta.name}.`,
       "Quantity: 1",
       `Link: ${productUrl(meta.slug)}`,
       ...journeyLines(currentJourney()),
-      ...(area ? [`Delivery area: ${area}`] : []),
+      ...(area ? [`Recipient city: ${area}`] : []),
       "",
       QUOTE_ONLY_CLOSING,
     ].join("\n");
@@ -617,7 +596,7 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
           `Link: ${productUrl(meta.slug)}`,
           ...journeyLines(currentJourney()),
           "",
-          "Delivery area:",
+          "Recipient city:",
           area,
           "",
           "Please confirm availability, final price and delivery details.",
@@ -746,7 +725,7 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
     const pincode = deliveryPincodeInput?.value.trim() || "";
 
     if (!/^[0-9]{6}$/.test(pincode)) {
-      deliveryStatus.textContent = "Enter your pincode to check delivery";
+      deliveryStatus.textContent = "Enter the pincode for a delivery charge estimate, where one is available";
       deliveryStatus.className = `${DELIVERY_STATUS_BASE_CLASS} border-line bg-paper text-moss`;
       return;
     }
@@ -767,12 +746,12 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
         deliveryStatus.textContent = `Delivery available in ${result.data.area} • ₹${result.data.fee} delivery fee`;
         deliveryStatus.className = `${DELIVERY_STATUS_BASE_CLASS} border-mint-line bg-mint-soft text-ink`;
       } else {
-        deliveryStatus.textContent = "We'll confirm delivery for this pincode on WhatsApp";
+        deliveryStatus.textContent = "Delivery charges will be confirmed on WhatsApp";
         deliveryStatus.className = `${DELIVERY_STATUS_BASE_CLASS} border-rose bg-linen text-berry`;
       }
     } catch {
       if (thisRequest !== serviceabilityRequestToken) return;
-      deliveryStatus.textContent = "We'll confirm delivery for this pincode on WhatsApp";
+      deliveryStatus.textContent = "Delivery charges will be confirmed on WhatsApp";
       deliveryStatus.className = `${DELIVERY_STATUS_BASE_CLASS} border-rose bg-linen text-berry`;
     }
   }
@@ -937,6 +916,7 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
       `Link: ${productUrl(meta.slug)}`,
       "",
       "DELIVERY",
+      ...(recipientCity() ? [`Recipient city: ${recipientCity()}`] : []),
       `Pincode: ${pincode}`,
       `Date: ${deliveryDate}`,
       ...deliveryLines,

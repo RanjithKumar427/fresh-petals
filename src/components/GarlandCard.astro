@@ -41,8 +41,6 @@ const quoteHref = garlandEnquiryHref({ code: design.code, quantity: 1, occasion:
   data-garland-card
   data-garland-filters={design.filters.join(" ")}
 >
-  <a href={href} data-journey-link class="absolute inset-0 z-10" aria-label={`${design.title}, design ${design.code}`}></a>
-
   <div class="relative aspect-[4/5] bg-linen">
     <img
       src={design.image.path}
@@ -66,7 +64,10 @@ const quoteHref = garlandEnquiryHref({ code: design.code, quantity: 1, occasion:
   </div>
 
   <div class="flex flex-1 flex-col px-3 pb-3 pt-2.5">
-    <h3 class="text-[14px] font-semibold leading-snug text-ink group-hover:text-berry">{design.title}</h3>
+    {/* The name is the link (crawlable text); its hit area covers the whole card, so there is one link and one tab stop. */}
+    <h3 class="text-[14px] font-semibold leading-snug text-ink group-hover:text-berry">
+      <a href={href} data-journey-link class="garland-card__link">{design.title}<span class="sr-only">, design {design.code}</span></a>
+    </h3>
     {filterLabels && <p class="mt-1 text-[11px] text-moss">{filterLabels}</p>}
     <p class="mt-1.5 text-[13px] font-semibold text-ink">{price ?? QUOTE_ONLY_PRICE_LABEL}</p>
 
@@ -93,3 +94,19 @@ const quoteHref = garlandEnquiryHref({ code: design.code, quantity: 1, occasion:
     }
   </div>
 </article>
+
+<style>
+  .garland-card__link::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+  }
+  .garland-card__link:focus-visible {
+    outline: none;
+  }
+  article:has(.garland-card__link:focus-visible) {
+    outline: 2px solid var(--color-berry);
+    outline-offset: 2px;
+  }
+</style>

@@ -1,14 +1,18 @@
-// Search-landing copy for the pages that answer distinct Bengaluru
-// (Bangalore) flower searches. One entry per search intent, mapped to an
-// existing page — no neighbourhood or keyword doorway pages.
+// Search-landing copy for the pages that answer distinct flower searches.
+// One entry per search intent, mapped to an existing page. These pages are
+// national: the homepage is the brand and coverage destination, and a search
+// that names a city belongs to that city's page (/locations/<city>,
+// src/data/cityHubs.ts) where one is published. No neighbourhood or keyword
+// doorway pages.
 //
 // Every claim here is either a verified fact about how ordering works
 // (cart → WhatsApp; availability, final price, slot and fee confirmed there
 // before payment; no payment taken on the website — see cart.astro) or is
 // computed at build time from the catalogue and the database prices the
-// page itself shows (product counts, lowest "From ₹" price). No delivery
-// speed, same-day, coverage, rating or discount claims: none are confirmed
-// for Bengaluru yet.
+// page itself shows (product counts, lowest "From ₹" price). Coverage is the
+// owner-confirmed city list (src/data/serviceCities.ts). No delivery speed,
+// same-day, fee, rating or discount claims: none are confirmed.
+import { COVERAGE_SENTENCE, serviceCityCount } from "./serviceCities";
 
 export type LandingLink = { href: string; label: string };
 export type LandingFaq = { question: string; answer: string };
@@ -31,12 +35,12 @@ const ORDERING_FAQ: LandingFaq = {
     "Add flowers to your cart and send it to us on WhatsApp. We confirm availability, the final price, your delivery date, slot and fee there before you pay. No payment is taken on this website.",
 };
 
-// Initial delivery coverage, as stated by the owner. No fee, time window
-// or wider coverage is claimed.
-const AREA_FAQ: LandingFaq = {
-  question: "Which parts of Bengaluru do you deliver to?",
-  answer:
-    "We're starting with Chamarajpet and Basavanagudi. If you're nearby, message us on WhatsApp: we confirm whether we can deliver to your address, the delivery timing and the final total including delivery before you pay.",
+// Delivery coverage, as confirmed by the owner: the cities in the registry.
+// The count is derived. No fee, time window or every-address claim is made.
+const CITY_COUNT = serviceCityCount();
+export const AREA_FAQ: LandingFaq = {
+  question: "Which cities do you deliver to?",
+  answer: `We take orders for ${CITY_COUNT} cities across India; the full list is on the delivery cities page. Tell us the recipient city, the address and the date on WhatsApp: we confirm whether we can deliver there on that date, and the final total including delivery, before you pay.`,
 };
 
 /**
@@ -56,7 +60,7 @@ export const HOME_FAQS: (LandingFaq & { link?: LandingLink })[] = [
   {
     question: "How much is delivery?",
     answer:
-      "It depends on the pincode, distance, order size and time slot. The basket may show an estimate for supported pincodes; we confirm the delivery charge on WhatsApp before you pay.",
+      "It depends on the city, the address, the order size and the timing. Delivery charges are confirmed on WhatsApp before you pay; where the basket can estimate a charge for a pincode it says so, and otherwise it tells you the charge will be confirmed.",
   },
   {
     question: "What if a flower isn't available?",
@@ -71,13 +75,12 @@ export const HOME_FAQS: (LandingFaq & { link?: LandingLink })[] = [
 ];
 
 export const HOME_LANDING: LandingContent = {
-  title: "Flowers in Bengaluru | Bouquets & Garlands | Fresh Petals",
-  description:
-    "Fresh flowers in Bengaluru (Bangalore): hand-tied bouquets and made-to-order wedding garlands, starting with Chamarajpet and Basavanagudi. Price on WhatsApp.",
-  h1: "Flowers & Bouquets in Bengaluru",
+  title: "Flower Delivery Across India | Bouquets & Garlands | Fresh Petals",
+  description: `Choose bouquets, wedding garlands and pooja flowers for delivery across our ${CITY_COUNT} service cities in India. Share the city and date; price and availability on WhatsApp.`,
+  h1: "Flower Delivery Across India",
   intro: [
-    "Fresh Petals is a WhatsApp-first flower shop in Bengaluru (Bangalore), starting with deliveries in Chamarajpet and Basavanagudi. Browse hand-tied rose, lily and mixed-flower bouquets, add what you like to your cart, and send it to us on WhatsApp.",
-    "We confirm availability, delivery timing and the final total including delivery before you pay — no payment is taken on this website.",
+    `Choose bouquets, wedding garlands and pooja flowers for delivery across our ${CITY_COUNT} service cities. Share the recipient city and date; we confirm availability, price and delivery details on WhatsApp.`,
+    "Add what you like to your basket and send it to us. No payment is taken on this website.",
   ],
   faqs: [ORDERING_FAQ, AREA_FAQ],
   links: [
@@ -87,19 +90,21 @@ export const HOME_LANDING: LandingContent = {
     { href: "/occasions/birthday", label: "Birthday flowers" },
     { href: "/occasions/anniversary", label: "Anniversary flowers" },
     { href: "/categories/garlands", label: "Wedding garlands" },
+    { href: "/categories/pooja-flowers", label: "Pooja flowers" },
+    { href: "/locations", label: "Delivery cities" },
     { href: "/custom-orders", label: "Custom orders" },
   ],
 };
 
 export const CATEGORY_LANDING: Record<string, LandingContent> = {
   bouquets: {
-    title: "Flower Bouquets in Bengaluru | Rose & Lily | Fresh Petals",
+    title: "Flower Bouquets Online | Rose, Lily & Mixed | Fresh Petals",
     description:
-      "Hand-tied rose, lily and mixed-flower bouquets in Bengaluru (Bangalore), starting with Chamarajpet and Basavanagudi. Choose online, get the price on WhatsApp.",
-    h1: "Flower Bouquets in Bengaluru",
+      `Hand-tied rose, lily and mixed-flower bouquets for delivery in ${CITY_COUNT} cities across India. Compare the designs, then get the price for your date on WhatsApp.`,
+    h1: "Flower Bouquets",
     intro: [
-      "Our launch range: rose bouquets, mixed-flower bouquets with gerberas, sunflowers, chrysanthemums and daisies, and lily bouquets, each wrapped and finished by hand. Deliveries start in Chamarajpet and Basavanagudi.",
-      "Pick a bouquet, add a delivery date and recipient details, and send your cart on WhatsApp. We confirm the flowers available that day, delivery timing and the final total including delivery before you pay.",
+      "Our launch range: rose bouquets, mixed-flower bouquets with gerberas, sunflowers, chrysanthemums and daisies, and lily bouquets, each wrapped and finished by hand, for delivery in the cities we serve across India.",
+      "Pick a bouquet, add the recipient city, a delivery date and recipient details, and send your cart on WhatsApp. We confirm the flowers available that day, delivery timing and the final total including delivery before you pay.",
     ],
     faqs: [
       {
@@ -127,12 +132,12 @@ export const CATEGORY_LANDING: Record<string, LandingContent> = {
   },
 
   "pooja-flowers": {
-    title: "Pooja Flowers & Jasmine in Bangalore | Fresh Petals Bengaluru",
+    title: "Pooja Flowers & Jasmine (Malli, Mallige) | Fresh Petals",
     description:
-      "Daily pooja flowers, jasmine (malli / mallige), pooja flower boxes, baskets and temple bulk flowers in Bengaluru, priced on the day's flower market.",
-    h1: "Pooja Flowers in Bengaluru",
+      "Daily pooja flowers, jasmine (malli / mallige), pooja flower boxes, baskets and temple bulk flowers, priced on the day's flower market. Availability for your city confirmed on WhatsApp.",
+    h1: "Pooja Flowers",
     intro: [
-      "Fresh flowers for daily pooja, festivals and temple offerings in Bengaluru (Bangalore): loose pooja flowers, jasmine (malli / mallige), pooja flower boxes and baskets, gajra and torans, and bulk flowers for temples and functions.",
+      "Fresh flowers for daily pooja, festivals and temple offerings: loose pooja flowers, jasmine (malli / mallige), pooja flower boxes and baskets, gajra and torans, and bulk flowers for temples and functions.",
       "Loose and pooja flower prices move with the daily flower market, so items marked “market price” are quoted on WhatsApp for your date. For regular pooja flowers, see our flower subscriptions.",
     ],
     faqs: [
@@ -153,13 +158,13 @@ export const CATEGORY_LANDING: Record<string, LandingContent> = {
   },
 
   subscriptions: {
-    title: "Flower Subscriptions in Bangalore | Fresh Petals Bengaluru",
+    title: "Flower Subscriptions | Pooja Flowers & Jasmine | Fresh Petals",
     description:
-      "Daily pooja flower, jasmine (malli) and weekly flowerbox subscriptions in Bengaluru (Bangalore). Plans, delivery days and prices confirmed on WhatsApp.",
-    h1: "Flower Subscriptions in Bengaluru",
+      "Daily pooja flower, jasmine (malli) and weekly flowerbox subscriptions. Plans, delivery days, your city and prices confirmed on WhatsApp.",
+    h1: "Flower Subscriptions",
     intro: [
-      "Regular fresh flowers for homes in Bengaluru (Bangalore): a daily pooja flower subscription, a jasmine (malli) subscription, a weekly flowerbox and custom plans for homes, pooja and events.",
-      "Choose a plan and send it on WhatsApp. We confirm your delivery days, start date, pincode and price before the first delivery.",
+      "Regular fresh flowers for homes: a daily pooja flower subscription, a jasmine (malli) subscription, a weekly flowerbox and custom plans for homes, pooja and events.",
+      "Choose a plan and send it on WhatsApp. We confirm your delivery days, start date, city and address, and price before the first delivery.",
     ],
     faqs: [
       {
@@ -179,13 +184,13 @@ export const CATEGORY_LANDING: Record<string, LandingContent> = {
 
 export const OCCASION_LANDING: Record<string, LandingContent> = {
   birthday: {
-    title: "Birthday Flowers in Bangalore | Fresh Petals Bengaluru",
+    title: "Birthday Flowers & Bouquets | Send Birthday Flowers | Fresh Petals",
     description:
-      "Birthday bouquets with roses, lilies and bright mixed flowers in Bengaluru (Bangalore). Choose online, confirm the date and price on WhatsApp.",
-    h1: "Birthday Flowers in Bengaluru",
+      `Birthday bouquets with roses, lilies and bright mixed flowers, for delivery in ${CITY_COUNT} cities across India. Choose online, confirm the date and price on WhatsApp.`,
+    h1: "Birthday Flowers",
     intro: [
-      "Birthday bouquets from our launch range — rose bouquets, bright mixed flowers and lilies — with deliveries starting in Chamarajpet and Basavanagudi.",
-      "Add the birthday date, recipient name and a message when you send your cart on WhatsApp. We confirm the flowers, delivery timing and the final total including delivery before you pay.",
+      "Birthday bouquets from our launch range — rose bouquets, bright mixed flowers and lilies — for someone in any of the cities we deliver to.",
+      "Add the recipient city, the birthday date, the recipient's name and a message when you send your cart on WhatsApp. We confirm the flowers, delivery timing and the final total including delivery before you pay.",
     ],
     faqs: [ORDERING_FAQ, AREA_FAQ],
     links: [
@@ -196,13 +201,13 @@ export const OCCASION_LANDING: Record<string, LandingContent> = {
   },
 
   anniversary: {
-    title: "Anniversary Flowers in Bangalore | Fresh Petals Bengaluru",
+    title: "Anniversary Flowers & Rose Bouquets | Fresh Petals",
     description:
-      "Anniversary bouquets with roses, lilies and romantic arrangements in Bengaluru (Bangalore). Choose online, confirm the date and price on WhatsApp.",
-    h1: "Anniversary Flowers in Bengaluru",
+      `Anniversary bouquets with roses, lilies and romantic arrangements, for delivery in ${CITY_COUNT} cities across India. Choose online, confirm the date and price on WhatsApp.`,
+    h1: "Anniversary Flowers",
     intro: [
-      "Anniversary bouquets from our launch range — red, pink and peach rose bouquets and lilies — with deliveries starting in Chamarajpet and Basavanagudi.",
-      "Add your anniversary date and a card message when you send your cart on WhatsApp. We confirm the flowers, delivery timing and the final total including delivery before you pay.",
+      "Anniversary bouquets from our launch range — red, pink and peach rose bouquets and lilies — for a couple in any of the cities we deliver to.",
+      "Add the recipient city, your anniversary date and a card message when you send your cart on WhatsApp. We confirm the flowers, delivery timing and the final total including delivery before you pay.",
     ],
     faqs: [ORDERING_FAQ, AREA_FAQ],
     links: [
@@ -219,10 +224,10 @@ export const OCCASION_LANDING: Record<string, LandingContent> = {
  * wedding flower needs; /categories/garlands is the page for garland searches.
  */
 export const WEDDING_LANDING = {
-  title: "Wedding Flowers in Bengaluru | Garlands & Bouquets | Fresh Petals",
+  title: "Wedding Flowers | Ceremony Garlands & Bouquets | Fresh Petals",
   description:
-    "Wedding flowers in Bengaluru (Bangalore): made-to-order ceremony garlands with photographs, and gift bouquets. Tell us the date; price and availability on WhatsApp.",
-  h1: "Wedding Flowers in Bengaluru",
+    "Wedding flowers: made-to-order ceremony garlands with photographs, and gift bouquets, for delivery across India. Tell us the city and date; price and availability on WhatsApp.",
+  h1: "Wedding Flowers",
 };
 
 /**
@@ -247,7 +252,7 @@ export const CANONICAL_CATEGORY: Record<string, string> = {
 export const NOINDEX_STATIC_PAGES = new Set(["/loyalty", "/refer-a-friend"]);
 
 // Pages kept for navigation but excluded from search: /categories/same-day
-// promises a delivery speed not confirmed for Bengaluru, and
+// promises a delivery speed that is not confirmed, and
 // /occasions/pooja competes with /categories/pooja-flowers (the page mapped
 // to pooja-flower searches) for the same query.
 export const NOINDEX_CATEGORY_SLUGS = new Set(["same-day"]);

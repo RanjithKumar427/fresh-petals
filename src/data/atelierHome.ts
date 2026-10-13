@@ -210,9 +210,9 @@ export function getHeroReel(): ReelSlide[] {
   return [
     {
       photo: photo("hero-main-banner", "White star-shaped jasmine flowers on a dark green branch"),
-      eyebrow: "Fresh flowers in Bengaluru",
+      eyebrow: "Fresh flowers across India",
       title: "Order on WhatsApp",
-      text: "Pooja flowers, jasmine, bouquets and garlands. Delivery area, slot and fee are confirmed in chat.",
+      text: "Pooja flowers, jasmine, bouquets and garlands. The recipient city, timing and delivery charge are confirmed in chat.",
       cta: "See today's offers",
       href: "/categories/offers",
     },

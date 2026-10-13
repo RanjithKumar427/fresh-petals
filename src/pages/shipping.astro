@@ -1,17 +1,19 @@
 ---
+import { serviceCityCount } from "../data/serviceCities";
+const cityCount = serviceCityCount();
 import BaseLayout from "../layouts/BaseLayout.astro";
 ---
 
 <BaseLayout
-  title="Shipping Policy | Fresh Petals Bengaluru"
-  description="Fresh Petals delivery information: starting with Chamarajpet and Basavanagudi in Bengaluru, with availability, timing and the final total confirmed on WhatsApp."
+  title="Shipping Policy | Fresh Petals"
+  description={`Fresh Petals delivery information: orders are taken for ${cityCount} cities across India, with availability, timing and delivery charges confirmed on WhatsApp.`}
 >
   <main class="bg-ivory">
     <section class="px-5 py-12 md:px-8 md:py-16">
       <div class="mx-auto max-w-4xl">
         <div class="mb-10 text-center">
           <p class="fp-eyebrow">
-            Fresh Petals Bengaluru
+            Fresh Petals
           </p>
 
           <h1 class="fp-h1 mt-3">
@@ -19,18 +21,18 @@ import BaseLayout from "../layouts/BaseLayout.astro";
           </h1>
 
           <p class="mx-auto mt-5 max-w-2xl text-sm leading-7 text-moss md:text-base">
-            Delivery information for Fresh Petals orders in Bengaluru, starting with Chamarajpet and Basavanagudi.
+            Delivery information for Fresh Petals orders across the cities we serve in India.
           </p>
         </div>
 
         <div class="space-y-5">
           <section class="rounded-[24px] border border-line bg-linen p-6">
             <h2 class="text-[12px] font-bold uppercase tracking-[0.24em] text-ink">
-              Delivery Areas
+              Delivery Cities
             </h2>
 
             <p class="mt-4 text-sm leading-7 text-moss">
-              We're starting with deliveries in Chamarajpet and Basavanagudi. If you're nearby, send your order on WhatsApp anyway: we check your exact address and tell you whether we can deliver before you pay.
+              We take orders for {cityCount} cities across India; the full list is on the <a class="font-semibold text-ink underline underline-offset-4" href="/locations">delivery cities page</a>. Being listed means we take orders for that city, not that every address or date is guaranteed: send your order on WhatsApp with the recipient city and address, and we tell you whether we can deliver before you pay.
             </p>
             <p class="mt-3 text-sm leading-7 text-moss">
               On WhatsApp we confirm availability, your delivery address, the delivery timing and the final total including delivery charges. Nothing is charged on this website, and a pincode is optional when you order.
@@ -43,7 +45,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
             </h2>
 
             <p class="mt-4 text-sm leading-7 text-moss">
-              Delivery charges depend on the delivery pincode, distance, order size and time slot. The website may show an estimated delivery fee for supported pincodes. Final delivery charges will be confirmed on WhatsApp before payment.
+              Delivery charges depend on the recipient city, the address, the order size and the timing. They are not fixed on this website: delivery charges are confirmed on WhatsApp before payment. Where the basket can estimate a charge for a pincode it shows the estimate; otherwise it says the charge will be confirmed.
             </p>
           </section>
 
@@ -116,11 +118,11 @@ import BaseLayout from "../layouts/BaseLayout.astro";
           </h2>
 
           <p class="mx-auto mt-3 max-w-2xl text-sm leading-7 text-moss">
-            Share your pincode, delivery date and flower requirement on WhatsApp.
+            Share the recipient city, delivery date and flower requirement on WhatsApp.
           </p>
 
           <a
-            href="https://wa.me/919652012274?text=Hi%20Fresh%20Petals%2C%20I%20want%20to%20check%20delivery%20availability%20for%20my%20pincode."
+            href="https://wa.me/919652012274?text=Hi%20Fresh%20Petals%2C%20I%20want%20to%20check%20delivery%20availability.%0ARecipient%20city%3A%20%0ADate%3A%20"
             target="_blank"
             rel="noopener noreferrer"
             class="mt-6 inline-flex rounded-full bg-berry px-7 py-4 text-[11px] font-bold uppercase tracking-[0.22em] text-white transition hover:bg-berry-deep"

@@ -304,7 +304,8 @@ test('garland collections: live membership, counts and links; an empty collectio
   assert.equal(new Set(titles).size, titles.length);
   const copy = JSON.stringify([collections.GARLAND_COLLECTIONS, collections.GARLANDS_LANDING, collections.GARLAND_CONFIRM_POINTS, collections.GARLAND_COVERAGE]);
   assert(!/₹|Rs\.?\s?\d|same[- ]day|express|guarantee|\d+\s?(hours|days)|free delivery|rated|stars/i.test(copy));
-  assert(/Chamarajpet and Basavanagudi/.test(collections.GARLAND_COVERAGE));
+  // Coverage is the registry's count, with no neighbourhood restriction left behind.
+  assert(new RegExp(`${load('src/data/serviceCities.ts').serviceCityCount()} cities across India`).test(collections.GARLAND_COVERAGE) && !/Chamarajpet|Basavanagudi/.test(copy));
   const page = readFileSync('src/pages/categories/garlands/[flower].astro', 'utf8');
   assert(/garlandCacheHeaders\(\)/.test(page) && /if \(empty\) Astro\.response\.status = 404/.test(page) && /noindex = empty \|\| drafts/.test(page));
   const sitemap = readFileSync('src/pages/sitemap-garlands.xml.ts', 'utf8');
@@ -400,4 +401,169 @@ test('pooja sections: every product on the page appears exactly once; unknown pr
   const copy = JSON.stringify([guide.POOJA_SECTIONS, guide.POOJA_ENQUIRY_POINTS, guide.POOJA_PHOTO_NOTE]);
   assert(!/₹|\d+\s?(g|gm|grams|kg|ft|cm|pieces)|same[- ]day|every day|guarantee|free delivery/i.test(copy));
   assert(/wa\.me\/919652012274/.test(guide.POOJA_ENQUIRY_HREF) && !/%E2%82%B9/.test(guide.POOJA_ENQUIRY_HREF));
+});
+
+// ---------------------------------------------------------------------------
+// National coverage (docs/seo/national-coverage-2026-10.md)
+// ---------------------------------------------------------------------------
+
+const OWNER_CITIES = 'Bengaluru, Mumbai, Delhi, Hyderabad, Chennai, Pune, Kolkata, Ahmedabad, Jaipur, Coimbatore, Visakhapatnam, Vijayawada, Gurugram, Noida, Mysuru, Surat, Lucknow, Indore, Chandigarh, Kochi, Bhubaneswar, Nagpur, Nashik, Vadodara, Rajkot, Bhopal, Patna, Guwahati, Thiruvananthapuram, Ludhiana, Faridabad, Ghaziabad, Navi Mumbai, Kalyan-Dombivli, Greater Noida, Thane, Varanasi, Udaipur, Madurai, Tirupati, Mangaluru, Kanpur, Meerut, Dehradun, Raipur, Ranchi, Mira-Bhayandar, Vasai-Virar, Tiruppur, Jamshedpur, Manipal, Belagavi, Hubballi-Dharwad, Guntur, Salem, Warangal, Kolhapur, Siliguri, Agra'.split(', ');
+
+test('service-city registry: exactly the 59 owner-confirmed cities, unique, all serviceable; aliases never make a second city; five hubs and ten queued', () => {
+  const registry = load('src/data/serviceCities.ts');
+  const cities = registry.SERVICE_CITIES;
+  assert.equal(OWNER_CITIES.length, 59);
+  assert.deepEqual(json(cities.map((city) => city.name).sort()), [...OWNER_CITIES].sort());
+  assert.equal(new Set(cities.map((city) => city.slug)).size, 59);
+  assert.equal(registry.serviceCityCount(), 59);
+  assert(cities.every((city) => city.serviceable && /^[a-z]+(-[a-z]+)*$/.test(city.slug)));
+  // Every alias resolves to its own city and to no other; no alias is another city's name.
+  const names = new Set(cities.flatMap((city) => [city.slug, city.name.toLowerCase()]));
+  for (const city of cities) for (const alias of city.aliases) {
+    assert.equal(registry.normalizeCity(alias), city.slug, alias);
+    assert(!names.has(alias), `alias ${alias} is a city`);
+  }
+  assert.equal(registry.normalizeCity('Bangalore'), 'bengaluru');
+  assert.equal(registry.normalizeCity(' GURGAON '), 'gurugram');
+  assert.equal(registry.normalizeCity('Navi Mumbai'), 'navi-mumbai');
+  for (const bad of ['', null, undefined, 'paris', '<script>', 'bengaluru/../admin', 'x'.repeat(200), 'mumbai?x=1']) assert.equal(registry.normalizeCity(bad), null, String(bad));
+  // Coverage, pages and measured demand are separate facts.
+  assert.deepEqual(json(registry.publishedHubs().map((city) => city.slug).sort()), ['bengaluru', 'chennai', 'hyderabad', 'mumbai', 'pune']);
+  assert.deepEqual(json(registry.queuedHubs().map((city) => city.name).sort()), ['Ahmedabad', 'Coimbatore', 'Delhi', 'Gurugram', 'Jaipur', 'Kolkata', 'Mysuru', 'Noida', 'Vijayawada', 'Visakhapatnam']);
+  assert.equal(cities.filter((city) => city.hub === 'none').length, 44);
+  assert.deepEqual(json(cities.filter((city) => city.demand === 'measured').map((city) => city.slug)), ['bengaluru']);
+  // A page path exists only for a published hub.
+  assert.equal(registry.hubPath(registry.findCity('delhi')), null);
+  assert.equal(registry.hubPath(registry.findCity('bangalore')), '/locations/bengaluru');
+  assert.equal(registry.citiesByRegion().reduce((sum, region) => sum + region.cities.length, 0), 59);
+});
+
+test('city hubs: one authored page per published hub, distinct copy, real sources only, no delivery promise or invented detail', () => {
+  const registry = load('src/data/serviceCities.ts');
+  const hubs = load('src/data/cityHubs.ts');
+  assert.deepEqual(json(hubs.CITY_HUBS.map((hub) => hub.slug).sort()), json(registry.publishedHubs().map((city) => city.slug).sort()));
+  for (const field of ['title', 'description', 'h1', 'emphasis']) assert.equal(new Set(hubs.CITY_HUBS.map((hub) => hub[field])).size, 5, field);
+  // Not city-name substitution: with every city name removed, no paragraph or answer is shared between two hubs.
+  const strip = (text) => registry.SERVICE_CITIES.reduce((out, city) => out.replaceAll(city.name, '#'), text);
+  const seen = new Map();
+  for (const hub of hubs.CITY_HUBS) {
+    const texts = [...hub.intro, ...hub.sections.flatMap((section) => [section.heading + ': ' + section.body.join(' ')]), ...hub.faqs.map((faq) => faq.answer)];
+    for (const text of texts) {
+      const key = strip(text);
+      assert(!seen.has(key) || seen.get(key) === hub.slug, `${hub.slug} repeats ${seen.get(key)}: ${text.slice(0, 60)}`);
+      seen.set(key, hub.slug);
+    }
+    assert(hub.title.includes(registry.findCity(hub.slug).name) && /^\d{4}-\d{2}-\d{2}$/.test(hub.updated));
+    assert(hub.sections.length >= 2 && hub.faqs.length >= 3);
+    for (const section of hub.sections) assert(section.sources.length > 0 && section.links.length > 0, section.id);
+  }
+  assert(hubs.CITY_HUBS.find((hub) => hub.slug === 'bengaluru').title.includes('Bangalore'));
+  const copy = JSON.stringify([hubs.CITY_HUBS, hubs.HUB_PHOTO_NOTE]);
+  assert(!/₹|Rs\.?\s?\d|free delivery|guarantee|within \d|\d+\s?(hours|minutes|mins|stems|cm|inches)|midnight|rated|stars|reviews?\b|our (shop|store|branch) in/i.test(copy));
+  // Same-day is only ever mentioned to say it is not promised.
+  for (const hit of copy.match(/[^.]*same[- ]day[^.]*/gi) ?? []) assert(/do not promise|not promise/i.test(hit), hit);
+  // Every internal link in the copy is a real route family; no link to an unpublished city.
+  for (const href of copy.match(/"href":"[^"]+"/g) ?? []) assert(/^"href":"\/(categories|occasions|guides|custom-orders|locations)(\/|"|#)/.test(href), href);
+  for (const slug of copy.match(/\/locations\/[a-z-]+/g) ?? []) assert(registry.hubPath(registry.findCity(slug.split('/').pop())), slug);
+  const page = readFileSync('src/pages/locations/[city].astro', 'utf8');
+  assert(/prerender = false/.test(page) && /Astro\.rewrite\("\/404"\)/.test(page) && /GARLAND_CACHE_TAG, OCCASION_INDEX_TAG/.test(page) && /isListedGarland/.test(page) && /giftProducts\(source\.route, membership\)/.test(page));
+  // One H1, visible breadcrumbs, self-canonical (no canonical override), no rating or LocalBusiness markup.
+  assert.equal(page.match(/<h1/g).length, 1);
+  assert(/aria-label="Breadcrumb"/.test(page) && !/canonical=/.test(page) && !/LocalBusiness|aggregateRating|PostalAddress/.test(page));
+});
+
+test('recipient city: one stored value, validated; browsing never re-points a basket; drafts and the enquiry check name only registry cities', () => {
+  const store = new Map();
+  const events = [];
+  const window = {
+    localStorage: { getItem: (key) => (store.has(key) ? store.get(key) : null), setItem: (key, value) => store.set(key, String(value)), removeItem: (key) => store.delete(key) },
+    location: { search: '' },
+    dispatchEvent: (event) => events.push(event.detail?.city ?? null),
+  };
+  const document = { querySelector: () => null };
+  class CustomEvent { constructor(type, init) { this.type = type; this.detail = init?.detail; } }
+  const destination = sourceLoader({ globals: { window, document, CustomEvent } })('src/utils/destination.ts');
+
+  // Nothing decided: a city link sets it; an invalid value is ignored.
+  window.location.search = '?city=atlantis';
+  assert.deepEqual(json(destination.resolveDestination()), { destination: null, browsing: null, conflict: false });
+  window.location.search = '?city=Bangalore&occ=birthday';
+  assert.deepEqual(json(destination.resolveDestination()), { destination: 'bengaluru', browsing: 'bengaluru', conflict: false });
+  // Empty basket: browsing another city moves with the visitor.
+  window.location.search = '?city=pune';
+  assert.equal(destination.resolveDestination().destination, 'pune');
+  // A basket with a destination is never re-pointed by a visit; the page asks.
+  store.set('fresh_petals_cart', JSON.stringify([{ id: 'red-affair', quantity: 1 }]));
+  window.location.search = '?city=mumbai';
+  assert.deepEqual(json(destination.resolveDestination()), { destination: 'pune', browsing: 'mumbai', conflict: true });
+  assert.equal(destination.getDestination(), 'pune');
+  // Only an explicit choice changes it.
+  assert.equal(destination.setDestination('Gurgaon'), 'gurugram');
+  assert.deepEqual(json(destination.destinationLines()), ['Recipient city: Gurugram']);
+  // An old basket with no city: the first city seen fills the empty value.
+  store.delete('fresh_petals_destination_city');
+  window.location.search = '';
+  assert.deepEqual(json(destination.resolveDestination()), { destination: null, browsing: null, conflict: false });
+  assert.deepEqual(json(destination.destinationLines()), []);
+  // A tampered stored value reads as no city.
+  store.set('fresh_petals_destination_city', 'not-a-city');
+  assert.equal(destination.getDestination(), null);
+
+  // Garland enquiry text and link.
+  const enquiry = load('src/utils/garlandEnquiry.ts');
+  const text = enquiry.garlandEnquiryText({ code: 'FP-G001', title: 'Rose', quantity: 2, city: 'Mumbai' });
+  assert(/Recipient city: Mumbai/.test(text) && !/₹/.test(text));
+  assert(!/Recipient city/.test(enquiry.garlandEnquiryText({ code: 'FP-G001', title: 'Rose', quantity: 1 })));
+  assert.equal(enquiry.garlandEnquiryHref({ code: 'FP-G001', city: 'mumbai' }), '/garland-enquiry?code=FP-G001&qty=1&city=mumbai');
+  assert(/findCity\(url\.searchParams\.get\(CITY_PARAM\)\)\?\.name/.test(readFileSync('src/pages/garland-enquiry.ts', 'utf8')));
+  // City drafts: the one number, the city named, no amount for quote-only products.
+  const city = load('src/utils/cityEnquiry.ts');
+  const general = decodeURIComponent(city.cityEnquiryHref('Kochi'));
+  assert(general.startsWith('https://wa.me/919652012274?text=') && /Recipient city: Kochi/.test(general) && !/₹/.test(general));
+  const quote = decodeURIComponent(city.cityProductEnquiryHref({ name: 'Red Affair', url: 'https://onlyfreshpetals.in/products/red-affair', cityName: 'Pune', quoteOnly: true, priceLabel: 'From ₹999' }));
+  assert(/Recipient city: Pune/.test(quote) && !/₹|999/.test(quote) && /products\/red-affair\n/.test(quote));
+  const priced = decodeURIComponent(city.cityProductEnquiryHref({ name: 'Pooja Basket', url: 'https://onlyfreshpetals.in/products/pooja-basket', cityName: 'Chennai', quoteOnly: false, priceLabel: 'From ₹499' }));
+  assert(/Price shown: From ₹499/.test(priced) && /Recipient city: Chennai/.test(priced));
+  // The basket and the product page use the same stored value, and no second copy.
+  const cart = readFileSync('src/pages/cart.astro', 'utf8');
+  assert(/fresh_petals_destination_city/.test(cart) && /Recipient city: \$\{destinationName\(\)/.test(cart) && /destination_city: destinationSlug\(\)/.test(cart));
+  for (const file of ['src/components/ProductOptions.astro', 'src/components/ProductCard.astro']) {
+    const source = readFileSync(file, 'utf8');
+    assert(/utils\/destination/.test(source) && !/utils\/area/.test(source), file);
+  }
+  // City parameters never make a new indexable URL: canonicals drop every query.
+  assert(/Query strings never enter the canonical/.test(readFileSync('src/layouts/BaseLayout.astro', 'utf8')));
+});
+
+test('delivery estimator: no estimate means charges are confirmed on WhatsApp, never that the city is unavailable', () => {
+  const rules = readFileSync('src/server/services/delivery/deliveryRules.ts', 'utf8');
+  assert(/Delivery charges will be confirmed on WhatsApp/.test(rules) && !/couldn't confirm delivery for this pincode/.test(rules));
+  const cart = readFileSync('src/pages/cart.astro', 'utf8');
+  assert(/Delivery charges will be confirmed on WhatsApp/.test(cart) && /type: "info"/.test(cart) && /Delivery Pincode \(optional\)/.test(cart));
+  // The estimator still quotes nothing it has not been given: other cities' seeded zones stay unquoted.
+  assert(/isStorefrontCity\(zone\.city\) \? zone : null/.test(readFileSync('src/server/services/delivery/DeliveryService.ts', 'utf8')));
+});
+
+test('discovery: footer groups, /occasions from the menu, linked garland names, city pages in the sitemap with authored dates', () => {
+  const footer = readFileSync('src/components/atelier/SiteFooter.astro', 'utf8');
+  for (const group of ['Flowers', 'Occasions', 'Delivery cities', 'Choosing flowers', 'Business and help']) assert(footer.includes(`label: "${group}"`), group);
+  assert(/\/occasions\/sympathy/.test(footer) && /publishedHubs\(\)/.test(footer) && /LOCATIONS_PATH/.test(footer) && !/serviceableCities|SERVICE_CITIES/.test(footer));
+  assert(/freshpetals\.hyderabad/.test(footer) && /whatsappLink/.test(footer));
+  const nav = load('src/data/navigation.ts');
+  const occasions = nav.SITE_NAV.find((item) => item.label === 'Shop by Occasion');
+  assert.equal(occasions.href, '/occasions');
+  assert.deepEqual(json(occasions.links[0]), { label: 'All occasions', href: '/occasions' });
+  const card = readFileSync('src/components/GarlandCard.astro', 'utf8');
+  assert(/<a href=\{href\} data-journey-link class="garland-card__link">\{design\.title\}/.test(card) && !/class="absolute inset-0 z-10" aria-label/.test(card));
+  assert.equal(card.match(/data-journey-link/g).length, 2); // the name, and the cart-mode button
+  const sitemap = readFileSync('src/pages/sitemap.xml.ts', 'utf8');
+  assert(/publishedHubs\(\)/.test(sitemap) && /lastmod: hub\.updated/.test(sitemap) && !/new Date\(\)/.test(sitemap));
+  // The directory lists every city without scripts; only hubs get page links.
+  const directory = readFileSync('src/pages/locations/index.astro', 'utf8');
+  assert(/hubPath\(city\)/.test(directory) && /cityEnquiryHref\(city\.name\)/.test(directory) && /citiesByRegion\(\)/.test(directory));
+  // National copy: the homepage title and coverage sentence; no neighbourhood restriction left in live landing copy.
+  const landing = load('src/data/seoLanding.ts');
+  assert.equal(landing.HOME_LANDING.title, 'Flower Delivery Across India | Bouquets & Garlands | Fresh Petals');
+  assert(/across our 59 service cities/.test(landing.HOME_LANDING.intro[0]));
+  assert(!/Chamarajpet|Basavanagudi|in Bengaluru|in Bangalore/.test(JSON.stringify([landing.HOME_LANDING, landing.CATEGORY_LANDING, landing.OCCASION_LANDING, landing.WEDDING_LANDING, landing.HOME_FAQS])));
 });

@@ -25,6 +25,7 @@ import { HERO_SCENE_SIZES, getArrivalBouquet, getBouquetBrowse, getBouquetEdit, 
 import { catalogueSlugs } from "../data/occasionJourneys";
 import { garlandsPromoted } from "../data/launchCatalogue";
 import { loadGarlands, isListedGarland } from "../data/garlands";
+import { serviceableCities } from "../data/serviceCities";
 import { loadOccasionMembership } from "../server/services/OccasionMembership";
 import { loadAuthoritativePrices } from "../server/services/ProductPricing";
 import { OCCASION_INDEX_TAG, occasionCacheHeaders } from "../server/services/GarlandWebsite";
@@ -48,9 +49,11 @@ const publicGarlands = garlandsPromoted() ? (await loadGarlands()).map((product)
 const heroCampaigns = getHeroCampaigns({ garlandsPublic: publicGarlands.length > 0 });
 
 // Organization/WebSite structured data — only verified facts: the name,
-// the site URL, the WhatsApp number every order link on the site uses, and
-// the business's own Instagram account. No address, opening hours, rating
-// or logo: none are verified yet (public/favicon.* is Astro's default mark).
+// the site URL, the WhatsApp number every order link on the site uses, the
+// business's own Instagram account, and the owner-confirmed service cities
+// (src/data/serviceCities.ts). An Organization, not a LocalBusiness: no
+// address, branch, opening hours, rating or logo is verified
+// (public/favicon.* is Astro's default mark).
 const siteUrl = new URL("/", Astro.site).toString();
 const homeJsonLd = [
   {
@@ -60,11 +63,8 @@ const homeJsonLd = [
     alternateName: "Fresh Petals Bengaluru",
     url: siteUrl,
     sameAs: ["https://www.instagram.com/freshpetals.hyderabad/"],
-    // The published delivery coverage (src/data/seoLanding.ts AREA_FAQ).
-    areaServed: [
-      { "@type": "Place", name: "Chamarajpet, Bengaluru" },
-      { "@type": "Place", name: "Basavanagudi, Bengaluru" },
-    ],
+    // The cities orders are taken for, from the registry.
+    areaServed: serviceableCities().map((city) => ({ "@type": "City", name: city.name })),
     contactPoint: {
       "@type": "ContactPoint",
       telephone: "+91-96520-12274",

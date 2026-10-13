@@ -136,11 +136,11 @@ export const POOJA_ENQUIRY_POINTS = [
   { label: "What it is for", detail: "Daily pooja, a festival, a housewarming, a temple offering or a function." },
   { label: "The date", detail: "And the time you need the flowers by." },
   { label: "The form and quantity", detail: "Loose flowers, a box or basket, strings, gajra or a toran, and roughly how much. Pack sizes are not fixed on this page; we confirm them with you." },
-  { label: "Your delivery address", detail: "We are starting with Chamarajpet and Basavanagudi and check nearby addresses with you." },
+  { label: "The recipient city and address", detail: "Tell us the city and the full address. We confirm whether we can deliver there on your date." },
 ];
 
 export const POOJA_ENQUIRY_HREF = whatsappLink(
-  ["Hi Fresh Petals, I'd like pooja flowers.", "For (daily pooja / festival / function): ", "Date and time needed: ", "Form and quantity (loose, box, string, gajra, toran): ", "Delivery address: ", "", "Please confirm availability and the price."].join("\n")
+  ["Hi Fresh Petals, I'd like pooja flowers.", "For (daily pooja / festival / function): ", "Date and time needed: ", "Form and quantity (loose, box, string, gajra, toran): ", "Recipient city: ", "Delivery address: ", "", "Please confirm availability and the price."].join("\n")
 );
 
 export const POOJA_PHOTO_NOTE =

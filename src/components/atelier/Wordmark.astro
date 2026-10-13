@@ -1,6 +1,8 @@
 ---
 // Text wordmark (no usable logo file exists in the repository): Fraunces
-// display with an italic "Petals", and the city as a small tracked label.
+// display with an italic "Petals", and a small tracked label beneath it
+// (the coverage: orders are taken for cities across India). Kept as short
+// as the label it replaced, so the header fits a 360px screen.
 interface Props {
   tone?: "ink" | "ivory";
   size?: "md" | "lg";
@@ -10,7 +12,7 @@ const { tone = "ink", size = "md" } = Astro.props;
 
 <span class:list={["wordmark", `wordmark--${tone}`, `wordmark--${size}`]}>
   <span class="wordmark__name">Fresh <em>Petals</em></span>
-  <span class="wordmark__city">Bengaluru</span>
+  <span class="wordmark__city">India</span>
 </span>
 
 <style>

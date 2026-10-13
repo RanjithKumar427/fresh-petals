@@ -8,6 +8,7 @@
 // is a WhatsApp enquiry carrying the code, title, listed price, chosen
 // options and quantity. No pincode or delivery slot is asked.
 import ProductOptions from "./ProductOptions.astro";
+import DestinationCity from "./DestinationCity.astro";
 import { QUOTE_ONLY_ENQUIRE_LABEL, QUOTE_ONLY_PRICE_LABEL } from "../shared/quoteOnly";
 import { GARLAND_FILTERS, GARLAND_PREVIEW, formatGarlandPrice, garlandPhotoSrcset, isCartGarland, isListedGarland, optionValues, type GarlandProduct } from "../data/garlands";
 import { garlandEnquiryHref } from "../utils/garlandEnquiry";
@@ -162,6 +163,7 @@ const quoteLabel = QUOTE_ONLY_ENQUIRE_LABEL;
           <JourneyNote />
           <div class="mt-7 rounded-[22px] border border-line bg-linen p-5" data-garland-quote-panel data-code={design.code} data-title={design.title} data-price={price ?? undefined} data-unit={design.soldUnit ?? undefined} data-url={pageUrl}>
             <h2 class="text-sm font-bold text-ink">Enquire about this design</h2>
+            <DestinationCity class="mt-4" label="Recipient city" />
             <div class="mt-4 flex items-center gap-3">
               <span id="garland-qty-label" class="text-sm font-semibold text-ink">Quantity</span>
               <div class="inline-flex items-center rounded-full border border-line-strong bg-paper" role="group" aria-labelledby="garland-qty-label">
@@ -239,6 +241,7 @@ const quoteLabel = QUOTE_ONLY_ENQUIRE_LABEL;
 <script>
   import { garlandEnquiryHref } from "../utils/garlandEnquiry";
   import { readJourney } from "../utils/journey";
+  import { DESTINATION_UPDATED_EVENT, getDestination } from "../utils/destination";
 
   // Came from an occasion page this session: the enquiry carries it.
   const journey = readJourney();
@@ -257,8 +260,10 @@ const quoteLabel = QUOTE_ONLY_ENQUIRE_LABEL;
         options,
         occasion: journey?.occasion ?? null,
         purpose: journey?.intent ?? null,
+        city: getDestination(),
       });
     };
+    window.addEventListener(DESTINATION_UPDATED_EVENT, update);
     panel.querySelectorAll<HTMLButtonElement>("[data-qty-step]").forEach((button) =>
       button.addEventListener("click", () => {
         qty.value = String(clamp(Number(qty.value) + Number(button.dataset.qtyStep)));

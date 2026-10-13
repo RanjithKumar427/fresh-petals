@@ -4,6 +4,7 @@ import { optionValues } from "../data/garlandRules";
 import { whatsappLink } from "../config/storefront";
 import { garlandEnquiryText } from "../utils/garlandEnquiry";
 import { OCCASION_JOURNEYS } from "../data/occasionJourneys";
+import { CITY_PARAM, findCity } from "../data/serviceCities";
 
 // The live enquiry check behind every garland "Enquire / Ask for a quote on
 // WhatsApp" button. Never cached: it reads the database at the moment of the
@@ -51,6 +52,8 @@ export const GET: APIRoute = async ({ url, site, redirect }) => {
     url: pageUrl,
     occasion: journey?.label ?? null,
     purpose,
+    // Only a city in the registry is named; any other value is ignored.
+    city: findCity(url.searchParams.get(CITY_PARAM))?.name ?? null,
   });
   const response = redirect(whatsappLink(text), 302);
   for (const [k, v] of Object.entries(NO_STORE)) response.headers.set(k, v);

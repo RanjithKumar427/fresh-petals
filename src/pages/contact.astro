@@ -1,4 +1,6 @@
 ---
+import { serviceCityCount } from "../data/serviceCities";
+const cityCount = serviceCityCount();
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { whatsappLink } from "../config/storefront";
 
@@ -18,7 +20,7 @@ const contactCards = [
   {
     title: "Delivery",
     description:
-      "We're starting with Chamarajpet and Basavanagudi. We confirm your address, timing and the final total including delivery on WhatsApp.",
+      `We take orders for ${cityCount} cities across India. We confirm the recipient city, address, timing and the final total including delivery on WhatsApp.`,
     href: "/shipping",
     external: false,
     cta: "View Delivery Info",
@@ -37,8 +39,8 @@ const enquiryTypes = ["Bouquet order", "Custom bouquet", "Small ceremony order",
 ---
 
 <BaseLayout
-  title="Contact Fresh Petals Bengaluru"
-  description="Contact Fresh Petals Bengaluru on WhatsApp for bouquet orders, custom orders and delivery questions in Chamarajpet and Basavanagudi."
+  title="Contact Fresh Petals"
+  description="Contact Fresh Petals on WhatsApp for bouquet, garland and pooja flower orders, custom orders and delivery questions for any of our service cities."
 >
   <main id="contact" class="bg-ivory">
     <section class="px-5 py-14 md:px-8 md:py-20">
@@ -49,7 +51,7 @@ const enquiryTypes = ["Bouquet order", "Custom bouquet", "Small ceremony order",
           </p>
 
           <h1 class="fp-serif mt-4 text-3xl text-ink md:text-5xl">
-            Fresh Flower Orders In Bengaluru
+            Fresh Flower Orders Across India
           </h1>
 
           <p class="mx-auto mt-5 max-w-2xl text-sm leading-7 text-moss md:text-base">
@@ -72,7 +74,7 @@ const enquiryTypes = ["Bouquet order", "Custom bouquet", "Small ceremony order",
             contactCards.map((card) => (
               <article class="rounded-[28px] border border-line bg-linen p-7">
                 <p class="text-[10px] font-semibold uppercase tracking-[0.28em] text-rose-deep">
-                  Fresh Petals Bengaluru
+                  Fresh Petals
                 </p>
 
                 <h2 class="mt-4 text-xl font-semibold text-ink">

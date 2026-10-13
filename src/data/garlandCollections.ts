@@ -11,13 +11,13 @@
 // confirm on WhatsApp. No delivery speed, durability or price claim.
 import type { GarlandFilterKey } from "./garlandRules";
 import type { LandingFaq, LandingLink } from "./seoLanding";
+import { serviceCityCount } from "./serviceCities";
 
 export const GARLANDS_PATH = "/categories/garlands";
 export const GARLAND_GUIDE_PATH = "/guides/choosing-wedding-garlands";
 
-/** Where garlands are delivered, as published. Nearby addresses are checked on WhatsApp. */
-export const GARLAND_COVERAGE =
-  "We make and deliver garlands in Bengaluru, starting with Chamarajpet and Basavanagudi. For a nearby address, send it on WhatsApp and we confirm whether we can deliver there before anything is made.";
+/** Where garlands are delivered, as confirmed by the owner (src/data/serviceCities.ts). No speed or fee is stated. */
+export const GARLAND_COVERAGE = `We take garland orders for ${serviceCityCount()} cities across India. Send the recipient city, the address and the ceremony date on WhatsApp, and we confirm whether the design can be made and delivered there before anything is made.`;
 
 /** What every garland enquiry settles before an order is accepted. */
 export const GARLAND_CONFIRM_POINTS: { label: string; detail: string }[] = [
@@ -48,12 +48,12 @@ export const GARLAND_COLLECTIONS: GarlandCollection[] = [
     key: "rose",
     path: `${GARLANDS_PATH}/rose`,
     label: "Rose garlands",
-    title: "Rose Wedding Garlands in Bengaluru | Fresh Petals",
+    title: "Rose Wedding Garlands | Varmala & Poola Mala | Fresh Petals",
     description:
-      "Rose wedding garlands (varmala, poola mala) photographed by Fresh Petals in Bengaluru: red, pink, peach and ivory designs. Price and details on WhatsApp.",
+      "Rose wedding garlands (varmala, poola mala) photographed by Fresh Petals: red, pink, peach and ivory designs. Price and details on WhatsApp.",
     h1: "Rose Wedding Garlands",
     intro:
-      "Rose garlands for the wedding exchange (varmala, jaimala, poola mala), made to order in Bengaluru (Bangalore). Each design below is a photograph of a garland we can make; open one to see it in full and enquire with its design code.",
+      "Rose garlands for the wedding exchange (varmala, jaimala, poola mala), made to order. Each design below is a photograph of a garland we can make; open one to see it in full and enquire with its design code.",
     guidance: [
       {
         heading: "Start with the colour",
@@ -85,12 +85,12 @@ export const GARLAND_COLLECTIONS: GarlandCollection[] = [
     key: "lotus",
     path: `${GARLANDS_PATH}/lotus`,
     label: "Lotus garlands",
-    title: "Lotus Wedding Garlands in Bengaluru | Fresh Petals",
+    title: "Lotus Wedding Garlands | Varmala & Poola Mala | Fresh Petals",
     description:
-      "Lotus wedding garlands photographed by Fresh Petals in Bengaluru: closed-bud and open pink lotus designs, some with jasmine or roses. Price on WhatsApp.",
+      "Lotus wedding garlands photographed by Fresh Petals: closed-bud and open pink lotus designs, some with jasmine or roses. Price on WhatsApp.",
     h1: "Lotus Wedding Garlands",
     intro:
-      "Lotus garlands for the wedding exchange (varmala, poola mala), made to order in Bengaluru (Bangalore). Most are pink lotus, shown as closed buds or opened flowers; open a design to see it in full and enquire with its design code.",
+      "Lotus garlands for the wedding exchange (varmala, poola mala), made to order. Most are pink lotus, shown as closed buds or opened flowers; open a design to see it in full and enquire with its design code.",
     guidance: [
       {
         heading: "Closed buds or open flowers",
@@ -122,12 +122,12 @@ export const GARLAND_COLLECTIONS: GarlandCollection[] = [
     key: "tuberose",
     path: `${GARLANDS_PATH}/tuberose`,
     label: "Tuberose garlands",
-    title: "Tuberose Wedding Garlands in Bengaluru | Fresh Petals",
+    title: "Tuberose (Rajnigandha) Wedding Garlands | Fresh Petals",
     description:
-      "Tuberose (rajnigandha, sampangi) wedding garlands photographed by Fresh Petals in Bengaluru: white garlands with coloured bands and rose panels. Price on WhatsApp.",
+      "Tuberose (rajnigandha, sampangi) wedding garlands photographed by Fresh Petals: white garlands with coloured bands and rose panels. Price on WhatsApp.",
     h1: "Tuberose Wedding Garlands",
     intro:
-      "Tuberose (rajnigandha, sampangi) garlands for the wedding exchange, made to order in Bengaluru (Bangalore). These are the dense white garlands, usually marked with coloured bands; open a design to see it in full and enquire with its design code.",
+      "Tuberose (rajnigandha, sampangi) garlands for the wedding exchange, made to order. These are the dense white garlands, usually marked with coloured bands; open a design to see it in full and enquire with its design code.",
     guidance: [
       {
         heading: "Choose the band colours",
@@ -169,11 +169,11 @@ export function populatedCollections<T extends { garland: { filters: string[] } 
 
 /** /categories/garlands: the page for wedding garland, flower garland and poola mala searches. */
 export const GARLANDS_LANDING = {
-  title: "Wedding Garlands in Bengaluru | Poola Mala | Fresh Petals",
+  title: "Wedding Garlands | Poola Mala, Varmala & Jaimala | Fresh Petals",
   description:
-    "Wedding garlands (poola mala, varmala, jaimala) made to order in Bengaluru: rose, lotus, tuberose and designer designs with photographs. Price on WhatsApp.",
+    "Wedding garlands (poola mala, varmala, jaimala) made to order: rose, lotus, tuberose and designer designs with photographs. Price on WhatsApp.",
   intro:
-    "Wedding garlands (poola mala, varmala, jaimala) made to order in Bengaluru (Bangalore). Filter by the main flower, open a design to see it in full, and enquire on WhatsApp with its design code. We confirm the flowers, length and price with you there. No pincode or delivery slot is needed to browse.",
+    "Wedding garlands (poola mala, varmala, jaimala) made to order for delivery across India. Filter by the main flower, open a design to see it in full, and enquire on WhatsApp with its design code. We confirm the flowers, length and price with you there. No pincode or delivery slot is needed to browse.",
   faqs: [
     {
       question: "How do I order a wedding garland?",

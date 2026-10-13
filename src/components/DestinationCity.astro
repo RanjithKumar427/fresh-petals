@@ -1,0 +1,180 @@
+---
+// The recipient city, visible and editable where an order is put together
+// (product pages, garland pages, the basket, the city pages). A plain
+// <select>: no modal, no account, no pincode. State and rules live in
+// src/utils/destination.ts.
+//
+// Without scripts the control is hidden: city pages render their own
+// city-specific WhatsApp links on the server, and every other draft simply
+// leaves the city for the customer to add.
+import { citiesByRegion } from "../data/serviceCities";
+
+interface Props {
+  /** Label above the select. */
+  label?: string;
+  /** Light text for dark surfaces. */
+  tone?: "ink" | "ivory";
+  class?: string;
+}
+
+const { label = "Recipient city", tone = "ink", class: className = "" } = Astro.props;
+const regions = citiesByRegion();
+const id = `destination-city-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<div class:list={["destination", `destination--${tone}`, className]} data-destination-control>
+  <label class="destination__label" for={id}>{label}</label>
+  <div class="destination__row">
+    <select id={id} class="destination__select" data-destination-select aria-describedby={`${id}-help`}>
+      <option value="">Not chosen yet</option>
+      {
+        regions.map((region) => (
+          <optgroup label={region.label}>
+            {region.cities.map((city) => (
+              <option value={city.slug}>{city.name}</option>
+            ))}
+          </optgroup>
+        ))
+      }
+    </select>
+  </div>
+  <p class="destination__help" id={`${id}-help`} data-destination-help>
+    Where the flowers are going. We confirm availability and delivery details for that city on WhatsApp.
+  </p>
+  <div class="destination__ask" data-destination-conflict hidden role="status">
+    <p>
+      Your basket is going to <strong data-destination-current></strong>. This page is about <strong data-destination-browsing></strong>.
+    </p>
+    <div class="destination__ask-actions">
+      <button type="button" data-destination-switch></button>
+      <button type="button" data-destination-keep></button>
+    </div>
+  </div>
+</div>
+
+<style>
+  .destination {
+    display: none;
+    font-size: 0.875rem;
+    color: var(--color-ink);
+  }
+  :global(html.js) .destination {
+    display: block;
+  }
+  .destination--ivory {
+    color: var(--color-ivory);
+  }
+  .destination__label {
+    display: block;
+    margin-bottom: 0.4rem;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--color-berry);
+  }
+  .destination--ivory .destination__label {
+    color: inherit;
+    opacity: 0.8;
+  }
+  .destination__select {
+    width: 100%;
+    max-width: 22rem;
+    min-height: 44px;
+    border-radius: 999px;
+    border: 1px solid var(--color-line-strong, #cfc8bb);
+    background: var(--color-paper, #fff);
+    color: var(--color-ink);
+    padding: 0.55rem 1.1rem;
+    font-size: 0.875rem;
+  }
+  .destination__select:focus-visible {
+    outline: 2px solid var(--color-berry);
+    outline-offset: 2px;
+  }
+  .destination__help {
+    margin-top: 0.4rem;
+    font-size: 0.75rem;
+    line-height: 1.5;
+    color: var(--color-moss);
+  }
+  .destination--ivory .destination__help {
+    color: inherit;
+    opacity: 0.75;
+  }
+  .destination__ask {
+    margin-top: 0.75rem;
+    border: 1px solid var(--color-line, #e3ddd0);
+    border-radius: 14px;
+    background: var(--color-linen, #f4efe6);
+    color: var(--color-ink);
+    padding: 0.75rem 0.9rem;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+  }
+  .destination__ask-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.6rem;
+  }
+  .destination__ask-actions button {
+    min-height: 44px;
+    border-radius: 999px;
+    border: 1px solid var(--color-ink);
+    padding: 0 1rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    background: transparent;
+    color: var(--color-ink);
+    cursor: pointer;
+  }
+  .destination__ask-actions button[data-destination-switch] {
+    background: var(--color-ink);
+    color: var(--color-paper, #fff);
+  }
+</style>
+
+<script>
+  import { DESTINATION_UPDATED_EVENT, cityName, getDestination, resolveDestination, setDestination } from "../utils/destination";
+
+  const state = resolveDestination();
+  let dismissed = false;
+
+  function render() {
+    const destination = getDestination();
+    document.querySelectorAll<HTMLElement>("[data-destination-control]").forEach((control) => {
+      const select = control.querySelector<HTMLSelectElement>("[data-destination-select]");
+      if (select && select.value !== (destination ?? "")) select.value = destination ?? "";
+      const ask = control.querySelector<HTMLElement>("[data-destination-conflict]");
+      const conflict = !dismissed && Boolean(state.browsing && destination && state.browsing !== destination);
+      if (!ask) return;
+      ask.hidden = !conflict;
+      if (!conflict) return;
+      const current = cityName(destination) ?? "";
+      const browsing = cityName(state.browsing) ?? "";
+      ask.querySelector("[data-destination-current]")!.textContent = current;
+      ask.querySelector("[data-destination-browsing]")!.textContent = browsing;
+      ask.querySelector("[data-destination-switch]")!.textContent = `Send the order to ${browsing}`;
+      ask.querySelector("[data-destination-keep]")!.textContent = `Keep ${current}`;
+    });
+  }
+
+  document.querySelectorAll<HTMLElement>("[data-destination-control]").forEach((control) => {
+    control.querySelector<HTMLSelectElement>("[data-destination-select]")?.addEventListener("change", (event) => {
+      dismissed = true;
+      setDestination((event.currentTarget as HTMLSelectElement).value || null);
+    });
+    control.querySelector("[data-destination-switch]")?.addEventListener("click", () => {
+      dismissed = true;
+      setDestination(state.browsing);
+    });
+    control.querySelector("[data-destination-keep]")?.addEventListener("click", () => {
+      dismissed = true;
+      render();
+    });
+  });
+
+  window.addEventListener(DESTINATION_UPDATED_EVENT, render);
+  render();
+</script>

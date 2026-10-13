@@ -17,7 +17,7 @@ export const OCCASION_PAGES: OccasionMeta[] = [
     slug: "birthday",
     eyebrow: "Birthday Flowers",
     description:
-      "Fresh bouquets, baskets, flower boxes and hampers for birthday gifting in Bengaluru.",
+      "Fresh bouquets, baskets, flower boxes and hampers for birthday gifting.",
     heroNote:
       "Choose a birthday-ready flower gift and confirm today’s flower availability on WhatsApp.",
     fallbackProductSlugs: [

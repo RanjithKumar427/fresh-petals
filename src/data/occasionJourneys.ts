@@ -18,6 +18,7 @@ import { OCCASION_PAGES, type OccasionMeta } from "./occasionPages";
 import { isListedGarland, type GarlandDesign } from "./garlandRules";
 
 import { OCCASION_FILTER_LABELS, COLOUR_LABELS, BUDGET_LABELS } from "./shoppingTaxonomy";
+import { serviceCityCount } from "./serviceCities";
 export { OCCASION_FILTER_LABELS, COLOUR_LABELS, BUDGET_LABELS } from "./shoppingTaxonomy";
 
 export type Intent = "gift" | "ceremony";
@@ -463,5 +464,5 @@ export function journeyEnquiryText(noun: string, intent?: string): string {
 
 /** One consistent line about where we deliver (src/data/seoLanding.ts AREA_FAQ says the same). */
 /** The verified delivery coverage, short (shipping policy: starting in these two areas; nearby addresses checked before payment). */
-export const SERVICE_AREA_SHORT = "Delivering in Chamarajpet and Basavanagudi, Bengaluru — nearby addresses are checked on WhatsApp before you pay.";
-export const SERVICE_AREA_LINE = "Bengaluru — delivery starting in Chamarajpet and Basavanagudi; your area, timing and fee are confirmed on WhatsApp.";
+export const SERVICE_AREA_SHORT = `Delivering in ${serviceCityCount()} cities across India — your city, address and date are confirmed on WhatsApp before you pay.`;
+export const SERVICE_AREA_LINE = `${serviceCityCount()} cities across India; your city, timing and delivery charge are confirmed on WhatsApp.`;

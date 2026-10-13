@@ -131,7 +131,7 @@ const mainDimensions = (imageDimensions as Record<string, { width: number; heigh
 // price is given. Quote-only products never mention an amount.
 const quoteOnlyProduct = isQuoteOnly(product);
 const metaDescription = `${product.description.replace(/\s+$/, "").replace(/([^.!?])$/, "$1.")} ${
-  quoteOnlyProduct ? "Made by Fresh Petals in Bengaluru; price and availability on WhatsApp." : "From Fresh Petals in Bengaluru; availability confirmed on WhatsApp."
+  quoteOnlyProduct ? "Made by Fresh Petals for delivery across India; price and availability on WhatsApp." : "From Fresh Petals, for delivery across India; availability confirmed on WhatsApp."
 }`;
 const imageAlt = `${product.name}: ${product.description.replace(/\.$/, "")}`;
 const breadcrumbJsonLd = {
@@ -145,7 +145,7 @@ const breadcrumbJsonLd = {
 ---
 
 <BaseLayout
-  title={`${product.name} – ${product.category} | Fresh Petals Bengaluru`}
+  title={`${product.name} – ${product.category} | Fresh Petals`}
   jsonLd={[breadcrumbJsonLd]}
   description={metaDescription}
   image={product.image}
@@ -530,7 +530,7 @@ const breadcrumbJsonLd = {
       <!-- No reward amount here: none is verified. The referral page explains
            the current manual, WhatsApp-confirmed process. -->
       <p class="mt-4 text-sm leading-7 text-moss">
-        Know someone who needs fresh flowers in Bengaluru? Share Fresh Petals with them.
+        Know someone who needs fresh flowers? Share Fresh Petals with them.
       </p>
 
       <a

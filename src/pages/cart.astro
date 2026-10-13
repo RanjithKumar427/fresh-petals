@@ -1,5 +1,7 @@
  ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+import DestinationCity from "../components/DestinationCity.astro";
+import { cityOptions } from "../data/serviceCities";
 import { TaxonomyService } from "../server/services/TaxonomyService";
 import { DELIVERY_METHOD_OPTIONS } from "../server/services/delivery/DeliveryService";
 import { productCatalog } from "../data/productCatalog";
@@ -32,7 +34,7 @@ const publishedPrices = Object.fromEntries(productCatalog.map((product) => [prod
 ---
 
 <BaseLayout
-  title="Cart | Fresh Petals Bengaluru"
+  title="Cart | Fresh Petals"
   noindex
   description="Review your Fresh Petals flower order cart and continue on WhatsApp."
   showCategoryCarousel={false}
@@ -42,7 +44,7 @@ const publishedPrices = Object.fromEntries(productCatalog.map((product) => [prod
       <div class="mx-auto max-w-5xl">
         <div class="mb-10 text-center">
           <p class="fp-eyebrow">
-            Fresh Petals Bengaluru
+            Fresh Petals
           </p>
 
           <h1 class="fp-h1 mt-3">
@@ -108,6 +110,11 @@ const publishedPrices = Object.fromEntries(productCatalog.map((product) => [prod
                   placeholder="Your phone number"
                   class="w-full rounded-full border border-line-strong bg-paper px-5 py-3 text-sm text-ink outline-none transition placeholder:text-sage-deep focus:border-berry"
                 />
+              </div>
+
+              {/* The order's one recipient city (src/utils/destination.ts): shown, editable, never required. */}
+              <div class="md:col-span-2" data-cart-destination>
+                <DestinationCity label="Recipient city" />
               </div>
 
               <div>
@@ -292,7 +299,7 @@ const publishedPrices = Object.fromEntries(productCatalog.map((product) => [prod
 
     <li class="flex gap-2">
       <span class="mt-1 text-ink">•</span>
-      <span>Delivery fee depends on pincode, date and slot.</span>
+      <span>Delivery charges are confirmed on WhatsApp.</span>
     </li>
 
     <li class="flex gap-2">
@@ -330,6 +337,7 @@ const publishedPrices = Object.fromEntries(productCatalog.map((product) => [prod
 
   <script is:inline type="application/json" id="published-prices" set:html={JSON.stringify(publishedPrices)}></script>
   <script is:inline type="application/json" id="quote-only" set:html={JSON.stringify(QUOTE_ONLY_CONFIG)}></script>
+  <script is:inline type="application/json" id="service-cities" set:html={JSON.stringify(Object.fromEntries(cityOptions().map((city) => [city.slug, city.name])))}></script>
   <script is:inline>
     const whatsappNumber = "919652012274";
     // The shared quote-only rule (src/shared/quoteOnly.ts), as data: these
@@ -340,6 +348,22 @@ const publishedPrices = Object.fromEntries(productCatalog.map((product) => [prod
     const itemPriceLabel = (item) => (isQuoteOnlyItem(item) ? quoteOnly.label : item.priceLabel);
     const addOnPriceText = (item, addOn) => (!isQuoteOnlyItem(item) && addOn.priceLabel ? ` (${addOn.priceLabel})` : "");
     const CART_KEY = "fresh_petals_cart";
+
+    // The order's recipient city: the one value src/utils/destination.ts
+    // keeps, read here and checked against the registry. A basket saved
+    // before cities existed simply has none.
+    const serviceCities = JSON.parse(document.getElementById("service-cities")?.textContent || "{}");
+    function destinationSlug() {
+      try {
+        const slug = window.localStorage.getItem("fresh_petals_destination_city") || "";
+        return Object.prototype.hasOwnProperty.call(serviceCities, slug) ? slug : "";
+      } catch {
+        return "";
+      }
+    }
+    function destinationName() {
+      return serviceCities[destinationSlug()] || "";
+    }
 
     /**
      * Fire-and-forget admin inquiry log — Commerce Foundation Phase 3,
@@ -506,6 +530,9 @@ const publishedPrices = Object.fromEntries(productCatalog.map((product) => [prod
       if (type === "success") {
         serviceAreaResult.className =
           "mt-5 rounded-2xl border border-mint-line bg-mint-soft p-4 text-sm leading-7 text-ink";
+      } else if (type === "info") {
+        serviceAreaResult.className =
+          "mt-5 rounded-2xl border border-line bg-paper p-4 text-sm leading-7 text-ink";
       } else {
         serviceAreaResult.className =
           "mt-5 rounded-2xl border border-rose bg-linen p-4 text-sm leading-7 text-berry";
@@ -958,6 +985,10 @@ const publishedPrices = Object.fromEntries(productCatalog.map((product) => [prod
           </div>
 
           <div class="flex justify-between gap-4 border-b border-line pb-2">
+            <span>Recipient city</span>
+            <strong class="text-right text-ink">${escapeHtml(destinationName() || "Not chosen")}</strong>
+          </div>
+          <div class="flex justify-between gap-4 border-b border-line pb-2">
             <span>Main Pincode</span>
             <strong class="text-right text-ink">${escapeHtml(pincode)}</strong>
           </div>
@@ -1127,12 +1158,12 @@ const publishedPrices = Object.fromEntries(productCatalog.map((product) => [prod
             available: false,
             method,
             label: deliverySlot || method,
-            reason: "No pincode given — we'll confirm the delivery area on WhatsApp.",
+            reason: "Delivery charges will be confirmed on WhatsApp.",
           };
 
-      let areaText = "Manual confirmation needed";
+      let areaText = "To be confirmed on WhatsApp";
       let deliveryFeeText = "To be confirmed";
-      let serviceStatusText = deliveryResult.reason || "Manual confirmation needed";
+      let serviceStatusText = deliveryResult.reason || "Delivery charges will be confirmed on WhatsApp.";
       let promiseText = "To be confirmed";
 
       if (deliveryResult.available) {
@@ -1151,11 +1182,13 @@ const publishedPrices = Object.fromEntries(productCatalog.map((product) => [prod
           `,
         });
       } else {
+        // No estimate is not "unavailable": the city is confirmed with the
+        // customer, and only the charge and timing remain to be agreed.
         showServiceAreaResult({
-          type: "error",
+          type: "info",
           html: `
             <strong>${escapeHtml(deliveryResult.reason)}</strong><br />
-            You can still continue on WhatsApp — we will manually confirm delivery possibility, fee and timing.
+            Continue on WhatsApp — we confirm the delivery details, charge and timing for ${escapeHtml(destinationName() || "the recipient city")} before you pay.
           `,
         });
       }
@@ -1195,7 +1228,8 @@ Name: ${recipientName}
 Phone: ${recipientPhoneLocal}
 
 DELIVERY
-Pincode: ${pincode || "Not given — please confirm the delivery area"}
+Recipient city: ${destinationName() || "Not chosen — please confirm the recipient city"}
+Pincode: ${pincode || "Not given"}
 Area: ${areaText}
 Delivery Option: ${deliveryResult.label}
 Promise: ${promiseText}${priceRequest ? "" : `\nDelivery Fee: ${deliveryFeeText}`}
@@ -1268,6 +1302,7 @@ ${priceRequest ? quoteOnly.closing : "Please confirm availability, final price, 
           item_category: [...new Set(sent.map((item) => item.category))].join(","),
           item_count: sent.reduce((sum, item) => sum + (Number(item.quantity) || 1), 0),
           request_type: hasQuoteOnlyItems(sent) ? "price_request" : "order_request",
+          destination_city: destinationSlug(),
         });
 
         if (whatsappTab) {

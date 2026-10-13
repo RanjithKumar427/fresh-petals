@@ -13,7 +13,7 @@ interface Props {
 }
 const { products, totalCount, browse = [], budget = null } = Astro.props;
 const availabilityHref = whatsappLink(
-  ["Hi Fresh Petals, can you deliver flowers on a particular date?", "Date: ", "Delivery area: ", "Bouquet (if you've chosen one): "].join("\n")
+  ["Hi Fresh Petals, can you deliver flowers on a particular date?", "Date: ", "Recipient city: ", "Bouquet (if you've chosen one): "].join("\n")
 );
 const imageSizes = "(min-width: 1440px) 312px, (min-width: 1024px) 23vw, 46vw";
 const flowerLine = (product: EditProduct) =>

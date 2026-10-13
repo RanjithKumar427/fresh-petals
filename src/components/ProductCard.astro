@@ -241,7 +241,7 @@ const priceBadgeShort =
   import { QUOTE_ONLY_CLOSING } from "../shared/quoteOnly";
   import { journeyFromParams, journeyLines } from "../utils/journey";
   const contextFor = (element: Element) => { const link = element.closest("article")?.querySelector<HTMLAnchorElement>("[data-journey-link]"); return link ? journeyFromParams(new URL(link.href).searchParams) : null; };
-  import { getSelectedArea, AREA_UPDATED_EVENT } from "../utils/area";
+  import { DESTINATION_UPDATED_EVENT, cityName, getDestination } from "../utils/destination";
   // P1.5 (Phase 1 discovery hardening) -- same pattern DiscoveryPostCard.astro
   // and products/[slug].astro already use: a delegated listener plus a
   // SAVED_UPDATED_EVENT-driven repaint. Added directly here (not assumed
@@ -307,6 +307,7 @@ const priceBadgeShort =
   // preferred "FreshPetals Order Request" template. Links whose message
   // was explicitly customized via the `whatsappText` prop are left alone.
   function updateWhatsappLinks(area: string | null) {
+    // `area` is the recipient city's name (src/utils/destination.ts), or null.
     const links = document.querySelectorAll<HTMLAnchorElement>(
       '[data-whatsapp-order-link][data-whatsapp-custom-text="false"]'
     );
@@ -320,7 +321,7 @@ const priceBadgeShort =
       const productLink = link.closest("article")?.querySelector<HTMLAnchorElement>("[data-journey-link]");
       const linkLine = productLink ? `Link: ${location.origin}${new URL(productLink.href).pathname}` : "";
       if (link.dataset.whatsappQuoteOnly === "true") {
-        const lines = [`Hi Fresh Petals, I'd like to enquire about ${productName}.`, "Quantity: 1", linkLine, ...journeyLines(journey), area ? `Delivery area: ${area}` : ""].filter(Boolean);
+        const lines = [`Hi Fresh Petals, I'd like to enquire about ${productName}.`, "Quantity: 1", linkLine, ...journeyLines(journey), area ? `Recipient city: ${area}` : ""].filter(Boolean);
         link.href = `https://wa.me/${number}?text=${encodeURIComponent([...lines, "", QUOTE_ONLY_CLOSING].join("\n"))}`;
         return;
       }
@@ -331,7 +332,7 @@ const priceBadgeShort =
             "Product:",
             productName,
             "",
-            "Delivery area:",
+            "Recipient city:",
             area,
             "",
             "Please confirm availability, final price and delivery details.",
@@ -343,12 +344,10 @@ const priceBadgeShort =
     });
   }
 
-  updateWhatsappLinks(getSelectedArea());
-  document.addEventListener("fresh-petals-shop-updated", () => updateWhatsappLinks(getSelectedArea()));
-
-  window.addEventListener(AREA_UPDATED_EVENT, ((event: CustomEvent<{ area: string }>) => {
-    updateWhatsappLinks(event.detail.area);
-  }) as EventListener);
+  const destinationCityName = () => cityName(getDestination());
+  updateWhatsappLinks(destinationCityName());
+  document.addEventListener("fresh-petals-shop-updated", () => updateWhatsappLinks(destinationCityName()));
+  window.addEventListener(DESTINATION_UPDATED_EVENT, () => updateWhatsappLinks(destinationCityName()));
 
   const buttons = document.querySelectorAll("[data-add-to-cart]");
 

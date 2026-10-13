@@ -74,7 +74,7 @@ const printSlot = (print: number, active: number) => {
 };
 ---
 
-<section class="hero" data-hero data-slide={campaigns[0]?.id} aria-label="Fresh Petals flowers in Bengaluru">
+<section class="hero" data-hero data-slide={campaigns[0]?.id} aria-label="Fresh Petals flowers, delivered across India">
   <div
     class="hero__stage"
     data-hero-stage
@@ -174,7 +174,7 @@ const printSlot = (print: number, active: number) => {
               <svg class="hero__doodle hero__doodle--flourish" viewBox="0 0 120 24" aria-hidden="true" focusable="false">
                 <path pathLength="1" d="M2 14C22 2 38 22 56 12c6-4 12-6 14 0s-6 8-8 2c-2-8 16-10 30-2 10 5 18 0 26-4" />
               </svg>
-              <p class="hero__eyebrow">Floral moments in Bengaluru</p>
+              <p class="hero__eyebrow">Floral moments across India</p>
               <Heading class="hero__headline" id={index === 0 ? "hero-title" : undefined}>
                 {campaign.headline.before}<em>{campaign.headline.accent}</em>{campaign.headline.after}
               </Heading>
@@ -245,9 +245,8 @@ const printSlot = (print: number, active: number) => {
   </nav>
 
   <div class="hero__below">
-    <p class="hero__assure">Availability, delivery and your final total confirmed before you pay.</p>
-    <p class="hero__links"><a href="/search">Search by name or code</a> <span aria-hidden="true">·</span> <a href="/custom-orders">Custom orders</a></p>
-    <p class="sr-only">{HOME_LANDING.intro[0]}</p>
+    <p class="hero__assure" data-home-coverage>{HOME_LANDING.intro[0]}</p>
+    <p class="hero__links"><a href="/locations">Delivery cities</a> <span aria-hidden="true">·</span> <a href="/search">Search by name or code</a> <span aria-hidden="true">·</span> <a href="/custom-orders">Custom orders</a></p>
   </div>
 </section>
 

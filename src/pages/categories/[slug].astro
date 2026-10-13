@@ -40,10 +40,10 @@ export async function getStaticPaths() {
 
   const categoryDescriptions: Record<string, string> = {
     "all-flowers":
-      "Explore all fresh flowers, bouquets, lilies, flowerboxes, baskets and gifting arrangements from Fresh Petals Bengaluru.",
+      "Explore all fresh flowers, bouquets, lilies, flowerboxes, baskets and gifting arrangements from Fresh Petals.",
 
     lilies:
-      "Explore lilies from Fresh Petals Bengaluru. Final availability, pricing and delivery will be confirmed on WhatsApp.",
+      "Explore lilies from Fresh Petals. Final availability, pricing and delivery will be confirmed on WhatsApp.",
 
     "fragrant-lilies":
       "Premium lily bouquets and fragrant flower arrangements based on fresh market availability.",
@@ -325,7 +325,7 @@ export async function getStaticPaths() {
       slug,
       description:
         categoryDescriptions[slug] ??
-        `Explore ${titleFromSlug(slug).toLowerCase()} from Fresh Petals Bengaluru. Final availability, pricing and delivery will be confirmed on WhatsApp.`,
+        `Explore ${titleFromSlug(slug).toLowerCase()} from Fresh Petals. Final availability, pricing and delivery will be confirmed on WhatsApp.`,
     };
 
     // The launch range (src/data/launchCatalogue.ts) replaces the full

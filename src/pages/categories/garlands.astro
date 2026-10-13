@@ -41,7 +41,7 @@ const name = "Garlands";
 const description =
   garlands.length > 0
     ? GARLANDS_LANDING.description
-    : "Explore garlands from Fresh Petals Bengaluru. Final availability, pricing and delivery will be confirmed on WhatsApp.";
+    : "Explore garlands from Fresh Petals. Final availability, pricing and delivery will be confirmed on WhatsApp.";
 const collections = populatedCollections(garlands);
 const landing = {
   faqs: GARLANDS_LANDING.faqs,
@@ -57,7 +57,7 @@ const breadcrumbJsonLd = {
 ---
 
 <BaseLayout
-  title={garlands.length > 0 ? GARLANDS_LANDING.title : `${name} | Fresh Petals Bengaluru`}
+  title={garlands.length > 0 ? GARLANDS_LANDING.title : `${name} | Fresh Petals`}
   description={description}
   image={garlands[0]?.image}
   showCategoryCarousel={false}

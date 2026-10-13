@@ -11,7 +11,7 @@ import { whatsappLink } from "../../config/storefront";
 
 const shot = getFinalPhoto();
 const helpHref = whatsappLink(
-  ["Hi Fresh Petals, could you help me choose flowers?", "Occasion: ", "Budget: ", "Delivery date (optional): ", "Delivery area (optional): "].join("\n")
+  ["Hi Fresh Petals, could you help me choose flowers?", "Occasion: ", "Budget: ", "Delivery date (optional): ", "Recipient city (optional): "].join("\n")
 );
 ---
 
@@ -32,7 +32,7 @@ const helpHref = whatsappLink(
   <div class="final__copy">
     <p class="final__eyebrow" data-reveal="fade">Not sure what to choose?</p>
     <h2 id="final-title" class="final__title" data-reveal="mask">Tell us the occasion <em>and your budget.</em></h2>
-    <p class="final__text">We'll suggest bouquets from our range that fit, and check your date and delivery area — before anything is ordered.</p>
+    <p class="final__text">We'll suggest bouquets from our range that fit, and check your date and recipient city — before anything is ordered.</p>
     <div class="final__actions">
       <a class="final__btn" href={helpHref} target="_blank" rel="noopener noreferrer">Tell us the occasion and your budget</a>
       <a class="final__btn final__btn--quiet" href="/categories/bouquets">Browse bouquets</a>

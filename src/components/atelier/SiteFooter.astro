@@ -1,23 +1,59 @@
 ---
-// Compact footer with verified links and contact details only. The
-// Instagram handle is the business's existing account (still named
+// Discovery footer: five readable groups of links to pages that exist, plus
+// the verified contact details. Flowers and occasions come first, then the
+// published city pages (the full list of cities lives on /locations, not
+// here), the buying guide, and business and help pages.
+// The Instagram handle is the business's existing account (still named
 // freshpetals.hyderabad — flagged for the owner's decision).
 import Wordmark from "./Wordmark.astro";
-import { SITE_NAV } from "../../data/navigation";
+import { POOJA_FLOWERS_LINK, OCCASIONS_HREF } from "../../data/navigation";
+import { garlandsPromoted, readyCategories } from "../../data/launchCatalogue";
+import { GARLANDS_PATH, GARLAND_COLLECTIONS, GARLAND_GUIDE_PATH } from "../../data/garlandCollections";
+import { LOCATIONS_PATH, hubPath, publishedHubs, serviceCityCount } from "../../data/serviceCities";
+import { whatsappLink } from "../../config/storefront";
 
-const whatsappNumber = "919652012274";
-const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent("Hi Fresh Petals, I have a question about an order.")}`;
+const whatsappUrl = whatsappLink("Hi Fresh Petals, I have a question about an order.");
 const instagramUrl = "https://www.instagram.com/freshpetals.hyderabad/";
+const cityCount = serviceCityCount();
 
-// Same structure as the header (src/data/navigation.ts).
-const shop = SITE_NAV.flatMap((item) => (item.links ? [{ label: item.label, href: item.href }, ...item.links.slice(1)] : []));
-const visit = SITE_NAV.filter((item) => !item.links).map(({ label, href }) => ({ label, href }));
-const help = [
+type Link = { label: string; href: string };
+const garlands = garlandsPromoted();
+const flowers: Link[] = [
+  ...readyCategories().filter((category) => category.id !== "garlands").map((category) => ({ label: category.label, href: category.href })),
+  ...(garlands ? [{ label: "Wedding garlands", href: GARLANDS_PATH }] : []),
+  POOJA_FLOWERS_LINK,
+  ...(garlands ? GARLAND_COLLECTIONS.map((collection) => ({ label: collection.label, href: collection.path })) : []),
+];
+const occasions: Link[] = [
+  { label: "All occasions", href: OCCASIONS_HREF },
+  { label: "Birthday", href: "/occasions/birthday" },
+  { label: "Anniversary", href: "/occasions/anniversary" },
+  { label: "Wedding", href: "/occasions/wedding" },
+  { label: "Sympathy", href: "/occasions/sympathy" },
+];
+const cities: Link[] = [
+  ...publishedHubs().map((city) => ({ label: city.name, href: hubPath(city)! })),
+  { label: `All ${cityCount} delivery cities`, href: LOCATIONS_PATH },
+];
+const choosing: Link[] = [
+  { label: "Choosing a wedding garland", href: GARLAND_GUIDE_PATH },
+  { label: "Custom orders", href: "/custom-orders" },
+  { label: "FAQs", href: "/faqs" },
+];
+const help: Link[] = [
+  { label: "About", href: "/about" },
+  { label: "Contact", href: "/contact" },
   { label: "Delivery", href: "/shipping" },
   { label: "Refunds", href: "/refunds" },
-  { label: "FAQs", href: "/faqs" },
-  { label: "Privacy", href: "/privacy" },
   { label: "Terms", href: "/terms" },
+  { label: "Privacy", href: "/privacy" },
+];
+const groups: { title: string; label: string; links: Link[] }[] = [
+  { title: "Flowers", label: "Flowers", links: flowers },
+  { title: "Occasions", label: "Occasions", links: occasions },
+  { title: "Delivery cities", label: "Delivery cities", links: cities },
+  { title: "Choosing flowers", label: "Choosing flowers", links: choosing },
+  { title: "Fresh Petals", label: "Business and help", links: help },
 ];
 ---
 
@@ -25,23 +61,17 @@ const help = [
   <div class="site-footer__inner">
     <div class="site-footer__brand">
       <Wordmark tone="ivory" size="lg" />
-      <p>Hand-tied bouquets and made-to-order wedding garlands in Bengaluru (Bangalore), starting with Chamarajpet and Basavanagudi. Choose online, confirm on WhatsApp.</p>
+      <p>Hand-tied bouquets, made-to-order wedding garlands and pooja flowers for delivery in {cityCount} cities across India. Choose online, confirm on WhatsApp.</p>
     </div>
 
-    <nav aria-label="Shop" class="site-footer__col">
-      <p class="site-footer__title">Shop</p>
-      <ul>{shop.map((link) => <li><a href={link.href}>{link.label}</a></li>)}</ul>
-    </nav>
-
-    <nav aria-label="Fresh Petals" class="site-footer__col">
-      <p class="site-footer__title">Fresh Petals</p>
-      <ul>{visit.map((link) => <li><a href={link.href}>{link.label}</a></li>)}</ul>
-    </nav>
-
-    <nav aria-label="Help" class="site-footer__col">
-      <p class="site-footer__title">Help</p>
-      <ul>{help.map((link) => <li><a href={link.href}>{link.label}</a></li>)}</ul>
-    </nav>
+    {
+      groups.map((group) => (
+        <nav aria-label={group.label} class="site-footer__col" data-footer-group={group.label}>
+          <p class="site-footer__title">{group.title}</p>
+          <ul>{group.links.map((link) => <li><a href={link.href}>{link.label}</a></li>)}</ul>
+        </nav>
+      ))
+    }
 
     <div class="site-footer__col">
       <p class="site-footer__title">Talk to us</p>
@@ -83,19 +113,22 @@ const help = [
     grid-column: 1 / -1;
   }
 
-  @media (min-width: 1024px) {
+  @media (min-width: 700px) {
     .site-footer__inner {
-      grid-template-columns: 1.6fr repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(3, minmax(0, 1fr));
     }
+  }
 
-    .site-footer__brand {
-      grid-column: auto;
+  @media (min-width: 1100px) {
+    .site-footer__inner {
+      gap: 2.5rem 2rem;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
     }
   }
 
   .site-footer__brand p {
     margin: 1rem 0 0;
-    max-width: 32ch;
+    max-width: 52ch;
     color: color-mix(in srgb, var(--color-ivory) 78%, transparent);
     line-height: 1.6;
   }
