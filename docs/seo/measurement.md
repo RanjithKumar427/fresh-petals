@@ -63,3 +63,31 @@ Reading it:
 ## Baseline
 
 As of 12 October 2026 the Search Console property exists but holds no data yet ("processing"), there is no analytics, and therefore there is no measured baseline for impressions, clicks, enquiries or orders. The technical baseline (titles, canonicals, indexing, structured data, images) is in `search-growth-2026-10.md`. The measured baseline is the first full 28 days of Search Console data.
+
+## GA4 is live (13 October 2026)
+
+- Property stream: "Fresh Petals website", `https://onlyfreshpetals.in/`, Measurement ID `G-V75FJQ06ZS`, Stream ID 16121182207.
+- `PUBLIC_GA_MEASUREMENT_ID` is set in Vercel for **Production only**. Preview deployments and local builds have no ID, load no Google tag and send nothing.
+- One tag, loaded once by `src/components/Analytics.astro`. No Tag Manager container and no second snippet: adding either would double-count.
+- **Baseline date: 13 October 2026.** There is no analytics data before it. The first figures to trust are for the first complete week after it.
+
+### Settings to make once in GA4 (Admin)
+
+1. Custom definitions → create event-scoped custom dimensions for: `landing_path`, `item_category`, `link_type`, `request_type`, `destination_city`, `ai_referrer`, `ai_attribution`. Until registered they are collected but do not appear in reports.
+2. Events → mark `whatsapp_enquiry_click` and `basket_quote_request` as key events. They are enquiries, not purchases; do not map them to `purchase` or give them a value.
+3. Data retention → 14 months.
+4. Leave Google signals and ads personalisation off (the site sends neither).
+
+### Weekly review (first one: after the first complete week of data)
+
+In Explore, a free-form table for the last complete week, with a page-path filter per group:
+
+| Group | Page path filter |
+|---|---|
+| City pages | begins with `/locations/` |
+| Products | begins with `/products/` |
+| Guides | begins with `/guides` |
+
+For each group record: sessions; session source / medium; `ai_referrer` sessions (assistant visits, labelled by hostname or allowlisted campaign only); `whatsapp_enquiry_click` and `basket_quote_request` counts; and click rate = enquiry events ÷ sessions for that group. Break enquiry events down by `item_id` (product slug or FP-G design code) and `destination_city`.
+
+Read alongside Search Console (Performance → Pages and Queries, same week) for impressions and queries; the two tools count different things and are not added together. Under about 100 sessions in a group, treat a click rate as a count, not a rate, and make no change on it. A recommendation is written only from these figures; with no data yet, none is made.
