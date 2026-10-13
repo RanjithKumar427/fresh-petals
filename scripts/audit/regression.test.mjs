@@ -666,7 +666,9 @@ test('assistant referrals: labelled from a known hostname only; no referrer path
   const script = analytics.split('---')[2];
   assert(/AI_HOSTS = \{ "chatgpt\.com": "chatgpt"/.test(script) && /new URL\(document\.referrer\)\.hostname/.test(script) && /data\.ai_referrer = aiReferrer/.test(script) && /data\.ai_attribution = aiMethod/.test(script) && /"referrer" : AI_HOSTS\[utm\] \? "campaign"/.test(script));
   // The referrer is used for its hostname and nowhere else; google.com is not an AI host.
-  assert.equal(script.match(/document\.referrer/g).length, 2);
+  // Two reads for the assistant label (hostname) and two for page_referrer (origin only).
+  assert.equal(script.match(/document\.referrer/g).length, 4);
+  assert(/page_referrer: \(function \(\) \{\s+try \{\s+return document\.referrer \? new URL\(document\.referrer\)\.origin \+ "\/" : "";/.test(script) && /page_location: location\.origin \+ location\.pathname/.test(script));
   assert(!/google\.com": "|"bing\.com"/.test(script.replace('gemini.google.com', '')));
   assert(!/location\.href|location\.search\)\.toString|pathname \+ location\.search/.test(script));
   assert(/A visit with no referrer is direct/.test(analytics));

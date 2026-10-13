@@ -55,6 +55,15 @@ const enabled = /^G-[A-Z0-9]{4,}$/.test(measurementId);
         allow_google_signals: false,
         allow_ad_personalization_signals: false,
         page_location: location.origin + location.pathname,
+        // The referring site only. Google's tag would otherwise send the whole
+        // referring URL, which can carry another site's path and query.
+        page_referrer: (function () {
+          try {
+            return document.referrer ? new URL(document.referrer).origin + "/" : "";
+          } catch (e) {
+            return "";
+          }
+        })(),
       });
     }
 
