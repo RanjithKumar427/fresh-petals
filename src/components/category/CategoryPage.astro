@@ -55,7 +55,8 @@ const landing = CATEGORY_LANDING[category.slug];
 const pageTitle = landing?.title ?? `${category.name} | Fresh Petals`;
 const pageDescription = landing?.description ?? category.description;
 const pageHeading = landing?.h1 ?? category.name;
-const fromPrice = landing ? lowestPrice(products) : null;
+// All Flowers is mostly quoted designs; a "from" amount taken from its few priced products would misdescribe the page.
+const fromPrice = landing && category.slug !== "all-flowers" ? lowestPrice(products) : null;
 const noindex = products.length === 0 || NOINDEX_CATEGORY_SLUGS.has(category.slug);
 const canonical = CANONICAL_CATEGORY[category.slug] ? `/categories/${CANONICAL_CATEGORY[category.slug]}` : undefined;
 // Launch categories (bouquets) can be narrowed by occasion, budget and
@@ -260,6 +261,8 @@ const breadcrumbJsonLd = {
                     </div>
                   </section>
                 ))}
+                {category.slug === "pooja-flowers" && (
+                <Fragment>
                 <div class="grid max-w-5xl gap-6 md:grid-cols-[1.3fr_1fr]" data-pooja-enquiry>
                   <div class="rounded-[24px] border border-line bg-paper p-6">
                     <h2 class="text-base font-semibold text-ink">What to send us on WhatsApp</h2>
@@ -284,6 +287,8 @@ const breadcrumbJsonLd = {
                     <p class="mt-3">{POOJA_PHOTO_NOTE}</p>
                   </div>
                 </div>
+                </Fragment>
+                )}
               </div>
             </div>
           ) : products.length > 0 ? (

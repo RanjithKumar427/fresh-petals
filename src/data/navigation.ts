@@ -18,8 +18,12 @@ export type NavLink = { label: string; href: string };
 export type NavItem = { label: string; href: string; links?: NavLink[]; extra?: NavLink };
 
 export const POOJA_FLOWERS_LINK: NavLink = { label: "Pooja flowers", href: "/categories/pooja-flowers" };
+// The whole public flower catalogue, which is wider than the curated launch
+// bouquets. Linked first, so the menu does not suggest the range ends at eight.
+export const ALL_FLOWERS_LINK: NavLink = { label: "All flowers", href: "/categories/all-flowers" };
 
 const shopLinks: NavLink[] = [
+  ALL_FLOWERS_LINK,
   ...readyCategories().flatMap((category) => [
     { label: `All ${category.label.toLowerCase()}`, href: category.href },
     ...launchGroups(category.id).map(({ group }) => ({ label: group.label, href: `${category.href}#${group.id}` })),

@@ -67,7 +67,8 @@ const flowerLine = (product: EditProduct) =>
         </nav>
         <a class="edit__availability" href={availabilityHref} target="_blank" rel="noopener noreferrer">Need a particular date? Check availability <span aria-hidden="true">↗</span></a>
       </div>
-      <a href="/categories/bouquets" class="fp-btn-outline edit__all">{`View all ${totalCount} ${totalCount === 1 ? "bouquet" : "bouquets"}`} <span aria-hidden="true">→</span></a>
+      <a href="/categories/bouquets" class="fp-btn-outline edit__all">{`View our ${totalCount} featured ${totalCount === 1 ? "bouquet" : "bouquets"}`} <span aria-hidden="true">→</span></a>
+      <a href="/categories/all-flowers" class="edit__availability" data-all-flowers-link>These are our featured designs. Browse the full flower catalogue <span aria-hidden="true">→</span></a>
     </div>
   </section>
 )}

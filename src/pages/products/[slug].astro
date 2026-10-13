@@ -1,5 +1,6 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
+import { productTitle } from "../../data/productTitles";
 import { guideForCategory } from "../../data/guides";
 import ProductOptions from "../../components/ProductOptions.astro";
 import JourneyNote from "../../components/occasion/JourneyNote.astro";
@@ -60,8 +61,14 @@ const idealFor = product.idealFor?.length
   ? product.idealFor.join(", ")
   : product.occasionTags?.join(", ");
 
-const stemCount = product.stemCount || "Not recorded — please confirm on WhatsApp";
-const careLevel = product.careLevel || "Occasional";
+// Facts that fit the product. A stem range is a bouquet fact: it is shown
+// only for bouquets and lilies that record one, and stays a listed range, not
+// a promise of the bouquet as made. Loose flowers, strings, boxes and other
+// products have no stems to list; their quantity is confirmed on WhatsApp.
+const isBouquet = /^(bouquets|lilies)$/i.test(product.category);
+const stemCount = isBouquet ? product.stemCount ?? null : null;
+// One useful care instruction from the record, in place of a vague grade.
+const careLine = product.careNotes?.slice(0, 2).join(" ") || null;
 
 const trustIndicators = [
   "Fresh Flowers",
@@ -146,7 +153,7 @@ const breadcrumbJsonLd = {
 ---
 
 <BaseLayout
-  title={`${product.name} – ${product.category} | Fresh Petals`}
+  title={productTitle(product)}
   jsonLd={[breadcrumbJsonLd]}
   description={metaDescription}
   image={product.image}
@@ -335,12 +342,21 @@ const breadcrumbJsonLd = {
              label/value pairs rather than boxed cards so they read as
              detail, not as decisions of equal weight to the above. -->
         <div class="mt-4 flex flex-wrap gap-x-8 gap-y-2 border-t border-line pt-4">
-          <p class="text-xs text-moss">
-            <span class="font-semibold text-ink">Listed stems</span> — {stemCount}. Confirm the final arrangement on WhatsApp.
-          </p>
-          <p class="text-xs text-moss">
-            <span class="font-semibold text-ink">Care</span> — {careLevel}
-          </p>
+          {stemCount && (
+            <p class="text-xs text-moss" data-fact="stems">
+              <span class="font-semibold text-ink">Listed stems</span> — {stemCount}. A listed range, not a count of the bouquet as made; confirm the final arrangement on WhatsApp.
+            </p>
+          )}
+          {!isBouquet && (
+            <p class="text-xs text-moss" data-fact="quantity">
+              <span class="font-semibold text-ink">Quantity</span> — not fixed on this page. Tell us how much you need and we confirm it, and the price, on WhatsApp.
+            </p>
+          )}
+          {careLine && (
+            <p class="text-xs text-moss" data-fact="care">
+              <span class="font-semibold text-ink">Care</span> — {careLine}
+            </p>
+          )}
         </div>
 
         <!-- Only facts the catalogue holds. Size is not recorded for any

@@ -145,3 +145,30 @@ export const POOJA_ENQUIRY_HREF = whatsappLink(
 
 export const POOJA_PHOTO_NOTE =
   "Some photographs on this page show the kind of flowers we supply rather than the exact pack. What you receive depends on the day's market, and we confirm it with you before you pay.";
+
+// ---------------------------------------------------------------------------
+// All Flowers: groups by how a product is presented, read from its record.
+// ---------------------------------------------------------------------------
+
+type Listed = Pick<Product, "slug" | "category" | "whatsIncluded">;
+const ALL_FLOWER_GROUPS: { id: string; label: string; note: string; test: (product: Listed) => boolean }[] = [
+  { id: "vase", label: "Arrangements in a vase", note: "Arranged in a vase and ready to stand on a table or a desk.", test: (product) => (product.whatsIncluded ?? []).some((item) => /\bvase\b/i.test(item)) },
+  { id: "lilies", label: "Lily bouquets", note: "Fewer, larger flowers. Lilies usually arrive with some buds closed that open over the following days.", test: (product) => /^lilies$/i.test(product.category) },
+  { id: "wrapped", label: "Hand-wrapped bouquets", note: "Wrapped and tied by hand. Each card lists the flowers on record; the wrapping is on the design's own page.", test: (product) => /^bouquets$/i.test(product.category) },
+  { id: "boxes-baskets", label: "Flowers in a box or a basket", note: "Packed to carry or to give. These keep their listed prices.", test: (product) => /^(flowerbox|baskets)$/i.test(product.category) },
+];
+const ALL_FLOWERS_OTHER = { id: "more", label: "More flowers", note: "Other flower products in the catalogue, at their listed prices." };
+
+/** Every listed product in exactly one group, in the page's own order; a group with nothing in it is left out. */
+export function allFlowerSections<T extends Listed>(products: T[]): { id: string; label: string; note: string | null; products: T[] }[] {
+  const placed = new Set<string>();
+  const sections = ALL_FLOWER_GROUPS.map((group) => {
+    const items = products.filter((product) => !placed.has(product.slug) && group.test(product));
+    items.forEach((product) => placed.add(product.slug));
+    return { id: group.id, label: group.label, note: group.note, products: items };
+  });
+  const rest = products.filter((product) => !placed.has(product.slug));
+  // Shown in a shopper's order: wrapped bouquets first, then lilies, vase arrangements, boxes and baskets.
+  const order = ["wrapped", "lilies", "vase", "boxes-baskets"];
+  return [...order.map((id) => sections.find((section) => section.id === id)!), ...(rest.length ? [{ ...ALL_FLOWERS_OTHER, products: rest }] : [])].filter((section) => section.products.length > 0);
+}

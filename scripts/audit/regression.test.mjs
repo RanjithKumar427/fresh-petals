@@ -673,3 +673,57 @@ test('assistant referrals: labelled from a known hostname only; no referrer path
   assert(!/location\.href|location\.search\)\.toString|pathname \+ location\.search/.test(script));
   assert(/A visit with no referrer is direct/.test(analytics));
 });
+
+// ---------------------------------------------------------------------------
+// Search-competitiveness release: All Flowers, descriptive titles, product facts
+// ---------------------------------------------------------------------------
+
+test('All Flowers: linked first in the menu and footer; every listed product in exactly one presentation group; no empty group', () => {
+  const nav = load('src/data/navigation.ts');
+  const shop = nav.SITE_NAV.find((item) => item.label === 'Shop Flowers');
+  assert.deepEqual(json(shop.links[0]), { label: 'All flowers', href: '/categories/all-flowers' });
+  assert(/ALL_FLOWERS_LINK,/.test(readFileSync('src/components/atelier/SiteFooter.astro', 'utf8')));
+  const guide = load('src/data/collectionGuidance.ts');
+  const listed = productCatalog.filter((product) => product.collectionTags?.includes('all-flowers'));
+  const sections = guide.allFlowerSections(listed);
+  const placed = sections.flatMap((section) => section.products.map((product) => product.slug));
+  assert.equal(placed.length, listed.length);
+  assert.equal(new Set(placed).size, listed.length);
+  assert(sections.every((section) => section.products.length > 0 && section.label && section.note));
+  // Groups come from the records: a vase arrangement is one whose record lists a vase; lilies are the Lilies category.
+  for (const product of sections.find((section) => section.id === 'vase')?.products ?? []) assert(product.whatsIncluded.some((item) => /vase/i.test(item)), product.slug);
+  for (const product of sections.find((section) => section.id === 'wrapped').products) assert(product.category === 'Bouquets' && !product.whatsIncluded.some((item) => /vase/i.test(item)), product.slug);
+  assert.equal(guide.allFlowerSections([]).length, 0);
+  assert.deepEqual(json(guide.allFlowerSections([{ slug: 'x', category: 'Offers', whatsIncluded: [] }]).map((section) => section.id)), ['more']);
+  const landing = load('src/data/seoLanding.ts');
+  const all = landing.CATEGORY_LANDING['all-flowers'];
+  // Distinct from the homepage and the bouquet collection; no count typed into the copy.
+  assert.equal(new Set([all.title, landing.HOME_LANDING.title, landing.CATEGORY_LANDING.bouquets.title]).size, 3);
+  assert(!/(51|37|eight|8)/.test(JSON.stringify([all.intro, all.faqs])) && !/₹|same[- ]day|guarantee/i.test(JSON.stringify(all)));
+  assert(/category\.slug === "pooja-flowers" && \(/.test(readFileSync('src/components/category/CategoryPage.astro', 'utf8')));
+});
+
+test('product titles and facts: flower and form from the record; model names kept; no stem line for loose flowers; no vague care grade', () => {
+  const titles = load('src/data/productTitles.ts');
+  const bySlug = (slug) => productCatalog.find((product) => product.slug === slug);
+  assert.equal(titles.productTitle(bySlug('red-affair')), 'Red Affair – Red Rose Bouquet | Fresh Petals');
+  assert.equal(titles.productTitle(bySlug('blush-lily-letter')), 'Blush Lily Letter – Blush Lily Bouquet | Fresh Petals');
+  assert.equal(titles.productTitle(bySlug('first-love')), 'First Love Pink & White Tulip Bouquet | Fresh Petals');
+  assert.equal(titles.productTitle(bySlug('colour-pop-love')), 'Colour Pop Love Gerbera & Daisy Vase Arrangement | Fresh Petals');
+  // Non-bouquets and products with no recorded flowers keep the plain title.
+  assert.equal(titles.productTitle(bySlug('jasmine-malli')), 'Jasmine / Malli – Pooja Flowers | Fresh Petals');
+  assert.equal(titles.productTitle({ name: 'Plain', category: 'Bouquets', flowerTypes: [], whatsIncluded: [] }), 'Plain – Bouquets | Fresh Petals');
+  assert.equal(titles.flowerDescriptor({ flowerTypes: ['Fresh rose foliage', 'Eucalyptus'] }), null);
+  const bouquets = productCatalog.filter((product) => /^(Bouquets|Lilies)$/.test(product.category));
+  const all = bouquets.map((product) => titles.productTitle(product));
+  assert.equal(new Set(all).size, all.length);
+  for (const [index, title] of all.entries()) {
+    assert(title.startsWith(bouquets[index].name) && title.endsWith(' | Fresh Petals') && title.length <= 70, title);
+    assert(!/₹|\d/.test(title.replace(bouquets[index].name, '')), title);
+    // Every descriptor word is a word of the product's own recorded flowers.
+    const descriptor = titles.flowerDescriptor(bouquets[index]);
+    if (descriptor && descriptor !== 'Mixed Flower') for (const word of descriptor.toLowerCase().split(/[\s&]+/).filter((w) => w && w !== 'mixed')) assert(bouquets[index].flowerTypes.join(' ').toLowerCase().includes(word.replace(/y$/, '')), `${title}: ${word}`);
+  }
+  const page = readFileSync('src/pages/products/[slug].astro', 'utf8');
+  assert(/title=\{productTitle\(product\)\}/.test(page) && /const stemCount = isBouquet \? product\.stemCount \?\? null : null/.test(page) && /\{stemCount && \(/.test(page) && !/careLevel/.test(page) && /A listed range, not a count of the bouquet as made/.test(page));
+});

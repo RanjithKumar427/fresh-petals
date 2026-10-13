@@ -6,7 +6,7 @@
 // The Instagram handle is the business's existing account (still named
 // freshpetals.hyderabad — flagged for the owner's decision).
 import Wordmark from "./Wordmark.astro";
-import { POOJA_FLOWERS_LINK, OCCASIONS_HREF } from "../../data/navigation";
+import { ALL_FLOWERS_LINK, POOJA_FLOWERS_LINK, OCCASIONS_HREF } from "../../data/navigation";
 import { garlandsPromoted, readyCategories } from "../../data/launchCatalogue";
 import { GARLANDS_PATH, GARLAND_COLLECTIONS } from "../../data/garlandCollections";
 import { GUIDES, GUIDES_PATH } from "../../data/guides";
@@ -20,6 +20,7 @@ const cityCount = serviceCityCount();
 type Link = { label: string; href: string };
 const garlands = garlandsPromoted();
 const flowers: Link[] = [
+  ALL_FLOWERS_LINK,
   ...readyCategories().filter((category) => category.id !== "garlands").map((category) => ({ label: category.label, href: category.href })),
   ...(garlands ? [{ label: "Wedding garlands", href: GARLANDS_PATH }] : []),
   POOJA_FLOWERS_LINK,

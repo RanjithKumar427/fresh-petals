@@ -84,6 +84,7 @@ export const HOME_LANDING: LandingContent = {
   ],
   faqs: [ORDERING_FAQ, AREA_FAQ],
   links: [
+    { href: "/categories/all-flowers", label: "All flowers" },
     { href: "/categories/bouquets", label: "Flower bouquets" },
     { href: "/categories/bouquets#roses", label: "Rose bouquets" },
     { href: "/categories/bouquets#lilies", label: "Lily bouquets" },
@@ -126,11 +127,49 @@ export const CATEGORY_LANDING: Record<string, LandingContent> = {
       AREA_FAQ,
     ],
     links: [
+      { href: "/categories/all-flowers", label: "All flowers (the full catalogue)" },
       { href: "/guides/choosing-a-flower-bouquet", label: "How to choose a bouquet" },
       { href: "/occasions/birthday", label: "Birthday flowers" },
       { href: "/occasions/anniversary", label: "Anniversary flowers" },
       { href: "/guides/sending-flowers-to-another-city", label: "Sending to another city" },
       { href: "/custom-orders", label: "Custom orders" },
+    ],
+  },
+
+  "all-flowers": {
+    title: "Flowers Online | Bouquets, Lilies & Arrangements | Fresh Petals",
+    description: `Order flowers online for delivery in ${CITY_COUNT} cities across India: every bouquet, lily design and arrangement we list, grouped by how it is presented. Price and date confirmed on WhatsApp.`,
+    h1: "All Flowers",
+    intro: [
+      "Every flower design we list, in one place: hand-wrapped bouquets, lily bouquets, arrangements in a vase, and flowers in a box or a basket. The bouquet collection shows a shorter featured range; this page is the whole catalogue.",
+      `Choose a design, tell us the recipient city (we take orders for ${CITY_COUNT} cities) and the date, and send it on WhatsApp. We confirm what is available for that day, the price and the delivery details before you pay.`,
+    ],
+    faqs: [
+      {
+        question: "What does the quote include?",
+        answer:
+          "The price of the design for your date, any change or substitution you asked for or we suggest, add-ons such as a vase or a card, and the delivery charge for the recipient's address. You see the whole amount on WhatsApp and accept it before paying. Nothing is charged on this website.",
+      },
+      {
+        question: "How is this page different from the bouquet collection?",
+        answer:
+          "The bouquet collection is a short featured range with selection help. This page lists every flower design that is public, grouped by how it is presented. A design on either page is ordered the same way.",
+      },
+      {
+        question: "Why do most designs show no price?",
+        answer:
+          "Bouquets and lilies are quoted on WhatsApp because the price depends on the flowers available for your date. Products that show a price keep it; we confirm it before you pay.",
+      },
+      AREA_FAQ,
+    ],
+    links: [
+      { href: "/categories/bouquets", label: "Featured bouquets" },
+      { href: "/guides/choosing-a-flower-bouquet", label: "How to choose a bouquet" },
+      { href: "/occasions", label: "Flowers by occasion" },
+      { href: "/locations", label: "Delivery cities" },
+      { href: "/guides/sending-flowers-to-another-city", label: "Sending to another city" },
+      { href: "/categories/garlands", label: "Wedding garlands" },
+      { href: "/categories/pooja-flowers", label: "Pooja flowers" },
     ],
   },
 
