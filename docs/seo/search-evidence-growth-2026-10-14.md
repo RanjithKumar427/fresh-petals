@@ -45,6 +45,13 @@ The search tool queries a US-based index and returns summaries, not ranked SERPs
 
 No competitor text was copied.
 
+The existing private Keyword Planner export (`docs/seo/Keyword Stats 2026-10-13 at 10_56_16.csv`, Sep 2025–Aug 2026, uncommitted) already lists the query families targeted here. Examples:
+- bouquet delivery bangalore, flowers in bangalore, flowers online bangalore;
+- flower garlands bangalore, jaimala bangalore, how to choose wedding garlands;
+- jasmine flowers bangalore, daily pooja flowers.
+
+Its volumes are not reproduced here. They are planning estimates, not FreshPetals impressions.
+
 ## 3. Three promotion pieces (ready to review; nothing posted)
 
 These reuse briefs 3, 4 and 5 from `release-3-evidence-and-content-briefs.md`. Copy carries no price, delivery time or recipe.
