@@ -15,6 +15,7 @@
 // about an order delivered in the city. Photographs are design examples.
 import type { LandingFaq, LandingLink } from "./seoLanding";
 import type { GarlandFilterKey } from "./garlandRules";
+import { GARLAND_PILOT_CODES } from "./garlandCollections";
 
 export type HubSource =
   /** The first `each` bouquets of every launch group (roses, mixed, lilies). */
@@ -127,7 +128,7 @@ export const CITY_HUBS: CityHub[] = [
           "A design's browsing group (rose, lotus, tuberose) sorts the photographs; it is not a recipe. The examples below are from the wedding garland guide, where each is described fact by fact. The exact flowers, length, single or pair, and the price for your date are confirmed on WhatsApp before anything is made.",
         ],
         compareHeading: "What each photograph shows",
-        sources: [{ kind: "garlands", filters: ["rose", "lotus", "tuberose"], each: 2, codes: ["FP-G001", "FP-G034", "FP-G106", "FP-G035", "FP-G086", "FP-G085"] }],
+        sources: [{ kind: "garlands", filters: ["rose", "lotus", "tuberose"], each: 2, codes: GARLAND_PILOT_CODES }],
         links: [GARLANDS, GUIDE, { href: "/occasions/wedding", label: "Wedding flowers" }],
         collections: ["garlands", "garlands-rose", "garlands-lotus", "garlands-tuberose"],
         quote: [

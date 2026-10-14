@@ -19,7 +19,7 @@ The release makes three primary destinations more useful and more accurate for f
 | Garland guide stated some looks as facts ("a white jasmine garland", "tuberose garlands are the dense white ones") | A browsing group and a photograph are not a recipe (`garlandCollections.ts` copy rules) | Sentences now say what the photographs show ("in the photographs…", "looks like jasmine"). Example captions are labelled "Photograph:". | Guide check passes; no recipe, size, stem, sample or preparation-time claim |
 | The garland facts list showed seven "To be confirmed" rows with no structure | Live pages for FP-G001, G034, G106, G035, G086 and G085: every specification is empty | Shared `garlandEvidence()` builds the same blocks on every garland page and in the guide:<br>- "On record": code, browsing group labelled "sorted from the photograph, not a list of flowers", and any specification the admin has recorded<br>- "In the photograph"<br>- "Confirmed for your order on WhatsApp": each empty specification, plus price and delivery | Pilot and other garland pages carry both blocks and no amount |
 | No fact-by-fact pilot | — | Guide section "Six designs, fact by fact" (`#six-designs`): FP-G001, FP-G034 (rose), FP-G106, FP-G035 (lotus), FP-G086, FP-G085 (tuberose). All six were already guide examples.<br>Links run both ways: guide ↔ pilot pages ↔ rose, lotus and tuberose collections ↔ garland hub ↔ Bengaluru. | 6 cards, a shared confirmation list, quote links and collection links |
-| Garland draft asked "Options: none chosen — please advise", a blank "Occasion", "Date (optional)" and quantity without a unit | `garlandEnquiry.ts` | The draft now contains the design code and title, link, recipient city, "Quantity: 1 (one garland or a pair?)", chosen options only, ceremony date, colours, length or changes, delivery area, then "Please confirm the final flowers, length and delivery for this date" and the fixed price closing.<br>Still no pincode. With a recorded unit, the count states it ("2 pairs") and the question is dropped. | Bengaluru and Kochi drafts captured; no amount |
+| Garland draft asked "Options: none chosen — please advise", a blank "Occasion", "Date (optional)" and quantity without a unit | `garlandEnquiry.ts` | The draft now contains the design code and title, link, recipient city, "Quantity: 1" with a separate "Single garland or pair (each):" line (a quantity is never read as a pair), chosen options only, ceremony date, colours, length or changes, delivery area, then "Please confirm the final flowers, length and delivery for this date" and the fixed price closing.<br>Still no pincode. With a recorded unit, the count states it ("2 pairs") and the question is dropped. | Bengaluru and Kochi drafts captured; no amount |
 | Hub chip said "157 options" | 156 coded designs plus the Event Garlands catalogue product | "156 coded designs + Event Garlands", computed from both sources | Hub check |
 
 Not changed:
@@ -171,3 +171,128 @@ Fast-forward `main` to this branch, push `main` alone, wait for Production, then
 - `/guides/choosing-wedding-garlands#six-designs`;
 - one pilot design page;
 - one captured garland draft.
+
+## 8. Final review (14 October 2026, about 15:30 IST)
+
+- **Base:** `origin/main` was fetched again and is still `1df9792`, so there was nothing to integrate.
+- **Reviewed:** `4db2595` and `4f4bc77`, plus the fix commit that adds this section.
+- **Untracked files** (keyword exports, the discovery baseline, the roadmap) were left untouched and uncommitted.
+
+### Requirement to evidence
+
+| Requirement | Implementation | Verification | Remaining gap |
+|---|---|---|---|
+| Unsupported Bengaluru origin removed, nothing substituted | Neutral intro in `cityHubs.ts` | Test: no began/founded/origin wording; release check on the rendered page | None |
+| Examples distinct from the complete range; complete links and counts | "Examples, not the full range" label; 7 complete links with live counts | Counts equal to the shop view (8, 51, 156, 78, 30, 24, 11); every collection still linked | None. "Featured bouquets (8)" is the collection's own label for the launch range, and "All flowers (51)" sits beside it, so 8 is never presented as the whole range |
+| All Flowers comparison matches records; products and prices preserved | `presentationComparison()` reads `whatsIncluded` and `careNotes` per group | Same 51 products and price labels as live; card text checked against the records. Each heading links to its complete group; examples are labelled "For example". | One fix (below) |
+| Garland facts: record versus photograph versus to confirm; no inferred recipe, unit, size or sample status | `garlandEvidence()` on every garland page and the guide pilot | Fixtures for an empty, a partly filled and a fully filled record. Tuberose (rajnigandha, sampangi) and other plant names are kept; only certainty about contents was qualified. | None |
+| Crawlable discovery without the noindex shop views | National pages are unchanged and server-rendered | Distinct product links: garland hub 157 (156 designs + Event Garlands), lotus 30, All Flowers 51, pooja 11, guide 14. Canonicals drop `?city=` and `utm_*`. City `/shop` views stay noindex. | None |
+| Destination journeys | Unchanged destination logic. The site header copies a chosen destination into every `/garland-enquiry` link. | `jr-check` 6/6 (below) | None |
+| Draft keeps quantity, options, code, city and link; asks only what is missing; quantity is not a unit | `garlandEnquiryText()` | Captured drafts and a regression test | One fix (below) |
+| Unpublished designs not promoted; counts follow eligibility | Pilot, guide examples, collection counts and city cards all read `loadGarlands()` filtered by `isListedGarland` | Fixture: a pilot design removed from the public list drops out | None |
+| Quote-only and prices; GA4 privacy | No amount on garland or bouquet cards, pages or drafts. No analytics code changed and no new event. | Release checks; pooja prices ₹199 and ₹299 shown | None |
+| Promotion pieces and prospects accurately described | Sections 3 and 4 | Reviewed below | None |
+
+### Data timing and cache
+
+- **Request time** (rendered on request; the CDN keeps a copy for up to 2 minutes; an admin garland save purges the `garlands` tag through the existing path in `GarlandWebsite.ts`):
+  - garland pages, the guide and its pilot, rose/lotus/tuberose collections, the garland hub;
+  - the garland part of city pages and city catalogue counts.
+
+  The new dependencies (the pilot list, `garlandEvidence` fields, pilot links) read the same garland records. So publishing, unpublishing or filling a specification in the admin reaches them without a deployment. The Bengaluru page sends `garlands,occasion-index`, as before.
+- **Build time** (needs a deployment):
+  - the All Flowers comparison (prebuilt from `productCatalog`);
+  - the non-garland city-catalogue collections (from the prebuilt category lists);
+  - the pilot code list itself (`GARLAND_PILOT`).
+- Nothing was written to production records to test this. Eligibility was tested with fixtures.
+
+### Defects found and fixed in this review
+
+1. **The garland draft merged quantity with unit.** "Quantity: 2 (one garland or a pair?)" could be read as "is 2 a pair?". Quantity is now a plain number, with a separate "Single garland or pair (each):" line; with a recorded unit it reads "2 pairs".
+   - Changed: `src/utils/garlandEnquiry.ts`, `scripts/audit/regression.test.mjs`.
+2. **The box-or-basket "suits" line overstated the records.** It said contents "follow the day's market", but only the loose flower box records a market-based selection. It now says the flowers inside are confirmed on WhatsApp.
+   - Changed: `src/data/collectionGuidance.ts`.
+3. **The pilot codes were typed twice** (`cityHubs.ts` and `garlandCollections.ts`). They now come from one list through `GARLAND_PILOT_CODES` and `pilotGarlands()`, used by the city page, the guide and the collections, with a removal fixture.
+   - Changed: `src/data/garlandCollections.ts`, `src/data/cityHubs.ts`, `src/pages/guides/choosing-wedding-garlands.astro`, `src/pages/categories/garlands/[flower].astro`.
+
+Checked and not defects:
+- the guide's quote links carry no city in the HTML, but the site header adds the chosen destination on every page (verified);
+- the Bengaluru bouquet wording "Most bouquets are wrapped …; a few are arranged in a glass vase" matches the records (6 of 51 are vase arrangements).
+
+### Query families and landing roles
+
+The source is the private Keyword Planner export described below. It is not committed and no keyword volumes are reproduced.
+- **Targeting:** location Bengaluru (the export's segmentation row).
+- **Period:** 1 Sep 2025 – 31 Aug 2026.
+- **Volumes:** banded averages (50, 500, 5,000, 50,000), with many rows blank.
+- **Limits:** close variants are grouped, and the figures are planning estimates, not FreshPetals impressions.
+
+US-index searches (section 2) are used only to see what kind of content comes back.
+
+| Family | Export band (Bengaluru) | Page and role | How the changed section helps the reader |
+|---|---|---|---|
+| flowers online bangalore, send flowers to bangalore | 5,000 band | `/` is the brand and service entry. `/categories/all-flowers` is the national catalogue of every flower design. | All Flowers compares how designs arrive, links examples, explains the quote, and sends a city reader to that city's page instead of restating city claims |
+| flowers in bangalore, flower delivery bangalore, florist bangalore | 5,000 band | `/locations/bengaluru` | Three task sections, each ending in the complete Bengaluru collection and the exact details a quote needs |
+| bouquet delivery bangalore, rose / lily bouquet | 500–5,000 bands | Bengaluru bouquet task, `/categories/bouquets`, `/guides/choosing-a-flower-bouquet` | Choosing by flower and by wrapping or vase, from records; links to featured bouquets, all flowers and the guide |
+| wedding / marriage garlands, varmala, jaimala, poola mala (+ bangalore) | 50–5,000 bands; "… bangalore" variants at 50 or blank | `/categories/garlands` | An honest total; links to the guide's six designs; every design is linked from the page |
+| rose / lotus / tuberose (rajnigandha) garland, lotus wedding garland | 50–500 bands | `/categories/garlands/<flower>` and the guide | Each collection names its two pilot designs, which are described fact by fact |
+| pooja flowers, jasmine flowers, mallige, gajra (+ bangalore) | 50–5,000 bands; "… bangalore" mostly blank | `/categories/pooja-flowers`, `/guides/jasmine-pooja-flowers-and-gajra`, Bengaluru pooja task | Choosing by form (loose, strung, basket) and what to send; the complete pooja collection |
+
+No cannibalisation is asserted. The only query-to-page data is the 11 Oct snapshot, where pooja and jasmine searches landed on `/`.
+
+### Promotion pieces (reviewed, unchanged)
+
+All three have final copy, a named image (a design's main photograph, or `/images/jasmine.jpg`), a destination with UTM values, an audience and an action (open the guide, quote the code, or choose loose versus strung). None states a price, recipe, length or delivery time.
+
+The gajra frame is a text card. The loose-jasmine photograph appears only in frame 1, captioned as loose jasmine.
+
+### Prospects (verified 14 Oct 2026)
+
+| Prospect | Verification |
+|---|---|
+| The Tamarind Tree | Direct: its own blog page |
+| The Tales of Tradition | **Indirect:** named on The Tamarind Tree's page; no site of its own was checked |
+| ISKCON Bangalore Kalyana Mantapa | Direct: its own page |
+| Vivek Krishnan Photography | Direct: its own site |
+| House On The Clouds | Direct: its own site |
+| LBB Bangalore | Direct: its own article |
+
+All are prospects, not partners. Nothing was sent, published or linked.
+
+### Verification on the final build
+
+The preview was rebuilt from the final working tree after the fixes; every check below ran against it.
+
+| Check | Result |
+|---|---|
+| Production build | PASS |
+| Regression suite | PASS, 42 of 42 (the release test extended with removal, full-record and quantity fixtures) |
+| Release checks (`sg-check`) | PASS, 32 of 32 |
+| Journeys (`jr-check`) | PASS, 6 of 6 |
+| City roots | PASS, 10 of 10 |
+| City catalogue | PASS, 59 of 59 |
+| Type check | 20 pre-existing errors, unchanged: `SubscriptionConfigurator.astro` 13 × TS2339 and 2 × TS7006, `DiscoveryPostCard.astro` 4 × TS7006, `MobileBottomBar.astro` 1 × TS2339. No new error. Type checking is not clean. |
+
+The six journeys checked:
+1. Bengaluru root → complete lotus collection → FP-G106 → draft with quantity 2, Bengaluru and the canonical link.
+2. With Bengaluru chosen, the guide's quote link and the product enquiry carry it.
+3. From the product back to the guide's six designs.
+4. The national guide with no destination assigns none and drafts name no city.
+5. A Kochi basket on the Bengaluru page keeps Kochi and asks.
+6. Enquiry links follow Kochi in that state.
+
+Screenshots were re-read on the final build:
+- All Flowers comparison, desktop;
+- Bengaluru garland task, mobile;
+- the full set from the earlier pass (layout is unchanged since).
+
+All screenshots are copied to the preview folder.
+
+**Limitations:**
+- live Search Console, indexing and rankings were not read, by design;
+- the earlier basket, search-competitiveness and national-coverage suites were not rerun;
+- GA4 receipt was not retested.
+
+### Verdict
+
+**Ready, with non-blocking follow-ups:** the five owner evidence items in section 5, and the indexing checks in section 6 after release. No blocking defect remains. Rollback reference for publication: `1df9792`, the current `origin/main`.

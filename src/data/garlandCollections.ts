@@ -45,6 +45,18 @@ export const GARLAND_PILOT: { code: string; group: "rose" | "lotus" | "tuberose"
 ];
 export const GARLAND_PILOT_ANCHOR = "six-designs";
 export const isPilotGarland = (code: string) => GARLAND_PILOT.some((entry) => entry.code === code);
+export const GARLAND_PILOT_CODES = GARLAND_PILOT.map((entry) => entry.code);
+
+/**
+ * The pilot designs that are in `garlands` (pass the public list), in pilot
+ * order, optionally for one group. A design no longer public is simply absent,
+ * so no page keeps promoting it.
+ */
+export function pilotGarlands<T extends { garland: { code: string } }>(garlands: T[], group?: string): (T & { group: string })[] {
+  return GARLAND_PILOT.filter((entry) => !group || entry.group === group).flatMap((entry) =>
+    garlands.filter((product) => product.garland.code === entry.code).map((product) => ({ ...product, group: entry.group }))
+  );
+}
 
 type EvidenceDesign = {
   code: string;

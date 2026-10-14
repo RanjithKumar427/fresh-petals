@@ -169,7 +169,7 @@ const ALL_FLOWERS_OTHER = { id: "more", label: "More flowers", note: "Other flow
 const PRESENTATION_ROWS: { id: string; label: string; suits: string; own: RegExp }[] = [
   { id: "wrapped", label: "Wrapped bouquet", suits: "Handing over in person, or a home that already has a vase. It needs water soon after it arrives.", own: /wrapping|hand-tied/i },
   { id: "vase", label: "Arrangement in a vase", suits: "An office desk, or a home without a vase. It can stand as it arrives.", own: /\bvase\b/i },
-  { id: "boxes-baskets", label: "Box or basket", suits: "Carrying, gifting or setting down without a vase. Contents follow the day's market and are confirmed with you.", own: /\bbox\b|basket/i },
+  { id: "boxes-baskets", label: "Box or basket", suits: "Carrying, gifting or setting down without a vase. The flowers inside are confirmed with you on WhatsApp.", own: /\bbox\b|basket/i },
 ];
 const PRESENTATION_ITEM = /wrapping|hand-tied|\bvase\b|\bbox\b|basket/i;
 

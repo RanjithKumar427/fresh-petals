@@ -39,8 +39,11 @@ export function garlandEnquiryText({ code, title, quantity, unit = null, options
   ];
   if (url) lines.push(`Link: ${url}`);
   if (city) lines.push(`Recipient city: ${city}`);
-  // With a recorded unit the count says it ("2 pairs"); without one, ask.
-  lines.push(unit ? `Quantity: ${count}${unitWord}` : `Quantity: ${count} (one garland or a pair?): `);
+  // With a recorded unit the count says it ("2 pairs"). Without one, the
+  // count stays a plain number and single-or-pair is asked on its own line:
+  // a quantity of 2 is not read as one pair.
+  lines.push(`Quantity: ${count}${unitWord}`);
+  if (!unit) lines.push("Single garland or pair (each): ");
   if (options.length > 0) lines.push(`Options: ${options.join("; ")}`);
   if (purpose) lines.push(`For: ${purpose}`);
   if (occasion) lines.push(`Occasion: ${occasion}`);

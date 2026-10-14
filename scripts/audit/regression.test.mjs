@@ -794,10 +794,25 @@ test('search evidence: Bengaluru tasks link complete collections with what a quo
   // Drafts: link and city first; ceremony date and one-or-pair asked once; no amount; fixed closing.
   const enquiry = load('src/utils/garlandEnquiry.ts');
   const text = enquiry.garlandEnquiryText({ code: 'FP-G001', title: 'Rose', quantity: 1, url: 'https://onlyfreshpetals.in/products/rose', city: 'Bengaluru' });
-  assert(/Link: https:/.test(text) && /Recipient city: Bengaluru/.test(text) && /one garland or a pair\?/.test(text) && /Ceremony date: /.test(text) && /final flowers, length and delivery/.test(text));
+  assert(/Link: https:/.test(text) && /Recipient city: Bengaluru/.test(text) && /^Quantity: 1$/m.test(text) && /^Single garland or pair \(each\): $/m.test(text) && /Ceremony date: /.test(text) && /final flowers, length and delivery/.test(text));
   assert(!/₹|none chosen|Date \(optional\)|pincode/i.test(text));
   assert.equal((text.match(/pair/g) ?? []).length, 1);
-  assert(!/one garland or a pair/.test(enquiry.garlandEnquiryText({ code: 'FP-G001', title: 'Rose', quantity: 2, unit: 'pair' })));
+  // Quantity is never read as a unit: 2 without a recorded unit stays "2" and single-or-pair is asked separately.
+  const two = enquiry.garlandEnquiryText({ code: 'FP-G001', title: 'Rose', quantity: 2, options: ['Finish: Gold tassels'] });
+  assert(/^Quantity: 2$/m.test(two) && /Single garland or pair/.test(two) && /Options: Finish: Gold tassels/.test(two));
+  const pairs = enquiry.garlandEnquiryText({ code: 'FP-G001', title: 'Rose', quantity: 2, unit: 'pair' });
+  assert(/Quantity: 2 pairs/.test(pairs) && !/Single garland or pair/.test(pairs));
+  // Pilot: one source; a design removed from public listing is no longer promoted anywhere that uses it.
+  assert.deepEqual(json(collections.GARLAND_PILOT_CODES), ['FP-G001', 'FP-G034', 'FP-G106', 'FP-G035', 'FP-G086', 'FP-G085']);
+  const listed = ['FP-G001', 'FP-G034', 'FP-G106', 'FP-G086', 'FP-G085', 'FP-G200'].map((code) => ({ garland: { code } }));
+  assert.deepEqual(json(collections.pilotGarlands(listed).map((product) => product.garland.code)), ['FP-G001', 'FP-G034', 'FP-G106', 'FP-G086', 'FP-G085']);
+  assert.deepEqual(json(collections.pilotGarlands(listed, 'lotus').map((product) => product.garland.code)), ['FP-G106']);
+  assert.equal(collections.pilotGarlands([]).length, 0);
+  assert(/codes: GARLAND_PILOT_CODES/.test(readFileSync('src/data/cityHubs.ts', 'utf8')) && /pilotGarlands\(garlands\)/.test(readFileSync('src/pages/guides/choosing-wedding-garlands.astro', 'utf8')));
+  // A fully specified record: every specification is on record, only price and delivery remain to confirm.
+  const full = json(collections.garlandEvidence({ ...design, filterRecipeVerified: true, soldUnit: 'Pair', length: '36 in', flowerRecipe: 'Red roses, baby\'s breath', weightOrThickness: 'Medium', finish: 'Gold tassels', leadTime: '1 day', substitutionPolicy: 'Closest colour' }));
+  assert.deepEqual(full.toConfirm, ['Price for your date', 'Delivery to the address on your date']);
+  assert(full.onRecord.some((fact) => fact.label === 'Flower group' && !/not a list/.test(fact.value)));
   // All Flowers comparison: from the records of each group, care only when most of the group carries it.
   const guidance = load('src/data/collectionGuidance.ts');
   const p = (slug, included, care) => ({ slug, category: 'Bouquets', whatsIncluded: included, careNotes: care });

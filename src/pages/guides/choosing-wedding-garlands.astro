@@ -11,7 +11,7 @@
 // Readers anywhere can use the checklist; delivery is stated as published.
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { garlandPhotoSrcset, isListedGarland, loadGarlands, type GarlandProduct } from "../../data/garlands";
-import { GARLANDS_PATH, GARLAND_CONFIRM_POINTS, GARLAND_COVERAGE, GARLAND_GUIDE_PATH, GARLAND_PILOT, GARLAND_PILOT_ANCHOR, garlandCollection, garlandEvidence, populatedCollections } from "../../data/garlandCollections";
+import { GARLANDS_PATH, GARLAND_CONFIRM_POINTS, GARLAND_COVERAGE, GARLAND_GUIDE_PATH, GARLAND_PILOT_ANCHOR, garlandCollection, garlandEvidence, pilotGarlands, populatedCollections } from "../../data/garlandCollections";
 import { garlandCacheHeaders } from "../../server/services/GarlandWebsite";
 import { whatsappLink } from "../../config/storefront";
 import { garlandEnquiryHref } from "../../utils/garlandEnquiry";
@@ -146,7 +146,7 @@ const jsonLd = [
 ];
 // The six-design pilot (src/data/garlandCollections.ts): each public one,
 // with the same evidence its own page shows.
-const pilot = GARLAND_PILOT.flatMap((entry) => (byCode.has(entry.code) ? [{ ...entry, product: byCode.get(entry.code)!, evidence: garlandEvidence(byCode.get(entry.code)!.garland) }] : []));
+const pilot = pilotGarlands(garlands).map((product) => ({ group: product.group, product, evidence: garlandEvidence(product.garland) }));
 // When every pilot design leaves the same points open, the list is shown once.
 const sharedConfirm = pilot.length > 0 && pilot.every((item) => item.evidence.toConfirm.join("|") === pilot[0].evidence.toConfirm.join("|")) ? pilot[0].evidence.toConfirm : null;
 // Three public designs to show what a code refers to, taken from the examples above.

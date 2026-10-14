@@ -13,7 +13,7 @@ import GarlandCard from "../../../components/GarlandCard.astro";
 import GarlandCollectionLinks from "../../../components/GarlandCollectionLinks.astro";
 import LandingDetails from "../../../components/LandingDetails.astro";
 import { isListedGarland, loadGarlands } from "../../../data/garlands";
-import { GARLANDS_PATH, GARLAND_CONFIRM_POINTS, GARLAND_COVERAGE, GARLAND_GUIDE_PATH, GARLAND_PILOT, GARLAND_PILOT_ANCHOR, garlandCollection, populatedCollections } from "../../../data/garlandCollections";
+import { GARLANDS_PATH, GARLAND_CONFIRM_POINTS, GARLAND_COVERAGE, GARLAND_GUIDE_PATH, GARLAND_PILOT_ANCHOR, garlandCollection, pilotGarlands, populatedCollections } from "../../../data/garlandCollections";
 import { garlandCacheHeaders } from "../../../server/services/GarlandWebsite";
 
 export const prerender = false;
@@ -31,7 +31,7 @@ if (empty) Astro.response.status = 404;
 const noindex = empty || drafts;
 const others = populatedCollections(all).filter((entry) => entry.collection.key !== collection.key);
 // This collection's designs in the guide's six-design pilot, when public.
-const pilot = GARLAND_PILOT.filter((entry) => entry.group === collection.key).flatMap((entry) => garlands.filter((product) => product.garland.code === entry.code));
+const pilot = pilotGarlands(garlands.filter((product) => isListedGarland(product.garland)), collection.key);
 
 const abs = (path: string) => new URL(path, Astro.site).toString();
 const jsonLd = [
