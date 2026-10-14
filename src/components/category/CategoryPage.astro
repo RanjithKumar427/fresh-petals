@@ -13,7 +13,7 @@ import { parseShopFilters, withoutUnpricedBudget, matchesShopFilters, shopFilter
 import { makeJourney } from "../../utils/journey";
 import { whatsappLink } from "../../config/storefront";
 import { filterGroups, shopItemData, type Membership } from "../../data/occasionJourneys";
-import { BOUQUET_GROUP_GUIDANCE, POOJA_ENQUIRY_HREF, POOJA_ENQUIRY_POINTS, POOJA_PHOTO_NOTE, bouquetLine, bouquetPhotoAlt, isVaseArrangement } from "../../data/collectionGuidance";
+import { BOUQUET_GROUP_GUIDANCE, POOJA_ENQUIRY_HREF, POOJA_ENQUIRY_POINTS, POOJA_PHOTO_NOTE, bouquetLine, bouquetPhotoAlt, isVaseArrangement, presentationComparison } from "../../data/collectionGuidance";
 
 type CategoryMeta = {
   name: string;
@@ -72,6 +72,13 @@ const helpHref = whatsappLink("Hi Fresh Petals, please help me choose flowers.\n
 // Bouquet groups: how the designs in a group differ, read from their records.
 const guidanceFor = (groupId: string) => (category.slug === "bouquets" ? BOUQUET_GROUP_GUIDANCE[groupId] : undefined);
 const vaseArrangements = category.slug === "bouquets" ? products.filter(isVaseArrangement) : [];
+// All Flowers: how the presentations compare, read from the grouped records.
+const presentations = category.slug === "all-flowers" ? presentationComparison(sections) : [];
+const OCCASION_LINKS = [
+  { href: "/occasions/birthday", label: "Birthday" },
+  { href: "/occasions/anniversary", label: "Anniversary" },
+  { href: "/occasions", label: "All occasions" },
+];
 const breadcrumbJsonLd = {
   "@type": "BreadcrumbList",
   itemListElement: [
@@ -288,6 +295,63 @@ const breadcrumbJsonLd = {
                   </div>
                 </div>
                 </Fragment>
+                )}
+                {presentations.length > 0 && (
+                  <section class="max-w-5xl" aria-labelledby="presentation-title" data-presentation-compare>
+                    <h2 id="presentation-title" class="fp-serif text-2xl text-ink md:text-3xl">Wrapped, in a vase, or in a box or basket</h2>
+                    <p class="mt-3 max-w-3xl text-sm leading-7 text-moss">
+                      The same flowers can arrive in different ways. This compares what is recorded on the designs in each group above: what they come in, and the care instructions most of them carry. Sizes and stem counts are not fixed on this page.
+                    </p>
+                    <ul class="mt-5 grid gap-4 md:grid-cols-3" role="list">
+                      {presentations.map((row) => (
+                        <li class="flex flex-col rounded-[18px] border border-line bg-paper p-5 text-sm leading-6" data-presentation={row.id}>
+                          <h3 class="text-base font-semibold text-ink"><a href={`#${row.id}`} class="underline decoration-line underline-offset-4 hover:text-berry">{row.label}</a></h3>
+                          <dl class="mt-3 space-y-3 text-moss">
+                            <div>
+                              <dt class="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink">Recorded on these designs</dt>
+                              <dd class="mt-1">
+                                {row.comesIn.length ? row.comesIn.join(", ") : "Confirmed on WhatsApp"}.
+                                {row.alsoOnSome.length > 0 && <span class="mt-1 block text-[12px]">Some designs in this group: {row.alsoOnSome.join(", ").toLowerCase()}.</span>}
+                              </dd>
+                            </div>
+                            <div>
+                              <dt class="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink">Care noted on most of them</dt>
+                              <dd class="mt-1">{row.care.length ? row.care.join(" ") : "Given with the order."}</dd>
+                            </div>
+                            <div>
+                              <dt class="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink">Suits</dt>
+                              <dd class="mt-1">{row.suits}</dd>
+                            </div>
+                            <div>
+                              <dt class="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink">For example</dt>
+                              <dd class="mt-1">
+                                {row.examples.map((product, index) => (
+                                  <Fragment>{index > 0 && "; "}<a href={`/products/${product.slug}`} class="text-ink underline underline-offset-4">{product.name}</a></Fragment>
+                                ))}
+                              </dd>
+                            </div>
+                          </dl>
+                        </li>
+                      ))}
+                    </ul>
+                    <div class="mt-5 grid gap-5 md:grid-cols-2">
+                      <div class="rounded-[18px] border border-line bg-linen p-5 text-sm leading-7 text-moss">
+                        <h3 class="text-base font-semibold text-ink">What the WhatsApp quote confirms</h3>
+                        <p class="mt-2">Whether the flowers in the design are available for your date, any substitution, the price, add-ons such as a vase or a card, and the delivery charge for the recipient's address. You accept the whole amount before paying.</p>
+                      </div>
+                      <div class="rounded-[18px] border border-line bg-paper p-5 text-sm leading-7 text-moss">
+                        <h3 class="text-base font-semibold text-ink">Choosing for an occasion or a city</h3>
+                        <p class="mt-2">
+                          Occasion pages list the designs assigned to each occasion:{" "}
+                          {OCCASION_LINKS.map((link, index) => <Fragment>{index > 0 && ", "}<a href={link.href} class="text-ink underline underline-offset-4">{link.label.toLowerCase()}</a></Fragment>)}.
+                          The <a href="/guides/choosing-a-flower-bouquet" class="text-ink underline underline-offset-4">bouquet guide</a> compares rose, lily and mixed designs.
+                        </p>
+                        <p class="mt-2">
+                          This page is the national catalogue. Each <a href="/locations" class="text-ink underline underline-offset-4">delivery city</a> has its own page with the same catalogue and the city kept on every order, for example <a href="/locations/bengaluru" class="text-ink underline underline-offset-4">flowers for delivery in Bengaluru</a>.
+                        </p>
+                      </div>
+                    </div>
+                  </section>
                 )}
               </div>
             </div>

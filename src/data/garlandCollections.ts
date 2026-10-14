@@ -29,6 +29,71 @@ export const GARLAND_CONFIRM_POINTS: { label: string; detail: string }[] = [
   { label: "Quote", detail: "We send the price on WhatsApp. Nothing is charged on this website." },
 ];
 
+/**
+ * The guide's six-design pilot: two rose, two lotus and two tuberose designs,
+ * each already an example in the guide. Each is described fact by fact on the
+ * guide (#six-designs) and on its own page. A code that is not public drops
+ * out; nothing here is a stock or specification claim.
+ */
+export const GARLAND_PILOT: { code: string; group: "rose" | "lotus" | "tuberose" }[] = [
+  { code: "FP-G001", group: "rose" },
+  { code: "FP-G034", group: "rose" },
+  { code: "FP-G106", group: "lotus" },
+  { code: "FP-G035", group: "lotus" },
+  { code: "FP-G086", group: "tuberose" },
+  { code: "FP-G085", group: "tuberose" },
+];
+export const GARLAND_PILOT_ANCHOR = "six-designs";
+export const isPilotGarland = (code: string) => GARLAND_PILOT.some((entry) => entry.code === code);
+
+type EvidenceDesign = {
+  code: string;
+  title: string;
+  filters: readonly string[];
+  filterRecipeVerified?: boolean;
+  soldUnit: string | null;
+  length: string | null;
+  flowerRecipe: string | null;
+  weightOrThickness: string | null;
+  finish?: string | null;
+  leadTime: string | null;
+  substitutionPolicy: string | null;
+  image: { alt: string };
+};
+
+/**
+ * One design's evidence in three parts, from its own record (its name is the page or card heading):
+ *  - onRecord: facts the record holds (code, browsing group, and any
+ *    specification the admin has filled in);
+ *  - photograph: what its photograph is described as showing;
+ *  - toConfirm: every specification the record leaves empty, then price and
+ *    delivery, which are always confirmed for the order.
+ * The browsing group is a way of sorting photographs, unless the admin has
+ * recorded the flowers, and is labelled so.
+ */
+export function garlandEvidence(design: EvidenceDesign) {
+  const groups = design.filters
+    .map((key) => garlandCollection(key)?.label ?? (key === "designer-mixed" ? "Designer and mixed garlands" : null))
+    .filter((label): label is string => !!label);
+  const specs: [string, string | null | undefined][] = [
+    ["Sold as (one garland or a pair)", design.soldUnit],
+    ["Length", design.length],
+    ["Flowers used", design.flowerRecipe],
+    ["Thickness", design.weightOrThickness],
+    ["Finish", design.finish],
+    ["Preparation time", design.leadTime],
+    ["Substitutions", design.substitutionPolicy],
+  ];
+  const onRecord = [
+    { label: "Design code", value: design.code },
+    ...(groups.length ? [{ label: design.filterRecipeVerified ? "Flower group" : "Browsed under", value: `${groups.join(", ")}${design.filterRecipeVerified ? "" : " (sorted from the photograph, not a list of flowers)"}` }] : []),
+    ...specs.filter(([, value]) => !!value).map(([label, value]) => ({ label, value: value as string })),
+  ];
+  const photograph = design.image.alt && design.image.alt !== design.title ? design.image.alt.trim().replace(/([^.!?])$/, "$1.") : null;
+  const toConfirm = [...specs.filter(([, value]) => !value).map(([label]) => label), "Price for your date", "Delivery to the address on your date"];
+  return { onRecord, photograph, toConfirm };
+}
+
 export type GarlandCollection = {
   key: Extract<GarlandFilterKey, "rose" | "lotus" | "tuberose">;
   path: string;
@@ -65,7 +130,7 @@ export const GARLAND_COLLECTIONS: GarlandCollection[] = [
       },
       {
         heading: "Check the hangers and tassels",
-        body: "The top of the garland is finished with pearl strands, gold-coloured bead strands or cord, and the ends with rose tassels, gold-coloured cones or bead tassels. If you prefer a different finish from the photograph, ask for it when you enquire.",
+        body: "In the photographs, the top is finished with pearl strands, gold-coloured bead strands or cord, and the ends with rose tassels, gold-coloured cones or bead tassels. If you prefer a different finish from the photograph, ask for it when you enquire.",
       },
     ],
     faqs: [
@@ -98,7 +163,7 @@ export const GARLAND_COLLECTIONS: GarlandCollection[] = [
       },
       {
         heading: "Lotus alone, or with another flower",
-        body: "Some designs are lotus from top to bottom, with green leaves or baby's breath between the flowers. Others set a lotus band or spaced lotus into a white jasmine garland, or combine lotus with red roses. White lotus appears in a few designs.",
+        body: "Some photographs show lotus from top to bottom, with green leaves or baby's breath between the flowers. Others show a lotus band or spaced lotus in a white garland that looks like jasmine, or lotus with red roses. White lotus appears in a few photographs.",
       },
       {
         heading: "Check the ends",
@@ -114,7 +179,7 @@ export const GARLAND_COLLECTIONS: GarlandCollection[] = [
       {
         question: "Can I have a lotus garland with jasmine?",
         answer:
-          "Several designs in this collection combine the two. Share the design code, or tell us how much of each you want, and we confirm what we can make.",
+          "Several photographs in this collection show lotus with a white garland that looks like jasmine. Share the design code, or tell us how much of each you want, and we confirm the flowers we can make it with for your date.",
       },
     ],
   },
@@ -192,6 +257,8 @@ export const GARLANDS_LANDING = {
   ] satisfies LandingFaq[],
   links: [
     { href: GARLAND_GUIDE_PATH, label: "How to choose a wedding garland" },
+    { href: `${GARLAND_GUIDE_PATH}#six-designs`, label: "Six designs, fact by fact" },
+    { href: "/locations/bengaluru", label: "Garlands for Bengaluru" },
     { href: "/occasions/wedding", label: "Wedding flowers" },
     { href: "/categories/pooja-flowers", label: "Pooja flowers" },
     { href: "/custom-orders", label: "Custom orders" },

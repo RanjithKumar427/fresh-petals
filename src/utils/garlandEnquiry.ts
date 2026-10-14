@@ -4,8 +4,10 @@
 // only options the customer actually chose. Garlands are quote-only
 // (src/shared/quoteOnly.ts): the message carries no amount and ends by
 // asking for the price and availability. It asks for no pincode or delivery
-// slot. Occasion/date and delivery area are left blank for the customer to
-// fill in WhatsApp.
+// slot. It asks only for what the page could not know: the ceremony date,
+// one garland or a pair (when the sold unit is not recorded), and colour,
+// length or other changes; then asks us to confirm the final flowers,
+// dimensions, price and delivery.
 import { QUOTE_ONLY_CLOSING } from "../shared/quoteOnly";
 
 export type GarlandEnquiry = {
@@ -35,14 +37,21 @@ export function garlandEnquiryText({ code, title, quantity, unit = null, options
     "Hi Fresh Petals, I'd like to enquire about this garland.",
     `Design: ${code} — ${title}`,
   ];
-  lines.push(
-    `Quantity: ${count}${unitWord}`,
-    `Options: ${options.length > 0 ? options.join("; ") : "none chosen — please advise"}`
-  );
   if (url) lines.push(`Link: ${url}`);
-  if (purpose) lines.push(`For: ${purpose}`);
   if (city) lines.push(`Recipient city: ${city}`);
-  lines.push(occasion ? `Occasion: ${occasion}` : "Occasion: ", "Date (optional): ", "Delivery area (optional): ", "", QUOTE_ONLY_CLOSING);
+  // With a recorded unit the count says it ("2 pairs"); without one, ask.
+  lines.push(unit ? `Quantity: ${count}${unitWord}` : `Quantity: ${count} (one garland or a pair?): `);
+  if (options.length > 0) lines.push(`Options: ${options.join("; ")}`);
+  if (purpose) lines.push(`For: ${purpose}`);
+  if (occasion) lines.push(`Occasion: ${occasion}`);
+  lines.push(
+    "Ceremony date: ",
+    "Colours, length or other changes (optional): ",
+    "Delivery area (optional): ",
+    "",
+    "Please confirm the final flowers, length and delivery for this date.",
+    QUOTE_ONLY_CLOSING
+  );
   return lines.join("\n");
 }
 

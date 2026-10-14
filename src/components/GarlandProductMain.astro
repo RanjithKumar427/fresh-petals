@@ -1,7 +1,7 @@
 ---
 // The main section of a garland design's product page. Shows the whole
-// photograph (contained, never cropped), the public design code and only
-// facts that are confirmed; everything else reads "To be confirmed". The
+// photograph (contained, never cropped), the public design code, what the
+// record holds and what is confirmed for the order (garlandEvidence). The
 // owner's confirmed price is shown as set, without saying what it covers
 // unless that is recorded. Only a design switched to cart mode
 // (isCartGarland) uses the existing cart (ProductOptions); every other design
@@ -13,7 +13,7 @@ import { QUOTE_ONLY_ENQUIRE_LABEL, QUOTE_ONLY_PRICE_LABEL } from "../shared/quot
 import { GARLAND_FILTERS, GARLAND_PREVIEW, formatGarlandPrice, garlandPhotoSrcset, isCartGarland, isListedGarland, optionValues, type GarlandProduct } from "../data/garlands";
 import { garlandEnquiryHref } from "../utils/garlandEnquiry";
 import JourneyNote from "./occasion/JourneyNote.astro";
-import { GARLANDS_PATH, garlandCollection } from "../data/garlandCollections";
+import { GARLANDS_PATH, GARLAND_GUIDE_PATH, GARLAND_PILOT_ANCHOR, garlandCollection, garlandEvidence, isPilotGarland } from "../data/garlandCollections";
 
 interface Props {
   product: GarlandProduct;
@@ -33,16 +33,10 @@ const filterChips = GARLAND_FILTERS.filter((filter) => design.filters.includes(f
   label: garlandCollection(filter.key)?.label ?? filter.label,
   href: garlandCollection(filter.key)?.path ?? `${GARLANDS_PATH}?filter=${filter.key}`,
 }));
-const TBC = "To be confirmed on WhatsApp";
-const facts = [
-  { label: "Sold as", value: design.soldUnit },
-  { label: "Length", value: design.length },
-  { label: "Flowers", value: design.flowerRecipe },
-  { label: "Thickness", value: design.weightOrThickness },
-  { label: "Finish", value: design.finish ?? null },
-  { label: "Preparation time", value: design.leadTime },
-  { label: "Substitutions", value: design.substitutionPolicy },
-];
+// The same three-part evidence the wedding garland guide uses: what the
+// record holds, what the photograph shows, and what is confirmed for the order.
+const evidence = garlandEvidence(design);
+const pilot = isPilotGarland(design.code);
 // Only confirmed photographs (design.gallery) join the gallery. Provisional
 // related views are shown separately, in a local preview only.
 const gallery = design.gallery;
@@ -140,21 +134,32 @@ const quoteLabel = QUOTE_ONLY_ENQUIRE_LABEL;
         )
       }
 
-      <dl class="mt-7 grid gap-x-6 gap-y-3 rounded-[22px] border border-line bg-paper p-5 text-sm leading-6 sm:grid-cols-2" data-garland-facts>
-        <div>
-          <dt class="font-semibold text-ink">Design code</dt>
-          <dd class="mt-0.5 text-moss">{design.code}</dd>
+      <div class="mt-7 grid gap-4 rounded-[22px] border border-line bg-paper p-5 text-sm leading-6 sm:grid-cols-2" data-garland-facts>
+        <div data-garland-on-record>
+          <h2 class="font-semibold text-ink">On record for this design</h2>
+          <dl class="mt-2 space-y-2">
+            {evidence.onRecord.map((fact) => (
+              <div>
+                <dt class="text-[12px] font-semibold uppercase tracking-[0.12em] text-moss">{fact.label}</dt>
+                <dd class="text-ink">{fact.value}</dd>
+              </div>
+            ))}
+          </dl>
         </div>
-        {facts.map((fact) => (
-          <div>
-            <dt class="font-semibold text-ink">{fact.label}</dt>
-            <dd class="mt-0.5 text-moss">{fact.value ?? TBC}</dd>
-          </div>
-        ))}
-      </dl>
-      {!design.filterRecipeVerified && filterChips.length > 0 && (
-        <p class="mt-2 text-xs leading-5 text-moss">The flower filter is based on the photograph; the exact flowers are confirmed with you.</p>
-      )}
+        <div data-garland-to-confirm>
+          <h2 class="font-semibold text-ink">Confirmed for your order on WhatsApp</h2>
+          <ul class="mt-2 list-disc space-y-1 pl-5 text-moss">
+            {evidence.toConfirm.map((item) => <li>{item}</li>)}
+          </ul>
+        </div>
+      </div>
+      <p class="mt-2 text-xs leading-5 text-moss">
+        The photograph shows the look, not the order. {pilot ? (
+          <Fragment>This design is one of six described fact by fact in <a href={`${GARLAND_GUIDE_PATH}#${GARLAND_PILOT_ANCHOR}`} class="font-semibold text-ink underline underline-offset-4" data-garland-pilot-link>the wedding garland guide</a>.</Fragment>
+        ) : (
+          <Fragment>See <a href={GARLAND_GUIDE_PATH} class="font-semibold text-ink underline underline-offset-4">how to choose a wedding garland</a>.</Fragment>
+        )}
+      </p>
 
       {
         cart ? (
@@ -199,7 +204,7 @@ const quoteLabel = QUOTE_ONLY_ENQUIRE_LABEL;
               </div>
             ) : (
               <p class="mt-4 text-sm leading-6 text-moss">
-                No options are confirmed for this design yet — tell us what you need (single or pair, colours, finish) in the chat.
+                No options are recorded for this design. The message asks for the ceremony date, one garland or a pair, and any change of colour or length.
               </p>
             )}
             <a
@@ -212,8 +217,8 @@ const quoteLabel = QUOTE_ONLY_ENQUIRE_LABEL;
               {quoteLabel}
             </a>
             <p class="mt-3 text-xs leading-5 text-moss">
-              Opens WhatsApp with the design code, title and quantity filled in; we reply with the price and
-              availability. Nothing is charged here; there is no pincode or delivery slot to choose.
+              Opens WhatsApp with the design code, its link, the quantity and, once chosen, the recipient city filled in; we reply with the
+              flowers, length, price and availability for your date. Nothing is charged here; there is no pincode or delivery slot to choose.
             </p>
           </div>
         )

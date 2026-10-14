@@ -159,6 +159,37 @@ const ALL_FLOWER_GROUPS: { id: string; label: string; note: string; test: (produ
 ];
 const ALL_FLOWERS_OTHER = { id: "more", label: "More flowers", note: "Other flower products in the catalogue, at their listed prices." };
 
+/**
+ * All Flowers: wrapped bouquet, vase arrangement, or box/basket, compared from
+ * the records of the products in each group. What it comes in is the
+ * presentation items recorded (wrapping, vase, box, basket); care is only the
+ * instructions recorded on at least half of the group's products. Nothing is
+ * typed per product, so a catalogue change updates the table.
+ */
+const PRESENTATION_ROWS: { id: string; label: string; suits: string; own: RegExp }[] = [
+  { id: "wrapped", label: "Wrapped bouquet", suits: "Handing over in person, or a home that already has a vase. It needs water soon after it arrives.", own: /wrapping|hand-tied/i },
+  { id: "vase", label: "Arrangement in a vase", suits: "An office desk, or a home without a vase. It can stand as it arrives.", own: /\bvase\b/i },
+  { id: "boxes-baskets", label: "Box or basket", suits: "Carrying, gifting or setting down without a vase. Contents follow the day's market and are confirmed with you.", own: /\bbox\b|basket/i },
+];
+const PRESENTATION_ITEM = /wrapping|hand-tied|\bvase\b|\bbox\b|basket/i;
+
+export type PresentationRow = { id: string; label: string; suits: string; comesIn: string[]; alsoOnSome: string[]; care: string[]; examples: Product[] };
+
+export function presentationComparison<T extends Product>(sections: { id: string; products: T[] }[]): PresentationRow[] {
+  return PRESENTATION_ROWS.flatMap(({ own, ...row }) => {
+    const products = sections.find((section) => section.id === row.id)?.products ?? [];
+    if (products.length === 0) return [];
+    const items = [...new Set(products.flatMap((product) => (product.whatsIncluded ?? []).filter((item) => PRESENTATION_ITEM.test(item))))];
+    // The row's own presentation, then any other recorded on some of its designs (a wrapped bouquet that comes in a box).
+    const comesIn = items.filter((item) => own.test(item));
+    const alsoOnSome = items.filter((item) => !own.test(item));
+    const counts = new Map<string, number>();
+    for (const product of products) for (const note of new Set(product.careNotes ?? [])) counts.set(note, (counts.get(note) ?? 0) + 1);
+    const care = [...counts].filter(([, count]) => count * 2 >= products.length).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([note]) => note);
+    return [{ ...row, comesIn, alsoOnSome, care, examples: products.slice(0, 2) }];
+  });
+}
+
 /** Every listed product in exactly one group, in the page's own order; a group with nothing in it is left out. */
 export function allFlowerSections<T extends Listed>(products: T[]): { id: string; label: string; note: string | null; products: T[] }[] {
   const placed = new Set<string>();

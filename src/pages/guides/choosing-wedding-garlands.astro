@@ -11,7 +11,7 @@
 // Readers anywhere can use the checklist; delivery is stated as published.
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { garlandPhotoSrcset, isListedGarland, loadGarlands, type GarlandProduct } from "../../data/garlands";
-import { GARLANDS_PATH, GARLAND_CONFIRM_POINTS, GARLAND_COVERAGE, GARLAND_GUIDE_PATH, garlandCollection, populatedCollections } from "../../data/garlandCollections";
+import { GARLANDS_PATH, GARLAND_CONFIRM_POINTS, GARLAND_COVERAGE, GARLAND_GUIDE_PATH, GARLAND_PILOT, GARLAND_PILOT_ANCHOR, garlandCollection, garlandEvidence, populatedCollections } from "../../data/garlandCollections";
 import { garlandCacheHeaders } from "../../server/services/GarlandWebsite";
 import { whatsappLink } from "../../config/storefront";
 import { garlandEnquiryHref } from "../../utils/garlandEnquiry";
@@ -51,7 +51,7 @@ const sections: Section[] = [
     linkLabel: `See all ${designs(count("rose"))} in rose garlands`,
     body: [
       "Rose garlands carry the most colour. In our photographs they run from deep red through hot pink, blush and peach to ivory and white, and many combine two colours in alternating roses, rows or blocks.",
-      "What changes the look most is how the roses are divided. A garland of roses from top to bottom reads as one solid colour. Rings, bands or whole sections of baby's breath break it up and lighten it. The top is finished with pearl strands, gold-coloured bead strands or cord, and the ends with rose tassels or gold-coloured cones.",
+      "What changes the look most is how the roses are divided. A garland of roses from top to bottom reads as one solid colour. Rings, bands or whole sections of baby's breath break it up and lighten it. In the photographs, the top is finished with pearl strands, gold-coloured bead strands or cord, and the ends with rose tassels or gold-coloured cones; ask for the finish you want.",
     ],
     examples: examples("rose", [
       ["FP-G001", "One colour throughout: red roses with fine pale bands and gold-coloured tassel details."],
@@ -67,7 +67,7 @@ const sections: Section[] = [
     linkLabel: `See all ${designs(count("lotus"))} in lotus garlands`,
     body: [
       "Lotus garlands are mostly pink, and the first choice is between closed buds and opened flowers. Closed buds give a slim, even line of pointed buds. Opened lotus has its petals folded back, so each flower shows its layers and the garland looks fuller.",
-      "Lotus is also used as an accent. Several designs set a band of lotus, or lotus spaced along the length, into a white jasmine garland, and a few pair it with red roses. Many end in lotus tassels or clusters of buds. Lotus availability changes through the year, so confirm it for your date before you settle on one of these.",
+      "Lotus is also used as an accent. Several photographs show a band of lotus, or lotus spaced along the length, in a white garland that looks like jasmine, and a few show it with red roses. Many end in lotus tassels or clusters of buds. Lotus is not reliably available all year, so confirm it for your date before you settle on one of these.",
     ],
     examples: examples("lotus", [
       ["FP-G106", "Closed pink lotus buds in a slim line, ending in clusters of buds on pale stems."],
@@ -82,8 +82,8 @@ const sections: Section[] = [
     href: garlandCollection("tuberose")!.path,
     linkLabel: `See all ${designs(count("tuberose"))} in tuberose garlands`,
     body: [
-      "Tuberose (rajnigandha, sampangi) garlands are the dense white ones. The white body stays much the same from design to design, so the choice is in the bands: red and gold-coloured, blue, teal, green, or several colours together.",
-      "Some designs keep to narrow bands near the top and at the tassels. Others add a broad panel of red or pink roses or buds in the middle, which is what you see first from the front. If a pair should match the outfits rather than each other, ask for different band colours on each.",
+      "In our photographs, the tuberose (rajnigandha, sampangi) designs are the dense white garlands. The white body looks much the same from design to design, so the choice is in the bands: red and gold-coloured, blue, teal, green, or several colours together.",
+      "Some designs keep to narrow bands near the top and at the tassels. Others show a broad panel of red or pink roses or buds in the middle, which is what you see first from the front. If a pair should match the outfits rather than each other, ask for different band colours on each.",
     ],
     examples: examples("tuberose", [
       ["FP-G086", "Nearly all white: tuberose dotted with gold-coloured accents, gold and white tassels."],
@@ -97,7 +97,7 @@ const sections: Section[] = [
     href: `${GARLANDS_PATH}?filter=designer-mixed`,
     linkLabel: "See the designer and mixed designs",
     body: [
-      "The remaining designs are built around other flowers or around a pattern: orchids, chrysanthemums, carnations, jasmine striped with colour, lattice and chevron work, and garlands made almost entirely of baby's breath. Choose these by the pattern in the photograph, and ask us which flowers we can make it in for your date.",
+      "The remaining photographs show other flowers or a pattern: what look like orchids, chrysanthemums or carnations, jasmine striped with colour, lattice and chevron work, and garlands made almost entirely of baby's breath. Choose these by the pattern in the photograph, and ask us which flowers we can make it in for your date.",
     ],
     examples: examples("designer-mixed", [
       ["FP-G135", "Jasmine with a purple orchid section and purple orchid tassels."],
@@ -108,7 +108,7 @@ const sections: Section[] = [
 ].filter((section) => section.examples.length > 0);
 
 const comparison = [
-  { flower: "Rose", colour: "Red, pink, peach, ivory, white; often two colours", build: "Roses throughout, or divided by baby's breath rings, bands and blocks", ask: "Which rose colours are available for your date" },
+  { flower: "Rose", colour: "Red, pink, peach, ivory, white; often two colours", build: "Roses throughout, or divided by baby's breath rings, bands and blocks", ask: "Which rose colours are available for your date, and one or a pair" },
   { flower: "Lotus", colour: "Mostly pink; some white", build: "Closed buds or opened flowers; alone, or set into jasmine or roses", ask: "Whether lotus is available for your date" },
   { flower: "Tuberose", colour: "White, with coloured bands", build: "Dense white body with narrow bands or a broad rose panel", ask: "The band colours you want on each garland" },
 ];
@@ -144,6 +144,11 @@ const jsonLd = [
   },
   publisherNode(Astro.site),
 ];
+// The six-design pilot (src/data/garlandCollections.ts): each public one,
+// with the same evidence its own page shows.
+const pilot = GARLAND_PILOT.flatMap((entry) => (byCode.has(entry.code) ? [{ ...entry, product: byCode.get(entry.code)!, evidence: garlandEvidence(byCode.get(entry.code)!.garland) }] : []));
+// When every pilot design leaves the same points open, the list is shown once.
+const sharedConfirm = pilot.length > 0 && pilot.every((item) => item.evidence.toConfirm.join("|") === pilot[0].evidence.toConfirm.join("|")) ? pilot[0].evidence.toConfirm : null;
 // Three public designs to show what a code refers to, taken from the examples above.
 const coded = sections.flatMap((section) => section.examples.slice(0, 1)).map((example) => example.product);
 const otherGuides = GUIDES.filter((entry) => entry.slug !== GARLAND_GUIDE.slug);
@@ -173,6 +178,7 @@ const otherGuides = GUIDES.filter((entry) => entry.slug !== GARLAND_GUIDE.slug);
               {sections.map((section) => (
                 <a href={`#${section.id}`} class="inline-flex min-h-[44px] items-center rounded-full border border-line bg-paper px-4 text-sm text-ink hover:border-ink">{section.heading}</a>
               ))}
+              <a href={`#${GARLAND_PILOT_ANCHOR}`} class="inline-flex min-h-[44px] items-center rounded-full border border-line bg-paper px-4 text-sm text-ink hover:border-ink">Six designs, fact by fact</a>
               <a href="#before-you-order" class="inline-flex min-h-[44px] items-center rounded-full border border-line bg-paper px-4 text-sm text-ink hover:border-ink">Before you order</a>
             </nav>
           )
@@ -217,7 +223,7 @@ const otherGuides = GUIDES.filter((entry) => entry.slug !== GARLAND_GUIDE.slug);
                             <figcaption class="flex flex-1 flex-col px-3 pb-3 pt-2.5">
                               <a href={`/products/${product.slug}`} class="text-[13px] font-semibold leading-snug text-ink hover:text-berry">{product.name}</a>
                               <span class="mt-0.5 text-[11px] tracking-[0.1em] text-moss">{product.garland.code}</span>
-                              <span class="mt-2 text-[12px] leading-5 text-moss">{note}</span>
+                              <span class="mt-2 text-[12px] leading-5 text-moss"><span class="font-semibold text-ink">Photograph:</span> {note}</span>
                             </figcaption>
                           </figure>
                         </li>
@@ -230,6 +236,47 @@ const otherGuides = GUIDES.filter((entry) => entry.slug !== GARLAND_GUIDE.slug);
                 </section>
               ))}
 
+              {pilot.length > 0 && (
+                <section class="guide-section" id={GARLAND_PILOT_ANCHOR} aria-labelledby="pilot-title" data-garland-pilot>
+                  <h2 id="pilot-title" class="fp-serif text-2xl text-ink md:text-3xl">Six designs, fact by fact</h2>
+                  <p class="mt-4 text-sm leading-7 text-moss">
+                    Two rose, two lotus and two tuberose designs, each separated into what our record holds, what its photograph shows, and what is confirmed for your order. A photograph shows the look; it does not fix the flowers, the length or whether you receive one garland or a pair.
+                  </p>
+                  <ul class="mt-6 grid gap-5 md:grid-cols-2" role="list">
+                    {pilot.map(({ product, group, evidence }) => {
+                      const photo = product.garland.image;
+                      const srcset = garlandPhotoSrcset(photo, 480);
+                      const collection = garlandCollection(group);
+                      return (
+                        <li class="flex gap-4 rounded-[18px] border border-line bg-paper p-4" data-pilot-design={product.garland.code}>
+                          <a href={`/products/${product.slug}`} class="block w-28 shrink-0 self-start overflow-hidden rounded-xl bg-linen sm:w-32">
+                            <img src={photo.path} srcset={srcset} sizes={srcset ? "128px" : undefined} width={photo.width} height={photo.height} alt={photo.alt} loading="lazy" decoding="async" class="aspect-[4/5] h-full w-full object-contain" />
+                          </a>
+                          <div class="min-w-0 text-[13px] leading-6">
+                            <p class="font-semibold text-ink"><a href={`/products/${product.slug}`} class="underline decoration-line underline-offset-4 hover:text-berry">{product.name}</a></p>
+                            <dl class="mt-2 space-y-1.5 text-moss">
+                              <div><dt class="inline font-semibold text-ink">On record: </dt><dd class="inline">{evidence.onRecord.map((fact) => `${fact.label}: ${fact.value}`).join("; ")}.</dd></div>
+                              {evidence.photograph && <div><dt class="inline font-semibold text-ink">Photograph shows: </dt><dd class="inline">{evidence.photograph}</dd></div>}
+                              {!sharedConfirm && <div><dt class="inline font-semibold text-ink">Confirm for your order: </dt><dd class="inline">{evidence.toConfirm.join(", ")}.</dd></div>}
+                            </dl>
+                            <p class="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+                              <a href={garlandEnquiryHref({ code: product.garland.code, quantity: 1 })} target="_blank" rel="noopener noreferrer" data-garland-quote={product.garland.code} class="font-semibold text-berry underline underline-offset-4">Request a quote for {product.garland.code}</a>
+                              {collection && <a href={collection.path} class="text-ink underline underline-offset-4">{collection.label}</a>}
+                            </p>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                  {sharedConfirm && (
+                    <div class="mt-5 rounded-[18px] border border-line bg-linen p-5 text-sm leading-7 text-moss" data-pilot-confirm>
+                      <h3 class="font-semibold text-ink">Confirmed for your order, for each of these six</h3>
+                      <p class="mt-1">Our records do not yet hold these for any of the six, so each is agreed with you on WhatsApp before anything is made: {sharedConfirm.join(", ").toLowerCase()}.</p>
+                    </div>
+                  )}
+                </section>
+              )}
+
               <section class="guide-section" aria-labelledby="compare-title">
                 <h2 id="compare-title" class="fp-serif text-2xl text-ink md:text-3xl">Rose, lotus and tuberose side by side</h2>
                 <div class="mt-5 overflow-x-auto rounded-[18px] border border-line bg-paper">
@@ -238,7 +285,7 @@ const otherGuides = GUIDES.filter((entry) => entry.slug !== GARLAND_GUIDE.slug);
                       <tr class="border-b border-line text-ink">
                         <th scope="col" class="px-4 py-3 font-semibold">Flower</th>
                         <th scope="col" class="px-4 py-3 font-semibold">Colours in our photographs</th>
-                        <th scope="col" class="px-4 py-3 font-semibold">How it is built</th>
+                        <th scope="col" class="px-4 py-3 font-semibold">How it looks in the photographs</th>
                         <th scope="col" class="px-4 py-3 font-semibold">Ask before ordering</th>
                       </tr>
                     </thead>
@@ -305,8 +352,8 @@ const otherGuides = GUIDES.filter((entry) => entry.slug !== GARLAND_GUIDE.slug);
                     <h3 class="text-sm font-semibold text-ink">Shown on each design page</h3>
                     <ul class="mt-3 list-disc space-y-1.5 pl-5 text-sm leading-6 text-moss">
                       <li>The whole photograph, uncropped</li>
-                      <li>A design code (FP-G…) to quote when you enquire</li>
-                      <li>A description of the colours, bands, hangers and tassels in the photograph</li>
+                      <li>On record: the design code (FP-G…) to quote, the name, and any specification we have recorded</li>
+                      <li>What the photograph shows: its colours, bands, hangers and tassels</li>
                       <li>The group it is browsed under (rose, lotus, tuberose or designer). This is a way of sorting the photographs, not a list of the flowers in the garland</li>
                     </ul>
                   </div>
@@ -315,9 +362,9 @@ const otherGuides = GUIDES.filter((entry) => entry.slug !== GARLAND_GUIDE.slug);
                     <ul class="mt-3 list-disc space-y-1.5 pl-5 text-sm leading-6 text-moss">
                       <li>The exact flowers and any substitutions</li>
                       <li>Length and thickness</li>
-                      <li>Single, pair or set</li>
+                      <li>One garland, a pair or a set</li>
                       <li>Preparation time for your date</li>
-                      <li>The price</li>
+                      <li>The price and delivery for your address</li>
                     </ul>
                   </div>
                 </div>

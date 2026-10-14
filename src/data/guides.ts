@@ -43,7 +43,7 @@ export const GUIDES: Guide[] = [
     description: "Choosing a wedding garland (varmala, jaimala, poola mala): rose, lotus and tuberose designs compared in photographs, and what to confirm before ordering.",
     summary: "Rose, lotus and tuberose designs compared in photographs, design codes, and what to confirm about pair, length and date.",
     published: "2026-10-12",
-    updated: "2026-10-13",
+    updated: "2026-10-14",
     liveSitemap: true,
   },
   {

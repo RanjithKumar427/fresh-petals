@@ -25,8 +25,12 @@ export type HubSource =
   | { kind: "presentation" }
   /** Bouquets of one launch group (roses, mixed or lilies). */
   | { kind: "bouquet-group"; group: "roses" | "mixed" | "lilies"; limit: number }
-  /** Public garland designs: `each` per browsing group. */
-  | { kind: "garlands"; filters: GarlandFilterKey[]; each: number }
+  /**
+   * Public garland designs: `each` per browsing group. `codes` names designs
+   * to show first for a group (e.g. the guide's pilot designs); a code that
+   * is not public is skipped and the group's first designs fill in.
+   */
+  | { kind: "garlands"; filters: GarlandFilterKey[]; each: number; codes?: string[] }
   /** Pooja catalogue records by slug. */
   | { kind: "pooja"; slugs: string[] };
 
@@ -38,6 +42,15 @@ export type HubSection = {
   compareHeading: string;
   sources: HubSource[];
   links: LandingLink[];
+  /**
+   * Shared-catalogue collections (src/server/services/CityCatalogue.ts ids)
+   * that hold the complete range for this task. Each is linked in the city's
+   * shop view with its live count, so the examples above are never mistaken
+   * for the whole inventory.
+   */
+  collections?: string[];
+  /** What to send for a quote for this task, one item per line. */
+  quote?: string[];
 };
 
 export type CityHub = {
@@ -78,45 +91,70 @@ export const CITY_HUBS: CityHub[] = [
     description:
       "Flowers for delivery in Bengaluru (Bangalore): compare rose, lily and mixed bouquets, pooja flowers and jasmine, and made-to-order wedding garlands. Price and date confirmed on WhatsApp.",
     h1: "Flowers for delivery in Bengaluru",
-    updated: "2026-10-13",
-    emphasis: "This page starts with three things: choosing a bouquet, flowers for a pooja, and wedding garlands.",
+    updated: "2026-10-14",
+    emphasis: "This page starts with three things: sending a bouquet, wedding garlands, and flowers for a pooja.",
+    // Neutral service wording only. Where the business began is not
+    // confirmed (docs/seo/release-3-evidence-and-content-briefs.md, item 8),
+    // so the page makes no origin claim for Bengaluru or anywhere else.
     intro: [
-      "Bengaluru, still Bangalore to many who search for it, is where this website began. Whether you live in the city or are sending flowers to someone here, choose a design below and send it to us on WhatsApp with the date and the delivery address.",
+      "Bengaluru (Bangalore) is one of the cities we take orders for, whether you live in the city or are sending flowers to someone here. Choose a design below, or from the full catalogue, and send it to us on WhatsApp with the date and the delivery address.",
       "We reply with whether those flowers are available for your date, the price and the delivery details. Nothing is charged on this website.",
     ],
     sections: [
       {
         id: "bouquets",
-        heading: "Choosing a bouquet",
+        heading: "Sending a bouquet as a gift",
         body: [
-          "Our bouquets fall into three groups, and the quickest way to choose is to decide which group fits the person. Roses carry one clear colour. Mixed bouquets are brighter and less formal. Lilies are fewer, larger flowers, and usually arrive with some buds still closed.",
-          "One design from each group is shown here; the bouquet collection lists all of them side by side.",
+          "Decide two things first: the kind of flower and how it should arrive. Rose bouquets carry one clear colour. Mixed bouquets combine several flowers and are less formal. Lily bouquets have fewer, larger flowers, often with some buds still closed. Most bouquets are wrapped and tied, ready to hand over; a few are arranged in a glass vase, which suits an office desk or a home without a vase.",
+          "Each example below lists the flowers and the wrapping or vase recorded for that design. They are examples only: the featured bouquets and the full flower catalogue are linked below, with Bengaluru kept on the order.",
         ],
-        compareHeading: "What is in each of these",
-        sources: [{ kind: "bouquet-mix", each: 1 }],
-        links: [BOUQUETS, { href: "/categories/bouquets#roses", label: "Rose bouquets" }, { href: "/categories/bouquets#lilies", label: "Lily bouquets" }],
-      },
-      {
-        id: "pooja",
-        heading: "Flowers for a pooja",
-        body: [
-          "For a pooja the useful questions are the form and the quantity: loose flowers, loose jasmine (mallige), or a basket that is ready to carry. Loose flowers and jasmine follow the day's flower market, so their price is quoted for your date.",
-          "Tell us what the pooja is and roughly how much you need. Pack sizes are not fixed on the website; we confirm them with you.",
+        compareHeading: "What is recorded for each of these",
+        sources: [{ kind: "bouquet-mix", each: 1 }, { kind: "presentation" }],
+        links: [BOUQUETS, { href: "/categories/bouquets#roses", label: "Rose bouquets" }, { href: "/categories/bouquets#lilies", label: "Lily bouquets" }, BIRTHDAY, ANNIVERSARY],
+        collections: ["bouquets", "all-flowers"],
+        quote: [
+          "The design name, or its link",
+          "The delivery date, and a time of day if it matters",
+          "The recipient's name, phone number and address in Bengaluru",
+          "A card message, and whether the flowers are a surprise",
         ],
-        compareHeading: "How these three differ",
-        sources: [{ kind: "pooja", slugs: ["daily-pooja-flowers", "jasmine-malli", "pooja-basket"] }],
-        links: [POOJA, { href: "/categories/pooja-flowers#loose", label: "Loose and daily flowers" }, { href: "/categories/pooja-flowers#bulk", label: "Bulk and ceremony flowers" }],
       },
       {
         id: "garlands",
-        heading: "Wedding garlands",
+        heading: "Choosing wedding garlands",
         body: [
-          "Garlands for the exchange (varmala, jaimala, poola mala) are made to order from a photographed design. Start with the main flower: rose designs differ mostly by colour, lotus designs by how the lotus is combined with other flowers, and tuberose designs are the palest.",
-          "Open a design to see it in full and enquire with its code. Length, single or pair, and the exact flowers for your date are settled on WhatsApp before anything is made.",
+          "Garlands for the exchange (varmala, jaimala, poola mala) are made to order from a photographed design. Start with the main flower in the photograph: rose designs differ mostly by colour, lotus designs by closed buds or opened flowers, and tuberose designs are white with coloured bands. Then decide whether you need one garland or a pair, and which colours should match the outfits.",
+          "A design's browsing group (rose, lotus, tuberose) sorts the photographs; it is not a recipe. The examples below are from the wedding garland guide, where each is described fact by fact. The exact flowers, length, single or pair, and the price for your date are confirmed on WhatsApp before anything is made.",
         ],
-        compareHeading: "The designs shown, by main flower",
-        sources: [{ kind: "garlands", filters: ["rose", "lotus", "tuberose"], each: 1 }],
+        compareHeading: "What each photograph shows",
+        sources: [{ kind: "garlands", filters: ["rose", "lotus", "tuberose"], each: 2, codes: ["FP-G001", "FP-G034", "FP-G106", "FP-G035", "FP-G086", "FP-G085"] }],
         links: [GARLANDS, GUIDE, { href: "/occasions/wedding", label: "Wedding flowers" }],
+        collections: ["garlands", "garlands-rose", "garlands-lotus", "garlands-tuberose"],
+        quote: [
+          "The design code (FP-G…) and its link",
+          "The ceremony date",
+          "One garland or a pair",
+          "Colours to match the outfits, and any change of length or finish",
+          "The delivery address in Bengaluru",
+        ],
+      },
+      {
+        id: "pooja",
+        heading: "Flowers for a pooja: loose, strung or in a basket",
+        body: [
+          "Choose by form first. Loose pooja flowers and loose jasmine (mallige) are for offering as they are, or for stringing yourself. Jasmine gajra comes already strung, and torans are strung for a doorway. A pooja basket is packed ready to carry. Loose flowers and jasmine follow the day's flower market, so their price is quoted for your date.",
+          "Pack sizes are not fixed on the website, so tell us the pooja and roughly how much you need. The examples below are three of the pooja products; the pooja collection lists all of them, including gajra, torans and bulk flowers.",
+        ],
+        compareHeading: "How these three differ",
+        sources: [{ kind: "pooja", slugs: ["daily-pooja-flowers", "jasmine-malli", "pooja-basket"] }],
+        links: [POOJA, { href: "/categories/pooja-flowers#strings", label: "Strings, gajra and torans" }, { href: "/guides/jasmine-pooja-flowers-and-gajra", label: "Loose jasmine or gajra" }, { href: "/categories/pooja-flowers#bulk", label: "Bulk and ceremony flowers" }],
+        collections: ["pooja-flowers"],
+        quote: [
+          "What the pooja is, and the date and time you need the flowers by",
+          "Loose flowers, loose jasmine, strung jasmine (gajra), a toran or a basket",
+          "Roughly how much: for one pooja, a festival, or a larger function",
+          "The delivery address in Bengaluru",
+        ],
       },
     ],
     faqs: [

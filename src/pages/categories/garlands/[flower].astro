@@ -13,7 +13,7 @@ import GarlandCard from "../../../components/GarlandCard.astro";
 import GarlandCollectionLinks from "../../../components/GarlandCollectionLinks.astro";
 import LandingDetails from "../../../components/LandingDetails.astro";
 import { isListedGarland, loadGarlands } from "../../../data/garlands";
-import { GARLANDS_PATH, GARLAND_CONFIRM_POINTS, GARLAND_COVERAGE, GARLAND_GUIDE_PATH, garlandCollection, populatedCollections } from "../../../data/garlandCollections";
+import { GARLANDS_PATH, GARLAND_CONFIRM_POINTS, GARLAND_COVERAGE, GARLAND_GUIDE_PATH, GARLAND_PILOT, GARLAND_PILOT_ANCHOR, garlandCollection, populatedCollections } from "../../../data/garlandCollections";
 import { garlandCacheHeaders } from "../../../server/services/GarlandWebsite";
 
 export const prerender = false;
@@ -30,6 +30,8 @@ const empty = garlands.length === 0;
 if (empty) Astro.response.status = 404;
 const noindex = empty || drafts;
 const others = populatedCollections(all).filter((entry) => entry.collection.key !== collection.key);
+// This collection's designs in the guide's six-design pilot, when public.
+const pilot = GARLAND_PILOT.filter((entry) => entry.group === collection.key).flatMap((entry) => garlands.filter((product) => product.garland.code === entry.code));
 
 const abs = (path: string) => new URL(path, Astro.site).toString();
 const jsonLd = [
@@ -141,6 +143,15 @@ const landing = {
               <p class="mt-6 text-sm leading-7 text-moss">
                 Comparing flowers? Read <a href={GARLAND_GUIDE_PATH} class="font-semibold text-ink underline underline-offset-4">how to choose a wedding garland</a>.
               </p>
+              {pilot.length > 0 && (
+                <p class="mt-3 text-sm leading-7 text-moss" data-collection-pilot>
+                  {pilot.map((product, index) => (
+                    <Fragment>{index > 0 && " and "}<a href={`/products/${product.slug}`} class="font-semibold text-ink underline underline-offset-4">{product.garland.code}</a></Fragment>
+                  ))}{" "}
+                  {pilot.length === 1 ? "is" : "are"} described fact by fact in the guide: what is on record, what the photograph shows and what is confirmed for your order.{" "}
+                  <a href={`${GARLAND_GUIDE_PATH}#${GARLAND_PILOT_ANCHOR}`} class="font-semibold text-ink underline underline-offset-4">See the six designs</a>.
+                </p>
+              )}
             </div>
             <div>
               <h2 class="fp-serif text-xl text-ink md:text-2xl">What we confirm on WhatsApp</h2>

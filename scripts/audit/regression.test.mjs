@@ -769,3 +769,43 @@ test('city roots: every serviceable city has an indexable root; the catalogue ro
   assert(/serviceableCities\(\)\.filter\(\(city\) => !hasHub\(city\)\)/.test(sitemap));
   assert(/href=\{`\$\{LOCATIONS_PATH\}\/\$\{city\.slug\}`\}/.test(readFileSync('src/pages/locations/index.astro', 'utf8')));
 });
+
+test('search evidence: Bengaluru tasks link complete collections with what a quote needs; garland evidence separates record, photograph and confirmation; drafts ask only for what is missing', () => {
+  const hubs = load('src/data/cityHubs.ts');
+  const blr = hubs.CITY_HUBS.find((hub) => hub.slug === 'bengaluru');
+  // No origin claim for any city.
+  assert(!/began|founded|started|origin|home city|where (this|we)/i.test(JSON.stringify(blr.intro)));
+  assert.deepEqual(json(blr.sections.map((section) => section.id)), ['bouquets', 'garlands', 'pooja']);
+  for (const section of blr.sections) assert(section.collections.length > 0 && section.quote.length >= 4, section.id);
+  assert(blr.sections.find((section) => section.id === 'garlands').collections.includes('garlands-lotus'));
+  assert(blr.sections.find((section) => section.id === 'bouquets').collections.includes('all-flowers'));
+  // Garland evidence: groups are labelled as sorting; empty specifications are to confirm, never invented.
+  const collections = load('src/data/garlandCollections.ts');
+  assert.equal(collections.GARLAND_PILOT.length, 6);
+  for (const group of ['rose', 'lotus', 'tuberose']) assert.equal(collections.GARLAND_PILOT.filter((entry) => entry.group === group).length, 2);
+  const design = { code: 'FP-G001', title: 'Classic Red Rose Garland', filters: ['rose'], filterRecipeVerified: false, soldUnit: null, length: null, flowerRecipe: null, weightOrThickness: null, finish: null, leadTime: null, substitutionPolicy: null, image: { alt: 'Red rose garlands with gold-coloured tassels' } };
+  const evidence = json(collections.garlandEvidence(design));
+  assert.deepEqual(evidence.onRecord.map((fact) => fact.label), ['Design code', 'Browsed under']);
+  assert(/not a list of flowers/.test(evidence.onRecord[1].value));
+  assert.equal(evidence.photograph, 'Red rose garlands with gold-coloured tassels.');
+  assert(evidence.toConfirm.includes('Flowers used') && evidence.toConfirm.includes('Length') && evidence.toConfirm.includes('Price for your date'));
+  const recorded = json(collections.garlandEvidence({ ...design, soldUnit: 'Pair', filterRecipeVerified: true }));
+  assert(recorded.onRecord.some((fact) => fact.value === 'Pair') && !recorded.toConfirm.some((item) => /^Sold as/.test(item)));
+  // Drafts: link and city first; ceremony date and one-or-pair asked once; no amount; fixed closing.
+  const enquiry = load('src/utils/garlandEnquiry.ts');
+  const text = enquiry.garlandEnquiryText({ code: 'FP-G001', title: 'Rose', quantity: 1, url: 'https://onlyfreshpetals.in/products/rose', city: 'Bengaluru' });
+  assert(/Link: https:/.test(text) && /Recipient city: Bengaluru/.test(text) && /one garland or a pair\?/.test(text) && /Ceremony date: /.test(text) && /final flowers, length and delivery/.test(text));
+  assert(!/₹|none chosen|Date \(optional\)|pincode/i.test(text));
+  assert.equal((text.match(/pair/g) ?? []).length, 1);
+  assert(!/one garland or a pair/.test(enquiry.garlandEnquiryText({ code: 'FP-G001', title: 'Rose', quantity: 2, unit: 'pair' })));
+  // All Flowers comparison: from the records of each group, care only when most of the group carries it.
+  const guidance = load('src/data/collectionGuidance.ts');
+  const p = (slug, included, care) => ({ slug, category: 'Bouquets', whatsIncluded: included, careNotes: care });
+  const rows = json(guidance.presentationComparison([{ id: 'wrapped', products: [p('a', ['Kraft wrapping'], ['Keep cool.']), p('b', ['Premium wrapping'], ['Keep cool.', 'Rare.']), p('c', ['Kraft wrapping'], [])] }, { id: 'vase', products: [] }]));
+  assert.deepEqual(rows.map((row) => row.id), ['wrapped']);
+  assert.deepEqual(rows[0].comesIn, ['Kraft wrapping', 'Premium wrapping']);
+  assert.deepEqual(json(guidance.presentationComparison([{ id: 'wrapped', products: [p('d', ['Kraft wrapping', 'Wicker basket'], [])] }]))[0].alsoOnSome, ['Wicker basket']);
+  assert.deepEqual(rows[0].care, ['Keep cool.']);
+  // The garland total names its parts.
+  assert(/coded design/.test(readFileSync('src/pages/categories/garlands.astro', 'utf8')));
+});

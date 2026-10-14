@@ -83,8 +83,10 @@ const breadcrumbJsonLd = {
               )
             }
             <div class="mt-5 flex max-w-2xl flex-wrap items-center gap-2">
-              <span class="rounded-full border border-line bg-linen px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-berry">
-                {total} option{total === 1 ? "" : "s"}
+              <span class="rounded-full border border-line bg-linen px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-berry" data-garland-total>
+                {garlands.length > 0
+                  ? `${garlands.length} coded design${garlands.length === 1 ? "" : "s"}${otherProducts.length > 0 ? ` + ${otherProducts.length === 1 ? otherProducts[0].name : `${otherProducts.length} services`}` : ""}`
+                  : `${total} option${total === 1 ? "" : "s"}`}
               </span>
               <span class="rounded-full border border-mint-soft bg-mint-soft px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-ink">
                 WhatsApp confirmed

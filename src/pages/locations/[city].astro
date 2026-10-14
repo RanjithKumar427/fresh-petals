@@ -146,7 +146,14 @@ function cardsFor(source: HubSource): Card[] {
       return [...wrapped, ...fresh(bouquets.filter(isVaseArrangement), 1)].map(productCard);
     }
     case "garlands":
-      return source.filters.flatMap((filter) => fresh(garlands.filter((product) => product.garland.filters.includes(filter)), source.each)).map(garlandCard);
+      return source.filters
+        .flatMap((filter) => {
+          const inGroup = garlands.filter((product) => product.garland.filters.includes(filter));
+          // Named designs first (when public and in this group), then the group's own order.
+          const named = (source.codes ?? []).flatMap((code) => inGroup.filter((product) => product.garland.code === code));
+          return fresh([...named, ...inGroup.filter((product) => !named.includes(product))], source.each);
+        })
+        .map(garlandCard);
     case "pooja":
       return fresh(source.slugs.map(bySlug).filter((product): product is Product => !!product)).map(productCard);
   }
@@ -159,14 +166,21 @@ const withGuides = (section: (typeof hub.sections)[number]) => {
   return [...section.links, ...guides.map((guide) => ({ href: guide.path, label: `Guide: ${guide.label.charAt(0).toLowerCase()}${guide.label.slice(1)}` }))];
 };
 
-// A section with nothing public is not shown.
-const sections = hub.sections.map((section) => ({ ...section, links: withGuides(section), cards: section.sources.flatMap(cardsFor) })).filter((section) => section.cards.length > 0);
-
 // The full catalogue for this city: every public collection, with its count
-// and a photograph, linking to the city's shop view. The sections above are
-// advice with a few examples; this is everything.
+// and a photograph, linking to the city's shop view. The sections are advice
+// with a few examples; this is everything.
 const catalogue = await loadCityCatalogue();
 const shopBase = `${LOCATIONS_PATH}/${city.slug}/shop`;
+
+// A section's complete collections (its `collections` ids), each with its
+// live count, so its examples are never the only way into the range.
+const completeFor = (ids: string[] = []) =>
+  ids.flatMap((id) => catalogue.collections.filter((collection) => collection.id === id)).map((collection) => ({ id: collection.id, href: `${shopBase}?collection=${collection.id}`, label: `${collection.label} in ${city.name}`, count: collection.items.length }));
+
+// A section with nothing public is not shown.
+const sections = hub.sections
+  .map((section) => ({ ...section, links: withGuides(section), cards: section.sources.flatMap(cardsFor), complete: completeFor(section.collections) }))
+  .filter((section) => section.cards.length > 0);
 const tiles = catalogue.collections.filter((collection) => collection.primary);
 // Every other collection, listed with its count, so the page links complete membership of all of them.
 const otherCollections = catalogue.collections.filter((collection) => !collection.primary);
@@ -239,47 +253,6 @@ const steps = [
       </div>
     </section>
 
-    <section id="catalogue" class="scroll-mt-24 border-t border-line bg-paper px-5 py-10 md:px-8 md:py-14" data-city-catalogue>
-      <div class="mx-auto max-w-7xl">
-        <h2 class="fp-h2">Everything you can order for {city.name}</h2>
-        <p class="mt-3 max-w-3xl text-sm leading-7 text-moss md:text-base">
-          {authored ? "The sections below give advice with a few examples. The full catalogue is here: " : "The full catalogue: "}{catalogue.all.length} products in {catalogue.collections.length} collections, all of which can be ordered for {city.name}.
-        </p>
-        <ul class="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-5">
-          {tiles.map((collection) => (
-            <li>
-              <a href={`${shopBase}?collection=${collection.id}`} data-city-collection={collection.id} class="group flex h-full flex-col overflow-hidden rounded-[18px] border border-line bg-ivory transition hover:border-berry">
-                <span class="relative block aspect-[4/3] bg-linen">
-                  <img src={collection.items[0].image.src} srcset={collection.items[0].image.srcset} sizes={collection.items[0].image.srcset ? "(min-width: 768px) 23vw, 48vw" : undefined} width={collection.items[0].image.width} height={collection.items[0].image.height} alt="" loading="lazy" decoding="async" class:list={["absolute inset-0 h-full w-full", collection.items[0].image.contain ? "object-contain" : "object-cover"]} />
-                </span>
-                <span class="block px-3 py-3">
-                  <span class="block text-sm font-semibold leading-snug text-ink group-hover:text-berry">{collection.label} in {city.name}</span>
-                  <span class="mt-1 block text-xs text-moss">{collection.items.length} {collection.items.length === 1 ? "product" : "products"}</span>
-                </span>
-              </a>
-            </li>
-          ))}
-        </ul>
-        <div class="mt-6 flex flex-wrap gap-3">
-          <a href={shopBase} data-city-shop-link={city.slug} class="inline-flex min-h-[48px] items-center justify-center rounded-full bg-berry px-6 text-sm font-semibold text-white transition hover:bg-berry-deep">Browse all {catalogue.all.length} products for {city.name}</a>
-        </div>
-        {moreCollections > 0 && (
-          <div class="mt-8" data-city-more-collections>
-            <h3 class="text-sm font-semibold text-ink">More collections in {city.name}</h3>
-            <ul class="mt-3 flex flex-wrap gap-2">
-              {otherCollections.map((collection) => (
-                <li>
-                  <a href={`${shopBase}?collection=${collection.id}`} data-city-collection={collection.id} class="inline-flex min-h-[44px] items-center gap-1 rounded-full border border-line bg-ivory px-4 text-[13px] text-ink transition hover:border-berry hover:text-berry">
-                    {collection.label} in {city.name} <span class="text-moss">({collection.items.length})</span>
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </div>
-    </section>
-
     {
       sections.map((section) => (
         <section id={section.id} class="scroll-mt-24 border-t border-line px-5 py-10 md:px-8 md:py-14" data-city-section={section.id}>
@@ -290,27 +263,51 @@ const steps = [
                 <div class="mt-4 space-y-3 text-sm leading-7 text-moss md:text-base">
                   {section.body.map((paragraph) => <p>{paragraph}</p>)}
                 </div>
-              </div>
-              {section.cards.some((card) => card.line) && (
-                <div class="rounded-[18px] border border-line bg-paper p-5 md:self-start md:p-6" data-city-compare>
-                  <h3 class="text-sm font-semibold text-ink">{section.compareHeading}</h3>
-                  <dl class="mt-3 space-y-3 text-sm leading-6">
-                    {section.cards.filter((card) => card.line).map((card) => (
-                      <div>
-                        <dt class="font-semibold text-ink">
-                          <a href={card.href} class="underline decoration-line underline-offset-4 hover:text-berry">{card.name}</a>
-                          {card.code && <span class="font-normal text-moss"> · {card.code}</span>}
-                          {!card.code && card.price !== QUOTE_ONLY_PRICE_LABEL && <span class="font-normal text-moss"> · {card.price}</span>}
-                        </dt>
-                        <dd class="text-moss">{card.line}</dd>
-                      </div>
+                {section.complete.length > 0 && (
+                  <ul class="mt-5 flex flex-wrap gap-2" data-city-complete={section.id}>
+                    {section.complete.map((collection) => (
+                      <li>
+                        <a href={collection.href} data-city-complete-link={collection.id} class="inline-flex min-h-[44px] items-center gap-1 rounded-full border border-ink bg-paper px-4 text-sm font-semibold text-ink transition hover:border-berry hover:text-berry">
+                          {/^all /i.test(collection.label) ? collection.label : `All ${collection.label.charAt(0).toLowerCase()}${collection.label.slice(1)}`} <span class="font-normal text-moss">({collection.count})</span>
+                        </a>
+                      </li>
                     ))}
-                  </dl>
-                </div>
-              )}
+                  </ul>
+                )}
+              </div>
+              <div class="space-y-5 md:self-start">
+                {section.cards.some((card) => card.line) && (
+                  <div class="rounded-[18px] border border-line bg-paper p-5 md:p-6" data-city-compare>
+                    <h3 class="text-sm font-semibold text-ink">{section.compareHeading}</h3>
+                    <dl class="mt-3 space-y-3 text-sm leading-6">
+                      {section.cards.filter((card) => card.line).map((card) => (
+                        <div>
+                          <dt class="font-semibold text-ink">
+                            <a href={card.href} class="underline decoration-line underline-offset-4 hover:text-berry">{card.name}</a>
+                            {card.code && <span class="font-normal text-moss"> · {card.code}</span>}
+                            {!card.code && card.price !== QUOTE_ONLY_PRICE_LABEL && <span class="font-normal text-moss"> · {card.price}</span>}
+                          </dt>
+                          <dd class="text-moss">{card.line}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </div>
+                )}
+                {section.quote && section.quote.length > 0 && (
+                  <div class="rounded-[18px] border border-line bg-linen p-5 md:p-6" data-city-quote={section.id}>
+                    <h3 class="text-sm font-semibold text-ink">For a quote, send us</h3>
+                    <ul class="mt-3 list-disc space-y-1.5 pl-5 text-sm leading-6 text-moss">
+                      {section.quote.map((item) => <li>{item}</li>)}
+                    </ul>
+                  </div>
+                )}
+              </div>
             </div>
 
-            <ul class="mt-8 grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5 lg:grid-cols-4">
+            <p class="mt-8 text-[11px] font-semibold uppercase tracking-[0.18em] text-moss" data-city-examples-label>
+              Examples{section.complete.length > 0 ? ", not the full range" : ""}
+            </p>
+            <ul class="mt-3 grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5 lg:grid-cols-4">
               {section.cards.map((card) => (
                 <li>
                   <article class="city-card group relative flex h-full flex-col overflow-hidden rounded-[18px] border border-line bg-paper" data-city-card={card.key} data-quote-only={card.price === QUOTE_ONLY_PRICE_LABEL ? "true" : "false"}>
@@ -353,6 +350,47 @@ const steps = [
         </section>
       ))
     }
+
+    <section id="catalogue" class="scroll-mt-24 border-t border-line bg-paper px-5 py-10 md:px-8 md:py-14" data-city-catalogue>
+      <div class="mx-auto max-w-7xl">
+        <h2 class="fp-h2">Everything you can order for {city.name}</h2>
+        <p class="mt-3 max-w-3xl text-sm leading-7 text-moss md:text-base">
+          {authored ? "The sections above give advice with a few examples. The full catalogue is here: " : "The full catalogue: "}{catalogue.all.length} products in {catalogue.collections.length} collections, all of which can be ordered for {city.name}.
+        </p>
+        <ul class="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-5">
+          {tiles.map((collection) => (
+            <li>
+              <a href={`${shopBase}?collection=${collection.id}`} data-city-collection={collection.id} class="group flex h-full flex-col overflow-hidden rounded-[18px] border border-line bg-ivory transition hover:border-berry">
+                <span class="relative block aspect-[4/3] bg-linen">
+                  <img src={collection.items[0].image.src} srcset={collection.items[0].image.srcset} sizes={collection.items[0].image.srcset ? "(min-width: 768px) 23vw, 48vw" : undefined} width={collection.items[0].image.width} height={collection.items[0].image.height} alt="" loading="lazy" decoding="async" class:list={["absolute inset-0 h-full w-full", collection.items[0].image.contain ? "object-contain" : "object-cover"]} />
+                </span>
+                <span class="block px-3 py-3">
+                  <span class="block text-sm font-semibold leading-snug text-ink group-hover:text-berry">{collection.label} in {city.name}</span>
+                  <span class="mt-1 block text-xs text-moss">{collection.items.length} {collection.items.length === 1 ? "product" : "products"}</span>
+                </span>
+              </a>
+            </li>
+          ))}
+        </ul>
+        <div class="mt-6 flex flex-wrap gap-3">
+          <a href={shopBase} data-city-shop-link={city.slug} class="inline-flex min-h-[48px] items-center justify-center rounded-full bg-berry px-6 text-sm font-semibold text-white transition hover:bg-berry-deep">Browse all {catalogue.all.length} products for {city.name}</a>
+        </div>
+        {moreCollections > 0 && (
+          <div class="mt-8" data-city-more-collections>
+            <h3 class="text-sm font-semibold text-ink">More collections in {city.name}</h3>
+            <ul class="mt-3 flex flex-wrap gap-2">
+              {otherCollections.map((collection) => (
+                <li>
+                  <a href={`${shopBase}?collection=${collection.id}`} data-city-collection={collection.id} class="inline-flex min-h-[44px] items-center gap-1 rounded-full border border-line bg-ivory px-4 text-[13px] text-ink transition hover:border-berry hover:text-berry">
+                    {collection.label} in {city.name} <span class="text-moss">({collection.items.length})</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    </section>
 
     <section id="ordering" class="scroll-mt-24 border-t border-line bg-paper px-5 py-10 md:px-8 md:py-14">
       <div class="mx-auto max-w-5xl">
