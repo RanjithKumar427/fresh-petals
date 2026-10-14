@@ -65,3 +65,22 @@ Every serviceable city now has an indexable root at `/locations/<city>`.
 Verification on the rebuilt preview: regression suite 41 of 41 (one new test for the roots); root checks 10 of 10 (all 59 roots 200, one H1, self-canonical, indexable, breadcrumbs, city context, links to every collection, unique titles; Kochi counts equal to its shop view; hubs unchanged; aliases, 404s, noindexed shop views; sitemap membership); catalogue checks 59 of 59, rerun. Screenshots read by eye: the Kochi root on mobile, Kochi's product grid on mobile and its numbered pagination on desktop.
 
 Note for publication: an earlier city check (in `nat-check`) expected unpublished cities such as `/locations/kochi` to answer 404; that expectation no longer holds and was not rerun.
+
+## Production release (14 October 2026)
+
+- **Deployed commit:** `4216303` (includes `e80b9fd`). `origin/main` was still `9d3c298`, so `main` was fast-forwarded with no merge, pushed alone without force, then `seo/city-catalogue` was pushed after Production was Ready. Unrelated local files were left untracked.
+- **Deployment:** `dpl_3Um6Ct7synZuWBGNMq8D9xC6WkqJ` (fresh-petals-7paradeqf), target production, Ready. Created 11:16:45 IST; Ready and serving onlyfreshpetals.in at 11:17:56 IST on 14 October 2026.
+- **Rollback reference:** commit `9d3c298`, deployment `dpl_Af4SnB4SPEyr8CeMPuUSuLwZoeSE` (fresh-petals-c16j2n7r7). To roll back, promote that deployment in Vercel, or revert `4216303` and `e80b9fd` on `main`.
+
+Verification on https://onlyfreshpetals.in (read-only; inquiry requests and WhatsApp were blocked in the browser and drafts captured, not sent):
+
+| Check | Result |
+|---|---|
+| Root checks | PASS, 10 of 10: all 59 roots 200, one H1, self-canonical, `max-image-preview:large`, breadcrumbs, links to every collection with city labels, unique titles; Kochi counts equal its shop view; hubs unchanged; aliases 301, unknown 404, shop views `noindex, follow`; sitemap lists all 59 roots once with `lastmod` and no shop views (221 URLs) |
+| Catalogue checks | PASS, 59 of 59: parity across all 59 cities; complete lotus collections in Bengaluru and Hyderabad (30 each, over two pages); All Products 245 with 156 garlands; Kochi product draft names Kochi with no amount; basket shows Kochi; destination confirmation; hero intact |
+| Kochi without JavaScript | PASS: "next" walks all 11 pages and reaches all 245 products once; page 3 loads directly with previous and next links |
+| Pooja prices in Kochi | Prices match `/categories/pooja-flowers` exactly (₹199, ₹50, ₹299, ₹399); the others keep their catalogue labels ("Market price today", "On request", Event Garlands quote-only). The first assertion expected every pooja card to show an amount, which was wrong; the site was correct. |
+| Layout at 390 and 1440 px | PASS: Kochi, Greater Noida, Bengaluru and Hyderabad roots and Kochi page two have no broken images and no horizontal overflow |
+| GA4 privacy | PASS: tag `G-V75FJQ06ZS`, collect responses 204; no query string in page locations; the AI referrer is sent as its origin only (`https://chatgpt.com/`); no draft text, path or parameter leaked |
+
+No ranking change is claimed. Search Console has not been checked.
