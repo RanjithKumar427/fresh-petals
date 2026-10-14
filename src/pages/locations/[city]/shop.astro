@@ -5,13 +5,13 @@
 // collection and the page are query parameters, so there is no city URL per
 // collection. It is a shopping view, not a landing page: noindex, follow,
 // canonical to itself, and not in the sitemap. The city's own page
-// (/locations/<city>), where one is published, stays the indexable page.
+// (/locations/<city>), which every serviceable city has, is the indexable page.
 //
 // Works without scripts: collections, pagination and product links are plain
 // links, 24 products a page, photographs lazy-loaded.
 import BaseLayout from "../../../layouts/BaseLayout.astro";
 import DestinationCity from "../../../components/DestinationCity.astro";
-import { CITY_PARAM, LOCATIONS_PATH, findCity, hasHub, serviceCityCount } from "../../../data/serviceCities";
+import { CITY_PARAM, LOCATIONS_PATH, findCity, serviceCityCount } from "../../../data/serviceCities";
 import { CITY_SHOP_PAGE_SIZE, loadCityCatalogue, type CatalogueItem } from "../../../server/services/CityCatalogue";
 import { cityEnquiryHref, cityProductEnquiryHref } from "../../../utils/cityEnquiry";
 import { garlandEnquiryHref } from "../../../utils/garlandEnquiry";
@@ -56,7 +56,6 @@ const title = `${collection ? collection.label : "Full Catalogue"} for Delivery 
 const description = `${collection ? collection.label : "Every bouquet, garland and pooja flower product"} available to order for delivery in ${city.name}. Availability, price and delivery details are confirmed on WhatsApp.`;
 const primary = collections.filter((entry) => entry.primary);
 const others = collections.filter((entry) => !entry.primary);
-const hub = hasHub(city);
 const first = (page - 1) * CITY_SHOP_PAGE_SIZE + 1;
 const chip = "inline-flex min-h-[44px] items-center gap-1 rounded-full border px-4 text-[13px] font-semibold transition";
 const chipClass = (current: boolean) => [chip, current ? "border-ink bg-ink text-paper" : "border-line bg-paper text-ink hover:border-berry hover:text-berry"];
@@ -70,7 +69,7 @@ const chipClass = (current: boolean) => [chip, current ? "border-ink bg-ink text
           <p class="fp-eyebrow">
             <a href="/" class="hover:underline">Home</a> <span aria-hidden="true">/</span>
             <a href={LOCATIONS_PATH} class="hover:underline">Delivery cities</a> <span aria-hidden="true">/</span>
-            {hub ? <a href={`${LOCATIONS_PATH}/${city.slug}`} class="hover:underline">{city.name}</a> : <span>{city.name}</span>} <span aria-hidden="true">/</span>
+            <a href={`${LOCATIONS_PATH}/${city.slug}`} class="hover:underline">{city.name}</a> <span aria-hidden="true">/</span>
             <span aria-current="page">Shop</span>
           </p>
         </nav>
@@ -155,7 +154,7 @@ const chipClass = (current: boolean) => [chip, current ? "border-ink bg-ink text
 
         <p class="mt-10 max-w-3xl text-sm leading-7 text-moss">
           We do not promise same-day or timed delivery on this website, and delivery charges are not fixed here: both are confirmed for your address and date on WhatsApp. Photographs show our designs; they are not pictures of orders delivered in {city.name}.
-          {hub ? <> For advice on choosing, see <a href={`${LOCATIONS_PATH}/${city.slug}`} class="font-semibold text-ink underline underline-offset-4">flowers for {city.name}</a>.</> : <> See <a href="/guides" class="font-semibold text-ink underline underline-offset-4">our guides to choosing flowers</a>.</>}
+          <> See <a href={`${LOCATIONS_PATH}/${city.slug}`} class="font-semibold text-ink underline underline-offset-4">flowers for {city.name}</a> and <a href="/guides" class="font-semibold text-ink underline underline-offset-4">our guides to choosing flowers</a>.</>
         </p>
       </div>
     </section>

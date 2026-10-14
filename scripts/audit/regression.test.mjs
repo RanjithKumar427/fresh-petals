@@ -480,7 +480,7 @@ test('city hubs: one authored page per published hub, distinct copy, real source
   for (const href of copy.match(/"href":"[^"]+"/g) ?? []) assert(/^"href":"\/(categories|occasions|guides|custom-orders|locations)(\/|"|#)/.test(href), href);
   for (const slug of copy.match(/\/locations\/[a-z-]+/g) ?? []) assert(registry.hubPath(registry.findCity(slug.split('/').pop())), slug);
   const page = readFileSync('src/pages/locations/[city].astro', 'utf8');
-  assert(/prerender = false/.test(page) && /Astro\.rewrite\("\/404"\)/.test(page) && /GARLAND_CACHE_TAG, OCCASION_INDEX_TAG/.test(page) && /isListedGarland/.test(page) && /giftProducts\(source\.route, membership\)/.test(page));
+  assert(/prerender = false/.test(page) && /if \(!city \|\| !city\.serviceable\) return Astro\.rewrite\("\/404"\)/.test(page) && /catalogueRoot\(city, serviceCityCount\(\)\)/.test(page) && /GARLAND_CACHE_TAG, OCCASION_INDEX_TAG/.test(page) && /isListedGarland/.test(page) && /giftProducts\(source\.route, membership\)/.test(page));
   // Garland comparisons describe the photograph and name a browsing group; they never present the group as the flowers used.
   assert(/design\.image\.alt/.test(page) && /Browse under:/.test(page) && !/Main flower/.test(page));
   // One H1, visible breadcrumbs, self-canonical (no canonical override), no rating or LocalBusiness markup.
@@ -751,4 +751,21 @@ test('city catalogue: one shared source with no sample limits or per-city restri
   assert(!/\/shop/.test(readFileSync('src/pages/sitemap.xml.ts', 'utf8')));
   // City pages link the whole catalogue; the directory gives every city without a page its shop view.
   assert(/loadCityCatalogue\(\)/.test(readFileSync('src/pages/locations/[city].astro', 'utf8')) && /data-city-shop-link=\{city\.slug\}/.test(readFileSync('src/pages/locations/index.astro', 'utf8')));
+});
+
+test('city roots: every serviceable city has an indexable root; the catalogue root states only what is true of every city', () => {
+  const hubs = load('src/data/cityHubs.ts');
+  const registry = load('src/data/serviceCities.ts');
+  const roots = registry.serviceableCities().filter((city) => !registry.hasHub(city)).map((city) => json(hubs.catalogueRoot(city, 59)));
+  assert.equal(roots.length, 44);
+  for (const field of ['title', 'description', 'h1']) assert.equal(new Set(roots.map((root) => root[field])).size, 44, field);
+  for (const root of roots) {
+    assert.equal(root.sections.length, 0);
+    assert(/^\d{4}-\d{2}-\d{2}$/.test(root.updated));
+    const copy = JSON.stringify(root);
+    assert(!/₹|same[- ]day|within \d|branch|store|shop in|our team in|local|review|rated|famous|grown/i.test(copy), root.slug);
+  }
+  const sitemap = readFileSync('src/pages/sitemap.xml.ts', 'utf8');
+  assert(/serviceableCities\(\)\.filter\(\(city\) => !hasHub\(city\)\)/.test(sitemap));
+  assert(/href=\{`\$\{LOCATIONS_PATH\}\/\$\{city\.slug\}`\}/.test(readFileSync('src/pages/locations/index.astro', 'utf8')));
 });

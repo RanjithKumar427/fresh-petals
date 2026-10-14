@@ -1031,3 +1031,42 @@ export const cityHub = (slug: string | undefined): CityHub | null => CITY_HUBS.f
 /** Shown on every hub: what the photographs are, and what they are not. */
 export const HUB_PHOTO_NOTE =
   "The photographs show our designs. They are examples of what we make, not pictures of orders delivered in this city, and flowers vary naturally in shade and size.";
+
+/**
+ * The root page for a serviceable city without an authored hub. It says only
+ * what is true of every city: we take orders for it, the catalogue is the
+ * same everywhere, and availability, price and delivery are confirmed on
+ * WhatsApp. No advice sections (those are written per city), no local story.
+ * Its content is the full catalogue, rendered by the city page template.
+ */
+export function catalogueRoot(city: { slug: string; name: string; state: string }, cityCount: number): CityHub {
+  return {
+    slug: city.slug,
+    title: `Flowers for Delivery in ${city.name} | Bouquets, Garlands & Pooja Flowers | Fresh Petals`,
+    description: `Order bouquets, wedding garlands and pooja flowers for delivery in ${city.name}, ${city.state}: the full Fresh Petals catalogue by collection. Price and date confirmed on WhatsApp.`,
+    h1: `Flowers for delivery in ${city.name}`,
+    updated: "2026-10-14",
+    emphasis: `${city.name} is one of the ${cityCount} cities we take orders for. Everything in our catalogue can be ordered for delivery here.`,
+    intro: [
+      `Choose from every collection below: bouquets, lilies, wedding garlands by flower group, pooja flowers and more. The catalogue is the same for every city we deliver to; nothing is held back for ${city.name}.`,
+      "Send your choice on WhatsApp with the date and the recipient's address. We confirm availability for that date, the price and the delivery details before you pay.",
+    ],
+    sections: [],
+    faqs: [
+      {
+        question: `Do you deliver to every address in ${city.name}?`,
+        answer: `${city.name} is one of the cities we take orders for. Whether we can deliver to a particular address on a particular date is confirmed for each order on WhatsApp, with the delivery charge, before you pay.`,
+      },
+      {
+        question: "Why do bouquets and garlands show no price?",
+        answer: "Their price depends on the flowers available for your date, so we send it on WhatsApp once you choose a design. Products that show a price keep it. Nothing is charged on this website.",
+      },
+    ],
+    links: [
+      { href: "/guides/sending-flowers-to-another-city", label: "Sending flowers to another city" },
+      { href: "/guides/choosing-a-flower-bouquet", label: "How to choose a bouquet" },
+      { href: "/guides/choosing-wedding-garlands", label: "How to choose a wedding garland" },
+      { href: "/locations", label: "All delivery cities" },
+    ],
+  };
+}

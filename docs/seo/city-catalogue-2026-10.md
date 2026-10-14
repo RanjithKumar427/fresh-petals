@@ -19,7 +19,7 @@ Counts when checked: all flowers 51, featured bouquets 8, lilies 11, wedding gar
 
 ## Indexing decision
 
-The shop views are `noindex, follow`, canonical to themselves, and not in the sitemap. They are a shopping tool: 59 pages listing the same catalogue under different city names would be near-duplicates, which the city-page work has avoided throughout. The indexable page for a city remains `/locations/<city>` where one is published. The 44 cities without a published page therefore have a complete shopping destination but still no indexable city page; writing those pages is separate work. `sitemap.xml` is unchanged.
+The shop views are `noindex, follow`, canonical to themselves, and not in the sitemap. They are a shopping tool: 59 pages listing the same catalogue under different city names would be near-duplicates, which the city-page work has avoided throughout. The indexable page for every city is its root, `/locations/<city>` (see "City roots for all 59 cities").
 
 ## Not changed
 
@@ -50,3 +50,18 @@ Not rerun for this release: the earlier city-hub, basket and search-competitiven
 ## Handoff
 
 Fast-forward `main` to this branch, push `main` alone, wait for Production, then push the branch. Rollback reference: `9d3c298`. After deploying, check `/locations/bengaluru/shop?collection=garlands-lotus` (30 designs over two pages), a newly enabled city such as `/locations/kochi/shop`, the tiles on a city page, and one captured draft.
+
+## City roots for all 59 cities (14 October 2026)
+
+Every serviceable city now has an indexable root at `/locations/<city>`.
+
+- **Fifteen authored hubs** are unchanged: their advice sections, nearby links, titles and dates stay as written.
+- **The other 44** use the same template with a catalogue root (`catalogueRoot` in `src/data/cityHubs.ts`): a unique title, description and H1 ("Flowers for delivery in Kochi"), an intro that says only what is true of every city (orders are taken for it, the catalogue is the same everywhere, availability, price and delivery are confirmed on WhatsApp), the full catalogue, the ordering steps, two FAQs and links to the guides. They have no advice sections and no local story, testimonial, branch or delivery time.
+- **Every root lists every collection.** The main ones appear as photograph tiles; the rest are listed underneath ("Silk flowers in Kochi (n)", and so on). Each links to its complete membership in the city's shop view, with the count, and the counts equal the shop view's.
+- **Indexing:** one H1, self-canonical, `max-image-preview:large`, breadcrumbs and BreadcrumbList. Aliases redirect (`/locations/cochin` → `/locations/kochi`); unknown cities answer 404. `/shop` views stay `noindex, follow` and out of the sitemap.
+- **Directory:** every one of the 59 city names now links to its root. Cities without an authored hub keep their Shop and WhatsApp actions.
+- **Sitemap:** `sitemap.xml` lists all 59 roots, each once with a `lastmod`: the authored date for the fifteen hubs, 2026-10-14 for the 44 catalogue roots, which is when they were written. It now holds 221 URLs (177 + 44).
+
+Verification on the rebuilt preview: regression suite 41 of 41 (one new test for the roots); root checks 10 of 10 (all 59 roots 200, one H1, self-canonical, indexable, breadcrumbs, city context, links to every collection, unique titles; Kochi counts equal to its shop view; hubs unchanged; aliases, 404s, noindexed shop views; sitemap membership); catalogue checks 59 of 59, rerun. Screenshots read by eye: the Kochi root on mobile, Kochi's product grid on mobile and its numbered pagination on desktop.
+
+Note for publication: an earlier city check (in `nat-check`) expected unpublished cities such as `/locations/kochi` to answer 404; that expectation no longer holds and was not rerun.
