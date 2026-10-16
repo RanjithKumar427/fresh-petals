@@ -4,7 +4,7 @@ The release adds image entries to the existing sitemaps and makes what each prod
 
 - **Status:** local commits and a write-blocked preview only. Nothing is pushed, merged or deployed.
 - **Outcomes:** none claimed. An image sitemap adds discovery coverage; it does not show an indexing problem when absent, and predicts no ranking, image-search or AI-answer change.
-- **Unchanged:** URLs, design codes, prices, quote-only behaviour, publication rules, admin, cities, canonicals, noindex rules, `lastmod` values, cache tags and analytics events. Product records are unchanged apart from the photograph of the 12 products in section 3. The page design is unchanged apart from three additions: a label on representative photographs, the placeholder on those 12 products, and a qualified "What's included" line on three lily designs.
+- **Unchanged:** URLs, design codes, prices, quote-only behaviour, publication rules, admin, cities, canonicals, noindex rules, cache tags and analytics events. Two `lastmod` values changed truthfully (section 6). Product records are unchanged apart from the photograph of the 12 products in section 3. The page design is unchanged apart from three additions: a label on representative photographs, the placeholder on those 12 products, and a qualified "What's included" line on three lily designs.
 
 ## 1. Baseline (checked 16 October 2026)
 
@@ -37,7 +37,12 @@ The release adds image entries to the existing sitemaps and makes what each prod
 
 `src/data/productPhotos.ts` (`PHOTO_REVIEWS`) records, for each catalogue product, the exact file reviewed, a sha256 prefix of that file's content, and a verdict decided by looking at the photograph.
 
-- **Neither the file name nor sharing decides a verdict.** A new upload, a renamed file or a replaced file is "unreviewed" until someone adds or updates its entry. The regression test fails if a reviewed file's content changes.
+- **Neither the file name nor sharing decides a verdict.** A new upload or a renamed file is "unreviewed" until someone adds or updates its entry.
+- **What protects what (checked 16 October, section 11):**
+  - **At runtime** the site matches a review by product and exact path only. It never downloads or hashes an image.
+  - **A replaced file at the same path** is caught at build time. `astro build` now fails while any reviewed file's content differs from its recorded hash (`scripts/build/photo-review-check.mjs`, an integration in `astro.config.mjs`). Before this, only the regression test checked hashes, and the build does not run the tests.
+  - Catalogue photographs are files in `public/` and change only through a deployment; admin edits do not change them. So no catalogue image can change without that build check.
+  - Garland photographs are admin uploads stored under generated names that are never overwritten (`upsert: false`). Their URLs do not change content through the app.
 - **Unreviewed photographs:** never listed, and their alt text is the product name only.
 - **A shared photograph can still be the product.** Loose jasmine and the loose-jasmine subscription share `/images/jasmine.jpg`, which shows what they sell.
 
@@ -59,7 +64,7 @@ Inventory of every place these designs appear on the built site:
 - **No presentation claim:** WhatsApp drafts, meta description, Open Graph, JSON-LD, card descriptions, and All Flowers (lilies have their own group there).
 
 Now (`presentationCheck()` in `src/data/collectionGuidance.ts`):
-- **What's included** reads "Recorded as premium wrapping, but the photograph shows a glass vase. Ask on WhatsApp how this design will be presented." Stargazer Affair reads "…shows a round box, with red roses among the lilies."
+- **What's included** reads "Wrapping or vase to be confirmed: the photograph shows a glass vase. Please confirm on WhatsApp how this design will be presented before you order." Stargazer Affair reads "Wrapping or box to be confirmed: the photograph shows a round box, with red roses among the lilies. …". This wording was revised on 16 October: the first version said "Recorded as …", internal record terminology. Neither wording promises wrapping or the container.
 - **Record-derived lines:** `bouquetPresentation()` returns nothing for the three. Lines, city examples and photo descriptions therefore claim no wrapping, vase or box.
 - **Title:** "Arrangement" instead of "Bouquet". This matches each design's own description ("A bright lily arrangement…").
 - **Records:** unchanged. The test asserts the wrapping entry is still there. Nothing is changed to vase or box without the owner.
@@ -80,7 +85,11 @@ Now (`presentationCheck()` in `src/data/collectionGuidance.ts`):
 
 ## 6. Sitemaps (live versus preview, same data)
 
-- **Page URLs:** identical, 393 = 221 + 161 + 11. No URL added, removed or moved between sitemaps; no `lastmod` changed.
+- **Page URLs:** identical, 393 = 221 + 161 + 11. No URL added, removed or moved between sitemaps.
+- **`lastmod`:** two changed, both through the existing `updated` field in `src/data/guides.ts` and fixed in source (not the build time):
+  - `/guides/jasmine-pooja-flowers-and-gajra` 2026-10-13 → 2026-10-16. Its card labels and photograph note were rewritten.
+  - `/guides` 2026-10-14 → 2026-10-16, the directory's existing rule (latest guide).
+- **Pages kept on their dates:** city pages changed only in image alt text. The three lilies are not among the city examples, and the bouquet guide uses the same groups, so their visible content is unchanged. Catalogue product and category pages carry no `lastmod` by design. Garland `lastmod` remains the admin's last save; no database timestamp was written.
 - **Images:** 46 in `sitemap.xml` and 156 in `sitemap-garlands.xml`, at most one per product page, none on listing pages. No public design has a gallery photograph today. One file (`/images/jasmine.jpg`) serves two pages. All are absolute and answer 200 as images.
 - **Each image matches its page:** comparing all 245 product entries, every listed image is the main photograph its page displays. Every product page without an image is a placeholder, a labelled representative photograph or an unconfirmed lily.
 - **XML:** all three files parse in a browser's strict XML parser, with image elements only under `<url>`. The largest file is 48 KB.
@@ -97,7 +106,7 @@ The preview is a production-style isolated build on `127.0.0.1:4399`. Inquiry an
 | Regression suite | PASS, 43 of 43 (fixture coverage below) |
 | Image-discovery browser checks | PASS, 44 of 44 |
 | `sg-check` 32, `jr-check` 6, `rt-check` 10 | PASS |
-| `cc-check` | 58 of 59 on the final build. The one failure is "photographs load" at 390 px, with 1–4 garland photographs from the remote storage host counted as not loaded within the check's 6-second wait; the images differ from run to run. Two probes of the same pages that wait 15 seconds found 0 of 24 broken at 390 and 768 px. The files answer 200 directly in under a second. This release does not touch those garland photographs. Recorded as an unresolved flaky check, not a pass. |
+| `cc-check` | 58 of 59 on the 57d3385 build: "photographs load" at 390 px failed, with 1–4 remote garland photographs not loaded within the 6-second wait. That result stands. The follow-up is in section 11: not a regression; an intermittent limitation of the local preview. |
 | Sitemap comparison, image-to-page mapping, XML parse | PASS (section 6) |
 | Type check | 20 errors, all pre-existing and unchanged: `SubscriptionConfigurator.astro` 15, `DiscoveryPostCard.astro` 4, `MobileBottomBar.astro` 1 |
 
@@ -136,7 +145,7 @@ The test does not exercise the admin-save purge (`refreshGarlandPages`), the CDN
 
 Screenshots were read by eye: `C:\Users\ranji\Downloads\fresh-petals-preview-2026-10-13\image-discovery`. Earlier in this release, the representative label sat below the sticky desktop photograph and was hidden at 1440×900; it was moved onto the photograph.
 
-The local preview server crashed once when the database pooler closed an idle connection and the preview's own server had no handler for the error event. It was restarted and the checks rerun. This is recorded as an environment observation; the site's own pool error handling was not examined here.
+The local preview server crashed once when the database pooler closed an idle connection. *Correction (section 11):* the unhandled error came from the site's own pool (`pg-pool`'s idle listener in the built function), not from the preview server. It is fixed in the shared connection code.
 
 ## 8. Owner inputs (in `owner-checklist.md`)
 
@@ -152,6 +161,63 @@ See `measurement.md`, "Account checks outstanding". In short:
 - look at Performance with Search type: Image, separately from Web.
 
 Resubmitting a sitemap is optional: Google re-reads listed sitemaps.
+
+## 11. Release checks, continued (16 October, evening)
+
+Evidence folder: `C:\Users\ranji\Downloads\fresh-petals-preview-2026-10-13\image-discovery\release-checks-2026-10-16`.
+
+`57d3385` was deployed to production by a separate release step the same evening, which is recorded outside this section. A read-only check at 22:17 IST confirmed the live pages serve it. The changes in this section are local commits after `57d3385`; they are not deployed.
+
+### Photo-review guarantee
+
+| Case | Runtime (path match) | Build | Tested |
+|---|---|---|---|
+| Product moved to another file | Unreviewed: no verdict, description or sitemap entry | - | Regression test |
+| New upload with a product-like name | Unreviewed | - | Regression test |
+| Same path, new content | Old verdict kept (no per-request hashing) | **Build fails** naming the file | Fixture test; a real `astro build` with one file swapped failed, and the file was restored (`build-gate-same-path-replacement.log`) |
+| Accurate photograph shared by products | Verdict per product: jasmine is "product" for loose jasmine and its subscription, "illustrative" for gajra | Hash checked once per file | Regression test |
+
+**Remaining limitation.** A file replaced on the server after deployment would not be noticed, but catalogue files are immutable per deployment. A garland photograph replaced directly in the storage console, outside the app, would also not be noticed; the app never overwrites one.
+
+### Customer wording for the three lilies
+
+The qualification is rewritten in customer terms (section 4). Records, verdicts, titles and enquiry drafts are unchanged; the drafts still make no presentation claim (browser check).
+
+### City-catalogue photograph check (the 6-second failure)
+
+- **Bounded comparison:** baseline `2755486` and the current code were built and served the same way (isolated builds, same server, same database, same image stand-in). They were checked with the check's exact procedure at 390 px, two runs each, alternating.
+- **Pages requested:** `/locations/bengaluru/shop?collection=garlands-lotus`, `/locations/hyderabad/shop`, `/locations/kochi/shop?collection=pooja-flowers`.
+- **Results:**
+  - Both builds request identical images: 24, 24 and 11.
+  - The only remote images are the 24 lotus-garland photographs: 3.1 MB in total, median 135 KB.
+  - Nothing failed at 6 seconds on either build (`cc-photo-diag-base-vs-current.jsonl`).
+  - A single `cc-check` run on the final build passed 59 of 59.
+- **Cause:** these are remote photographs that the local preview serves as originals through its image stand-in, where production serves resized copies. The check scrolls through the page in about a second, so all 24 load requests start together under a fixed 6-second budget. The same check failed the same way once at 375 px for the earlier city release (13 October), and passed against production (14 October).
+- **Verdict:** not a regression. It is an intermittent limitation of the local preview, with the original failure kept on record. The timeout was not raised.
+
+### Idle database connection crash
+
+- **Error (sanitized):** `Error: Connection terminated unexpectedly`, emitted through `pg-pool`'s `Client.idleListener` as an unhandled `'error'` event (`serve-nat.log`).
+- **Cause:** `src/server/db/postgres/client.ts` created the pool without an `error` listener. node-postgres removes an idle client whose connection closed and emits `error` on the pool; with no listener, the process exits.
+- **Scope:** the same code runs in production serverless functions. A production crash was not observed and is not claimed.
+- **Reproduced** on a disposable local PostgreSQL by terminating an idle pooled backend (`idle-connection-repro.txt`): without a listener the process exits with code 1; with one it continues, and the next query opens a new connection.
+- **Fix:** a pool `error` listener that logs a sanitized line. Query errors still reject to their callers, so pages still fail rather than showing an empty catalogue, and nothing is retried.
+- **Regression test:** emits the event on the real pool without connecting. It fails without the listener.
+
+### Verification on the final code
+
+| Check | Result |
+|---|---|
+| Regression suite | PASS, 45 of 45 (adds the review-build fixture test and the pool test) |
+| Production build (isolated copy, `.env.local`) | PASS; the review check ran in it |
+| Image-discovery browser checks (`ig-check2`) | PASS, 48 of 48: the original 44 updated for the new lily wording, plus two more lily enquiries at both widths |
+| `cc-check` | PASS, 59 of 59 (one run). The original 58 of 59 stands, as above |
+| Sitemaps (baseline versus final) | PASS. 393 URLs unchanged; 202 image entries (46 + 156), every one fetched and matched to its page's main photograph; strict XML parse; two `lastmod` changes (section 6). Images crawlable: robots excludes only /admin and /api, and the storage host has no robots.txt |
+| Type check | 20 errors, 0 warnings, 11 hints; the same diagnostics as `2755486`, ignoring line numbers (`typecheck-diff.txt`). An unused variable added by 57d3385 was removed |
+| `sg-check`, `jr-check`, `rt-check` | Not rerun: earlier passing evidence reused (unaffected) |
+| Production admin save, CDN purge, production writes | Not tested, not done |
+
+Separately, three older regexes in `regression.test.mjs` contain a literal backspace where `\b` was meant (lines 402, 695 and 702, already in `2755486`). They were left as they are and noted here.
 
 ## 10. Rollback
 
