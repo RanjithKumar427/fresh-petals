@@ -4,6 +4,7 @@
 // each card shows "Price on WhatsApp"; basket behaviour uses existing sources.
 import type { EditProduct } from "../../data/atelierHome";
 import { whatsappLink } from "../../config/storefront";
+import { productPhotoAlt } from "../../data/productPhotos";
 
 interface Props {
   products: EditProduct[];
@@ -38,7 +39,7 @@ const flowerLine = (product: EditProduct) =>
         <li class="edit__item" data-featured-bouquet={product.slug}>
           <a href={`/products/${product.slug}`} class="edit__photo fp-photo" data-reveal="image" style={`--reveal-delay:${index * 60}ms`}>
             <img src={product.img.src} srcset={product.img.srcset} sizes={imageSizes}
-              width={product.img.width} height={product.img.height} alt={product.name}
+              width={product.img.width} height={product.img.height} alt={productPhotoAlt(product)}
               loading="lazy" decoding="async" />
           </a>
           <div class="edit__info">

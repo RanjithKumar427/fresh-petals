@@ -24,7 +24,7 @@ import { GARLAND_FILTER_LABELS, garlandPhotoSrcset } from "../../data/garlandRul
 import { loadAuthoritativePrices, withAuthoritativePrice } from "./ProductPricing";
 import { photoDimensions, photoVariants } from "../../data/photoManifest";
 import { QUOTE_ONLY_PRICE_LABEL, isQuoteOnly } from "../../shared/quoteOnly";
-import { bouquetPhotoAlt } from "../../data/collectionGuidance";
+import { productPhotoAlt } from "../../data/productPhotos";
 
 export type CatalogueItem = {
   /** Product slug: one product, one key, whichever collections it is in. */
@@ -64,7 +64,7 @@ function productItem(product: Product): CatalogueItem {
       srcset: variants ? Object.entries(variants).map(([width, path]) => `${path} ${width}w`).join(", ") : undefined,
       width: photoDimensions[product.image]?.width,
       height: photoDimensions[product.image]?.height,
-      alt: /^(bouquets|lilies)$/i.test(product.category) ? bouquetPhotoAlt(product) : product.name,
+      alt: productPhotoAlt(product),
       contain: false,
     },
     price: quoteOnly ? QUOTE_ONLY_PRICE_LABEL : product.priceLabel,

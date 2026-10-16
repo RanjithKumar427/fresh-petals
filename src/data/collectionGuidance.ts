@@ -30,11 +30,21 @@ export function bouquetFlowers(product: Product): string | null {
   return flowers.length ? list(flowers) : null;
 }
 
+/**
+ * Bouquets whose photograph shows a different presentation from the record
+ * (checked by eye, 16 October 2026): Mandarin Lily Glow and Luxe Lily Bloom
+ * are photographed in a glass vase, Stargazer Affair in a round box with red
+ * roses, while each record says wrapping. Their photo descriptions leave the
+ * presentation out until the owner settles which is right.
+ */
+const PHOTO_PRESENTATION_DIFFERS = new Set(["mandarin-lily-glow", "luxe-lily-bloom", "stargazer-affair"]);
+
 /** Photograph description from the record: name, flowers and presentation. Falls back to the name. */
 export function bouquetPhotoAlt(product: Product): string {
   const flowers = bouquetFlowers(product);
   if (!flowers) return product.name;
-  return `${product.name}: ${flowers}${bouquetPresentation(product) ? `, ${bouquetPresentation(product)}` : ""}`;
+  const presentation = PHOTO_PRESENTATION_DIFFERS.has(product.slug) ? null : bouquetPresentation(product);
+  return `${product.name}: ${flowers}${presentation ? `, ${presentation}` : ""}`;
 }
 
 /** One line per bouquet for a group's comparison list. */

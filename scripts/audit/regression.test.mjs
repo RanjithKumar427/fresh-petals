@@ -824,3 +824,83 @@ test('search evidence: Bengaluru tasks link complete collections with what a quo
   // The garland total names its parts.
   assert(/coded design/.test(readFileSync('src/pages/categories/garlands.astro', 'utf8')));
 });
+
+test('image discovery: sitemaps list each page\'s own photographs only; garland images follow publication live; representative pictures described, never offered as the product', async () => {
+  const photos = load('src/data/productPhotos.ts');
+  const images = load('src/data/imageSitemap.ts');
+  const bySlug = (slug) => productCatalog.find((product) => product.slug === slug);
+  // Own photograph: named for the product and used by no other. Every listed image passes that rule.
+  for (const product of productCatalog) {
+    for (const path of images.productImages(product)) {
+      assert(path.split('/').pop().includes(product.slug), product.slug);
+      assert.equal(productCatalog.filter((other) => other.image === path).length, 1, path);
+    }
+  }
+  assert.deepEqual(json(images.productImages(bySlug('red-affair'))), ['/images/bouquets/bouquet-red-affair-01.webp']);
+  for (const slug of ['jasmine-gajra', 'jasmine-malli', 'florist-cutter', 'daily-pooja-flowers', 'loose-flower-box', 'chocolates-addon']) assert.deepEqual(json(images.productImages(bySlug(slug))), [], slug);
+  // Every representative photograph in use is described; descriptions name what is visible, not the product.
+  for (const product of productCatalog.filter((item) => !photos.hasOwnPhotograph(item) && !item.image.endsWith('.svg'))) assert(photos.photoDescription(product.image), product.image);
+  assert.equal(photos.productPhotoAlt(bySlug('jasmine-gajra')), 'Jasmine Gajra: representative photograph of white jasmine buds');
+  assert(!/strung|gajra|garland/i.test(photos.photoDescription('/images/jasmine.jpg')));
+  assert(/sunflowers/.test(photos.productPhotoAlt(bySlug('florist-cutter'))) && !/cutter add-on/.test(photos.productPhotoAlt(bySlug('florist-cutter'))));
+  const guidance = load('src/data/collectionGuidance.ts');
+  assert.equal(photos.productPhotoAlt(bySlug('red-affair')), guidance.bouquetPhotoAlt(bySlug('red-affair')));
+  assert(/red roses/.test(photos.productPhotoAlt(bySlug('red-affair'))) && /wrapping/.test(photos.productPhotoAlt(bySlug('red-affair'))));
+  // Photographed differently from the record: no presentation claimed.
+  for (const slug of ['mandarin-lily-glow', 'luxe-lily-bloom', 'stargazer-affair']) assert(!/wrapping|vase|box/.test(photos.productPhotoAlt(bySlug(slug))), slug);
+  // XML: absolute, escaped, one image per page entry.
+  const entry = images.urlEntry('https://onlyfreshpetals.in/products/a', { lastmod: '2026-10-14', images: ['/images/a.webp', '/images/a.webp', 'https://x.supabase.co/m/b.jpg?v=1&w=2'], site: 'https://onlyfreshpetals.in' });
+  assert.equal(entry, '  <url><loc>https://onlyfreshpetals.in/products/a</loc><lastmod>2026-10-14</lastmod><image:image><image:loc>https://onlyfreshpetals.in/images/a.webp</image:loc></image:image><image:image><image:loc>https://x.supabase.co/m/b.jpg?v=1&amp;w=2</image:loc></image:image></url>');
+  assert.equal(images.urlEntry('https://onlyfreshpetals.in/guides', { site: 'https://onlyfreshpetals.in' }), '  <url><loc>https://onlyfreshpetals.in/guides</loc></url>');
+  assert.equal(images.IMAGE_SITEMAP_NS, 'xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"');
+  // Live garland sitemap, through the real loader and publication rules, from controlled records (no database).
+  const drafts = JSON.parse(readFileSync('src/data/garlandDrafts.json', 'utf8')).designs;
+  const withViews = drafts.find((design) => design.relatedViews.length > 0);
+  const [a, b, c, d] = drafts.filter((design) => design !== withViews).slice(0, 4);
+  const store = (name) => `https://x.supabase.co/storage/v1/object/public/media/products/${name}.jpg`;
+  const record = (design, over) => ({ productId: 1, designCode: design.code, slug: design.slug, name: design.title, shortDescription: null, description: null, status: 'published', updatedAt: '2026-10-15T10:00:00.000Z', priceType: 'quote', sellingPrice: null, soldUnit: null, length: null, flowerRecipe: null, thickness: null, finish: null, leadTime: null, substitutionPolicy: null, sellingMode: 'enquiry', readyForSale: false, photoPermission: 'granted', sampleVerified: false, filters: design.filters, occasions: ['wedding'], options: [], images: [{ url: store(`${design.code}-main`), altText: 'Main', width: 600, height: 1200, isPrimary: true }], ...over });
+  let records = new Map();
+  const sitemapFor = async () => {
+    const route = sourceLoader({ globals: { Response, process }, mocks: { 'src/server/services/GarlandCatalogue.ts': { loadGarlandRecords: async () => records } } })('src/pages/sitemap-garlands.xml.ts');
+    const response = await route.GET({ site: new URL('https://onlyfreshpetals.in'), url: new URL('https://onlyfreshpetals.in/sitemap-garlands.xml') });
+    return { xml: await response.text(), headers: response.headers };
+  };
+  const set = (...list) => { records = new Map(list.map((item) => [item.designCode, item])); };
+  set(
+    record(withViews, { images: [{ url: store('main'), altText: 'Main', width: 600, height: 1200, isPrimary: true }, { url: store('side'), altText: 'Side', width: 600, height: 1200, isPrimary: false }, { url: store('side'), altText: 'Side', width: 600, height: 1200, isPrimary: false }] }),
+    record(a, { photoPermission: 'unconfirmed' }),
+    record(b, { status: 'archived' }),
+    record(c, { images: [] }),
+    record(d, { status: 'draft' }),
+  );
+  let { xml, headers } = await sitemapFor();
+  const page = (design) => xml.match(new RegExp(`<url><loc>https://onlyfreshpetals.in/products/${design.slug}</loc>.*?</url>`))?.[0] ?? null;
+  assert(/^<\?xml[^>]*>\n<urlset xmlns="http:\/\/www\.sitemaps\.org\/schemas\/sitemap\/0\.9" xmlns:image="http:\/\/www\.google\.com\/schemas\/sitemap-image\/1\.1">/.test(xml));
+  assert.equal((page(withViews).match(/<image:image>/g) ?? []).length, 2);
+  assert(page(withViews).includes(store('main')) && page(withViews).includes(store('side')));
+  for (const view of withViews.relatedViews) assert(!xml.includes(view.path), view.path);
+  for (const hidden of [a, b, c, d]) assert.equal(page(hidden), null, hidden.code);
+  assert(!/\.svg|\/images\/garlands\//.test(xml));
+  assert(/<url><loc>https:\/\/onlyfreshpetals\.in\/categories\/garlands<\/loc><lastmod>2026-10-15<\/lastmod><\/url>/.test(xml));
+  // Well-formed: balanced tags and only escaped ampersands.
+  const stack = [];
+  for (const [, close, name, self] of xml.replace(/^<\?xml[^>]*>/, '').matchAll(/<(\/?)([\w:]+)[^>]*?(\/?)>/g)) { if (self) continue; if (close) assert.equal(stack.pop(), name); else stack.push(name); }
+  assert.equal(stack.length, 0);
+  assert(!/&(?!amp;|lt;|gt;|quot;|apos;)/.test(xml));
+  // Same cache tag as the pages, so an admin save refreshes it with them.
+  const website = sourceLoader({ globals: { process } })('src/server/services/GarlandWebsite.ts');
+  assert.deepEqual(Object.fromEntries(Object.keys(website.garlandCacheHeaders()).map((key) => [key.toLowerCase(), headers.get(key)])), Object.fromEntries(Object.entries(website.garlandCacheHeaders()).map(([key, value]) => [key.toLowerCase(), value])));
+  // A new main photograph and an unpublished design follow on the next request.
+  set(record(withViews, { updatedAt: '2026-10-16T09:00:00.000Z', images: [{ url: store('new'), altText: 'New', width: 600, height: 1200, isPrimary: true }] }), record(a));
+  ({ xml } = await sitemapFor());
+  assert(page(withViews).includes(store('new')) && !xml.includes(store('main')) && !xml.includes(store('side')) && page(withViews).includes('<lastmod>2026-10-16</lastmod>'));
+  assert(page(a).includes(store(`${a.code}-main`)));
+  set(record(withViews, { status: 'draft' }));
+  ({ xml } = await sitemapFor());
+  assert(!xml.includes('/products/') && !xml.includes('<image:'));
+  // Wiring: the main sitemap lists own photographs; product pages label a representative photograph.
+  const main = readFileSync('src/pages/sitemap.xml.ts', 'utf8');
+  assert(/productImages\(product\)/.test(main) && /IMAGE_SITEMAP_NS/.test(main));
+  assert(/data-representative-photo/.test(readFileSync('src/pages/products/[slug].astro', 'utf8')));
+  for (const file of ['src/components/category/CategoryPage.astro', 'src/components/occasion/OccasionCard.astro', 'src/components/atelier/BouquetEdit.astro', 'src/server/services/CityCatalogue.ts', 'src/components/GuideProductCard.astro']) assert(/productPhotoAlt\(/.test(readFileSync(file, 'utf8')), file);
+});

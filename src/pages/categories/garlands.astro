@@ -9,6 +9,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 import ProductCard from "../../components/ProductCard.astro";
 import GarlandListing from "../../components/GarlandListing.astro";
 import { productCatalog } from "../../data/productCatalog";
+import { productPhotoAlt } from "../../data/productPhotos";
 import { isListedGarland, loadGarlands } from "../../data/garlands";
 import { loadAuthoritativePrices, withAuthoritativePrice } from "../../server/services/ProductPricing";
 import { garlandCacheHeaders } from "../../server/services/GarlandWebsite";
@@ -114,6 +115,7 @@ const breadcrumbJsonLd = {
                   id={product.id}
                   name={product.name}
                   image={product.image}
+                  imageAlt={productPhotoAlt(product)}
                   priceLabel={product.priceLabel}
                   priceType={product.priceType}
                   category={product.category}

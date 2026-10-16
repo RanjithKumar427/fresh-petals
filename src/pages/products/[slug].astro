@@ -14,6 +14,7 @@ import imageVariants from "../../data/imageVariants.json";
 import imageDimensions from "../../data/imageDimensions.json";
 import { whatsappLink } from "../../config/storefront";
 import { QUOTE_ONLY_PRICE_LABEL, isQuoteOnly } from "../../shared/quoteOnly";
+import { hasOwnPhotograph, photoDescription, productPhotoAlt } from "../../data/productPhotos";
 
 // Catalog/Database Reconciliation milestone — the product's displayed
 // price now comes from PostgreSQL (the admin-editable, authoritative
@@ -141,7 +142,12 @@ const quoteOnlyProduct = isQuoteOnly(product);
 const metaDescription = `${product.description.replace(/\s+$/, "").replace(/([^.!?])$/, "$1.")} ${
   quoteOnlyProduct ? "Made by Fresh Petals for delivery across India; price and availability on WhatsApp." : "From Fresh Petals, for delivery across India; availability confirmed on WhatsApp."
 }`;
-const imageAlt = `${product.name}: ${product.description.replace(/\.$/, "")}`;
+// A representative photograph (src/data/productPhotos.ts) is described by
+// what it shows and labelled under the image; it is not this exact product.
+const ownPhotograph = hasOwnPhotograph(product);
+const representative = ownPhotograph ? null : photoDescription(product.image);
+const lowerFirst = (text: string) => text.charAt(0).toLowerCase() + text.slice(1);
+const imageAlt = ownPhotograph ? `${product.name}: ${product.description.replace(/\.$/, "")}` : productPhotoAlt(product);
 const breadcrumbJsonLd = {
   "@type": "BreadcrumbList",
   itemListElement: [
@@ -219,6 +225,12 @@ const breadcrumbJsonLd = {
               </svg>
             </span>
           </button>
+          {/* On the photograph itself (as on guide cards), so the sticky desktop column never hides it. */}
+          {representative && (
+            <p class="absolute inset-x-3 bottom-3 z-10 rounded-xl bg-paper/95 px-3 py-2 text-[12px] leading-5 text-ink shadow-sm" data-representative-photo>
+              <span class="font-semibold">Representative photograph:</span> {lowerFirst(representative)}. It is not this exact product; what you receive is confirmed on WhatsApp.
+            </p>
+          )}
         </div>
       </aside>
 
@@ -473,6 +485,7 @@ const breadcrumbJsonLd = {
                   id={item.id}
                   name={item.name}
                   image={item.image}
+                  imageAlt={productPhotoAlt(item)}
                   priceLabel={item.priceLabel}
                   category={item.category}
                   description={item.description}

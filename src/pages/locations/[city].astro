@@ -22,7 +22,8 @@ import { loadAuthoritativePrices, withAuthoritativePrice } from "../../server/se
 import { isListedGarland, loadGarlands, type GarlandProduct } from "../../data/garlands";
 import { GARLAND_FILTER_LABELS, garlandPhotoSrcset } from "../../data/garlandRules";
 import { garlandEnquiryHref } from "../../utils/garlandEnquiry";
-import { bouquetLine, bouquetPhotoAlt, bouquetPresentation, isVaseArrangement } from "../../data/collectionGuidance";
+import { bouquetLine, bouquetPresentation, isVaseArrangement } from "../../data/collectionGuidance";
+import { productPhotoAlt } from "../../data/productPhotos";
 import { QUOTE_ONLY_ENQUIRE_LABEL, QUOTE_ONLY_PRICE_LABEL, isQuoteOnly } from "../../shared/quoteOnly";
 import { photoDimensions, photoVariants } from "../../data/photoManifest";
 import { cityEnquiryHref, cityProductEnquiryHref } from "../../utils/cityEnquiry";
@@ -88,7 +89,7 @@ function productCard(product: Product): Card {
       srcset: variants ? Object.entries(variants).map(([width, path]) => `${path} ${width}w`).join(", ") : undefined,
       width: photoDimensions[product.image]?.width,
       height: photoDimensions[product.image]?.height,
-      alt: isBouquet ? bouquetPhotoAlt(product) : product.name,
+      alt: productPhotoAlt(product),
       contain: false,
     },
     price: quoteOnly ? QUOTE_ONLY_PRICE_LABEL : priced.priceLabel,

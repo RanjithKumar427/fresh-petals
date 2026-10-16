@@ -4,11 +4,12 @@ Steps that need the owner's accounts or decisions. Nothing here is done automati
 
 ## 1. Google Search Console (about 15 minutes)
 
-1. Done already: a verified Domain property for `onlyfreshpetals.in` exists. (The `PUBLIC_GOOGLE_SITE_VERIFICATION` setting is only needed if a URL-prefix property is ever added.)
-2. **Still to do:** under Sitemaps, submit all three: `sitemap.xml`, `sitemap-garlands.xml`, `sitemap-occasions.xml`. None was submitted as of 12 Oct 2026.
-3. Use URL Inspection → Request indexing for `/categories/garlands`, the three collections, `/guides/choosing-wedding-garlands` and `/occasions/wedding`.
+1. Done: a verified Domain property for `onlyfreshpetals.in` exists. (The `PUBLIC_GOOGLE_SITE_VERIFICATION` setting is only needed if a URL-prefix property is ever added.)
+2. Done: all three sitemaps were submitted on 12 Oct 2026; `sitemap.xml` was resubmitted on 14 Oct and read at 221 URLs, and a stray `/locations/bengaluru` sitemap entry was removed (`discovery-baseline-2026-10-14.md`).
+3. Done 14 Oct 2026: indexing requested for `/locations/bengaluru`, `/categories/all-flowers`, `/categories/garlands`, `/categories/garlands/lotus` and `/locations/hyderabad`, and a recrawl of `/categories/pooja-flowers`. Requests only queue a crawl.
+4. **Still to check** after each release: the list under "Account checks outstanding" in `measurement.md`. After the image-discovery release, both changed sitemaps should show a later read date; nothing needs resubmitting.
 
-Needed from you: two minutes in Search Console. Reports there were still "processing" on 12 Oct 2026; data usually appears within a few days.
+Reports showed "processing" until 13–14 Oct 2026; only one day of performance data had been read by 14 Oct.
 
 ## 2. Bing Webmaster Tools (about 10 minutes)
 
@@ -16,9 +17,9 @@ Needed from you: two minutes in Search Console. Reports there were still "proces
 2. Without the import: add the site, choose the meta-tag method, put the `content` value in Vercel as `PUBLIC_BING_SITE_VERIFICATION` and redeploy. Then submit the three sitemaps.
 3. IndexNow needs no account. After a release, run `node scripts/seo/indexnow.mjs` to see what would be sent and add `--submit` to send it. Bing's IndexNow report then shows the submissions.
 
-## 3. Google Analytics (optional, about 10 minutes)
+## 3. Google Analytics
 
-Create a GA4 property and a web stream for `https://onlyfreshpetals.in`. Put the measurement ID (`G-…`) in Vercel as `PUBLIC_GA_MEASUREMENT_ID` and redeploy. The privacy page changes its wording by itself. See `measurement.md` for the events and the two settings to switch on.
+Done 13 Oct 2026: property, web stream and `PUBLIC_GA_MEASUREMENT_ID` (Production only). Still unverified: the custom dimensions, the two key events, data retention, and a link to Search Console. See `measurement.md`.
 
 ## 4. Google Business Profile
 
@@ -60,3 +61,6 @@ Never buy links or pay for listings that promise rankings.
 
 - Is `instagram.com/freshpetals.hyderabad` still the account to link? If there is a Bengaluru account, tell us.
 - For each garland: single or pair, length, exact flowers, preparation time. Each one recorded in the admin replaces a "To be confirmed" on the design page.
+- **Own photographs for 39 catalogue products** that now show a labelled representative picture (pooja flowers and baskets, flower boxes, baskets, add-ons, vases, offers, subscriptions, hampers, flowers by stem, toran, event garlands). A photograph saved under a file name containing the product's slug (as the bouquet photographs are) and used by no other product joins the image sitemap and loses the label by itself. List: `src/data/productPhotos.ts`; reasons: `image-discovery-2026-10-16.md`.
+- **Mandarin Lily Glow, Luxe Lily Bloom, Stargazer Affair:** wrapped, as their records say, or in a vase or box, as their photographs show?
+- **Chocolates, Flower Food Sachets, Pet Friendly Flowerbox** have no photograph at all.

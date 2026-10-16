@@ -60,6 +60,32 @@ Reading it:
 - For the first cycles after a release, expect new pages to have impressions before clicks.
 - Choose at most three priorities, each tied to a row in the report.
 
+## Five signals, reported separately
+
+Search impressions, search clicks, AI visibility, WhatsApp clicks and confirmed orders come from different tools and count different things. Report each on its own line and never add or divide one by another across tools:
+
+| Signal | Source | What it does not show |
+|---|---|---|
+| Impressions (Web, and Image separately) | Search Console → Performance | That a page ranks above a competitor or appears in an AI answer |
+| Clicks | Search Console → Performance | Enquiries or orders |
+| AI visibility | Search Console AI reports where the property offers them; `ai_referrer` sessions in GA4; sampled prompts (`assistant-benchmark.md`) | Assistants that send no referrer |
+| WhatsApp clicks | GA4 `whatsapp_enquiry_click`, `basket_quote_request` | That a message was sent or received |
+| Confirmed orders | The hand-kept orders file | Anything about search, by itself |
+
+## Account checks outstanding (16 October 2026)
+
+None of these was inspected for the image-discovery release; each is **unverified** until read in the account. Missing reports or sparse data are not by themselves a site defect.
+
+| Check | Where | What to record |
+|---|---|---|
+| Sitemap processing | Search Console → Sitemaps | `sitemap.xml` and `sitemap-garlands.xml` read after the deployment date, status Success, discovered pages 221 and about 161; any image-related error |
+| Representative URL inspections | URL Inspection | `/products/red-affair` (own photograph), `/products/jasmine-gajra` (representative photograph), `/products/closed-pink-lotus-garland-with-bud-stem-tassels` (FP-G106): indexing state, Google-selected canonical, last crawl |
+| Image search | Performance → Search type: Image | Whether any data exists; keep it apart from Web |
+| AI features inclusion and reports | Property settings and reports | Whether the property shows any AI inclusion setting or AI performance report, and its state; record "not offered" if absent |
+| Other image or multimodal reports | Search Console report list | Name of any report that appears; none is assumed |
+| GA4 ↔ Search Console link | GA4 Admin → Product links | Linked or not |
+| Key events and custom dimensions | GA4 Admin → Events, Custom definitions | `whatsapp_enquiry_click` and `basket_quote_request` marked as key events; the seven dimensions registered |
+
 ## Baseline
 
 As of 12 October 2026 the Search Console property exists but holds no data yet ("processing"), there is no analytics, and therefore there is no measured baseline for impressions, clicks, enquiries or orders. The technical baseline (titles, canonicals, indexing, structured data, images) is in `search-growth-2026-10.md`. The measured baseline is the first full 28 days of Search Console data.

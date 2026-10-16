@@ -7,6 +7,7 @@ import type { Product } from "../data/productCatalog";
 import { photoDimensions, photoVariants } from "../data/photoManifest";
 import { QUOTE_ONLY_CLOSING, QUOTE_ONLY_PRICE_LABEL, isQuoteOnly } from "../shared/quoteOnly";
 import { whatsappLink } from "../config/storefront";
+import { productPhotoAlt } from "../data/productPhotos";
 
 interface Props {
   product: Product;
@@ -31,7 +32,7 @@ const draft = quoteOnly
 
 <article class="guide-card relative flex h-full flex-col overflow-hidden rounded-[18px] border border-line bg-paper" data-guide-card={product.slug} data-quote-only={quoteOnly ? "true" : "false"}>
   <div class="relative aspect-square bg-linen">
-    <img src={product.image} srcset={srcset} sizes={srcset ? "(min-width: 768px) 280px, 46vw" : undefined} width={size?.width} height={size?.height} alt={alt ?? product.name} loading="lazy" decoding="async" class="absolute inset-0 h-full w-full object-cover" />
+    <img src={product.image} srcset={srcset} sizes={srcset ? "(min-width: 768px) 280px, 46vw" : undefined} width={size?.width} height={size?.height} alt={alt ?? productPhotoAlt(product)} loading="lazy" decoding="async" class="absolute inset-0 h-full w-full object-cover" />
     {photoNote && <span class="absolute inset-x-2 bottom-2 rounded-lg bg-paper/95 px-2 py-1 text-[11px] leading-4 text-ink">{photoNote}</span>}
   </div>
   <div class="flex flex-1 flex-col px-3 pb-3 pt-2.5">

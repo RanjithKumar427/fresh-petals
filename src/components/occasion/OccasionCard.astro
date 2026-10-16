@@ -10,6 +10,7 @@ import { journeyHref, type Journey } from "../../utils/journey";
 import { parseShopFilters, matchesShopFilters } from "../../utils/shopFilters";
 import type { Product } from "../../data/productCatalog";
 import { responsiveImage } from "../../data/atelierHome";
+import { productPhotoAlt } from "../../data/productPhotos";
 import { COLOUR_LABELS, shopItemData, type Intent } from "../../data/occasionJourneys";
 
 interface Props {
@@ -47,7 +48,7 @@ const price = product.priceLabel.replace(/^From\s+/i, "");
         sizes="(min-width: 1024px) 23vw, (min-width: 768px) 31vw, 46vw"
         width={img.width ?? 800}
         height={img.height ?? 800}
-        alt={product.name}
+        alt={productPhotoAlt(product)}
         loading={priority ? "eager" : "lazy"}
         fetchpriority={priority ? "high" : undefined}
         decoding="async"

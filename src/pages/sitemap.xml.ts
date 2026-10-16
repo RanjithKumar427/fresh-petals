@@ -5,6 +5,7 @@ import { CANONICAL_CATEGORY, NOINDEX_CATEGORY_SLUGS, NOINDEX_STATIC_PAGES } from
 import { LOCATIONS_PATH, hasHub, hubPath, publishedHubs, serviceableCities } from "../data/serviceCities";
 import { CITY_HUBS, cityHub } from "../data/cityHubs";
 import { GUIDES, GUIDES_PATH } from "../data/guides";
+import { IMAGE_SITEMAP_NS, productImages, urlEntry } from "../data/imageSitemap";
 
 // Prerendered — built once at build time from the exact same real data
 // every other page already uses, not a second, parallel catalogue.
@@ -92,13 +93,16 @@ export const GET: APIRoute = async ({ site }) => {
     ...GUIDES.filter((guide) => !guide.liveSitemap).map((guide) => ({ path: guide.path, lastmod: guide.updated })),
   ];
 
+  // A product page lists its own photograph (src/data/imageSitemap.ts);
+  // representative pictures shared with other products are not listed.
+  const imagesFor = new Map(productCatalog.map((product) => [`/products/${product.slug}`, productImages(product)]));
   const urlEntries = [
-    ...paths.map((path) => `  <url><loc>${new URL(path, site).toString()}</loc></url>`),
-    ...[...cityEntries, ...guideEntries].map(({ path, lastmod }) => `  <url><loc>${new URL(path, site).toString()}</loc>${lastmod ? `<lastmod>${lastmod}</lastmod>` : ""}</url>`),
+    ...paths.map((path) => urlEntry(new URL(path, site).toString(), { images: imagesFor.get(path), site: site! })),
+    ...[...cityEntries, ...guideEntries].map(({ path, lastmod }) => urlEntry(new URL(path, site).toString(), { lastmod, site: site! })),
   ].join("\n");
 
   const body = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" ${IMAGE_SITEMAP_NS}>
 ${urlEntries}
 </urlset>
 `;
