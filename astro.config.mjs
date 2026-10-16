@@ -8,6 +8,7 @@ import { copyFile, link, mkdir, readdir, readFile, rm, rmdir } from 'node:fs/pro
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { photoReviewCheck } from './scripts/build/photo-review-check.mjs';
 
 // Server-only secrets are read via `process.env` (src/server/db/postgres/
 // client.ts, src/server/auth/*), but `astro dev` does not copy .env /
@@ -180,7 +181,10 @@ export default defineConfig({
     plugins: [tailwindcss()],
   },
 
-  integrations: [react(), garlandDraftPhotos, {
+  // photoReviewCheck: a catalogue photograph replaced at the same path must
+  // not keep its reviewed verdict, description or image-sitemap entry; the
+  // build fails until the review is updated (scripts/build/photo-review-check.mjs).
+  integrations: [react(), photoReviewCheck, garlandDraftPhotos, {
     name: 'published-price-build-context',
     hooks: {
       // Astro sync/check uses production mode too. The actual command is

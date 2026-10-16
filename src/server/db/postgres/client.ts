@@ -66,6 +66,17 @@ export function getDb(): NodePgDatabase<typeof schema> {
     // be supplied. See ssl.ts for the full explanation.
     ssl: supabasePoolSsl,
   });
+  // An idle client can still lose its connection: Supavisor closes idle
+  // client connections, and a network blip does the same. node-postgres
+  // then removes that client from the pool and emits 'error' on the pool;
+  // with no listener that is an unhandled 'error' event and the process
+  // exits (observed locally: "Connection terminated unexpectedly" from
+  // pg-pool's idleListener). The next query simply opens a new connection,
+  // so logging is all that is needed here. Errors from queries in progress
+  // are unaffected -- they still reject to their caller.
+  pool.on("error", (error) => {
+    console.error(`[db] idle connection closed (${error.message}); it was removed from the pool`);
+  });
   const db = drizzle(pool, { schema });
 
   globals.__fpPgPool = pool;

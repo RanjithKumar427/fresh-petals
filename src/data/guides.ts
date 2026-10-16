@@ -55,7 +55,9 @@ export const GUIDES: Guide[] = [
     description: "Loose jasmine or strung gajra, the two pooja flower boxes, baskets and bulk flowers compared, with their listed prices and what to tell us before ordering.",
     summary: "Loose flowers or finished gajra, the two pooja boxes, baskets, and bulk requirements.",
     published: "2026-10-13",
-    updated: "2026-10-13",
+    // Card labels and the photograph note were rewritten on 16 Oct 2026
+    // (labelled by reviewed relationship, not by shared file).
+    updated: "2026-10-16",
   },
   {
     slug: "sending-flowers-to-another-city",

@@ -27,6 +27,9 @@ const PRESENTATION_UNCONFIRMED: Record<string, string> = {
   "stargazer-affair": "a round box, with red roses among the lilies",
 };
 
+/** The container a photograph shows, as one word ("vase", "box"), for the customer-facing question. */
+const containerWord = (photographed: string) => (/\bvase\b/i.test(photographed) ? "vase" : /\bbox\b/i.test(photographed) ? "box" : "container");
+
 /** For a design whose presentation is unconfirmed: what is recorded and what the photograph shows. */
 export function presentationCheck(product: Pick<Product, "slug" | "whatsIncluded">): { recorded: string | null; photographed: string; note: string } | null {
   const photographed = PRESENTATION_UNCONFIRMED[product.slug];
@@ -35,7 +38,9 @@ export function presentationCheck(product: Pick<Product, "slug" | "whatsIncluded
   return {
     recorded,
     photographed,
-    note: `${recorded ? `Recorded as ${lowerFirst(recorded)}, but the` : "The"} photograph shows ${photographed}. Ask on WhatsApp how this design will be presented.`,
+    // Customer-facing: names the open choice and asks, promising neither the
+    // recorded wrapping nor the photographed container.
+    note: `${recorded ? `Wrapping or ${containerWord(photographed)}` : "Presentation"} to be confirmed: the photograph shows ${photographed}. Please confirm on WhatsApp how this design will be presented before you order.`,
   };
 }
 

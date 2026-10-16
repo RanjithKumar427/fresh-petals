@@ -852,7 +852,7 @@ test('image discovery: only photographs reviewed as the product reach the sitema
   assert.equal(photos.productPhotoAlt(upload), 'New Rose');
   assert.equal(photos.photoStatus({ ...bySlug('red-affair'), image: '/images/bouquets/bouquet-red-affair-02.webp' }), 'unreviewed');
   // Unrelated photographs are replaced by the existing placeholder; the product, its page and its enquiry stay.
-  for (const [slug, review] of Object.entries(photos.PHOTO_REVIEWS).filter(([, r]) => r.verdict === 'unrelated')) {
+  for (const [slug] of Object.entries(photos.PHOTO_REVIEWS).filter(([, r]) => r.verdict === 'unrelated')) {
     assert.equal(bySlug(slug).image, photos.PLACEHOLDER_PHOTO, slug);
     assert.equal(photos.photoStatus(bySlug(slug)), 'missing');
   }
@@ -873,7 +873,9 @@ test('image discovery: only photographs reviewed as the product reach the sitema
     assert(product.whatsIncluded.some((item) => /wrapping/i.test(item)), `${slug} record unchanged`);
     assert.equal(photos.photoStatus(product), 'unconfirmed');
     const check = guidance.presentationCheck(product);
-    assert(/^Recorded as (premium|luxury) wrapping, but the photograph shows a (glass vase|round box)/.test(check.note) && /Ask on WhatsApp/.test(check.note), check.note);
+    // Customer wording: the open choice and a request to confirm; no internal record terms, no promise.
+    assert(/^Wrapping or (vase|box) to be confirmed: the photograph shows a (glass vase|round box)/.test(check.note) && /confirm on WhatsApp/.test(check.note), check.note);
+    assert(!/recorded|record\b|verdict|unconfirmed/i.test(check.note), check.note);
     assert.equal(guidance.bouquetPresentation(product), null);
     for (const text of [photos.productPhotoAlt(product), guidance.bouquetLine(product), titles.productTitle(product)]) assert(!/wrapping|vase|\bbox\b|bouquet/i.test(text.replace(/\| Fresh Petals$/, '')), `${slug}: ${text}`);
     assert(/Arrangement/.test(titles.productTitle(product)));
@@ -937,4 +939,95 @@ test('image discovery: only photographs reviewed as the product reach the sitema
   assert(/productImages\(product\)/.test(main) && /IMAGE_SITEMAP_NS/.test(main));
   assert(/data-representative-photo/.test(readFileSync('src/pages/products/[slug].astro', 'utf8')));
   for (const file of ['src/components/category/CategoryPage.astro', 'src/components/occasion/OccasionCard.astro', 'src/components/atelier/BouquetEdit.astro', 'src/server/services/CityCatalogue.ts', 'src/components/GuideProductCard.astro']) assert(/productPhotoAlt\(/.test(readFileSync(file, 'utf8')), file);
+});
+
+test('photo reviews: runtime matches by product and exact path only; the build refuses a reviewed file whose content changed (isolated fixtures)', async () => {
+  const photos = load('src/data/productPhotos.ts');
+  const images = load('src/data/imageSitemap.ts');
+  const { readPhotoReviews, staleReviews } = await import('../build/photo-review-check.mjs');
+  const { mkdtempSync, mkdirSync, writeFileSync, rmSync } = await import('node:fs');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const { createHash } = await import('node:crypto');
+  const prefix = (buf) => createHash('sha256').update(buf).digest('hex').slice(0, 16);
+  const bySlug = (slug) => productCatalog.find((product) => product.slug === slug);
+
+  // The build check reads exactly the register the site uses.
+  assert.deepEqual(readPhotoReviews().map((r) => r.slug).sort(), Object.keys(photos.PHOTO_REVIEWS).sort());
+  assert.deepEqual(staleReviews(), []);
+
+  // Isolated fixture: two reviewed files, one shared by two products.
+  const root = mkdtempSync(join(tmpdir(), 'fp-photo-review-'));
+  try {
+    mkdirSync(join(root, 'src/data'), { recursive: true });
+    mkdirSync(join(root, 'public/images'), { recursive: true });
+    const rose = Buffer.from('rose photograph v1');
+    const shared = Buffer.from('jasmine photograph v1');
+    writeFileSync(join(root, 'public/images/rose.webp'), rose);
+    writeFileSync(join(root, 'public/images/shared.jpg'), shared);
+    const register = (roseHash) => [
+      'export const PHOTO_REVIEWS: Record<string, PhotoReview> = {',
+      `  "rose": { photo: "/images/rose.webp", sha256: "${roseHash}", verdict: "product" },`,
+      `  "malli": { photo: "/images/shared.jpg", sha256: "${prefix(shared)}", verdict: "product" },`,
+      `  "malli-subscription": { photo: "/images/shared.jpg", sha256: "${prefix(shared)}", verdict: "product" },`,
+      '};',
+    ].join(String.fromCharCode(10));
+    writeFileSync(join(root, 'src/data/productPhotos.ts'), register(prefix(rose)));
+    assert.deepEqual(staleReviews({ root }), [], 'reviewed files, including one shared file, pass');
+
+    // Same path, new content: the build check names it.
+    writeFileSync(join(root, 'public/images/rose.webp'), Buffer.from('a different photograph at the same path'));
+    const stale = staleReviews({ root });
+    assert.deepEqual(stale.map((s) => [s.slug, s.reason.startsWith('content changed')]), [['rose', true]]);
+
+    // A reviewed file removed: also stale.
+    rmSync(join(root, 'public/images/shared.jpg'));
+    assert.deepEqual(staleReviews({ root }).map((s) => s.slug).sort(), ['malli', 'malli-subscription', 'rose']);
+
+    // An unreadable register is never a silent pass.
+    writeFileSync(join(root, 'src/data/productPhotos.ts'), 'export const PHOTO_REVIEWS = {};');
+    assert.equal(staleReviews({ root }).length, 1);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+
+  // Runtime: a product moved to another file is unreviewed and inherits nothing from its old review.
+  const moved = { ...bySlug('red-affair'), image: '/images/bouquets/bouquet-red-affair-02.webp' };
+  assert.equal(photos.photoStatus(moved), 'unreviewed');
+  assert.equal(photos.productPhotoAlt(moved), 'Red Affair');
+  assert.deepEqual(json(images.productImages(moved)), []);
+  // Runtime: an illustrative product moved onto a described file claims no description from that file.
+  const movedIllustrative = { ...bySlug('jasmine-gajra'), image: '/images/rose-bouquet.jpg' };
+  assert.equal(photos.photoStatus(movedIllustrative), 'unreviewed');
+  assert.equal(photos.representativePhoto(movedIllustrative), null);
+  assert.equal(photos.productPhotoAlt(movedIllustrative), 'Jasmine Gajra');
+  // Runtime: a review never transfers between products on the same file -- the verdict is per product.
+  assert.equal(photos.photoStatus(bySlug('jasmine-malli')), 'product');
+  assert.equal(photos.photoStatus(bySlug('jasmine-gajra')), 'illustrative');
+  assert.equal(photos.photoStatus({ ...bySlug('jasmine-malli'), slug: 'new-jasmine-product' }), 'unreviewed');
+  // Runtime limitation, stated rather than hidden: the site compares paths, so same-path content is not
+  // re-checked per request. The build check above is what keeps such a file from being deployed.
+  assert.equal(photos.photoStatus(bySlug('red-affair')), 'product');
+});
+
+
+test('database pool: an idle connection closed by the server is logged and removed, not a process crash (no connection is opened)', () => {
+  const previous = process.env.DATABASE_URL;
+  process.env.DATABASE_URL = 'postgres://user:secret@127.0.0.1:1/never-connected';
+  const logged = [];
+  const quiet = { ...console, error: (...args) => logged.push(args.join(' ')) };
+  try {
+    // The CA module is a Vite raw import; a boundary double stands in (nothing connects).
+    const client = sourceLoader({ globals: { process, console: quiet, Buffer }, mocks: { 'src/server/db/postgres/supabaseCa.ts': { supabasePoolSsl: { rejectUnauthorized: true, ca: 'test-ca' } } } })('src/server/db/postgres/client.ts');
+    const pool = client.getDb().$client;
+    assert(pool && typeof pool.emit === 'function', 'getDb() exposes its pg pool');
+    assert(pool.listenerCount('error') >= 1, 'the pool has an error listener');
+    // What pg-pool does when an idle client's connection is terminated: emit "error" on the pool.
+    assert.doesNotThrow(() => pool.emit('error', new Error('Connection terminated unexpectedly'), {}));
+    assert.equal(logged.length, 1);
+    assert(/idle connection closed \(Connection terminated unexpectedly\)/.test(logged[0]), logged[0]);
+    assert(!/secret|postgres:\/\//.test(logged[0]), 'no connection string in the log');
+  } finally {
+    if (previous === undefined) delete process.env.DATABASE_URL; else process.env.DATABASE_URL = previous;
+  }
 });
