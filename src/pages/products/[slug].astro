@@ -14,7 +14,8 @@ import imageVariants from "../../data/imageVariants.json";
 import imageDimensions from "../../data/imageDimensions.json";
 import { whatsappLink } from "../../config/storefront";
 import { QUOTE_ONLY_PRICE_LABEL, isQuoteOnly } from "../../shared/quoteOnly";
-import { hasOwnPhotograph, photoDescription, productPhotoAlt } from "../../data/productPhotos";
+import { photoStatus, productPhotoAlt, representativePhoto } from "../../data/productPhotos";
+import { presentationCheck } from "../../data/collectionGuidance";
 
 // Catalog/Database Reconciliation milestone — the product's displayed
 // price now comes from PostgreSQL (the admin-editable, authoritative
@@ -142,12 +143,16 @@ const quoteOnlyProduct = isQuoteOnly(product);
 const metaDescription = `${product.description.replace(/\s+$/, "").replace(/([^.!?])$/, "$1.")} ${
   quoteOnlyProduct ? "Made by Fresh Petals for delivery across India; price and availability on WhatsApp." : "From Fresh Petals, for delivery across India; availability confirmed on WhatsApp."
 }`;
-// A representative photograph (src/data/productPhotos.ts) is described by
-// what it shows and labelled under the image; it is not this exact product.
-const ownPhotograph = hasOwnPhotograph(product);
-const representative = ownPhotograph ? null : photoDescription(product.image);
+// How the photograph relates to the product (src/data/productPhotos.ts): a
+// bouquet's own photograph keeps its description; a representative one is
+// described by what it shows and labelled on the image; a placeholder says so.
+const photo = photoStatus(product);
+const representative = representativePhoto(product);
 const lowerFirst = (text: string) => text.charAt(0).toLowerCase() + text.slice(1);
-const imageAlt = ownPhotograph ? `${product.name}: ${product.description.replace(/\.$/, "")}` : productPhotoAlt(product);
+const imageAlt = (photo === "product" || photo === "unconfirmed") && isBouquet ? `${product.name}: ${product.description.replace(/\.$/, "")}` : productPhotoAlt(product);
+// Recorded presentation that the photograph contradicts: shown qualified, never restated as fact.
+const presentation = presentationCheck(product);
+const PRESENTATION_ITEM = /wrapping|hand-tied|\bvase\b|\bbox\b|basket/i;
 const breadcrumbJsonLd = {
   "@type": "BreadcrumbList",
   itemListElement: [
@@ -162,7 +167,7 @@ const breadcrumbJsonLd = {
   title={productTitle(product)}
   jsonLd={[breadcrumbJsonLd]}
   description={metaDescription}
-  image={product.image}
+  image={photo === "missing" ? undefined : product.image}
   showCategoryCarousel={false}
 >
   <main data-track-item={product.slug} data-track-category={product.category}>
@@ -434,7 +439,7 @@ const breadcrumbJsonLd = {
               {product.whatsIncluded.map((item) => (
                 <li class="flex gap-2.5">
                   <span class="mt-2.5 h-1 w-1 shrink-0 rounded-full bg-berry"></span>
-                  {item}
+                  {presentation && PRESENTATION_ITEM.test(item) ? <span data-presentation-unconfirmed>{presentation.note}</span> : item}
                 </li>
               ))}
             </ul>

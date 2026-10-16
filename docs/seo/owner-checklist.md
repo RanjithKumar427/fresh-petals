@@ -61,6 +61,8 @@ Never buy links or pay for listings that promise rankings.
 
 - Is `instagram.com/freshpetals.hyderabad` still the account to link? If there is a Bengaluru account, tell us.
 - For each garland: single or pair, length, exact flowers, preparation time. Each one recorded in the admin replaces a "To be confirmed" on the design page.
-- **Own photographs for 39 catalogue products** that now show a labelled representative picture (pooja flowers and baskets, flower boxes, baskets, add-ons, vases, offers, subscriptions, hampers, flowers by stem, toran, event garlands). A photograph saved under a file name containing the product's slug (as the bouquet photographs are) and used by no other product joins the image sitemap and loses the label by itself. List: `src/data/productPhotos.ts`; reasons: `image-discovery-2026-10-16.md`.
-- **Mandarin Lily Glow, Luxe Lily Bloom, Stargazer Affair:** wrapped, as their records say, or in a vase or box, as their photographs show?
+- **Photographs of 12 products now shown with the "no image yet" placeholder** (their old picture showed something else): gift flower box, premium basket, dried flower bunch, dried flower vase set, mini succulent, plant and flower hamper, premium decor vase, florist cutter, room mist, flower and chocolate hamper, bridal flower accessories, lilies by stem.
+- **Photographs of 25 products shown with a labelled representative picture** (pooja flowers and baskets, flower boxes, baskets, offers, subscriptions, cards, candles, table decor, clear glass vase, toran, gajra, housewarming hamper, event garlands, roses by stem).
+- For either list, a new photograph is described as the product, and listed in the image sitemap, only after someone looks at it and records it in `src/data/productPhotos.ts`; a matching file name is not enough. Reasons: `image-discovery-2026-10-16.md`.
+- **Mandarin Lily Glow, Luxe Lily Bloom, Stargazer Affair:** wrapped, as their records say, or in a vase or box, as their photographs show? Until you say, their pages show both and ask on WhatsApp; the records are unchanged.
 - **Chocolates, Flower Food Sachets, Pet Friendly Flowerbox** have no photograph at all.

@@ -4,12 +4,14 @@
 // leaves the catalogue drops out of its section; the guidance stays.
 //
 // Copy rules: no jasmine variety or origin, no pack size, weight, length or
-// count, no delivery time. Several products share one photograph; each shared
-// photograph is labelled on the card and explained in its own section.
+// count, no delivery time. Several products share one photograph; a card is
+// labelled when its photograph is representative, and sharing is explained in
+// its own section.
 import GuideShell from "../../components/GuideShell.astro";
 import GuideProductCard from "../../components/GuideProductCard.astro";
 import { POOJA_GUIDE } from "../../data/guides";
 import { productCatalog, type Product } from "../../data/productCatalog";
+import { representativePhoto } from "../../data/productPhotos";
 import { loadAuthoritativePrices, withAuthoritativePrice } from "../../server/services/ProductPricing";
 
 const priceMap = await loadAuthoritativePrices();
@@ -25,7 +27,9 @@ const everything = [...jasmine, ...boxes, ...daily, ...bulk];
 const users = new Map<string, Product[]>();
 for (const product of everything) users.set(product.image, [...(users.get(product.image) ?? []), product]);
 const shared = [...users.values()].filter((list) => list.length > 1);
-const photoNote = (product: Product) => ((users.get(product.image)?.length ?? 0) > 1 ? "Shared photograph: shows the kind of flower, not this exact product" : null);
+// Labelled by the reviewed relationship (src/data/productPhotos.ts), not by how many products share a file:
+// loose jasmine shown with its jasmine photograph is the product; gajra shown with it is not.
+const photoNote = (product: Product) => (representativePhoto(product) ? "Representative photograph: shows the kind of flower, not this exact product" : null);
 const names = (list: Product[]) => list.map((product) => product.name).join(", ").replace(/, ([^,]*)$/, " and $1");
 const contents = [
   { id: "jasmine", label: "Loose jasmine or gajra" },
@@ -100,7 +104,7 @@ const contents = [
   <section class="guide-section" id="photographs" aria-labelledby="photographs-title" data-guide-section="photographs">
     <h2 id="photographs-title" class="fp-serif text-2xl text-ink md:text-3xl">About the photographs</h2>
     <p>
-      Not every product here has its own photograph yet. Where one picture is used for several products it is labelled on the card, and it shows the kind of flower, not the exact product, form or pack.
+      Not every product here has its own photograph yet. Where a picture shows the kind of flower rather than the product itself, it is labelled on the card; it does not show the exact form or pack.
     </p>
     {shared.length > 0 && (
       <ul class="mt-4 list-disc space-y-2 pl-5 text-[0.9375rem] leading-7 text-moss" data-guide-shared-photos>

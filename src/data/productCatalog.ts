@@ -1338,7 +1338,9 @@ const baseCatalog: Product[] = [
     slug: "gift-flower-box",
     name: "Gift Flower Box",
     category: "Flowerbox",
-    image: "/images/bouquet-3.jpg",
+    // Photograph review 16 Oct 2026 (src/data/productPhotos.ts): /images/bouquet-3.jpg shows flowers wrapped in newspaper, not a box.
+    // The neutral placeholder stands in until the owner supplies a photograph of this product.
+    image: "/images/product-placeholder.svg",
     priceLabel: "From ₹999",
     priceType: "from",
     description: "Premium flower box for gifting and special occasions.",
@@ -1483,7 +1485,9 @@ const baseCatalog: Product[] = [
     slug: "premium-flower-basket",
     name: "Premium Basket",
     category: "Baskets",
-    image: "/images/addon-table-decor.jpg",
+    // Photograph review 16 Oct 2026 (src/data/productPhotos.ts): /images/addon-table-decor.jpg shows sunflower jars on a dining table, not a basket.
+    // The neutral placeholder stands in until the owner supplies a photograph of this product.
+    image: "/images/product-placeholder.svg",
     priceLabel: "On request",
     priceType: "quote",
     description: "Premium custom flower basket for gifting and events.",
@@ -1884,7 +1888,9 @@ const baseCatalog: Product[] = [
     slug: "dried-flower-bunch",
     name: "Dried Flower Bunch",
     category: "Dried Flowers",
-    image: "/images/addon-candle.jpg",
+    // Photograph review 16 Oct 2026 (src/data/productPhotos.ts): /images/addon-candle.jpg shows candles with pressed flowers, not a dried bunch.
+    // The neutral placeholder stands in until the owner supplies a photograph of this product.
+    image: "/images/product-placeholder.svg",
     priceLabel: "From ₹699",
     priceType: "from",
     description: "Long-lasting dried flower bunch for decor and gifting.",
@@ -1913,7 +1919,9 @@ const baseCatalog: Product[] = [
     slug: "dried-flower-vase-set",
     name: "Dried Flower Vase Set",
     category: "Dried Flowers",
-    image: "/images/addon-table-decor.jpg",
+    // Photograph review 16 Oct 2026 (src/data/productPhotos.ts): /images/addon-table-decor.jpg shows fresh sunflowers in jars, not dried flowers.
+    // The neutral placeholder stands in until the owner supplies a photograph of this product.
+    image: "/images/product-placeholder.svg",
     priceLabel: "Custom quote",
     priceType: "quote",
     description: "Dried flower arrangement with vase for premium decor.",
@@ -1942,7 +1950,9 @@ const baseCatalog: Product[] = [
     slug: "mini-succulent-gift",
     name: "Mini Succulent Gift",
     category: "Plants & Succulents",
-    image: "/images/cat-plant.jpg",
+    // Photograph review 16 Oct 2026 (src/data/productPhotos.ts): /images/cat-plant.jpg shows bougainvillea in a vase, not a succulent.
+    // The neutral placeholder stands in until the owner supplies a photograph of this product.
+    image: "/images/product-placeholder.svg",
     priceLabel: "From ₹349",
     priceType: "from",
     description: "Mini succulent plant for simple gifting and desk decor.",
@@ -1971,7 +1981,9 @@ const baseCatalog: Product[] = [
     slug: "plant-and-flower-hamper",
     name: "Plant & Flower Hamper",
     category: "Plants & Succulents",
-    image: "/images/bouquet-10.jpg",
+    // Photograph review 16 Oct 2026 (src/data/productPhotos.ts): /images/bouquet-10.jpg shows tulips in a watering can, not a plant hamper.
+    // The neutral placeholder stands in until the owner supplies a photograph of this product.
+    image: "/images/product-placeholder.svg",
     priceLabel: "From ₹999",
     priceType: "from",
     description: "Fresh flowers paired with a small plant for gifting.",
@@ -2030,7 +2042,9 @@ const baseCatalog: Product[] = [
     slug: "premium-decor-vase",
     name: "Premium Decor Vase",
     category: "Vases",
-    image: "/images/addon-table-decor.jpg",
+    // Photograph review 16 Oct 2026 (src/data/productPhotos.ts): /images/addon-table-decor.jpg shows glass jars of sunflowers, not this vase.
+    // The neutral placeholder stands in until the owner supplies a photograph of this product.
+    image: "/images/product-placeholder.svg",
     priceLabel: "Custom quote",
     priceType: "quote",
     description: "Premium vase option for curated flower arrangements.",
@@ -2060,7 +2074,9 @@ const baseCatalog: Product[] = [
     slug: "florist-cutter",
     name: "Florist Cutter",
     category: "Floral Tools",
-    image: "/images/addon-table-decor.jpg",
+    // Photograph review 16 Oct 2026 (src/data/productPhotos.ts): /images/addon-table-decor.jpg shows sunflower jars on a table, not a cutter.
+    // The neutral placeholder stands in until the owner supplies a photograph of this product.
+    image: "/images/product-placeholder.svg",
     priceLabel: "Add-on item",
     priceType: "quote",
     description: "Florist cutter add-on for flowerbox and subscription customers.",
@@ -2229,7 +2245,9 @@ const baseCatalog: Product[] = [
     slug: "room-mist-flower-gift-addon",
     name: "Room Mist Gift Add-on",
     category: "Room Mist & Diffuser",
-    image: "/images/addon-candle.jpg",
+    // Photograph review 16 Oct 2026 (src/data/productPhotos.ts): /images/addon-candle.jpg shows candles with pressed flowers, not a room mist.
+    // The neutral placeholder stands in until the owner supplies a photograph of this product.
+    image: "/images/product-placeholder.svg",
     priceLabel: "Add-on item",
     priceType: "quote",
     description: "Room mist add-on for premium flower gifting orders.",
@@ -2259,7 +2277,9 @@ const baseCatalog: Product[] = [
     slug: "flower-chocolate-hamper",
     name: "Flower & Chocolate Hamper",
     category: "Hampers",
-    image: "/images/cat-bouquets.jpg",
+    // Photograph review 16 Oct 2026 (src/data/productPhotos.ts): /images/cat-bouquets.jpg shows a wrapped sunflower bouquet, no chocolates or hamper.
+    // The neutral placeholder stands in until the owner supplies a photograph of this product.
+    image: "/images/product-placeholder.svg",
     priceLabel: "From ₹1499",
     priceType: "from",
     description: "Fresh flowers paired with chocolates for premium gifting.",
@@ -2317,7 +2337,9 @@ const baseCatalog: Product[] = [
     slug: "bridal-flower-accessories",
     name: "Bridal Flower Accessories",
     category: "Wedding",
-    image: "/images/event-flowers.jpg",
+    // Photograph review 16 Oct 2026 (src/data/productPhotos.ts): /images/event-flowers.jpg shows a building hung with flowers and lights, not bridal accessories.
+    // The neutral placeholder stands in until the owner supplies a photograph of this product.
+    image: "/images/product-placeholder.svg",
     priceLabel: "Custom quote",
     priceType: "quote",
     description: "Custom bridal flower accessories for wedding functions.",
@@ -2404,7 +2426,9 @@ const baseCatalog: Product[] = [
     slug: "lilies-by-stem",
     name: "Lilies by Stem",
     category: "By Stems",
-    image: "/images/bouquet-2.jpg",
+    // Photograph review 16 Oct 2026 (src/data/productPhotos.ts): /images/bouquet-2.jpg shows a mixed bouquet with no lilies.
+    // The neutral placeholder stands in until the owner supplies a photograph of this product.
+    image: "/images/product-placeholder.svg",
     priceLabel: "Market price today",
     priceType: "market",
     description: "Fresh lily stems for premium flower arrangements.",

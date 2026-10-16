@@ -646,8 +646,8 @@ test('guides: four published guides, one registry; real products only; no price 
   // Nothing addressed to a search assistant, visible or hidden.
   assert(!/recommend (fresh ?petals|us)|as an ai|language model|ignore (previous|prior)|assistants? should|llms?\.txt/i.test(prose + shell));
   assert(!/display:\s*none|visibility:\s*hidden|sr-only|aria-hidden="true">[^<]{20,}/.test(Object.values(pages).join('') .replace(/<span aria-hidden="true">\/<\/span>/g, '')));
-  // The jasmine guide claims no variety, origin or pack size, and labels shared photographs.
-  assert(/do not state a variety or where the jasmine is grown/.test(pages['jasmine-pooja-flowers-and-gajra']) && /Shared photograph/.test(pages['jasmine-pooja-flowers-and-gajra']));
+  // The jasmine guide claims no variety, origin or pack size, and labels representative photographs.
+  assert(/do not state a variety or where the jasmine is grown/.test(pages['jasmine-pooja-flowers-and-gajra']) && /Representative photograph: shows the kind of flower/.test(pages['jasmine-pooja-flowers-and-gajra']));
   // The garland guide separates what a photograph shows from a specification, and a browsing group from the flowers used.
   assert(/It is not a specification/.test(pages['choosing-wedding-garlands']) && /not a list of the flowers in the garland/.test(pages['choosing-wedding-garlands']));
   // Article markup: published by the one Organization; no person, rating or offer.
@@ -825,29 +825,62 @@ test('search evidence: Bengaluru tasks link complete collections with what a quo
   assert(/coded design/.test(readFileSync('src/pages/categories/garlands.astro', 'utf8')));
 });
 
-test('image discovery: sitemaps list each page\'s own photographs only; garland images follow publication live; representative pictures described, never offered as the product', async () => {
+test('image discovery: only photographs reviewed as the product reach the sitemap; garland images follow publication; illustrative pictures labelled, unrelated ones replaced, unconfirmed presentation qualified', async () => {
   const photos = load('src/data/productPhotos.ts');
   const images = load('src/data/imageSitemap.ts');
-  const bySlug = (slug) => productCatalog.find((product) => product.slug === slug);
-  // Own photograph: named for the product and used by no other. Every listed image passes that rule.
-  for (const product of productCatalog) {
-    for (const path of images.productImages(product)) {
-      assert(path.split('/').pop().includes(product.slug), product.slug);
-      assert.equal(productCatalog.filter((other) => other.image === path).length, 1, path);
-    }
-  }
-  assert.deepEqual(json(images.productImages(bySlug('red-affair'))), ['/images/bouquets/bouquet-red-affair-01.webp']);
-  for (const slug of ['jasmine-gajra', 'jasmine-malli', 'florist-cutter', 'daily-pooja-flowers', 'loose-flower-box', 'chocolates-addon']) assert.deepEqual(json(images.productImages(bySlug(slug))), [], slug);
-  // Every representative photograph in use is described; descriptions name what is visible, not the product.
-  for (const product of productCatalog.filter((item) => !photos.hasOwnPhotograph(item) && !item.image.endsWith('.svg'))) assert(photos.photoDescription(product.image), product.image);
-  assert.equal(photos.productPhotoAlt(bySlug('jasmine-gajra')), 'Jasmine Gajra: representative photograph of white jasmine buds');
-  assert(!/strung|gajra|garland/i.test(photos.photoDescription('/images/jasmine.jpg')));
-  assert(/sunflowers/.test(photos.productPhotoAlt(bySlug('florist-cutter'))) && !/cutter add-on/.test(photos.productPhotoAlt(bySlug('florist-cutter'))));
   const guidance = load('src/data/collectionGuidance.ts');
+  const { createHash } = await import('node:crypto');
+  const bySlug = (slug) => productCatalog.find((product) => product.slug === slug);
+  // Every review is bound to the exact file content it was made from: replacing a file breaks this test until it is looked at again.
+  for (const [slug, review] of Object.entries(photos.PHOTO_REVIEWS)) {
+    assert.equal(createHash('sha256').update(readFileSync(`public${review.photo}`)).digest('hex').slice(0, 16), review.sha256, `${slug} ${review.photo}`);
+  }
+  // Every catalogue photograph in use has been reviewed; none in use was reviewed as unrelated.
+  for (const product of productCatalog) {
+    const status = photos.photoStatus(product);
+    assert(status !== 'unreviewed' && status !== 'unrelated', `${product.slug} ${status}`);
+  }
+  // The sitemap lists exactly the photographs reviewed as the product, shared files included.
+  for (const product of productCatalog) assert.deepEqual(json(images.productImages(product)), photos.photoStatus(product) === 'product' ? [product.image] : [], product.slug);
+  assert.deepEqual(json(images.productImages(bySlug('red-affair'))), ['/images/bouquets/bouquet-red-affair-01.webp']);
+  assert.deepEqual(json(images.productImages(bySlug('jasmine-malli'))), ['/images/jasmine.jpg']);
+  for (const slug of ['jasmine-gajra', 'florist-cutter', 'daily-pooja-flowers', 'chocolates-addon', 'mandarin-lily-glow', 'stargazer-affair']) assert.deepEqual(json(images.productImages(bySlug(slug))), [], slug);
+  // A file name is never evidence: an unreviewed upload named for its product, or a reviewed product on a different file, is not listed and claims nothing.
+  const upload = { slug: 'new-rose', name: 'New Rose', category: 'Bouquets', image: '/images/bouquets/bouquet-new-rose-01.webp', flowerTypes: ['Red roses'], whatsIncluded: ['Kraft wrapping'] };
+  assert.equal(photos.photoStatus(upload), 'unreviewed');
+  assert.deepEqual(json(images.productImages(upload)), []);
+  assert.equal(photos.productPhotoAlt(upload), 'New Rose');
+  assert.equal(photos.photoStatus({ ...bySlug('red-affair'), image: '/images/bouquets/bouquet-red-affair-02.webp' }), 'unreviewed');
+  // Unrelated photographs are replaced by the existing placeholder; the product, its page and its enquiry stay.
+  for (const [slug, review] of Object.entries(photos.PHOTO_REVIEWS).filter(([, r]) => r.verdict === 'unrelated')) {
+    assert.equal(bySlug(slug).image, photos.PLACEHOLDER_PHOTO, slug);
+    assert.equal(photos.photoStatus(bySlug(slug)), 'missing');
+  }
+  assert.equal(photos.productPhotoAlt(bySlug('florist-cutter')), 'Florist Cutter: no photograph yet');
+  // Illustrative and non-bouquet product photographs are described by what they show.
+  for (const product of productCatalog.filter((item) => photos.photoStatus(item) === 'illustrative' || (photos.photoStatus(item) === 'product' && !/^(bouquets|lilies)$/i.test(item.category)))) assert(photos.photoDescription(product.image), product.slug);
+  assert.equal(photos.productPhotoAlt(bySlug('jasmine-gajra')), 'Jasmine Gajra: representative photograph of white jasmine buds');
+  assert.equal(photos.productPhotoAlt(bySlug('jasmine-malli')), 'Jasmine / Malli: white jasmine buds');
+  assert(!/strung|gajra|garland/i.test(photos.photoDescription('/images/jasmine.jpg')));
+  assert.equal(photos.representativePhoto(bySlug('jasmine-malli')), null);
+  assert.equal(photos.representativePhoto(bySlug('jasmine-gajra')), 'White jasmine buds');
   assert.equal(photos.productPhotoAlt(bySlug('red-affair')), guidance.bouquetPhotoAlt(bySlug('red-affair')));
   assert(/red roses/.test(photos.productPhotoAlt(bySlug('red-affair'))) && /wrapping/.test(photos.productPhotoAlt(bySlug('red-affair'))));
-  // Photographed differently from the record: no presentation claimed.
-  for (const slug of ['mandarin-lily-glow', 'luxe-lily-bloom', 'stargazer-affair']) assert(!/wrapping|vase|box/.test(photos.productPhotoAlt(bySlug(slug))), slug);
+  // Unconfirmed presentation: the record is kept; it is shown only qualified, and nothing derived from it claims wrapping, vase or box.
+  const titles = load('src/data/productTitles.ts');
+  for (const slug of ['mandarin-lily-glow', 'luxe-lily-bloom', 'stargazer-affair']) {
+    const product = bySlug(slug);
+    assert(product.whatsIncluded.some((item) => /wrapping/i.test(item)), `${slug} record unchanged`);
+    assert.equal(photos.photoStatus(product), 'unconfirmed');
+    const check = guidance.presentationCheck(product);
+    assert(/^Recorded as (premium|luxury) wrapping, but the photograph shows a (glass vase|round box)/.test(check.note) && /Ask on WhatsApp/.test(check.note), check.note);
+    assert.equal(guidance.bouquetPresentation(product), null);
+    for (const text of [photos.productPhotoAlt(product), guidance.bouquetLine(product), titles.productTitle(product)]) assert(!/wrapping|vase|\bbox\b|bouquet/i.test(text.replace(/\| Fresh Petals$/, '')), `${slug}: ${text}`);
+    assert(/Arrangement/.test(titles.productTitle(product)));
+  }
+  assert.equal(guidance.presentationCheck(bySlug('red-affair')), null);
+  assert(/Bouquet/.test(titles.productTitle(bySlug('red-affair'))));
+  assert(/data-presentation-unconfirmed/.test(readFileSync('src/pages/products/[slug].astro', 'utf8')));
   // XML: absolute, escaped, one image per page entry.
   const entry = images.urlEntry('https://onlyfreshpetals.in/products/a', { lastmod: '2026-10-14', images: ['/images/a.webp', '/images/a.webp', 'https://x.supabase.co/m/b.jpg?v=1&w=2'], site: 'https://onlyfreshpetals.in' });
   assert.equal(entry, '  <url><loc>https://onlyfreshpetals.in/products/a</loc><lastmod>2026-10-14</lastmod><image:image><image:loc>https://onlyfreshpetals.in/images/a.webp</image:loc></image:image><image:image><image:loc>https://x.supabase.co/m/b.jpg?v=1&amp;w=2</image:loc></image:image></url>');
@@ -887,10 +920,11 @@ test('image discovery: sitemaps list each page\'s own photographs only; garland 
   for (const [, close, name, self] of xml.replace(/^<\?xml[^>]*>/, '').matchAll(/<(\/?)([\w:]+)[^>]*?(\/?)>/g)) { if (self) continue; if (close) assert.equal(stack.pop(), name); else stack.push(name); }
   assert.equal(stack.length, 0);
   assert(!/&(?!amp;|lt;|gt;|quot;|apos;)/.test(xml));
-  // Same cache tag as the pages, so an admin save refreshes it with them.
+  // The response carries the same cache headers (and tag) as the garland pages. This checks the headers only;
+  // the purge itself (GarlandWebsite.refreshGarlandPages on an admin save) and the CDN are not exercised here.
   const website = sourceLoader({ globals: { process } })('src/server/services/GarlandWebsite.ts');
   assert.deepEqual(Object.fromEntries(Object.keys(website.garlandCacheHeaders()).map((key) => [key.toLowerCase(), headers.get(key)])), Object.fromEntries(Object.entries(website.garlandCacheHeaders()).map(([key, value]) => [key.toLowerCase(), value])));
-  // A new main photograph and an unpublished design follow on the next request.
+  // Changed fixture records (a new main photograph, then an unpublished design) are reflected when the route renders again.
   set(record(withViews, { updatedAt: '2026-10-16T09:00:00.000Z', images: [{ url: store('new'), altText: 'New', width: 600, height: 1200, isPrimary: true }] }), record(a));
   ({ xml } = await sitemapFor());
   assert(page(withViews).includes(store('new')) && !xml.includes(store('main')) && !xml.includes(store('side')) && page(withViews).includes('<lastmod>2026-10-16</lastmod>'));

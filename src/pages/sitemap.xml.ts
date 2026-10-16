@@ -93,8 +93,8 @@ export const GET: APIRoute = async ({ site }) => {
     ...GUIDES.filter((guide) => !guide.liveSitemap).map((guide) => ({ path: guide.path, lastmod: guide.updated })),
   ];
 
-  // A product page lists its own photograph (src/data/imageSitemap.ts);
-  // representative pictures shared with other products are not listed.
+  // A product page lists its photograph only when it was reviewed as showing
+  // the product (src/data/productPhotos.ts); see src/data/imageSitemap.ts.
   const imagesFor = new Map(productCatalog.map((product) => [`/products/${product.slug}`, productImages(product)]));
   const urlEntries = [
     ...paths.map((path) => urlEntry(new URL(path, site).toString(), { images: imagesFor.get(path), site: site! })),

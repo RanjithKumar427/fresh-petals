@@ -13,8 +13,35 @@ import { whatsappLink } from "../config/storefront";
 const lowerFirst = (text: string) => text.charAt(0).toLowerCase() + text.slice(1);
 const list = (items: string[]) => (items.length <= 1 ? items.join("") : `${items.slice(0, -1).join(", ")} and ${items.at(-1)}`);
 
-/** How a bouquet is presented, from its record: "in a glass vase", "in kraft wrapping", or null when unrecorded. */
+/**
+ * Designs whose photograph shows a different presentation from the record
+ * (checked by eye, 16 October 2026). Each record says wrapping; the
+ * photograph shows what is given here. Until the owner confirms which is
+ * right, no page states either: the record is shown qualified
+ * (presentationCheck) and nothing derived from it (lines, examples, titles,
+ * photo descriptions) claims a presentation. The records are not changed.
+ */
+const PRESENTATION_UNCONFIRMED: Record<string, string> = {
+  "mandarin-lily-glow": "a glass vase",
+  "luxe-lily-bloom": "a glass vase",
+  "stargazer-affair": "a round box, with red roses among the lilies",
+};
+
+/** For a design whose presentation is unconfirmed: what is recorded and what the photograph shows. */
+export function presentationCheck(product: Pick<Product, "slug" | "whatsIncluded">): { recorded: string | null; photographed: string; note: string } | null {
+  const photographed = PRESENTATION_UNCONFIRMED[product.slug];
+  if (!photographed) return null;
+  const recorded = (product.whatsIncluded ?? []).find((item) => PRESENTATION_ITEM.test(item)) ?? null;
+  return {
+    recorded,
+    photographed,
+    note: `${recorded ? `Recorded as ${lowerFirst(recorded)}, but the` : "The"} photograph shows ${photographed}. Ask on WhatsApp how this design will be presented.`,
+  };
+}
+
+/** How a bouquet is presented, from its record: "in a glass vase", "in kraft wrapping", or null when unrecorded or unconfirmed. */
 export function bouquetPresentation(product: Product): string | null {
+  if (PRESENTATION_UNCONFIRMED[product.slug]) return null;
   const included = product.whatsIncluded ?? [];
   const vase = included.find((item) => /\bvase\b/i.test(item));
   if (vase) return `in a ${lowerFirst(vase)}`;
@@ -30,20 +57,11 @@ export function bouquetFlowers(product: Product): string | null {
   return flowers.length ? list(flowers) : null;
 }
 
-/**
- * Bouquets whose photograph shows a different presentation from the record
- * (checked by eye, 16 October 2026): Mandarin Lily Glow and Luxe Lily Bloom
- * are photographed in a glass vase, Stargazer Affair in a round box with red
- * roses, while each record says wrapping. Their photo descriptions leave the
- * presentation out until the owner settles which is right.
- */
-const PHOTO_PRESENTATION_DIFFERS = new Set(["mandarin-lily-glow", "luxe-lily-bloom", "stargazer-affair"]);
-
 /** Photograph description from the record: name, flowers and presentation. Falls back to the name. */
 export function bouquetPhotoAlt(product: Product): string {
   const flowers = bouquetFlowers(product);
   if (!flowers) return product.name;
-  const presentation = PHOTO_PRESENTATION_DIFFERS.has(product.slug) ? null : bouquetPresentation(product);
+  const presentation = bouquetPresentation(product);
   return `${product.name}: ${flowers}${presentation ? `, ${presentation}` : ""}`;
 }
 

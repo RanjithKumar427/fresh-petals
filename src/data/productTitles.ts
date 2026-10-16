@@ -8,6 +8,7 @@
 // keeps its plain "Name – Category" title. Garlands have their own titles
 // (name and FP-G code) and are not handled here.
 import type { Product } from "./productCatalog";
+import { presentationCheck } from "./collectionGuidance";
 
 const SUPPORTING = /foliage|filler|greenery|gypsophila|eucalyptus|baby|leaves|leaf|fern|seasonal|buds?$|spray/i;
 const SINGULAR: [RegExp, string][] = [[/ies$/i, "y"], [/(gerbera|dahlia|hydrangea|peon)s$/i, "$1"], [/ses$/i, "se"], [/s$/i, ""]];
@@ -37,7 +38,8 @@ export function productTitle(product: Product): string {
   if (!/^(bouquets|lilies)$/i.test(product.category)) return plain;
   const descriptor = flowerDescriptor(product);
   if (!descriptor) return plain;
-  const form = VASE(product) ? "Vase Arrangement" : "Bouquet";
+  // An unconfirmed presentation (presentationCheck) gets the neutral form its own description uses.
+  const form = presentationCheck(product) ? "Arrangement" : VASE(product) ? "Vase Arrangement" : "Bouquet";
   // Words the name already says are not said again right after it.
   const nameWords = new Set(product.name.toLowerCase().split(/\s+/));
   const repeats = descriptor.toLowerCase().split(/[\s&]+/).filter(Boolean).some((word) => nameWords.has(word));
