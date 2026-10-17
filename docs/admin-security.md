@@ -76,7 +76,9 @@ A reset link alone never gives admin access and never creates admin membership.
 | MFA (TOTP) | Authentication → Multi-Factor | Enabled (enroll + verify) |
 | Rate limits | Authentication → Rate Limits | Defaults: sign-in/recover 30 per 5 min per IP, token 150 per 5 min per IP, MFA verify 15 per min per IP (not configurable). The built-in email sender allows only **2 emails per hour per project** — configure custom SMTP if more reset emails are needed. |
 
-Checked on 17 October 2026 from the project's public Auth settings: **sign-up is enabled (must be turned off)**; anonymous sign-ins off; email confirmation on; email is the only provider. Password length, redirect URLs, Site URL, MFA and dashboard-account MFA could not be read without dashboard access and remain to be checked by the owner.
+Checked on 17 October 2026 in the dashboard: sign-up turned **off** that day; anonymous sign-ins off; email confirmation on; email the only provider; TOTP enabled. Still to fix by the owner: minimum password length is **6** (set 12), Site URL is **`http://localhost:3000`** with **no redirect URLs** (set the two values above, then test a reset email). Dashboard-account two-step verification not checked.
+
+New tables and sequences created by `postgres` in `public` are not granted to anon/authenticated by default (`drizzle/0013`, applied 17 October 2026); a migration that wants visitors to read a table grants SELECT and adds RLS explicitly.
 
 The app does not implement its own login throttling; an in-memory counter would not hold across Vercel's instances, and Supabase's limits count its server, not each visitor. Since 17 October 2026 a Vercel Firewall rule ("Rate limit sign-in, MFA and enquiry POSTs") allows each IP 30 POSTs per 60 seconds (fixed window) to `/api/admin/auth/{login,forgot-password,reset-password,recovery-session}`, `/admin/mfa` and `/api/inquiries`, then answers 429. Storefront GETs, crawlers, the delivery check and editor autosaves are not matched. The Hobby plan allows one such rule; review it in Firewall → Overview after real traffic (shared office networks share one IP).
 

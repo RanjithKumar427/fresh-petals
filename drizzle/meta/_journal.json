@@ -92,6 +92,13 @@
       "when": 1792171661000,
       "tag": "0012_security_least_privilege",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1792232400000,
+      "tag": "0013_visitor_default_privileges",
+      "breakpoints": true
     }
   ]
 }

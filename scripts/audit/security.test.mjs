@@ -585,3 +585,17 @@ test('CSP: reviewed inline scripts are rendered through InlineScript (hash of th
   assert.match(analytics, /JSON\.stringify\(enabled \? measurementId : ""\)/);
   assert.match(analytics, /const enabled = \/\^G-\[A-Z0-9\]\{4,\}\$\/\.test\(measurementId\)/);
 });
+
+// ---------------------------------------------------------------- database privileges
+
+test('migrations: new public tables and sequences created by postgres are not granted to visitor roles', () => {
+  const journal = JSON.parse(read('drizzle/meta/_journal.json'));
+  const tags = journal.entries.map((entry) => entry.tag);
+  assert.ok(tags.indexOf('0013_visitor_default_privileges') > tags.indexOf('0012_security_least_privilege'));
+  const sql = read('drizzle/0013_visitor_default_privileges.sql').replace(/--.*$/gm, '');
+  for (const kind of ['TABLES', 'SEQUENCES']) {
+    assert.match(sql, new RegExp(`ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public\\s+REVOKE ALL ON ${kind} FROM anon, authenticated;`));
+  }
+  // Never widen visitor or narrow trusted access from this file.
+  assert.doesNotMatch(sql, /\bGRANT\b|service_role|supabase_admin|\bauth\.|\bstorage\./);
+});
