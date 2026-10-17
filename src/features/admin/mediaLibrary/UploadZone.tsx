@@ -48,7 +48,7 @@ export default function UploadZone({ folder, onFolderChange, onUploaded }: Props
         }`}
       >
         <p className="text-[14px] font-medium text-[#171717]">Drag & drop images here</p>
-        <p className="mt-1 text-[12px] text-[#9B948F]">or click to browse — JPG, PNG, WebP or GIF, up to 8MB each</p>
+        <p className="mt-1 text-[12px] text-[#9B948F]">or click to browse — JPG, PNG, WebP or GIF, up to 4 MB each</p>
         <input
           ref={fileInputRef}
           type="file"

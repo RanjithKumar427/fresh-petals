@@ -14,7 +14,21 @@ Every `/admin/*` page and `/api/admin/*` endpoint goes through `src/middleware.t
 
 - Identity is checked with Supabase Auth on each request (`getUser()` catches revoked sessions; `getClaims()` verifies the token before its `aal` claim is used).
 - **Approved** means an existing `admin_users` row for that exact auth UUID with a role in `APPROVED_ADMIN_ROLES` (currently `admin`). The app never creates, changes or relinks these rows — not on login, session checks, password recovery or MFA. Email addresses and user metadata are never used to grant access.
-- Admin responses are sent with `Cache-Control: private, no-store`, `X-Robots-Tag: noindex` and `Referrer-Policy: same-origin` (not `no-referrer`, which makes Chrome send `Origin: null` on the admin's own form posts and trips the origin check). Session cookies are `HttpOnly`, `SameSite=Lax` and `Secure` in production. Cross-origin form posts are rejected by Astro's origin check.
+- Admin responses are sent with `Cache-Control: private, no-store`, `X-Robots-Tag: noindex` and `Referrer-Policy: same-origin` (not `no-referrer`, which makes Chrome send `Origin: null` on the admin's own form posts and trips the origin check). Session cookies are `HttpOnly`, `SameSite=Lax` and `Secure` in production.
+- If Supabase Auth or the database cannot be reached, protected requests get `503` (fail closed); the session cookies are kept, so an outage does not sign anyone out.
+
+## Request and browser protections (17 October 2026)
+
+- **Unsafe methods** (POST, PATCH, DELETE …) on every on-demand route, admin and public, JSON included: the `Origin` must be exactly the site's own origin and `Sec-Fetch-Site`, when sent, must be `same-origin`; otherwise `403` before authentication or any handler (`src/server/http/requestGuard.ts`). This stops other sites driving a visitor's browser; it is not bot protection.
+- **Bodies** are read through bounded streaming readers (`src/server/http/body.ts`), not just checked against `Content-Length`: public JSON 32 KiB, admin JSON 256 KiB, sign-in/MFA forms 8 KiB, image uploads 4.5 MB (Vercel's own request ceiling). JSON endpoints require `application/json` (`415` otherwise).
+- **Add Product** is a POST (dashboard and product-list buttons) answered with `303` to the editor. Visiting `/admin/products/new` with GET or HEAD only shows a button and creates nothing.
+- **Uploads** (`src/server/media/imageSafety.ts`): the file's real format must be JPEG, PNG, WebP or GIF and match its declared type; at most 4 MB, 40 million decoded pixels and 100 frames; the image is fully decoded and re-encoded (metadata and anything appended removed, animation kept), stored under a name and extension derived from the real format. Disguised HTML/SVG, corrupt files and decompression bombs are refused before storage.
+- **Privacy:** a successful public enquiry answers `{ "ok": true }` only. Database errors are logged as call, duration and driver code, never SQL, parameters or messages.
+- **Headers:** every page has a hash-based `Content-Security-Policy` (Astro's own script/style hashes plus the reviewed inline scripts in `src/scripts/inline/`, rendered through `InlineScript.astro`); no `unsafe-inline`/`unsafe-eval` for scripts. Inline `style=""` attributes stay allowed. Every response also carries `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy: same-origin` and a restrictive `Permissions-Policy` (`src/server/http/securityHeaders.mjs`). HSTS stays with Vercel. The build fails if a prerendered page lacks a CSP or runs an inline script whose hash is not in it (`scripts/build/security-headers.mjs`). Adding an inline script means putting it in `src/scripts/inline/` and rendering it with `<InlineScript code={…} />`; never add a blanket CSP in Vercel settings, which would block the hashed scripts.
+
+## Preview deployments
+
+Preview and Production share the same `DATABASE_URL` and Supabase keys (one Vercel variable targets both), so previews are **not** an isolated staging environment. On a preview (`VERCEL_ENV=preview`) every `/admin` page and `/api/admin` endpoint, including the recovery-link GET and the session bridge, and the enquiry log are refused before any handler runs. Browsing, the delivery check and WhatsApp drafts keep working. Give Preview its own database, Auth project and storage before ever allowing admin or writes there.
 
 ## Adding an administrator (trusted operator only)
 
@@ -62,7 +76,9 @@ A reset link alone never gives admin access and never creates admin membership.
 | MFA (TOTP) | Authentication → Multi-Factor | Enabled (enroll + verify) |
 | Rate limits | Authentication → Rate Limits | Defaults: sign-in/recover 30 per 5 min per IP, token 150 per 5 min per IP, MFA verify 15 per min per IP (not configurable). The built-in email sender allows only **2 emails per hour per project** — configure custom SMTP if more reset emails are needed. |
 
-The app does not implement its own login throttling; an in-memory counter would not hold across Vercel's instances. Abuse protection for sign-in and reset relies on the Supabase limits above.
+Checked on 17 October 2026 from the project's public Auth settings: **sign-up is enabled (must be turned off)**; anonymous sign-ins off; email confirmation on; email is the only provider. Password length, redirect URLs, Site URL, MFA and dashboard-account MFA could not be read without dashboard access and remain to be checked by the owner.
+
+The app does not implement its own login throttling; an in-memory counter would not hold across Vercel's instances, and Supabase's limits count its server, not each visitor. Since 17 October 2026 a Vercel Firewall rule ("Rate limit sign-in, MFA and enquiry POSTs") allows each IP 30 POSTs per 60 seconds (fixed window) to `/api/admin/auth/{login,forgot-password,reset-password,recovery-session}`, `/admin/mfa` and `/api/inquiries`, then answers 429. Storefront GETs, crawlers, the delivery check and editor autosaves are not matched. The Hobby plan allows one such rule; review it in Firewall → Overview after real traffic (shared office networks share one IP).
 
 Vercel needs `SITE_URL=https://onlyfreshpetals.in` in **Production**. Without it the app refuses to send reset emails rather than building a link from the request's Host header.
 

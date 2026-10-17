@@ -1,4 +1,3 @@
-import sharp from "sharp";
 import {
   MediaRepository,
   type Media,
@@ -7,20 +6,8 @@ import {
   type MediaUsage,
 } from "../db/repositories/MediaRepository";
 import { getStorageService } from "../storage";
+import { sanitizeImage } from "../media/imageSafety";
 import { ok, fail, type ServiceResult } from "./result";
-
-const MAX_FILE_SIZE_BYTES = 8 * 1024 * 1024; // 8MB
-const ALLOWED_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
-
-async function readDimensions(buffer: Buffer): Promise<{ width: number | null; height: number | null }> {
-  try {
-    const metadata = await sharp(buffer).metadata();
-    return { width: metadata.width ?? null, height: metadata.height ?? null };
-  } catch {
-    // A corrupt/unreadable image still gets stored — dimensions just show as unknown rather than blocking the upload.
-    return { width: null, height: null };
-  }
-}
 
 export const MediaService = {
   async list(filter?: { folder?: MediaFolder; search?: string; unused?: boolean }): Promise<MediaListItem[]> {
@@ -96,10 +83,11 @@ export const MediaService = {
    * if the DB insert fails after the file is written, the file is cleaned
    * up so a failed upload never leaves an orphaned file on disk.
    *
-   * Compression/background-removal/AI-enhancement hooks would slot in here
-   * later (transform `buffer` before handing it to the storage driver) —
-   * nothing upstream (the upload API route, ImagesSection) would need to
-   * change.
+   * Only a decoded and re-encoded image is stored (sanitizeImage in
+   * ../media/imageSafety.ts): its real format must match the declared
+   * type, size, pixel and frame limits apply, metadata and trailing bytes
+   * are removed, and the stored name and type follow the real format.
+   * A file that fails any check is refused before storage is touched.
    */
   async upload(input: {
     buffer: Buffer;
@@ -108,34 +96,28 @@ export const MediaService = {
     folder: MediaFolder;
     altText?: string | null;
   }): Promise<ServiceResult<Media>> {
-    if (!ALLOWED_MIME_TYPES.has(input.mimeType)) {
-      return fail("Only JPEG, PNG, WebP or GIF images are supported.");
-    }
-    if (input.buffer.byteLength > MAX_FILE_SIZE_BYTES) {
-      return fail("Images must be 8MB or smaller.");
-    }
-    if (input.buffer.byteLength === 0) {
-      return fail("That file is empty.");
-    }
+    const checked = await sanitizeImage({ buffer: input.buffer, declaredMime: input.mimeType, filename: input.filename });
+    if (!checked.ok) return fail(checked.error);
+    const image = checked.image;
 
-    const [storage, dimensions] = [getStorageService(), await readDimensions(input.buffer)];
+    const storage = getStorageService();
     const stored = await storage.put({
-      buffer: input.buffer,
-      filename: input.filename,
-      mimeType: input.mimeType,
+      buffer: image.buffer,
+      filename: image.filename,
+      mimeType: image.mimeType,
       folder: input.folder,
     });
 
     try {
       const media = await MediaRepository.create({
-        filename: input.filename,
+        filename: image.filename,
         path: stored.path,
         url: stored.url,
         folder: input.folder,
-        mimeType: input.mimeType,
+        mimeType: image.mimeType,
         sizeBytes: stored.sizeBytes,
-        width: dimensions.width,
-        height: dimensions.height,
+        width: image.width,
+        height: image.height,
         altText: input.altText ?? null,
         source: "upload",
       });

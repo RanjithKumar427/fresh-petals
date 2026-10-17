@@ -2,11 +2,20 @@ import type { APIRoute } from "astro";
 import { MediaService } from "../../../../server/services/MediaService";
 import { MEDIA_FOLDERS, type MediaFolder } from "../../../../server/db/repositories/MediaRepository";
 import { json } from "../../../../server/http/json";
+import { BODY_LIMITS, bodyErrorResponse, readForm } from "../../../../server/http/body";
 
 export const prerender = false;
 
+// Multipart upload, read through the bounded reader (4.5 MB: Vercel's own
+// request ceiling). MediaService.upload checks and re-encodes the image
+// before anything is stored.
 export const POST: APIRoute = async ({ request }) => {
-  const form = await request.formData();
+  let form: FormData;
+  try {
+    form = await readForm(request, BODY_LIMITS.upload);
+  } catch (error) {
+    return bodyErrorResponse(error);
+  }
   const file = form.get("file");
   const folderRaw = String(form.get("folder") || "products");
 

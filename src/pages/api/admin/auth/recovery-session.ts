@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { AuthService } from "../../../../server/services/AuthService";
+import { BODY_LIMITS, readJson } from "../../../../server/http/body";
 
 export const prerender = false;
 
@@ -13,7 +14,7 @@ export const prerender = false;
 export const POST: APIRoute = async ({ request, cookies }) => {
   let body: unknown;
   try {
-    body = await request.json();
+    body = await readJson(request, BODY_LIMITS.authForm);
   } catch {
     return new Response(JSON.stringify({ ok: false }), { status: 400 });
   }

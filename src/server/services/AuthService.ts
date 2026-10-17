@@ -27,11 +27,32 @@ export type AdminAccess =
   | { state: "mfa"; admin: AdminUser; hasVerifiedFactor: boolean }
   | { state: "full"; admin: AdminUser };
 
+/**
+ * Thrown by resolveAccess when Supabase Auth or the admin_users lookup
+ * cannot be reached, so the answer is unknown. Callers refuse access (the
+ * middleware answers 503); unlike an invalid session, the cookies are kept,
+ * so an outage does not sign the administrator out.
+ */
+export class AuthUnavailableError extends Error {
+  constructor() {
+    super("Authentication service unavailable");
+    this.name = "AuthUnavailableError";
+  }
+}
+
+/** A network failure or a 5xx from Auth: the session's validity is unknown, not disproved. */
+function isOutage(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const { name, status } = error as { name?: string; status?: number };
+  return name === "AuthRetryableFetchError" || (typeof status === "number" && (status === 0 || status >= 500));
+}
+
 export const PASSWORD_MIN_LENGTH = 12;
 // Supabase Auth hashes with bcrypt, which only uses the first 72 bytes.
 export const PASSWORD_MAX_LENGTH = 72;
 
 const GENERIC_LOGIN_ERROR = "Invalid email or password.";
+const UNAVAILABLE_ERROR = "Sign-in is temporarily unavailable. Please try again in a few minutes.";
 const CODE_PATTERN = /^\d{6}$/;
 
 type Supabase = ReturnType<typeof createSupabaseServerClient>;
@@ -63,8 +84,10 @@ async function endSession(supabase: Supabase, request: Request, cookies: AstroCo
  */
 async function verifiedIdentity(supabase: Supabase) {
   const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (isOutage(userError)) throw new AuthUnavailableError();
   if (userError || !userData.user) return null;
   const { data: claimsData, error: claimsError } = await supabase.auth.getClaims();
+  if (isOutage(claimsError)) throw new AuthUnavailableError();
   if (claimsError || !claimsData?.claims || claimsData.claims.sub !== userData.user.id) return null;
   const aal = claimsData.claims.aal === "aal2" ? "aal2" : "aal1";
   return { user: userData.user, aal } as const;
@@ -85,6 +108,7 @@ export const AuthService = {
   async login(email: string, password: string, request: Request, cookies: AstroCookies): Promise<AuthResult> {
     const supabase = createSupabaseServerClient(request, cookies);
     const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
+    if (isOutage(error)) return { ok: false, error: UNAVAILABLE_ERROR };
     if (error || !data.user) return { ok: false, error: GENERIC_LOGIN_ERROR };
 
     const row = await AdminUserRepository.findById(data.user.id).catch(() => null);
@@ -105,7 +129,8 @@ export const AuthService = {
   /**
    * The access state for this request (see AdminAccess). A valid session
    * that does not belong to an approved administrator is signed out here,
-   * so it cannot linger.
+   * so it cannot linger. Throws AuthUnavailableError when Auth or the
+   * database cannot answer: an unknown answer is never treated as approval.
    */
   async resolveAccess(request: Request, cookies: AstroCookies): Promise<AdminAccess> {
     const hadSession = hasSessionCookie(request);
@@ -118,7 +143,9 @@ export const AuthService = {
       return { state: "none", hadSession, unapproved: false };
     }
 
-    const row = await AdminUserRepository.findById(identity.user.id).catch(() => null);
+    const row = await AdminUserRepository.findById(identity.user.id).catch(() => {
+      throw new AuthUnavailableError();
+    });
     if (!isApprovedAdmin(row)) {
       await endSession(supabase, request, cookies);
       return { state: "none", hadSession, unapproved: true };
@@ -139,7 +166,8 @@ export const AuthService = {
     request: Request,
     cookies: AstroCookies
   ): Promise<{ ok: true; factorId: string; qrCode: string; secret: string } | { ok: false; error: string }> {
-    const access = await AuthService.resolveAccess(request, cookies);
+    const access = await AuthService.resolveAccess(request, cookies).catch(() => null);
+    if (!access) return { ok: false, error: UNAVAILABLE_ERROR };
     if (access.state !== "mfa") return { ok: false, error: "Please sign in again." };
     if (access.hasVerifiedFactor) return { ok: false, error: "An authenticator is already set up for this account." };
 
@@ -173,7 +201,8 @@ export const AuthService = {
   async verifyTotp(code: string, postedFactorId: string | null, request: Request, cookies: AstroCookies): Promise<AuthResult> {
     if (!CODE_PATTERN.test(code)) return { ok: false, error: "Enter the 6-digit code from your authenticator app." };
 
-    const access = await AuthService.resolveAccess(request, cookies);
+    const access = await AuthService.resolveAccess(request, cookies).catch(() => null);
+    if (!access) return { ok: false, error: UNAVAILABLE_ERROR };
     if (access.state === "none") return { ok: false, error: "Your session has ended. Please sign in again." };
     if (access.state === "full") return { ok: true };
 
@@ -237,7 +266,7 @@ export const AuthService = {
    */
   async recoveryState(request: Request, cookies: AstroCookies): Promise<{ valid: boolean; needsCode: boolean }> {
     const supabase = createSupabaseServerClient(request, cookies);
-    const identity = await verifiedIdentity(supabase);
+    const identity = await verifiedIdentity(supabase).catch(() => null);
     if (!identity) return { valid: false, needsCode: false };
     return { valid: true, needsCode: identity.aal !== "aal2" && totpFactors(identity.user).verified.length > 0 };
   },
@@ -251,7 +280,8 @@ export const AuthService = {
    */
   async updatePassword(password: string, code: string | null, request: Request, cookies: AstroCookies): Promise<AuthResult> {
     const supabase = createSupabaseServerClient(request, cookies);
-    const identity = await verifiedIdentity(supabase);
+    const identity = await verifiedIdentity(supabase).catch(() => undefined);
+    if (identity === undefined) return { ok: false, error: UNAVAILABLE_ERROR };
     if (!identity) {
       return { ok: false, error: "This password reset link is invalid or has expired. Please request a new one." };
     }

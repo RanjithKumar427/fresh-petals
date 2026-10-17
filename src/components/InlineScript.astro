@@ -1,0 +1,18 @@
+---
+// A reviewed inline script, allowed by the page's Content-Security-Policy
+// through the SHA-256 of its exact text. `code` must be literal source from
+// this repository (imported with `?raw` from src/scripts/inline/), plus at
+// most build-time configuration serialised with JSON.stringify — never
+// anything a visitor sent. Any other inline script is blocked by the policy.
+import { createHash } from "node:crypto";
+
+interface Props {
+  code: string;
+}
+
+const { code } = Astro.props;
+const hash = `sha256-${createHash("sha256").update(code, "utf8").digest("base64")}` as const;
+Astro.csp?.insertScriptHash(hash);
+---
+
+<script is:inline set:html={code} />

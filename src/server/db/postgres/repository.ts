@@ -15,11 +15,29 @@
 // to later — one function every repository method already calls, so
 // adding retry/metrics/tracing later means changing this file once, not
 // re-touching every repository.
+// `cause` keeps only the bounded driver code ({ code }), never the raw
+// driver error: Drizzle's errors carry the SQL text and its parameters
+// (customer names, phone numbers, notes), and an error thrown past a route
+// is printed whole, cause chain included, into the hosting logs.
 export class RepositoryError extends Error {
-  constructor(message: string, public readonly cause?: unknown) {
+  public readonly cause?: { code: string };
+  constructor(message: string, cause?: unknown) {
     super(message);
     this.name = "RepositoryError";
+    this.cause = { code: safeErrorCode(cause) };
   }
+}
+
+/**
+ * A log-safe label for a database/driver error: a Postgres SQLSTATE
+ * ("23505"), a Node socket code ("ECONNRESET") or the error class name.
+ * Never the message, query, parameters or connection string.
+ */
+export function safeErrorCode(error: unknown): string {
+  const code = pgCode(error);
+  if (typeof code === "string" && /^[0-9A-Z]{5}$|^E[A-Z_]{2,30}$/.test(code)) return code;
+  const name = (error as { name?: unknown } | null)?.name;
+  return typeof name === "string" && /^[A-Za-z]{1,40}$/.test(name) ? name : "Error";
 }
 
 // Postgres SQLSTATE codes relevant here — see
@@ -105,8 +123,10 @@ const SLOW_QUERY_THRESHOLD_MS = 500;
  *   1. Translate raw pg/Drizzle errors into safe, friendly messages
  *      (never let a raw error reach an API response — see
  *      RepositoryError above).
- *   2. Log the *real* error server-side before translating it away, so
- *      operators aren't left with only the friendly version.
+ *   2. Log which call failed, how long it took and the driver's error
+ *      code before translating it away, so operators aren't left with
+ *      only the friendly version. Not the raw error: it carries the SQL
+ *      parameters, i.e. customer and enquiry details.
  *   3. Time every call and flag slow ones — the observability seam this
  *      phase's brief asked for: not a metrics/tracing system, just a
  *      structured place a real one could hook into later (swap the
@@ -123,7 +143,7 @@ export async function withRepositoryCall<T>(context: string, fn: () => Promise<T
     return result;
   } catch (error) {
     const durationMs = performance.now() - startedAt;
-    console.error(`[${context}] failed after ${durationMs.toFixed(0)}ms:`, error);
+    console.error(`[${context}] failed after ${durationMs.toFixed(0)}ms (${safeErrorCode(error)})`);
     throw translatePgError(error);
   }
 }

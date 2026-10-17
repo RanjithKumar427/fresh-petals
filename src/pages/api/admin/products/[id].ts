@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { ProductService } from "../../../../server/services/ProductService";
 import { json } from "../../../../server/http/json";
+import { BODY_LIMITS, jsonBody } from "../../../../server/http/body";
 import { garlandWebsiteChange } from "../../../../server/services/GarlandWebsite";
 import { occasionWebsiteChange } from "../../../../server/services/OccasionWebsite";
 
@@ -20,7 +21,8 @@ export const PATCH: APIRoute = async ({ params, request }) => {
   const id = Number(params.id);
   if (!Number.isInteger(id)) return json({ ok: false, error: "Invalid id." }, 400);
 
-  const body = await request.json();
+  const body = await jsonBody(request, BODY_LIMITS.adminJson);
+  if (body instanceof Response) return body;
   const before = await ProductService.get(id);
   const result = await ProductService.update(id, body);
   if (!result.ok) return json(result, 400);

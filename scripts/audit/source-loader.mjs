@@ -5,7 +5,10 @@ import vm from 'node:vm';
 import ts from 'typescript';
 
 // Executes repository TS with explicit boundary doubles. Never opens a DB.
+// `mocks` keys are repository paths ('src/…') or bare module names
+// ('astro:middleware', 'sharp'), replaced wherever they are imported.
 export function sourceLoader({ root = process.cwd(), dev = false, mocks = {}, globals = {} } = {}) {
+  const bare = new Map(Object.entries(mocks).filter(([name]) => !name.startsWith('src/') && !name.startsWith('scripts/') && !name.startsWith('.')));
   const cache = new Map(Object.entries(mocks).map(([file, value]) => [path.resolve(root, file), value]));
   function load(relative) {
     let file = path.resolve(root, relative);
@@ -16,7 +19,7 @@ export function sourceLoader({ root = process.cwd(), dev = false, mocks = {}, gl
     cache.set(file, exports);
     const source = readFileSync(file, 'utf8').replaceAll('import.meta.env.DEV', String(dev)).replaceAll('import.meta.env.PUBLIC_FP_PREVIEW_DRAFTS', 'undefined');
     const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true } }).outputText;
-    const require = (specifier) => specifier.startsWith('.') ? load(path.resolve(path.dirname(file), specifier)) : createRequire(file)(specifier);
+    const require = (specifier) => specifier.startsWith('.') ? load(path.resolve(path.dirname(file), specifier)) : bare.has(specifier) ? bare.get(specifier) : createRequire(file)(specifier);
     vm.runInNewContext(code, { exports, require, console, URL, URLSearchParams, AbortSignal, Event, Date, setTimeout, clearTimeout, ...globals }, { filename: file });
     return exports;
   }

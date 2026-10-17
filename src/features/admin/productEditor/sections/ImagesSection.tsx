@@ -13,7 +13,8 @@ interface Props {
 type PendingUpload = { key: string; filename: string; progress: number; error: string | null };
 
 const MAX_IMAGES = 12;
-const MAX_FILE_SIZE_BYTES = 8 * 1024 * 1024;
+// Matches the server (src/server/media/imageSafety.ts): Vercel accepts at most 4.5 MB per request.
+const MAX_FILE_SIZE_BYTES = 4 * 1024 * 1024;
 
 function formatBytes(bytes?: number): string {
   if (!bytes) return "";
@@ -45,7 +46,7 @@ export default function ImagesSection({ draft, onChange }: Props) {
         continue;
       }
       if (file.size > MAX_FILE_SIZE_BYTES) {
-        setPendingUploads((prev) => [...prev, { key, filename: file.name, progress: 0, error: "Larger than 8MB." }]);
+        setPendingUploads((prev) => [...prev, { key, filename: file.name, progress: 0, error: "Larger than 4 MB." }]);
         continue;
       }
 
@@ -158,7 +159,7 @@ export default function ImagesSection({ draft, onChange }: Props) {
         }`}
       >
         <p className="text-[13px] font-medium text-[#171717]">Drag & drop photos here</p>
-        <p className="mt-1 text-[12px] text-[#9B948F]">or click to browse — JPG, PNG, WebP or GIF, up to 8MB each</p>
+        <p className="mt-1 text-[12px] text-[#9B948F]">or click to browse — JPG, PNG, WebP or GIF, up to 4 MB each</p>
         <input
           ref={fileInputRef}
           type="file"

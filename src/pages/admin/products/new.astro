@@ -1,12 +1,37 @@
 ---
-// Creating a draft is a redirect, not a page — see docs/architecture and
-// ProductService.createDraft() for why the row is created before any
-// input exists. The URL rewrites to /admin/products/edit/{id} immediately
-// so a refresh never creates a second draft.
+// "Add Product". Creating a draft writes a database row, so it happens only
+// on POST: the dashboard and product-list buttons submit a form here (the
+// middleware has already checked the administrator, aal2, and that the
+// request comes from this site). The draft is created before any input
+// exists (see ProductService.createDraft()), and a 303 sends the browser to
+// /admin/products/edit/{id}, so a refresh never creates a second draft.
+//
+// GET or HEAD (a typed URL, a prefetch, a crawler, an old bookmark) never
+// creates anything: it shows a button that submits the same POST.
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import AdminShell from "../../../components/admin/AdminShell.astro";
 import { ProductService } from "../../../server/services/ProductService";
 
 export const prerender = false;
 
-const product = await ProductService.createDraft();
-return Astro.redirect(`/admin/products/edit/${product.id}`);
+if (Astro.request.method === "POST") {
+  const product = await ProductService.createDraft();
+  return Astro.redirect(`/admin/products/edit/${product.id}`, 303);
+}
+
+const admin = Astro.locals.admin!;
 ---
+
+<AdminLayout title="Add Product">
+  <AdminShell active="products" adminEmail={admin.email} pageTitle="Add Product">
+    <p class="text-[14px] text-[#5F5A58]">A new draft product is created when you continue. It stays hidden from the website until you publish it.</p>
+    <form method="post" action="/admin/products/new" class="mt-6">
+      <button
+        type="submit"
+        class="rounded-full bg-[#111111] px-5 py-2.5 text-[11px] font-bold uppercase tracking-[0.18em] text-white transition hover:bg-[#7C243E]"
+      >
+        Create draft product
+      </button>
+    </form>
+  </AdminShell>
+</AdminLayout>

@@ -6,6 +6,7 @@ import {
   deliveryCheckSchema,
 } from "../../../server/validation/deliverySchema";
 import { json } from "../../../server/http/json";
+import { BODY_LIMITS, bodyErrorResponse, readJson } from "../../../server/http/body";
 
 export const prerender = false;
 
@@ -43,8 +44,13 @@ function failClosedMethods(methods: string[], reason: string) {
 }
 
 export const POST: APIRoute = async ({ request }) => {
-  const body = await request.json().catch(() => null);
-  if (!body) return json({ ok: false, error: "Invalid request body." }, 400);
+  let body: any;
+  try {
+    body = await readJson(request, BODY_LIMITS.publicJson);
+  } catch (error) {
+    return bodyErrorResponse(error);
+  }
+  if (!body || typeof body !== "object") return json({ ok: false, error: "Invalid request body." }, 400);
 
   if (body.deliveryDate === undefined) {
     const parsed = deliveryServiceabilitySchema.safeParse(body);

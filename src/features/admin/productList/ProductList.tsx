@@ -102,12 +102,15 @@ export default function ProductList({ categories }: Props) {
         <p className="text-[13px] text-[#77706F]">
           {loading ? "Loading…" : `${visibleProducts.length} of ${products.length} products`}
         </p>
-        <a
-          href="/admin/products/new"
-          className="rounded-full bg-[#111111] px-5 py-2.5 text-[11px] font-bold uppercase tracking-[0.18em] text-white transition hover:bg-[#7C243E]"
-        >
-          + Add Product
-        </a>
+        {/* Creating a draft writes a row, so it is a POST (never a link). */}
+        <form method="post" action="/admin/products/new">
+          <button
+            type="submit"
+            className="rounded-full bg-[#111111] px-5 py-2.5 text-[11px] font-bold uppercase tracking-[0.18em] text-white transition hover:bg-[#7C243E]"
+          >
+            + Add Product
+          </button>
+        </form>
       </div>
 
       {actionError && (

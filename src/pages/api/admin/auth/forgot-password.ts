@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { AuthService } from "../../../../server/services/AuthService";
+import { BODY_LIMITS, readForm } from "../../../../server/http/body";
 
 export const prerender = false;
 
@@ -27,7 +28,8 @@ function resetRedirect(request: Request): string | null {
 }
 
 export const POST: APIRoute = async ({ request, cookies, redirect }) => {
-  const form = await request.formData();
+  const form = await readForm(request, BODY_LIMITS.authForm).catch(() => null);
+  if (!form) return redirect(`/admin/forgot-password?error=${encodeURIComponent("Please try again.")}`);
   const email = String(form.get("email") || "").trim();
 
   if (!email) {

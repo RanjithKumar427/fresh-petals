@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { ProductService } from "../../../../../server/services/ProductService";
 import { json } from "../../../../../server/http/json";
+import { BODY_LIMITS, jsonBody } from "../../../../../server/http/body";
 import { garlandWebsiteChange } from "../../../../../server/services/GarlandWebsite";
 
 export const prerender = false;
@@ -11,8 +12,9 @@ export const POST: APIRoute = async ({ params, request }) => {
   const id = Number(params.id);
   if (!Number.isInteger(id)) return json({ ok: false, error: "Invalid id." }, 400);
 
-  const body = await request.json().catch(() => null);
-  if (!body || !VALID_STATUSES.has(body.status)) {
+  const body = await jsonBody(request, BODY_LIMITS.adminJson);
+  if (body instanceof Response) return body;
+  if (!VALID_STATUSES.has(body.status)) {
     return json({ ok: false, error: "Invalid status." }, 400);
   }
 

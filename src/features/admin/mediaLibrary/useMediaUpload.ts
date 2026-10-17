@@ -11,7 +11,8 @@ export type UploadItem = {
   media?: Media;
 };
 
-const MAX_FILE_SIZE_BYTES = 8 * 1024 * 1024;
+// Matches the server (src/server/media/imageSafety.ts): Vercel accepts at most 4.5 MB per request.
+const MAX_FILE_SIZE_BYTES = 4 * 1024 * 1024;
 
 function startUpload(
   file: File,
@@ -93,7 +94,7 @@ export function useMediaUpload(onUploaded: (media: Media) => void) {
           continue;
         }
         if (file.size > MAX_FILE_SIZE_BYTES) {
-          setItems((prev) => [...prev, { id, file, folder, progress: 0, status: "error", error: "Larger than 8MB." }]);
+          setItems((prev) => [...prev, { id, file, folder, progress: 0, status: "error", error: "Larger than 4 MB." }]);
           continue;
         }
 

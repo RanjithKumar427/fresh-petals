@@ -2,6 +2,7 @@ import type { APIRoute } from "astro";
 import { MediaService } from "../../../../server/services/MediaService";
 import { MEDIA_FOLDERS, type MediaFolder } from "../../../../server/db/repositories/MediaRepository";
 import { json } from "../../../../server/http/json";
+import { BODY_LIMITS, jsonBody } from "../../../../server/http/body";
 
 export const prerender = false;
 
@@ -21,7 +22,8 @@ export const PATCH: APIRoute = async ({ params, request }) => {
   const id = Number(params.id);
   if (!Number.isInteger(id)) return json({ ok: false, error: "Invalid id." }, 400);
 
-  const body = await request.json().catch(() => ({}));
+  const body = await jsonBody(request, BODY_LIMITS.adminJson);
+  if (body instanceof Response) return body;
 
   if (typeof body.filename === "string") {
     const result = await MediaService.rename(id, body.filename);

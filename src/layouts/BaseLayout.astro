@@ -8,6 +8,10 @@ import SiteHeader from "../components/atelier/SiteHeader.astro";
 import SiteFooter from "../components/atelier/SiteFooter.astro";
 import RoundCategoryCarousel from "../components/RoundCategoryCarousel.astro";
 import Analytics from "../components/Analytics.astro";
+import InlineScript from "../components/InlineScript.astro";
+// Reviewed inline scripts, allowed by the page's CSP through their hashes.
+import pageFlags from "../scripts/inline/page-flags.js?raw";
+import reveal from "../scripts/inline/reveal.js?raw";
 
 
 const {
@@ -80,14 +84,7 @@ const absoluteImageUrl = new URL(image, Astro.site);
     <!-- "js": controls that only work with scripts (listing filters) are laid
          out from the first paint instead of appearing later and pushing
          the products down. -->
-    <script is:inline>
-      (function () {
-        document.documentElement.classList.add("js");
-        if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-          document.documentElement.classList.add("motion");
-        }
-      })();
-    </script>
+    <InlineScript code={pageFlags} />
     <slot name="head" />
 
     <title>{title}</title>
@@ -133,27 +130,6 @@ const absoluteImageUrl = new URL(image, Astro.site);
     <SiteFooter />
     <Analytics />
 
-    <script is:inline>
-      (function () {
-        var root = document.documentElement;
-        var els = [].slice.call(document.querySelectorAll("[data-reveal]"));
-        if (!root.classList.contains("motion") || !("IntersectionObserver" in window)) {
-          els.forEach(function (el) { el.classList.add("is-in"); });
-          return;
-        }
-        var io = new IntersectionObserver(
-          function (entries) {
-            entries.forEach(function (entry) {
-              if (entry.isIntersecting) {
-                entry.target.classList.add("is-in");
-                io.unobserve(entry.target);
-              }
-            });
-          },
-          { rootMargin: "0px 0px -4% 0px", threshold: 0 }
-        );
-        els.forEach(function (el) { io.observe(el); });
-      })();
-    </script>
+    <InlineScript code={reveal} />
   </body>
 </html>

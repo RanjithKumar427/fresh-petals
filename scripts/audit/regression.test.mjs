@@ -346,11 +346,11 @@ test('search indexing rules: one page per intent, duplicates canonicalised, thin
 });
 
 test('measurement: no tracker without an owner-supplied ID; events carry paths and codes, never customer details', () => {
-  const analytics = readFileSync('src/components/Analytics.astro', 'utf8');
+  const analytics = (readFileSync('src/components/Analytics.astro', 'utf8') + readFileSync('src/scripts/inline/analytics.js', 'utf8'));
   assert(/PUBLIC_GA_MEASUREMENT_ID/.test(analytics) && /\{enabled && <script/.test(analytics));
   assert(/whatsapp_enquiry_click/.test(analytics) && /view_item_list/.test(analytics) && /landing_path/.test(analytics));
   assert(!/customer|recipient|phone|message:|text=/i.test(analytics.split('---')[2]));
-  const cart = readFileSync('src/pages/cart.astro', 'utf8');
+  const cart = (readFileSync('src/pages/cart.astro', 'utf8') + readFileSync('src/scripts/inline/cart.js', 'utf8'));
   const event = cart.slice(cart.indexOf('fpTrack?.("basket_quote_request"'), cart.indexOf('fpTrack?.("basket_quote_request"') + 420);
   assert(/item_id/.test(event) && /request_type/.test(event) && !/name\.value|phone|pincode|note|message/i.test(event.replace('item.name', '')));
 });
@@ -541,7 +541,7 @@ test('recipient city: one stored value, validated; browsing never re-points a ba
   const priced = decodeURIComponent(city.cityProductEnquiryHref({ name: 'Pooja Basket', url: 'https://onlyfreshpetals.in/products/pooja-basket', cityName: 'Chennai', quoteOnly: false, priceLabel: 'From ₹499' }));
   assert(/Price shown: From ₹499/.test(priced) && /Recipient city: Chennai/.test(priced));
   // The basket and the product page use the same stored value, and no second copy.
-  const cart = readFileSync('src/pages/cart.astro', 'utf8');
+  const cart = (readFileSync('src/pages/cart.astro', 'utf8') + readFileSync('src/scripts/inline/cart.js', 'utf8'));
   assert(/fresh_petals_destination_city/.test(cart) && /Recipient city: \$\{destinationName\(\)/.test(cart) && /destination_city: destinationSlug\(\)/.test(cart));
   for (const file of ['src/components/ProductOptions.astro', 'src/components/ProductCard.astro']) {
     const source = readFileSync(file, 'utf8');
@@ -554,7 +554,7 @@ test('recipient city: one stored value, validated; browsing never re-points a ba
 test('delivery estimator: no estimate means charges are confirmed on WhatsApp, never that the city is unavailable', () => {
   const rules = readFileSync('src/server/services/delivery/deliveryRules.ts', 'utf8');
   assert(/Delivery charges will be confirmed on WhatsApp/.test(rules) && !/couldn't confirm delivery for this pincode/.test(rules));
-  const cart = readFileSync('src/pages/cart.astro', 'utf8');
+  const cart = (readFileSync('src/pages/cart.astro', 'utf8') + readFileSync('src/scripts/inline/cart.js', 'utf8'));
   assert(/Delivery charges will be confirmed on WhatsApp/.test(cart) && /type: "info"/.test(cart) && /Delivery Pincode \(optional\)/.test(cart));
   // The estimator still quotes nothing it has not been given: other cities' seeded zones stay unquoted.
   assert(/isStorefrontCity\(zone\.city\) \? zone : null/.test(readFileSync('src/server/services/delivery/DeliveryService.ts', 'utf8')));
@@ -662,7 +662,7 @@ test('guides: four published guides, one registry; real products only; no price 
 });
 
 test('assistant referrals: labelled from a known hostname only; no referrer path, query or prompt is read into an event', () => {
-  const analytics = readFileSync('src/components/Analytics.astro', 'utf8');
+  const analytics = (readFileSync('src/components/Analytics.astro', 'utf8') + readFileSync('src/scripts/inline/analytics.js', 'utf8'));
   const script = analytics.split('---')[2];
   assert(/AI_HOSTS = \{ "chatgpt\.com": "chatgpt"/.test(script) && /new URL\(document\.referrer\)\.hostname/.test(script) && /data\.ai_referrer = aiReferrer/.test(script) && /data\.ai_attribution = aiMethod/.test(script) && /"referrer" : AI_HOSTS\[utm\] \? "campaign"/.test(script));
   // The referrer is used for its hostname and nowhere else; google.com is not an AI host.

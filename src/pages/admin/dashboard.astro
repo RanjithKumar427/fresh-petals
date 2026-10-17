@@ -31,12 +31,15 @@ const lastUpdatedLabel = stats.lastUpdated
     </div>
 
     <div class="mt-8 flex flex-wrap gap-3">
-      <a
-        href="/admin/products/new"
-        class="rounded-full bg-[#111111] px-5 py-2.5 text-[11px] font-bold uppercase tracking-[0.18em] text-white transition hover:bg-[#7C243E]"
-      >
-        + Add Product
-      </a>
+      <!-- Creating a draft writes a row, so it is a POST (never a link). -->
+      <form method="post" action="/admin/products/new">
+        <button
+          type="submit"
+          class="rounded-full bg-[#111111] px-5 py-2.5 text-[11px] font-bold uppercase tracking-[0.18em] text-white transition hover:bg-[#7C243E]"
+        >
+          + Add Product
+        </button>
+      </form>
       <a
         href="/admin/products"
         class="rounded-full border border-[#D8D1D4] px-5 py-2.5 text-[11px] font-bold uppercase tracking-[0.18em] text-[#171717] transition hover:border-[#7C243E] hover:text-[#7C243E]"

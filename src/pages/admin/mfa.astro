@@ -12,6 +12,7 @@
 import AdminLayout from "../../layouts/AdminLayout.astro";
 import { AuthService } from "../../server/services/AuthService";
 import { safeAdminPath } from "../../server/auth/safeAdminPath";
+import { BODY_LIMITS, readForm } from "../../server/http/body";
 
 export const prerender = false;
 
@@ -23,8 +24,9 @@ let error: string | null = null;
 let enrollment: { factorId: string; qrCode: string; secret: string } | null = null;
 let awaitingFirstCode: string | null = null; // factor id of an enrollment whose first code was wrong
 
-if (Astro.request.method === "POST") {
-  const form = await Astro.request.formData();
+const form = Astro.request.method === "POST" ? await readForm(Astro.request, BODY_LIMITS.authForm).catch(() => null) : null;
+if (Astro.request.method === "POST" && !form) error = "Please try again.";
+if (form) {
   const action = String(form.get("action") || "");
 
   if (action === "enroll") {

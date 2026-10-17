@@ -9,6 +9,8 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { photoReviewCheck } from './scripts/build/photo-review-check.mjs';
+import { securityHeaders } from './scripts/build/security-headers.mjs';
+import { CSP_DIRECTIVES } from './src/server/http/securityHeaders.mjs';
 
 // Server-only secrets are read via `process.env` (src/server/db/postgres/
 // client.ts, src/server/auth/*), but `astro dev` does not copy .env /
@@ -151,17 +153,13 @@ export default defineConfig({
   // rendering via `export const prerender = false`, which is what actually
   // needs this adapter — those routes deploy as Vercel serverless functions.
   //
-  // `isr` is deliberately left at its default (false/unset): the installed
-  // @astrojs/vercel@10.0.8 carries a high-severity advisory
-  // (GHSA-x27w-589x-frm2, unauthenticated path override) that lives entirely
-  // inside the ISR build path (`buildISRFolder`, gated by `if (isr)` —
-  // verified by reading node_modules/@astrojs/vercel/dist/index.js). With
-  // isr never enabled, that code never runs, so this build carries the
-  // advisory on paper but not as a live attack surface. The real fix is an
-  // Astro 7 upgrade (@astrojs/vercel's next major requires astro ^7.0.0),
-  // which is a separate, deliberately out-of-scope decision for this
-  // milestone — do not enable `isr` here without addressing that upgrade
-  // first.
+  // `isr` stays at its default (off): on-demand pages set their own cache
+  // headers and cache tags. (The ISR path advisory GHSA-x27w-589x-frm2 that
+  // used to be noted here was fixed by the Astro 7 / adapter 11 upgrade.)
+  //
+  // staticHeaders: prerendered pages get their Content-Security-Policy as a
+  // response header (written into the Vercel routing config), not a <meta>
+  // tag; on-demand pages send it from the server. See `security` below.
   //
   // Image optimisation is on for one purpose: garland photographs uploaded
   // in the admin are stored as full-size JPEGs (served `no-cache` by the
@@ -175,7 +173,28 @@ export default defineConfig({
       minimumCacheTTL: 2678400,
       remotePatterns: [{ protocol: 'https', hostname: 'hjhmetomcaskrrwkgrbp.supabase.co', pathname: '/storage/v1/object/public/media/**' }],
     },
+    staticHeaders: true,
   }),
+
+  // Content-Security-Policy for every page, static and on-demand. Scripts
+  // run only from this site, Google's tag host, or an inline body whose
+  // exact SHA-256 is in the policy: Astro hashes the scripts and styles it
+  // generates (including island hydration), and the few reviewed `is:inline`
+  // scripts are rendered through src/components/InlineScript.astro, which
+  // adds the hash of its literal code. No 'unsafe-inline' or 'unsafe-eval'
+  // for scripts. Inline `style="…"` attributes stay allowed
+  // (style-src-attr) because components rely on them; <style> elements are
+  // hashed. The other headers (frame denial, nosniff, referrer and
+  // permissions policy) are added to every response by securityHeaders
+  // below and by src/middleware.ts; they never replace this policy.
+  security: {
+    csp: {
+      algorithm: 'SHA-256',
+      directives: CSP_DIRECTIVES,
+      scriptDirective: { resources: ["'self'", 'https://www.googletagmanager.com'] },
+      styleDirective: { resources: ["'self'", 'https://fonts.googleapis.com', { resource: "'unsafe-inline'", kind: 'attribute' }] },
+    },
+  },
 
   vite: {
     plugins: [tailwindcss()],
@@ -184,7 +203,7 @@ export default defineConfig({
   // photoReviewCheck: a catalogue photograph replaced at the same path must
   // not keep its reviewed verdict, description or image-sitemap entry; the
   // build fails until the review is updated (scripts/build/photo-review-check.mjs).
-  integrations: [react(), photoReviewCheck, garlandDraftPhotos, {
+  integrations: [react(), photoReviewCheck, garlandDraftPhotos, securityHeaders, {
     name: 'published-price-build-context',
     hooks: {
       // Astro sync/check uses production mode too. The actual command is

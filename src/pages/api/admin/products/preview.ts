@@ -3,6 +3,7 @@ import { experimental_AstroContainer as AstroContainer } from "astro/container";
 import ProductCard from "../../../../components/ProductCard.astro";
 import GarlandCard from "../../../../components/GarlandCard.astro";
 import { json } from "../../../../server/http/json";
+import { BODY_LIMITS, jsonBody } from "../../../../server/http/body";
 import { formatPriceLabel } from "../../../../shared/pricing";
 
 export const prerender = false;
@@ -17,7 +18,8 @@ export const prerender = false;
 // text since it wasn't inserted via the DOM's normal parsing path — which
 // is desirable here, an admin preview shouldn't wire up a live cart button.
 export const POST: APIRoute = async ({ request }) => {
-  const body = await request.json().catch(() => ({}));
+  const body = await jsonBody(request, BODY_LIMITS.adminJson);
+  if (body instanceof Response) return body;
 
   const priceType = body.priceType || "market";
   const priceLabel = formatPriceLabel({ priceType, sellingPrice: body.sellingPrice ?? null });
