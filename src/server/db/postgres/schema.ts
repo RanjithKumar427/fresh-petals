@@ -450,9 +450,10 @@ export const inquiries = pgTable(
     deliveryLandmark: text("delivery_landmark"),
     occasion: text("occasion"),
 
-    // Delivery Capability Engine milestone — the authoritative result the
-    // customer was actually shown and that was server-revalidated right
-    // before this inquiry was created (see DeliveryService). Nullable for
+    // Delivery Capability Engine milestone — the method, promise and fee the
+    // customer's browser showed and submitted. Stored as submitted (shape
+    // validated only, not recomputed through DeliveryService), so they are
+    // customer claims and the admin view labels them unverified. Nullable for
     // the same backward-compatibility reason as the Milestone 2 fields
     // above: rows created before this migration have none of this.
     // `deliveryMethod` uses the real pgEnum (not free text like `occasion`)

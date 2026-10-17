@@ -15,7 +15,7 @@ Every `/admin/*` page and `/api/admin/*` endpoint goes through `src/middleware.t
 - Identity is checked with Supabase Auth on each request (`getUser()` catches revoked sessions; `getClaims()` verifies the token before its `aal` claim is used).
 - **Approved** means an existing `admin_users` row for that exact auth UUID with a role in `APPROVED_ADMIN_ROLES` (currently `admin`). The app never creates, changes or relinks these rows — not on login, session checks, password recovery or MFA. Email addresses and user metadata are never used to grant access.
 - Admin responses are sent with `Cache-Control: private, no-store`, `X-Robots-Tag: noindex` and `Referrer-Policy: same-origin` (not `no-referrer`, which makes Chrome send `Origin: null` on the admin's own form posts and trips the origin check). Session cookies are `HttpOnly`, `SameSite=Lax` and `Secure` in production.
-- If Supabase Auth or the database cannot be reached, protected requests get `503` (fail closed); the session cookies are kept, so an outage does not sign anyone out.
+- If Supabase Auth cannot answer (network failure, 5xx or 429) or the `admin_users` lookup fails, protected requests get a generic `503` (fail closed) and the handler never runs; the session cookies are kept, so an outage does not sign anyone out. Only a definite answer (invalid session, unapproved account) clears or ends a session.
 
 ## Request and browser protections (17 October 2026)
 
@@ -72,13 +72,18 @@ A reset link alone never gives admin access and never creates admin membership.
 | Confirm email | Authentication → Providers → Email | On |
 | Minimum password length | Authentication → Providers → Email | **12** (the app enforces 12 too) |
 | Site URL | Authentication → URL Configuration | `https://onlyfreshpetals.in` |
-| Redirect URLs | Authentication → URL Configuration | `https://onlyfreshpetals.in/admin/reset-password` only (previews and local use their own project) |
+| Redirect URLs | Authentication → URL Configuration | Includes exactly `https://onlyfreshpetals.in/admin/reset-password`; keep any other entry only if confirmed necessary (Preview has admin disabled) |
+| Reset password email | Authentication → Emails | Read before editing. The app sends the full callback as `redirectTo`, so never build `{{ .RedirectTo }}/admin/reset-password` (duplicated path). |
 | MFA (TOTP) | Authentication → Multi-Factor | Enabled (enroll + verify) |
 | Rate limits | Authentication → Rate Limits | Defaults: sign-in/recover 30 per 5 min per IP, token 150 per 5 min per IP, MFA verify 15 per min per IP (not configurable). The built-in email sender allows only **2 emails per hour per project** — configure custom SMTP if more reset emails are needed. |
 
-Checked on 17 October 2026 in the dashboard: sign-up turned **off** that day; anonymous sign-ins off; email confirmation on; email the only provider; TOTP enabled. Still to fix by the owner: minimum password length is **6** (set 12), Site URL is **`http://localhost:3000`** with **no redirect URLs** (set the two values above, then test a reset email). Dashboard-account two-step verification not checked.
+Status on 17 October 2026:
 
-New tables and sequences created by `postgres` in `public` are not granted to anon/authenticated by default (`drizzle/0013`, applied 17 October 2026); a migration that wants visitors to read a table grants SELECT and adds RLS explicitly.
+- **Verified:** sign-up off (turned off that day; public settings report `disable_signup: true`), anonymous sign-ins off, email confirmation on, email the only provider.
+- **Read in the dashboard once, not re-verified:** TOTP enabled; minimum password length **6**; Site URL **`http://localhost:3000`**; **no redirect URLs**. If still so, recovery links may point to localhost. The owner reads them again and sets the values above; no code changes them.
+- **Not inspected:** the reset-password email template, dashboard-account two-step verification.
+
+New tables and sequences created by `postgres` in `public` are not granted to anon/authenticated by default (`drizzle/0013`, applied directly on 17 October 2026). Function EXECUTE defaults and anything `supabase_admin` creates keep Supabase's defaults, so a migration that adds a table still adds RLS and grants exactly what visitors need. The Drizzle ledger has not recorded 0012/0013. Do not run `db:migrate` until that is reconciled; see `docs/security-hardening-2026-10-17.md`.
 
 The app does not implement its own login throttling; an in-memory counter would not hold across Vercel's instances, and Supabase's limits count its server, not each visitor. Since 17 October 2026 a Vercel Firewall rule ("Rate limit sign-in, MFA and enquiry POSTs") allows each IP 30 POSTs per 60 seconds (fixed window) to `/api/admin/auth/{login,forgot-password,reset-password,recovery-session}`, `/admin/mfa` and `/api/inquiries`, then answers 429. Storefront GETs, crawlers, the delivery check and editor autosaves are not matched. The Hobby plan allows one such rule; review it in Firewall → Overview after real traffic (shared office networks share one IP).
 

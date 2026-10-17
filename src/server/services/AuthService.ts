@@ -40,11 +40,11 @@ export class AuthUnavailableError extends Error {
   }
 }
 
-/** A network failure or a 5xx from Auth: the session's validity is unknown, not disproved. */
+/** A network failure, rate limit (429) or 5xx from Auth: the session's validity is unknown, not disproved. */
 function isOutage(error: unknown): boolean {
   if (!error || typeof error !== "object") return false;
   const { name, status } = error as { name?: string; status?: number };
-  return name === "AuthRetryableFetchError" || (typeof status === "number" && (status === 0 || status >= 500));
+  return name === "AuthRetryableFetchError" || (typeof status === "number" && (status === 0 || status === 429 || status >= 500));
 }
 
 export const PASSWORD_MIN_LENGTH = 12;

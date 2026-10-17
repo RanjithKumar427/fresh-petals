@@ -80,14 +80,15 @@ export const inquiryInputSchema = z.object({
   // the business doesn't require" principle.
   occasion: z.string().trim().max(160).optional().nullable(),
 
-  // Delivery Capability Engine milestone — the authoritative result the
-  // server itself computed and revalidated (see DeliveryService) right
-  // before this inquiry was created. All three are optional: unlike the
-  // Delivery Details fields above (always customer-entered form data),
-  // these depend on whether the pincode/date/method combination actually
-  // resolved to a confirmed delivery method — an unserviceable pincode is
-  // a legitimate, existing "manual confirmation on WhatsApp" outcome that
-  // must still be allowed to create an inquiry with no confirmed method.
+  // Delivery Capability Engine milestone — what the customer's browser
+  // showed and sent: the requested method and the promise/fee from its
+  // delivery check. They are validated for shape only and stored as
+  // submitted; InquiryService does not recompute them through
+  // DeliveryService, so they are customer claims, not server decisions,
+  // and the admin enquiry view labels them unverified. All three are
+  // optional: an unserviceable pincode is a legitimate, existing "manual
+  // confirmation on WhatsApp" outcome that must still be allowed to
+  // create an inquiry with no method.
   deliveryMethod: z.enum(["MORNING", "AFTERNOON", "EVENING", "EXPRESS"]).optional().nullable(),
   deliveryPromise: z.string().trim().max(200).optional().nullable(),
   deliveryFee: z.number().int().nonnegative().optional().nullable(),

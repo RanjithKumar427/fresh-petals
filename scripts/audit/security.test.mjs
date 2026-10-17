@@ -107,9 +107,9 @@ test('bounded bodies: JSON must be declared JSON and valid; forms must be form e
 
 // ---------------------------------------------------------------- middleware
 
-function middlewareHarness({ access, env = {}, onResolve } = {}) {
+function middlewareHarness({ access, env = {}, onResolve, service } = {}) {
   const calls = { resolve: 0, next: 0 };
-  const AuthService = {
+  const AuthService = service ?? {
     resolveAccess: async () => {
       calls.resolve += 1;
       onResolve?.();
@@ -272,12 +272,12 @@ test('middleware: separate Set-Cookie headers survive, including on immutable re
 
 // ---------------------------------------------------------------- AuthService
 
-function authHarness({ user, userError = null, claims, claimsError = null, row, rowError } = {}) {
+function authHarness({ user, userError = null, userThrow, claims, claimsError = null, claimsThrow, row, rowError } = {}) {
   const log = { signOut: 0, deleted: [] };
   const supabase = {
     auth: {
-      getUser: async () => ({ data: { user: user ?? null }, error: userError }),
-      getClaims: async () => ({ data: claims ? { claims } : null, error: claimsError }),
+      getUser: async () => { if (userThrow) throw userThrow; return { data: { user: user ?? null }, error: userError }; },
+      getClaims: async () => { if (claimsThrow) throw claimsThrow; return { data: claims ? { claims } : null, error: claimsError }; },
       signOut: async () => { log.signOut += 1; },
     },
   };
@@ -293,7 +293,7 @@ function authHarness({ user, userError = null, claims, claimsError = null, row, 
   })('src/server/services/AuthService.ts');
   const request = new Request(`${ORIGIN}/admin/dashboard`, { headers: { cookie: 'sb-proj-auth-token=x; other=1' } });
   const cookies = { delete: (name) => log.deleted.push(name), set() {} };
-  return { access: () => AuthService.resolveAccess(request, cookies), log, AuthUnavailableError };
+  return { access: () => AuthService.resolveAccess(request, cookies), log, AuthUnavailableError, service: AuthService };
 }
 
 test('AuthService: approved UUID + verified aal2 is full; aal1 is mfa; unapproved or mismatched identities are none', async () => {
@@ -319,12 +319,70 @@ test('AuthService: Auth or database outages throw AuthUnavailableError and keep 
     { userError: { name: 'AuthApiError', status: 503 } },
     { user, claimsError: { name: 'AuthRetryableFetchError', status: 502 } },
     { user, claims: { sub: admin.id, aal: 'aal2' }, rowError: new Error('ECONNRESET') },
+    { userError: { name: 'AuthApiError', status: 429 } },
+    { user, claimsError: { name: 'AuthApiError', status: 503 } },
   ]) {
     const h = authHarness(setup);
     await assert.rejects(h.access(), (error) => error.name === 'AuthUnavailableError');
     assert.deepEqual(h.log.deleted, []);
     assert.equal(h.log.signOut, 0);
   }
+});
+
+// The real AuthService inside the real middleware; only the Supabase SDK and
+// the admin_users repository are doubles.
+test('middleware + AuthService: provider errors and database exceptions answer 503, keep the session and never reach the handler', async () => {
+  const user = { id: admin.id, factors: [{ id: 'f1', factor_type: 'totp', status: 'verified' }] };
+  const aal2 = { sub: admin.id, aal: 'aal2' };
+  const session = { cookie: 'sb-proj-auth-token=x' };
+  const failures = {
+    'getUser returns 503': { userError: { name: 'AuthApiError', status: 503 } },
+    'getUser returns 429': { userError: { name: 'AuthApiError', status: 429 } },
+    'getUser network failure': { userError: { name: 'AuthRetryableFetchError', status: 0 } },
+    'getUser throws': { userThrow: new TypeError('fetch failed') },
+    'getClaims returns 503': { user, claimsError: { name: 'AuthApiError', status: 503 } },
+    'getClaims throws': { user, claimsThrow: new TypeError('fetch failed') },
+    'approved-admin lookup throws': { user, claims: aal2, rowError: Object.assign(new Error('connect ECONNREFUSED'), { code: 'ECONNREFUSED' }) },
+  };
+  for (const [name, setup] of Object.entries(failures)) {
+    const auth = authHarness(setup);
+    const mw = middlewareHarness({ service: auth.service });
+    for (const [p, method] of [['/api/admin/products', 'GET'], ['/admin/dashboard', 'GET'], ['/api/admin/products/7', 'PATCH']]) {
+      const headers = { ...session, ...(method === 'PATCH' ? { origin: ORIGIN, 'content-type': 'application/json' } : {}) };
+      const { response, deleted } = await mw.run(p, { method, headers, ...(method === 'PATCH' ? { body: '{}' } : {}) });
+      assert.equal(response.status, 503, `${name}: ${method} ${p}`);
+      const text = await response.text();
+      assert.doesNotMatch(text, /503|ECONN|fetch failed|AuthApiError/, `${name}: generic message only`);
+      assert.deepEqual(deleted, [], `${name}: session cookies kept`);
+      assert.equal(response.headers.get('cache-control'), 'private, no-store, max-age=0');
+    }
+    assert.equal(mw.calls.next, 0, `${name}: handler never ran`);
+    assert.equal(auth.log.signOut, 0, `${name}: never signed out`);
+  }
+
+  // Genuine answers keep their meaning through the same path.
+  const runOne = async (setup, p = '/api/admin/products') => {
+    const auth = authHarness(setup);
+    const mw = middlewareHarness({ service: auth.service });
+    const result = await mw.run(p, { headers: session });
+    return { ...result, auth, mw };
+  };
+  const invalid = await runOne({ userError: { name: 'AuthApiError', status: 401 } });
+  assert.equal(invalid.response.status, 401);
+  assert.deepEqual(invalid.deleted, ['sb-proj-auth-token'], 'a definitely invalid session is cleared');
+  const unapproved = await runOne({ user, claims: aal2, row: { ...admin, role: 'viewer' } });
+  assert.equal(unapproved.response.status, 401);
+  assert.equal(unapproved.auth.log.signOut, 1, 'an unapproved UUID/role is signed out');
+  const missingRow = await runOne({ user, claims: aal2, row: null });
+  assert.equal(missingRow.response.status, 401);
+  const firstFactor = await runOne({ user, claims: { sub: admin.id, aal: 'aal1' }, row: admin });
+  assert.equal(firstFactor.response.status, 403, 'aal1 is refused on APIs');
+  assert.equal(firstFactor.mw.calls.next, 0);
+  const full = await runOne({ user, claims: aal2, row: admin });
+  assert.equal(full.response.status, 200);
+  assert.equal(full.mw.calls.next, 1);
+  assert.equal(full.context.locals.admin.id, admin.id);
+  assert.deepEqual(full.deleted, []);
 });
 
 // ---------------------------------------------------------------- uploads
