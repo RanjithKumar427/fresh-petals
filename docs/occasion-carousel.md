@@ -22,8 +22,9 @@ position (`src/pages/index.astro`, after the bouquet edit). Integrated on
   cleared assignment is never refilled from catalogue tags.
 - **Eligibility and count**: a card's products are exactly
   `occasionPageProducts()` for its occasion page, so "N designs" always equals
-  what `/occasions/<slug>` lists. Launch occasions list assigned launch
-  bouquets (Housewarming also counts pooja-assigned ones). Condolence
+  what `/occasions/<slug>` lists. The gift occasions list every assigned
+  public bouquet (19 Oct 2026: no longer the launch eight; pooja no longer
+  counts toward Housewarming). Condolence
   (`sympathy`) lists assigned public bouquets (Bouquets/Lilies) only, never
   add-ons or other product types (`BOUQUET_ONLY_ROUTES`). The admin's
   live-page check uses the same rule, so it expects an assigned add-on to be
