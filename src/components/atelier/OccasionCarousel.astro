@@ -17,12 +17,15 @@
 // unique cards that exist are shown and nothing is repeated.
 import { getOccasionCarousel } from "../../data/atelierHome";
 import type { Membership } from "../../data/occasionJourneys";
+import type { Product } from "../../data/productCatalog";
 
 interface Props {
   membership: Membership;
+  /** This deployment's public catalogue. */
+  catalogue: Product[];
 }
 
-const cards = getOccasionCarousel(Astro.props.membership);
+const cards = getOccasionCarousel(Astro.props.membership, Astro.props.catalogue);
 const total = cards.length;
 const mode = total >= 3 ? "carousel" : total === 2 ? "pair" : "single";
 const sizes = "(min-width: 1280px) 350px, (min-width: 1024px) 300px, (min-width: 768px) 300px, 70vw";

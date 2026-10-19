@@ -10,12 +10,14 @@
 import GuideShell from "../../components/GuideShell.astro";
 import GuideProductCard from "../../components/GuideProductCard.astro";
 import { POOJA_GUIDE } from "../../data/guides";
-import { productCatalog, type Product } from "../../data/productCatalog";
+import type { Product } from "../../data/productCatalog";
+import { loadPublicCatalogue } from "../../server/services/PublicCatalogue";
 import { representativePhoto } from "../../data/productPhotos";
 import { loadAuthoritativePrices, withAuthoritativePrice } from "../../server/services/ProductPricing";
 
-const priceMap = await loadAuthoritativePrices();
-const pick = (slugs: string[]): Product[] => slugs.flatMap((slug) => productCatalog.filter((product) => product.slug === slug)).map((product) => withAuthoritativePrice(product, priceMap));
+// Only public products are shown; one that isn't published is skipped, not substituted.
+const [priceMap, publicCatalogue] = await Promise.all([loadAuthoritativePrices(), loadPublicCatalogue()]);
+const pick = (slugs: string[]): Product[] => slugs.flatMap((slug) => publicCatalogue.filter((product) => product.slug === slug)).map((product) => withAuthoritativePrice(product, priceMap));
 
 const jasmine = pick(["jasmine-malli", "jasmine-gajra"]);
 const boxes = pick(["pooja-flower-box", "pooja-flowerbox"]);
@@ -33,7 +35,8 @@ const photoNote = (product: Product) => (representativePhoto(product) ? "Represe
 const names = (list: Product[]) => list.map((product) => product.name).join(", ").replace(/, ([^,]*)$/, " and $1");
 const contents = [
   { id: "jasmine", label: "Loose jasmine or gajra" },
-  { id: "boxes", label: "The two pooja boxes" },
+  // Compares the two boxes only while both are public products.
+  ...(boxes.length === 2 ? [{ id: "boxes", label: "The two pooja boxes" }] : []),
   { id: "daily", label: "Daily flowers and baskets" },
   { id: "bulk", label: "Bulk and ceremony" },
   { id: "photographs", label: "About the photographs" },
@@ -47,8 +50,8 @@ const contents = [
   track="guide/pooja"
   contents={contents}
   lead={[
-    "With pooja flowers the usual mistake is ordering the right flower in the wrong form. Jasmine comes loose or already strung. Pooja flowers come loose, boxed or in a basket, and the two boxes on this website are different products with different prices.",
-    "This guide sets the forms side by side, with the price each one lists. Where a product says market price, the day's price is quoted on WhatsApp before you confirm.",
+    `With pooja flowers the usual mistake is ordering the right flower in the wrong form. Jasmine comes loose or already strung. Pooja flowers come loose, boxed or in a basket${boxes.length === 2 ? ", and the two boxes on this website are different products with different prices" : ""}.`,
+    "This guide sets the forms side by side, with the price each listed product shows. A form with nothing listed online can still be described to us on WhatsApp. Where a product says market price, the day's price is quoted on WhatsApp before you confirm.",
   ]}
 >
   <section class="guide-section" id="jasmine" aria-labelledby="jasmine-title" data-guide-section="jasmine">
@@ -57,11 +60,16 @@ const contents = [
       Loose jasmine (malli, mallige) is for offering, or for stringing yourself to the length you want. Gajra is jasmine already strung, ready for hair or to hang. They are not interchangeable: loose flowers cannot be worn without stringing, and a gajra cannot be scattered as an offering.
     </p>
     <p>For loose jasmine, tell us roughly how much you need. For gajra, tell us how many and how long. Neither quantity is fixed on the website, and we do not state a variety or where the jasmine is grown.</p>
-    <ul class="mt-6 grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5">
-      {jasmine.map((product) => <li><GuideProductCard product={product} line={product.description} photoNote={photoNote(product)} /></li>)}
-    </ul>
+    {jasmine.length > 0 ? (
+      <ul class="mt-6 grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5">
+        {jasmine.map((product) => <li><GuideProductCard product={product} line={product.description} photoNote={photoNote(product)} /></li>)}
+      </ul>
+    ) : (
+      <p data-guide-unlisted="jasmine">Neither form is listed online at the moment. Tell us on WhatsApp which you need, and how much, and we reply with what we can do for your date.</p>
+    )}
   </section>
 
+  {boxes.length === 2 && (
   <section class="guide-section" id="boxes" aria-labelledby="boxes-title" data-guide-section="boxes">
     <h2 id="boxes-title" class="fp-serif text-2xl text-ink md:text-3xl">The two pooja flower boxes</h2>
     <p>Two products carry almost the same name. They are separate listings, and the simplest way to tell them apart is the price each shows.</p>
@@ -80,6 +88,7 @@ const contents = [
     </ul>
     <p>If you are not sure which you need, describe the pooja and we suggest one. What goes into a box depends on the day's flowers and is confirmed with you first.</p>
   </section>
+  )}
 
   <section class="guide-section" id="daily" aria-labelledby="daily-title" data-guide-section="daily">
     <h2 id="daily-title" class="fp-serif text-2xl text-ink md:text-3xl">Daily pooja flowers and baskets</h2>

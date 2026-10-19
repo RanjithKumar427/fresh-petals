@@ -92,7 +92,7 @@ export const CITY_HUBS: CityHub[] = [
     description:
       "Flowers for delivery in Bengaluru (Bangalore): compare rose, lily and mixed bouquets, pooja flowers and jasmine, and made-to-order wedding garlands. Price and date confirmed on WhatsApp.",
     h1: "Flowers for delivery in Bengaluru",
-    updated: "2026-10-14",
+    updated: "2026-10-19",
     emphasis: "This page starts with three things: sending a bouquet, wedding garlands, and flowers for a pooja.",
     // Neutral service wording only. Where the business began is not
     // confirmed (docs/seo/release-3-evidence-and-content-briefs.md, item 8),
@@ -144,9 +144,9 @@ export const CITY_HUBS: CityHub[] = [
         heading: "Flowers for a pooja: loose, strung or in a basket",
         body: [
           "Choose by form first. Loose pooja flowers and loose jasmine (mallige) are for offering as they are, or for stringing yourself. Jasmine gajra comes already strung, and torans are strung for a doorway. A pooja basket is packed ready to carry. Loose flowers and jasmine follow the day's flower market, so their price is quoted for your date.",
-          "Pack sizes are not fixed on the website, so tell us the pooja and roughly how much you need. The examples below are three of the pooja products; the pooja collection lists all of them, including gajra, torans and bulk flowers.",
+          "Pack sizes are not fixed on the website, so tell us the pooja and roughly how much you need. The examples below are pooja products listed now, and the pooja collection lists all of them; for a form that is not listed, describe it on WhatsApp.",
         ],
-        compareHeading: "How these three differ",
+        compareHeading: "How these differ",
         sources: [{ kind: "pooja", slugs: ["daily-pooja-flowers", "jasmine-malli", "pooja-basket"] }],
         links: [POOJA, { href: "/categories/pooja-flowers#strings", label: "Strings, gajra and torans" }, { href: "/guides/jasmine-pooja-flowers-and-gajra", label: "Loose jasmine or gajra" }, { href: "/categories/pooja-flowers#bulk", label: "Bulk and ceremony flowers" }],
         collections: ["pooja-flowers"],
@@ -821,7 +821,7 @@ export const CITY_HUBS: CityHub[] = [
     description:
       "Flowers for delivery in Coimbatore (Kovai): browse rose, lotus and tuberose garland designs separately, and choose the right form of jasmine and pooja flowers.",
     h1: "Garlands, jasmine and pooja flowers for Coimbatore",
-    updated: "2026-10-13",
+    updated: "2026-10-19",
     emphasis: "Garlands one flower group at a time, then the forms jasmine and pooja flowers come in.",
     intro: [
       "For Coimbatore, Kovai to those who live there, this page takes garlands one group at a time instead of mixing them, so you can look at rose designs next to rose designs. After that come jasmine and pooja flowers, where the decision is the form you need.",
@@ -857,9 +857,9 @@ export const CITY_HUBS: CityHub[] = [
         heading: "Jasmine and pooja flowers: which form",
         body: [
           "The same flower is sold in different forms, and ordering the wrong one is the common mistake. Loose jasmine is for offering or stringing yourself. Gajra is already strung. Daily pooja flowers are a loose mix; a basket is packed to carry.",
-          "Tell us the form and roughly how much. Pack sizes are not fixed on the website. Some photographs here are shared between products and show the kind of flower, not the exact form or pack.",
+          "Tell us the form and roughly how much. Pack sizes are not fixed on the website. Where a photograph shows the kind of flower rather than the exact form or pack, its card says so.",
         ],
-        compareHeading: "Four forms compared",
+        compareHeading: "Forms listed now",
         sources: [{ kind: "pooja", slugs: ["jasmine-malli", "jasmine-gajra", "daily-pooja-flowers", "pooja-basket"] }],
         links: [POOJA, { href: "/categories/pooja-flowers#strings", label: "Strings, gajra and torans" }],
       },
@@ -1008,7 +1008,7 @@ export const CITY_HUBS: CityHub[] = [
     description:
       "Flowers for delivery in Mysuru (Mysore): loose jasmine or strung gajra, what to tell us for a pooja, and bouquets to give. Availability and price confirmed on WhatsApp.",
     h1: "Jasmine, pooja flowers and bouquets for Mysuru",
-    updated: "2026-10-13",
+    updated: "2026-10-19",
     emphasis: "Loose jasmine or strings first, then what a pooja needs, then a bouquet to give.",
     intro: [
       "For Mysuru, or Mysore, this page begins with jasmine, because the first question there is always the same: loose, or already strung. It then covers what to tell us for a pooja, and ends with bouquets for when the flowers are a gift.",
@@ -1020,9 +1020,9 @@ export const CITY_HUBS: CityHub[] = [
         heading: "Loose jasmine, or strings and gajra",
         body: [
           "Loose jasmine (mallige) is what you want for offering or for stringing at home to your own length. Gajra and strings arrive ready to wear or to hang. A doorway toran is a different product again, made for the entrance.",
-          "For loose flowers tell us the quantity; for strings, the number and the length you need. The jasmine and gajra entries below share one photograph of loose jasmine: it shows the flower, not the strung form.",
+          "For loose flowers tell us the quantity; for strings, the number and the length you need. Whichever form you need, the price follows the day's market and is confirmed on WhatsApp.",
         ],
-        compareHeading: "Three forms compared",
+        compareHeading: "Forms listed now",
         sources: [{ kind: "pooja", slugs: ["jasmine-malli", "jasmine-gajra", "fresh-flower-toran"] }],
         links: [{ href: "/categories/pooja-flowers#strings", label: "Strings, gajra and torans" }, { href: "/categories/pooja-flowers#loose", label: "Loose and daily flowers" }],
       },
@@ -1030,7 +1030,7 @@ export const CITY_HUBS: CityHub[] = [
         id: "pooja",
         heading: "What to tell us for a pooja",
         body: [
-          "Say what the pooja is, the date and the time you need the flowers by, and whether you want them loose, boxed or in a basket. Two boxes are listed: one assorted and priced on the day's market, the other a flowerbox with a starting price.",
+          "Say what the pooja is, the date and the time you need the flowers by, and whether you want them loose, boxed or in a basket. What goes into a box or basket follows the day's flowers and is confirmed with you before you pay.",
         ],
         compareHeading: "Loose, boxed or in a basket",
         sources: [{ kind: "pooja", slugs: ["daily-pooja-flowers", "pooja-flower-box", "pooja-flowerbox", "pooja-basket"] }],

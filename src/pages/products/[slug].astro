@@ -5,10 +5,10 @@ import { guideForCategory } from "../../data/guides";
 import ProductOptions from "../../components/ProductOptions.astro";
 import JourneyNote from "../../components/occasion/JourneyNote.astro";
 import ProductCard from "../../components/ProductCard.astro";
-import { productCatalog } from "../../data/productCatalog";
 import type { Product } from "../../data/productCatalog";
 import { TaxonomyService } from "../../server/services/TaxonomyService";
 import { loadAuthoritativePrices, withAuthoritativePrice } from "../../server/services/ProductPricing";
+import { loadPublicCatalogue } from "../../server/services/PublicCatalogue";
 import { slugify } from "../../server/utils/slugify";
 import imageVariants from "../../data/imageVariants.json";
 import imageDimensions from "../../data/imageDimensions.json";
@@ -27,9 +27,14 @@ import { presentationCheck } from "../../data/collectionGuidance";
 // Garland designs are not built here: they live in the admin and are
 // rendered on request by ./[...garland].astro at the same /products/<slug>
 // addresses (Astro falls through to that route for any slug not listed below).
+//
+// Only public catalogue products get a page: a record that is a draft or
+// archived in this deployment's snapshot (src/server/services/
+// PublicCatalogue.ts) is not built, so its address falls through to the
+// "not available" 404 (noindex, no basket or enquiry) in ./[...garland].astro.
 export async function getStaticPaths() {
-  const priceMap = await loadAuthoritativePrices();
-  return productCatalog.map((product) => ({
+  const [priceMap, publicCatalogue] = await Promise.all([loadAuthoritativePrices(), loadPublicCatalogue()]);
+  return publicCatalogue.map((product) => ({
     params: {
       slug: product.slug,
     },
@@ -98,7 +103,8 @@ const trustIndicators = [
 // removal above was meant to end, reproduced through a different
 // mechanism. Fixed by scoring real overlap depth instead of a boolean
 // match, using the same three fields -- no new data, no component change.
-const relatedProducts = productCatalog
+// Related products come from the same public catalogue as the pages they link to.
+const relatedProducts = (await loadPublicCatalogue())
   .filter((item) => item.slug !== product.slug)
   .map((item) => {
     const sameCategory = item.category === product.category ? 5 : 0;

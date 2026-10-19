@@ -19,6 +19,7 @@ import SEOSection from "./sections/SEOSection";
 import GarlandDetailsSection from "./sections/GarlandDetailsSection";
 import OptionsSection from "./sections/OptionsSection";
 import PublishingSection from "./sections/PublishingSection";
+import StorefrontStatus, { type StorefrontReadiness } from "./StorefrontStatus";
 import ConfirmDialog from "../shared/ConfirmDialog";
 
 interface Props {
@@ -29,7 +30,9 @@ interface Props {
   flowerTypes: TagOption[];
   uncategorizedCategoryId: number;
   /** Which occasion pages list this product (see ClassificationSection). */
-  liveOccasions?: "launch" | "catalogue" | null;
+  liveOccasions?: "bouquet" | "catalogue" | null;
+  /** Non-garland products: what the deployed storefront shows (see StorefrontStatus). */
+  storefront?: StorefrontReadiness | null;
 }
 
 async function saveProduct(draft: ProductDraft): Promise<{ ok: boolean; error?: string; website?: WebsiteChange; occasions?: OccasionChange }> {
@@ -58,6 +61,7 @@ export default function ProductEditor({
   flowerTypes,
   uncategorizedCategoryId,
   liveOccasions = null,
+  storefront = null,
 }: Props) {
   const [draft, setDraft] = useState<ProductDraft>(product);
   const sections = getSections(product);
@@ -218,6 +222,7 @@ export default function ProductEditor({
           onArchive={() => changeStatus("archived")}
           onUnarchive={() => changeStatus("draft")}
           onUnpublish={() => changeStatus("draft")}
+          storefrontStatus={!draft.garland && storefront ? <StorefrontStatus status={draft.status} sellingPrice={draft.sellingPrice} readiness={storefront} /> : null}
         />
       </EditorShell>
 

@@ -1,29 +1,31 @@
 ---
-// /categories/bouquets (the launch bouquet range), rendered on request. Each
-// bouquet's occasions come from the admin's "Suitable occasions", so the
-// occasion filter, its counts and ?occasion=… links are current in the HTML
-// itself; the CDN keeps a copy (occasion index tag) that a save changing an
-// assignment purges (src/server/services/OccasionWebsite.ts). Every other
-// category page is still built by ./[slug].astro, which leaves this slug out.
+// /categories/bouquets — every public bouquet, rendered on request. The list
+// is the full eligible range (src/data/catalogueRange.ts bouquetRange over
+// this deployment's public catalogue), not the featured shortlist; it is
+// grouped by the flowers recorded for each design (#roses, #lilies, #mixed),
+// and the rose and lily groups overlap. Each bouquet's occasions come from
+// the admin's "Suitable occasions", so the occasion filter, its counts and
+// ?occasion=… links are current in the HTML itself; the CDN keeps a copy
+// (occasion index tag) that a save changing an assignment purges
+// (src/server/services/OccasionWebsite.ts). Every other category page is
+// still built by ./[slug].astro, which leaves this slug out.
 import CategoryPage from "../../components/category/CategoryPage.astro";
-import { launchGroups } from "../../data/launchCatalogue";
-import { productCatalog } from "../../data/productCatalog";
-import { launchSlugs } from "../../data/occasionJourneys";
+import { bouquetFlowerGroups, bouquetRange } from "../../data/catalogueRange";
 import { loadOccasionMembership } from "../../server/services/OccasionMembership";
 import { loadAuthoritativePrices, withAuthoritativePrice } from "../../server/services/ProductPricing";
+import { loadPublicCatalogue } from "../../server/services/PublicCatalogue";
 import { OCCASION_INDEX_TAG, occasionCacheHeaders } from "../../server/services/GarlandWebsite";
 
 export const prerender = false;
 
 for (const [name, value] of Object.entries(occasionCacheHeaders([OCCASION_INDEX_TAG]))) Astro.response.headers.set(name, value);
 
-const [priceMap, membership] = await Promise.all([loadAuthoritativePrices(), loadOccasionMembership(launchSlugs())]);
-const groups = launchGroups("bouquets").map(({ group, products }) => ({
-  ...group,
-  products: products.map((product) => withAuthoritativePrice(product, priceMap)),
-}));
+const [priceMap, publicCatalogue] = await Promise.all([loadAuthoritativePrices(), loadPublicCatalogue()]);
+const bouquets = bouquetRange(publicCatalogue).map((product) => withAuthoritativePrice(product, priceMap));
+const membership = await loadOccasionMembership(bouquets.map((product) => product.slug));
+const groups = bouquetFlowerGroups(bouquets);
 // What the card prices cover, with the vase add-on's published price.
-const vase = productCatalog.find((product) => product.slug === "clear-glass-vase");
+const vase = publicCatalogue.find((product) => product.slug === "clear-glass-vase");
 const vasePrice = vase ? withAuthoritativePrice(vase, priceMap).priceLabel.replace(/^From /, "from ") : null;
 const priceNote = `Each price is the bouquet's starting price; add-ons${vasePrice ? ` (a vase, ${vasePrice})` : ""} and delivery are quoted separately.`;
 const category = {
@@ -33,4 +35,4 @@ const category = {
 };
 ---
 
-<CategoryPage category={category} products={groups.flatMap((group) => group.products)} groups={groups} membership={membership} priceNote={priceNote} />
+<CategoryPage category={category} products={bouquets} groups={groups} membership={membership} priceNote={priceNote} />

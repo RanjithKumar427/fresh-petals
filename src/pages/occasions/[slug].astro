@@ -3,15 +3,17 @@
 // the admin's "Suitable occasions" (product_occasions), read fresh — so adding
 // or removing an occasion in the dashboard changes the page, its filters and
 // counts without a deployment (src/data/occasionJourneys.ts
-// occasionPageProducts: launch occasions show the launch range; the older
-// pages keep their wider catalogue scope). The CDN keeps a copy and serves it
+// occasionPageProducts: the gift occasions list every assigned public bouquet;
+// the older pages keep their wider catalogue scope). Which products are public
+// is this deployment's snapshot (src/server/services/PublicCatalogue.ts). The CDN keeps a copy and serves it
 // while refreshing in the background; saving a product whose occasions
 // changed purges the affected pages (src/server/services/GarlandWebsite.ts,
 // occasion tags).
 import OccasionPage from "../../components/occasion/OccasionPage.astro";
 import { OCCASION_PAGES } from "../../data/occasionPages";
-import { catalogueSlugs, launchSlugs, occasionPageProducts } from "../../data/occasionJourneys";
-import { LAUNCH_OCCASION_ROUTES, GARLAND_OCCASION_ROUTES } from "../../data/launchCatalogue";
+import { occasionPageProducts } from "../../data/occasionJourneys";
+import { GARLAND_OCCASION_ROUTES } from "../../data/launchCatalogue";
+import { loadPublicCatalogue } from "../../server/services/PublicCatalogue";
 import { loadOccasionMembership } from "../../server/services/OccasionMembership";
 import { loadAuthoritativePrices, withAuthoritativePrice } from "../../server/services/ProductPricing";
 import { occasionCacheHeaders, occasionTag, GARLAND_CACHE_TAG } from "../../server/services/GarlandWebsite";
@@ -24,11 +26,9 @@ if (!occasion) return Astro.rewrite("/404");
 
 for (const [name, value] of Object.entries(occasionCacheHeaders([occasionTag(slug), ...(GARLAND_OCCASION_ROUTES.has(slug) ? [GARLAND_CACHE_TAG] : [])]))) Astro.response.headers.set(name, value);
 
-const [membership, priceMap] = await Promise.all([
-  loadOccasionMembership(LAUNCH_OCCASION_ROUTES.has(slug) ? launchSlugs() : catalogueSlugs()),
-  loadAuthoritativePrices(),
-]);
-const products = occasionPageProducts(occasion, membership).map((product) => withAuthoritativePrice(product, priceMap));
+const [publicCatalogue, priceMap] = await Promise.all([loadPublicCatalogue(), loadAuthoritativePrices()]);
+const membership = await loadOccasionMembership(publicCatalogue.map((product) => product.slug));
+const products = occasionPageProducts(occasion, membership, publicCatalogue).map((product) => withAuthoritativePrice(product, priceMap));
 ---
 
 <OccasionPage occasion={occasion} products={products} />

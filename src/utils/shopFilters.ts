@@ -1,13 +1,20 @@
-import { OCCASION_FILTER_LABELS, BUDGET_LABELS, COLOUR_LABELS } from "../data/shoppingTaxonomy";
+import { OCCASION_FILTER_LABELS, BUDGET_LABELS, COLOUR_LABELS, COLOUR_ALIASES } from "../data/shoppingTaxonomy";
 import type { FilterGroup, Intent, ShopItemData } from "../data/occasionJourneys";
 export const FILTER_GROUPS = ["occasion", "budget", "colour"] as const;
 export type FilterKey = typeof FILTER_GROUPS[number];
 export type ShopFilterState = Record<FilterKey, string[]> & { intent: Intent | null };
 const labels: Record<FilterKey, Record<string, string>> = { occasion: OCCASION_FILTER_LABELS, budget: BUDGET_LABELS, colour: COLOUR_LABELS };
+/** A colour value as written in a link, normalized (?colour=Lavender → purple); other groups are kept as written. */
+const normalize = (group: FilterKey, key: string) => {
+  const value = key.trim();
+  if (group !== "colour") return value;
+  const lower = value.toLowerCase();
+  return Object.hasOwn(COLOUR_ALIASES, lower) ? COLOUR_ALIASES[lower] : lower;
+};
 /** Known zero-result selections survive; unknown URL values do not become selections. */
 export function parseShopFilters(params: URLSearchParams): ShopFilterState {
   const state: ShopFilterState = { occasion: [], budget: [], colour: [], intent: null };
-  for (const group of FILTER_GROUPS) state[group] = [...new Set((params.get(group) ?? "").split(",").map((key) => key.trim()).filter((key) => Object.hasOwn(labels[group], key)))];
+  for (const group of FILTER_GROUPS) state[group] = [...new Set((params.get(group) ?? "").split(",").map((key) => normalize(group, key)).filter((key) => Object.hasOwn(labels[group], key)))];
   const intent = params.get("for");
   if (intent === "gift" || intent === "ceremony") state.intent = intent;
   return state;

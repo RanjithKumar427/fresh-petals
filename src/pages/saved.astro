@@ -13,7 +13,7 @@
 // bandwidth.
 import BaseLayout from "../layouts/BaseLayout.astro";
 import DiscoveryPostCard from "../components/DiscoveryPostCard.astro";
-import { productCatalog } from "../data/productCatalog";
+import { loadPublicCatalogue } from "../server/services/PublicCatalogue";
 import { loadAuthoritativePrices, withAuthoritativePrice } from "../server/services/ProductPricing";
 // Shared manifests plus visible garland photos (src/data/photoManifest.ts).
 import { photoDimensions as imageDimensions } from "../data/photoManifest";
@@ -39,7 +39,8 @@ const priceMap = await loadAuthoritativePrices();
 // same 89-product server-render, just fewer visible), which is exactly
 // why grid's per-card `grid-row: span N` handles it correctly regardless
 // of how many end up shown.
-const products = productCatalog
+// Public products only, like every other list (a saved product that is no longer published is not shown).
+const products = (await loadPublicCatalogue())
   .map((product) => withAuthoritativePrice(product, priceMap))
   .map((product) => ({
     ...product,

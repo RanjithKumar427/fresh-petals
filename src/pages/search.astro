@@ -1,17 +1,16 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import ProductCard from "../components/ProductCard.astro";
-import { productCatalog } from "../data/productCatalog";
 import { loadAuthoritativePrices, withAuthoritativePrice } from "../server/services/ProductPricing";
+import { loadPublicCatalogue } from "../server/services/PublicCatalogue";
 
+// Only public catalogue products are searchable: the same snapshot that
+// decides which product pages exist (src/server/services/PublicCatalogue.ts).
+const [priceMap, publicCatalogue] = await Promise.all([loadAuthoritativePrices(), loadPublicCatalogue()]);
 const categories = Array.from(
-  new Set(productCatalog.map((product) => product.category))
+  new Set(publicCatalogue.map((product) => product.category))
 );
-
-// Catalog/Database Reconciliation milestone — see products/[slug].astro's
-// matching comment.
-const priceMap = await loadAuthoritativePrices();
-const searchableProducts = productCatalog.map((product) => withAuthoritativePrice(product, priceMap));
+const searchableProducts = publicCatalogue.map((product) => withAuthoritativePrice(product, priceMap));
 ---
 
 <BaseLayout

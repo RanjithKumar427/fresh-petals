@@ -1,5 +1,5 @@
 ---
-// A category listing (heading, landing copy, filters for launch categories,
+// A category listing (heading, landing copy, filters for the bouquet list,
 // grouped or plain product grid). Shared by the prebuilt category pages
 // (src/pages/categories/[slug].astro) and the bouquet list, which is
 // rendered on request (src/pages/categories/bouquets.astro).
@@ -24,9 +24,15 @@ type CategoryMeta = {
 
 interface Props {
   category: CategoryMeta;
+  /** Every listed product, each once. */
   products: Product[];
+  /**
+   * Bouquet list sections (src/data/catalogueRange.ts bouquetFlowerGroups).
+   * They may overlap — a bouquet with roses and lilies is in both — so totals
+   * and filter counts are taken from `products`, never summed over groups.
+   */
   groups?: { id: string; label: string; products: Product[] }[];
-  /** The admin's occasion assignments for the listed products (launch categories), or null. */
+  /** The admin's occasion assignments for the listed products (the bouquet list), or null. */
   membership?: Membership | null;
   /** A sentence on what the listed prices cover (launch categories). */
   priceNote?: string;
@@ -35,11 +41,13 @@ interface Props {
    * note per section, no filters. Every listed product is in exactly one.
    */
   sections?: { id: string; label: string; note: string | null; products: Product[] }[];
+  /** Public catalogue slugs, for copy that links to a named product (only shown while it is public). */
+  publicSlugs?: Set<string>;
 }
 
-const { category, products: listedProducts, groups: listedGroups = [], membership = null, priceNote, sections = [] } = Astro.props;
+const { category, products: listedProducts, groups: listedGroups = [], membership = null, priceNote, sections = [], publicSlugs = new Set<string>() } = Astro.props;
 
-// Launch categories: each bouquet's occasions come from the admin's
+// The bouquet list: each bouquet's occasions come from the admin's
 // assignments (product_occasions), never the catalogue's original tags; the
 // bouquet list is rendered on request (src/pages/categories/bouquets.astro),
 // so they are current in the HTML.
@@ -60,7 +68,7 @@ const pageHeading = landing?.h1 ?? category.name;
 const fromPrice = landing && category.slug !== "all-flowers" ? lowestPrice(products) : null;
 const noindex = products.length === 0 || NOINDEX_CATEGORY_SLUGS.has(category.slug);
 const canonical = CANONICAL_CATEGORY[category.slug] ? `/categories/${CANONICAL_CATEGORY[category.slug]}` : undefined;
-// Launch categories (bouquets) can be narrowed by occasion, budget and
+// The bouquet list can be narrowed by occasion, budget and
 // colour — derived from the products, shown only when they divide the list
 // (src/data/occasionJourneys.ts). Shareable: ?occasion=…&budget=…&colour=….
 const filters = withoutUnpricedBudget(groups.length ? parseShopFilters(Astro.url.searchParams) : parseShopFilters(new URLSearchParams()), products.map((product) => shopItemData(product)));
@@ -164,6 +172,13 @@ const breadcrumbJsonLd = {
                 </a>
               ))}
             </nav>
+          )
+        }
+        {
+          groups.length > 1 && category.slug === "bouquets" && (
+            <p class="-mt-4 mb-8 max-w-3xl text-sm leading-7 text-moss" data-group-overlap>
+              {products.length} bouquets in all, grouped by the flowers recorded for each design. A bouquet with both roses and lilies is listed in both groups; every other bouquet appears once.
+            </p>
           )
         }
         {
@@ -289,10 +304,16 @@ const breadcrumbJsonLd = {
                   </div>
                   <div class="rounded-[24px] border border-line bg-linen p-6 text-sm leading-7 text-moss">
                     <h2 class="text-base font-semibold text-ink">Loose flowers or a string?</h2>
+                    {publicSlugs.has("jasmine-malli") && publicSlugs.has("jasmine-gajra") ? (
                     <p class="mt-2">
                       Choose <a href="/products/jasmine-malli" class="font-semibold text-ink underline underline-offset-4">loose jasmine</a> if you will offer the flowers as they are or string them yourself, and
                       <a href="/products/jasmine-gajra" class="font-semibold text-ink underline underline-offset-4"> jasmine gajra</a> if you want them already strung.
                     </p>
+                    ) : (
+                    <p class="mt-2">
+                      Tell us on WhatsApp whether you need loose jasmine to offer or string yourself, or jasmine already strung, and roughly how much.
+                    </p>
+                    )}
                     <p class="mt-3">{POOJA_PHOTO_NOTE}</p>
                   </div>
                 </div>

@@ -14,15 +14,16 @@ import LandingDetails from "../../components/LandingDetails.astro";
 import DestinationCity from "../../components/DestinationCity.astro";
 import { HUB_PHOTO_NOTE, catalogueRoot, cityHub, type HubSource } from "../../data/cityHubs";
 import { CITY_PARAM, LOCATIONS_PATH, findCity, hasHub, serviceCityCount } from "../../data/serviceCities";
-import { launchGroups } from "../../data/launchCatalogue";
-import { productCatalog, type Product } from "../../data/productCatalog";
-import { giftProducts, launchSlugs } from "../../data/occasionJourneys";
+import { featuredGroups } from "../../data/launchCatalogue";
+import { loadPublicCatalogue } from "../../server/services/PublicCatalogue";
+import type { Product } from "../../data/productCatalog";
+import { giftProducts } from "../../data/occasionJourneys";
 import { loadOccasionMembership } from "../../server/services/OccasionMembership";
 import { loadAuthoritativePrices, withAuthoritativePrice } from "../../server/services/ProductPricing";
 import { isListedGarland, loadGarlands, type GarlandProduct } from "../../data/garlands";
 import { GARLAND_FILTER_LABELS, garlandPhotoSrcset } from "../../data/garlandRules";
 import { garlandEnquiryHref } from "../../utils/garlandEnquiry";
-import { bouquetLine, bouquetPresentation, isVaseArrangement } from "../../data/collectionGuidance";
+import { bouquetLine, bouquetPresentation, isVaseArrangement, poojaSections } from "../../data/collectionGuidance";
 import { productPhotoAlt } from "../../data/productPhotos";
 import { QUOTE_ONLY_ENQUIRE_LABEL, QUOTE_ONLY_PRICE_LABEL, isQuoteOnly } from "../../shared/quoteOnly";
 import { photoDimensions, photoVariants } from "../../data/photoManifest";
@@ -50,9 +51,10 @@ const occasionRoutes = [...new Set(hub.sections.flatMap((section) => section.sou
 for (const [name, value] of Object.entries(occasionCacheHeaders([GARLAND_CACHE_TAG, OCCASION_INDEX_TAG, ...occasionRoutes.map(occasionTag)]))) Astro.response.headers.set(name, value);
 
 const needsGarlands = hub.sections.some((section) => section.sources.some((source) => source.kind === "garlands"));
+const publicCatalogue = await loadPublicCatalogue();
 const [priceMap, membership, garlands] = await Promise.all([
   loadAuthoritativePrices(),
-  loadOccasionMembership(launchSlugs()),
+  loadOccasionMembership(publicCatalogue.map((product) => product.slug)),
   needsGarlands ? loadGarlands().then((list) => list.filter((product) => isListedGarland(product.garland))) : Promise.resolve([] as GarlandProduct[]),
 ]);
 
@@ -121,8 +123,10 @@ function garlandCard(product: GarlandProduct): Card {
   };
 }
 
-const bouquetGroups = launchGroups("bouquets");
-const bySlug = (slug: string) => productCatalog.find((product) => product.slug === slug);
+// City examples: the featured bouquets (an editorial selection, labelled as
+// examples) and named pooja products, public ones only.
+const bouquetGroups = featuredGroups("bouquets", publicCatalogue);
+const bySlug = (slug: string) => publicCatalogue.find((product) => product.slug === slug);
 
 // Each product once per page: a source picks from what the page has not
 // shown yet, so two occasions that share a bouquet still list different ones.
@@ -140,7 +144,7 @@ function cardsFor(source: HubSource): Card[] {
     case "bouquet-group":
       return fresh(bouquetGroups.find(({ group }) => group.id === source.group)?.products ?? [], source.limit).map(productCard);
     case "occasion":
-      return fresh(giftProducts(source.route, membership), source.limit).map(productCard);
+      return fresh(giftProducts(source.route, membership, publicCatalogue), source.limit).map(productCard);
     case "presentation": {
       const bouquets = bouquetGroups.flatMap(({ products }) => products);
       const wrapped = fresh(bouquets.filter((product) => !isVaseArrangement(product) && bouquetPresentation(product)), 1);
@@ -178,10 +182,16 @@ const shopBase = `${LOCATIONS_PATH}/${city.slug}/shop`;
 const completeFor = (ids: string[] = []) =>
   ids.flatMap((id) => catalogue.collections.filter((collection) => collection.id === id)).map((collection) => ({ id: collection.id, href: `${shopBase}?collection=${collection.id}`, label: `${collection.label} in ${city.name}`, count: collection.items.length }));
 
-// A section with nothing public is not shown.
+// Links into the pooja collection name one of its sections; a section with
+// nothing public is not on that page, so its link is left out.
+const poojaAnchors = new Set(poojaSections((catalogue.collections.find((collection) => collection.id === "pooja-flowers")?.items ?? []).map((item) => ({ slug: item.key }))).map((section) => section.id));
+const reachable = (link: { href: string }) => !link.href.startsWith("/categories/pooja-flowers#") || poojaAnchors.has(link.href.split("#")[1]);
+// A section with nothing public is not shown — except advice on what to ask
+// for (pooja and jasmine forms), which stays without examples: an unlisted
+// form can still be described on WhatsApp.
 const sections = hub.sections
-  .map((section) => ({ ...section, links: withGuides(section), cards: section.sources.flatMap(cardsFor), complete: completeFor(section.collections) }))
-  .filter((section) => section.cards.length > 0);
+  .map((section) => ({ ...section, links: withGuides(section).filter(reachable), cards: section.sources.flatMap(cardsFor), complete: completeFor(section.collections) }))
+  .filter((section) => section.cards.length > 0 || section.sources.every((source) => source.kind === "pooja"));
 const tiles = catalogue.collections.filter((collection) => collection.primary);
 // Every other collection, listed with its count, so the page links complete membership of all of them.
 const otherCollections = catalogue.collections.filter((collection) => !collection.primary);
@@ -305,9 +315,17 @@ const steps = [
               </div>
             </div>
 
+            {section.cards.length === 0 && (
+              <p class="mt-8 max-w-3xl text-sm leading-7 text-moss" data-city-unlisted={section.id}>
+                Nothing in this section is listed online at the moment. <a href={enquiryHref} target="_blank" rel="noopener noreferrer" class="font-semibold text-ink underline underline-offset-4">Ask us on WhatsApp</a> with the details above, and we reply with what we can do for your date.
+              </p>
+            )}
+            {section.cards.length > 0 && (
             <p class="mt-8 text-[11px] font-semibold uppercase tracking-[0.18em] text-moss" data-city-examples-label>
               Examples{section.complete.length > 0 ? ", not the full range" : ""}
             </p>
+            )}
+            {section.cards.length > 0 && (
             <ul class="mt-3 grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5 lg:grid-cols-4">
               {section.cards.map((card) => (
                 <li>
@@ -339,6 +357,7 @@ const steps = [
                 </li>
               ))}
             </ul>
+            )}
 
             <ul class="mt-6 flex flex-wrap gap-2">
               {section.links.map((link) => (

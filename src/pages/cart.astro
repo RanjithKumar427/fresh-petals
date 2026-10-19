@@ -4,7 +4,7 @@ import DestinationCity from "../components/DestinationCity.astro";
 import { cityOptions } from "../data/serviceCities";
 import { TaxonomyService } from "../server/services/TaxonomyService";
 import { DELIVERY_METHOD_OPTIONS } from "../server/services/delivery/DeliveryService";
-import { productCatalog } from "../data/productCatalog";
+import { loadPublicCatalogue } from "../server/services/PublicCatalogue";
 import { loadAuthoritativePrices, withAuthoritativePrice } from "../server/services/ProductPricing";
 import { QUOTE_ONLY_BASKET_LABEL, QUOTE_ONLY_CONFIG } from "../shared/quoteOnly";
 import InlineScript from "../components/InlineScript.astro";
@@ -33,8 +33,10 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
 // or sent, so WhatsApp never receives an outdated price. Quote-only products
 // (src/shared/quoteOnly.ts) are published as "Price on WhatsApp": the page
 // receives no amount for them.
-const priceMap = await loadAuthoritativePrices();
-const publishedPrices = Object.fromEntries(productCatalog.map((product) => [product.slug, withAuthoritativePrice(product, priceMap).priceLabel]));
+// Public products only: an item whose record is not published in this
+// deployment gets no published price (it is left as saved; see cart.js).
+const [priceMap, publicCatalogue] = await Promise.all([loadAuthoritativePrices(), loadPublicCatalogue()]);
+const publishedPrices = Object.fromEntries(publicCatalogue.map((product) => [product.slug, withAuthoritativePrice(product, priceMap).priceLabel]));
 ---
 
 <BaseLayout
@@ -59,6 +61,8 @@ const publishedPrices = Object.fromEntries(productCatalog.map((product) => [prod
             Review your selected flowers and send them to us on WhatsApp. We reply with the prices and availability before you pay.
           </p>
         </div>
+
+        <p data-cart-unavailable-notice role="status" class="mb-5 rounded-2xl border border-line bg-linen px-4 py-3 text-sm leading-6 text-ink" hidden></p>
 
         <div
           data-cart-empty

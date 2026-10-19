@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import StatusPill from "../../shared/StatusPill";
 import type { ProductDraft } from "../types";
 
@@ -10,6 +11,8 @@ interface Props {
   onUnarchive: () => void;
   /** Garlands: take a published design off the website (back to draft). */
   onUnpublish?: () => void;
+  /** Non-garland products: dashboard status versus the deployed storefront (StorefrontStatus). */
+  storefrontStatus?: ReactNode;
 }
 
 function formatDate(iso: string | null): string {
@@ -17,7 +20,7 @@ function formatDate(iso: string | null): string {
   return new Date(iso).toLocaleString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" });
 }
 
-export default function PublishingSection({ draft, blockers, onSaveDraft, onPublish, onArchive, onUnarchive, onUnpublish }: Props) {
+export default function PublishingSection({ draft, blockers, onSaveDraft, onPublish, onArchive, onUnarchive, onUnpublish, storefrontStatus = null }: Props) {
   return (
     <section id="section-publishing" className="fp-card scroll-mt-6 p-6">
       <h2 className="fp-serif text-lg tracking-[0.08em] text-[#171717]">Publishing</h2>
@@ -38,6 +41,8 @@ export default function PublishingSection({ draft, blockers, onSaveDraft, onPubl
           <p className="mt-1.5 text-[13px] text-[#171717]">{formatDate(draft.updatedAt)}</p>
         </div>
       </div>
+
+      {storefrontStatus}
 
       {blockers.length > 0 && (
         <div className="mt-5 rounded-xl bg-[#FFF7E8] p-4">

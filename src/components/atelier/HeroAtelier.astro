@@ -24,10 +24,13 @@
 import { HOME_LANDING } from "../../data/seoLanding";
 import { HERO_PRINT_SIZES, HERO_SCENE_SIZES, type HeroCampaign } from "../../data/atelierHome";
 import { heroOccasionLinks, homeShortcuts, type Membership } from "../../data/occasionJourneys";
+import type { Product } from "../../data/productCatalog";
 import type { GarlandDesign } from "../../data/garlandRules";
 
 interface Props {
   membership: Membership;
+  /** This deployment's public catalogue. */
+  catalogue: Product[];
   /** The campaign slides (atelierHome.getHeroCampaigns). */
   campaigns: HeroCampaign[];
   publicGarlands?: GarlandDesign[];
@@ -41,12 +44,12 @@ const many = campaigns.length > 1;
 // public products (docs/occasion-journeys.md): occasions follow the admin's
 // assignments, garlands and ceremony flowers need public garland designs,
 // and the budget shortcut exists only while bouquets are priced under it.
-const needs = homeShortcuts(Astro.props.membership, Astro.props.publicGarlands);
+const needs = homeShortcuts(Astro.props.membership, Astro.props.catalogue, Astro.props.publicGarlands);
 const garlands = needs.find((item) => item.href === "/categories/garlands");
 const ceremony = needs.find((item) => item.href.includes("for=ceremony"));
 const pooja = needs.find((item) => item.href === "/categories/pooja-flowers");
 const strip: { label: string; href: string; icon: string }[] = [
-  ...heroOccasionLinks(Astro.props.membership)
+  ...heroOccasionLinks(Astro.props.membership, Astro.props.catalogue)
     .filter((link) => link.href !== "/occasions")
     .map((link) => ({ ...link, icon: link.href.endsWith("/birthday") ? "cake" : "heart" })),
   ...(garlands ? [{ label: "Garlands", href: garlands.href, icon: "garland" }] : []),

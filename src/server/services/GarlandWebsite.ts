@@ -60,11 +60,14 @@ export function occasionCacheHeaders(tags: string[]): Record<string, string> {
   };
 }
 
-/** The live occasion pages a change to these occasion slugs can affect (housewarming also lists pooja). */
+/**
+ * The live occasion pages a change to these occasion slugs can affect, plus
+ * the index tag (homepage, /occasions, the bouquet list, city pages, the
+ * occasion sitemap). Each occasion page lists only its own assignments, so no
+ * other occasion's page is implied.
+ */
 export function occasionTagsFor(changed: string[]): string[] {
-  const pages = new Set(changed);
-  if (pages.has("pooja")) pages.add("housewarming");
-  return [OCCASION_INDEX_TAG, ...[...pages].sort().map(occasionTag)];
+  return [OCCASION_INDEX_TAG, ...[...new Set(changed)].sort().map(occasionTag)];
 }
 
 export type RefreshResult = {

@@ -9,9 +9,10 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { loadOccasionMembership } from "../../server/services/OccasionMembership";
 import { OCCASION_INDEX_TAG, occasionCacheHeaders } from "../../server/services/GarlandWebsite";
-import { launchSlugs } from "../../data/occasionJourneys";
 import { needDestinations, journeyEnquiryText, SERVICE_AREA_LINE } from "../../data/occasionJourneys";
-import { launchProducts, garlandsPromoted } from "../../data/launchCatalogue";
+import { garlandsPromoted } from "../../data/launchCatalogue";
+import { bouquetRange } from "../../data/catalogueRange";
+import { loadPublicCatalogue } from "../../server/services/PublicCatalogue";
 import { loadGarlands, isListedGarland } from "../../data/garlands";
 import { budgetBand } from "../../data/occasionJourneys";
 import { whatsappLink } from "../../config/storefront";
@@ -21,13 +22,17 @@ export const prerender = false;
 
 for (const [name, value] of Object.entries(occasionCacheHeaders([OCCASION_INDEX_TAG]))) Astro.response.headers.set(name, value);
 
-const [membership, priceMap] = await Promise.all([loadOccasionMembership(launchSlugs()), loadAuthoritativePrices()]);
+// Counts are of the full eligible sets (every public bouquet as assigned in the
+// admin), the same lists the linked pages show.
+const [publicCatalogue, priceMap] = await Promise.all([loadPublicCatalogue(), loadAuthoritativePrices()]);
+const bouquets = bouquetRange(publicCatalogue);
+const membership = await loadOccasionMembership(bouquets.map((product) => product.slug));
 const publicGarlands = garlandsPromoted() ? (await loadGarlands()).map((product) => product.garland).filter(isListedGarland) : [];
-const needs = needDestinations(membership, publicGarlands);
+const needs = needDestinations(membership, publicCatalogue, publicGarlands);
 // Availability for today is asked, never promised.
 const todayHref = whatsappLink(["Hi Fresh Petals, I need flowers today.", "What can you make and deliver today, and by what time?", "Occasion: ", "Delivery area: "].join("\n"));
 // Counted from the published prices the bouquet cards show.
-const underBudget = launchProducts().filter((product) => budgetBand(withAuthoritativePrice(product, priceMap)) === "under-1500").length;
+const underBudget = bouquets.filter((product) => budgetBand(withAuthoritativePrice(product, priceMap)) === "under-1500").length;
 const breadcrumbJsonLd = {
   "@type": "BreadcrumbList",
   itemListElement: [

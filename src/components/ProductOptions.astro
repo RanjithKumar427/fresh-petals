@@ -14,7 +14,8 @@
 // behavior. See src/utils/deliveryCheck.ts for the shared fetch helper.
 import { DELIVERY_METHOD_OPTIONS } from "../server/services/delivery/DeliveryService";
 import DestinationCity from "./DestinationCity.astro";
-import { productCatalog, type Product } from "../data/productCatalog";
+import type { Product } from "../data/productCatalog";
+import { loadPublicCatalogue } from "../server/services/PublicCatalogue";
 import { loadAuthoritativePrices, withAuthoritativePrice } from "../server/services/ProductPricing";
 import { isQuoteOnly } from "../shared/quoteOnly";
 
@@ -39,9 +40,10 @@ const ADD_ON_SLUGS: [string, string][] = [
   ["clear-glass-vase", "Clear Glass Vase"],
   ["room-mist-flower-gift-addon", "Room Mist Gift Add-on"],
 ];
-const addOnPrices = await loadAuthoritativePrices();
+// Only add-ons that are public in this deployment are offered.
+const [addOnPrices, publicCatalogue] = await Promise.all([loadAuthoritativePrices(), loadPublicCatalogue()]);
 const addOns = ADD_ON_SLUGS.flatMap(([id, name]) => {
-  const item = productCatalog.find((entry) => entry.slug === id);
+  const item = publicCatalogue.find((entry) => entry.slug === id);
   return item ? [{ id, name, priceLabel: quoteOnly ? "" : withAuthoritativePrice(item, addOnPrices).priceLabel }] : [];
 });
 

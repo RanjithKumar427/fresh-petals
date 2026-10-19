@@ -40,6 +40,9 @@ const clearHref = shopFilterUrl(Astro.url.pathname, { occasion: [], budget: [], 
     const chips = [...root.querySelectorAll<HTMLAnchorElement>("[data-filter-value]")];
     const sections = [...root.querySelectorAll<HTMLElement>("[data-intent-section]")];
     const defaultIntent = root.dataset.defaultIntent === "ceremony" ? "ceremony" : "gift";
+    // A bouquet can be listed in two overlapping groups (roses and lilies), so
+    // counts are of distinct products (data-slug), not of cards.
+    const distinct = (list: HTMLElement[]) => new Set(list.map((item) => item.dataset.slug || item)).size;
     const itemData = (item: HTMLElement) => ({ occasions: (item.dataset.occasions ?? "").split(" "), colours: (item.dataset.colours ?? "").split(" ") as (keyof typeof COLOUR_LABELS)[], budget: (item.dataset.budget || null) as "under-1500" | "1500-plus" | null, intent: (item.dataset.intent ?? "gift") as "gift" | "ceremony" });
     const render = () => {
       const selectedIntent = state.intent ?? (intents.length ? defaultIntent : null);
@@ -48,13 +51,13 @@ const clearHref = shopFilterUrl(Astro.url.pathname, { occasion: [], budget: [], 
       const items = [...root.querySelectorAll<HTMLElement>("[data-shop-item]")];
       const scoped = items.filter((item) => !item.closest<HTMLElement>("[data-intent-section]")?.hidden);
       for (const item of items) item.hidden = !matchesShopFilters(itemData(item), state);
-      const shown = scoped.filter((item) => !item.hidden).length;
+      const shown = distinct(scoped.filter((item) => !item.hidden));
       root.querySelectorAll<HTMLElement>("[data-shop-group]").forEach((group) => { group.hidden = ![...group.querySelectorAll<HTMLElement>("[data-shop-item]")].some((item) => !item.hidden); });
       root.querySelectorAll<HTMLElement>("[data-shop-empty]").forEach((empty) => { empty.hidden = shown !== 0; });
       for (const chip of chips) {
         const group = chip.dataset.filterGroup as FilterKey, value = chip.dataset.filterValue!;
         const selected = state[group].includes(value);
-        const n = scoped.filter((item) => matchesShopFilters(itemData(item), state, group) && (group === "occasion" ? itemData(item).occasions : group === "colour" ? itemData(item).colours : [itemData(item).budget]).includes(value as never)).length;
+        const n = distinct(scoped.filter((item) => matchesShopFilters(itemData(item), state, group) && (group === "occasion" ? itemData(item).occasions : group === "colour" ? itemData(item).colours : [itemData(item).budget]).includes(value as never)));
         chip.setAttribute("aria-pressed", String(selected));
         chip.querySelector("[data-chip-count]")!.textContent = "(" + n + ")";
         // A selected zero-count chip remains visible and removable.
@@ -64,7 +67,7 @@ const clearHref = shopFilterUrl(Astro.url.pathname, { occasion: [], budget: [], 
       root.querySelectorAll<HTMLElement>(".filters__group").forEach((group) => { group.hidden = ![...group.querySelectorAll<HTMLElement>("[data-filter-value]")].some((chip) => !chip.hidden); });
       const selected = FILTER_GROUPS.flatMap((group) => state[group].map((value) => ({ group, value })));
       const count = root.querySelector<HTMLElement>("[data-shop-count]");
-      if (count) { const noun = root.dataset.shopNoun ?? "bouquets"; count.textContent = selected.length ? "Showing " + shown + " of " + scoped.length + " " + noun : shown + " " + noun; }
+      if (count) { const noun = root.dataset.shopNoun ?? "bouquets"; count.textContent = selected.length ? "Showing " + shown + " of " + distinct(scoped) + " " + noun : shown + " " + noun; }
       const activeList = root.querySelector("[data-active-list]");
       activeList?.replaceChildren(...selected.map(({ group, value }) => {
         const link = document.createElement("a"); link.className = "active-pill"; link.textContent = labels[group][value] + " ✕";

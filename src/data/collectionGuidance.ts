@@ -9,6 +9,7 @@
 // what we confirm, not what a pack contains.
 import type { Product } from "./productCatalog";
 import { whatsappLink } from "../config/storefront";
+import type { FlowerKey } from "./catalogueRange";
 
 const lowerFirst = (text: string) => text.charAt(0).toLowerCase() + text.slice(1);
 const list = (items: string[]) => (items.length <= 1 ? items.join("") : `${items.slice(0, -1).join(", ")} and ${items.at(-1)}`);
@@ -80,24 +81,28 @@ export function bouquetLine(product: Product): string | null {
 
 export type GroupGuidance = { intro: string; links: { href: string; label: string }[] };
 
-/** Bouquet groups (ids from src/data/launchCatalogue.ts). */
+/**
+ * The bouquet list's groups (ids from src/data/catalogueRange.ts
+ * BOUQUET_FLOWER_GROUPS). Membership is read from each design's recorded
+ * flowers, and the rose and lily groups overlap.
+ */
 export const BOUQUET_GROUP_GUIDANCE: Record<string, GroupGuidance> = {
   roses: {
-    intro: "Rose bouquets differ mainly in colour. Choose the colour first, then tell us on WhatsApp if you want it changed or made larger.",
+    intro: "Every bouquet whose recorded flowers include roses, from all-rose designs to mixed bouquets with a few roses. A design that also has lilies is listed under lilies too. Compare the flowers listed for each, then tell us on WhatsApp if you want the colour changed.",
     links: [
       { href: "/occasions/anniversary", label: "Anniversary flowers" },
       { href: "/occasions/birthday", label: "Birthday flowers" },
     ],
   },
   mixed: {
-    intro: "Mixed bouquets combine several flowers, so they differ in which flower leads and how the bouquet is presented.",
+    intro: "Bouquets whose recorded flowers include neither roses nor lilies. They differ in which flowers lead and how they are presented; each design lists its own flowers below.",
     links: [
       { href: "/occasions/birthday", label: "Birthday flowers" },
       { href: "/occasions", label: "All occasions" },
     ],
   },
   lilies: {
-    intro: "Lily bouquets have fewer, larger flowers than rose bouquets, and usually arrive with some buds still closed that open over the following days.",
+    intro: "Every bouquet whose recorded flowers include lilies. Lilies are fewer, larger flowers, and usually arrive with some buds still closed that open over the following days. A design that also has roses is listed under roses too.",
     links: [
       { href: "/occasions/anniversary", label: "Anniversary flowers" },
       { href: "/custom-orders", label: "Custom orders" },
@@ -122,19 +127,19 @@ export const POOJA_SECTIONS: PoojaSection[] = [
     id: "loose",
     label: "Loose and daily flowers",
     slugs: ["daily-pooja-flowers", "jasmine-malli"],
-    note: "Loose flowers for the daily pooja, and loose jasmine (malli, mallige). The mix follows the morning's market; tell us how much you need and we confirm what is available.",
+    note: "Loose flowers for the daily pooja. The mix follows the morning's market; tell us how much you need, and whether you also want loose jasmine (malli, mallige), and we confirm what is available.",
   },
   {
     id: "boxes",
     label: "Boxes and baskets",
     slugs: ["pooja-flower-box", "pooja-flowerbox", "pooja-basket"],
-    note: "Assorted pooja flowers packed for carrying or gifting. Two boxes are listed: one is an assorted box priced on the day's market, the other a flowerbox with a starting price. If you are unsure, describe the pooja and we suggest one.",
+    note: "Assorted pooja flowers packed for carrying or gifting. If you are unsure which suits, describe the pooja and we suggest one.",
   },
   {
     id: "strings",
-    label: "Strings, gajra and torans",
+    label: "Strings and torans",
     slugs: ["jasmine-gajra", "fresh-flower-toran"],
-    note: "Flowers already strung: jasmine gajra for hair and offerings, and fresh flower torans for a doorway. Tell us the length or the number of pieces you need.",
+    note: "Flowers already strung, such as a toran for a doorway or jasmine gajra for hair and offerings. Tell us the form, the length or the number of pieces you need.",
   },
   {
     id: "regular",
@@ -185,6 +190,7 @@ export const POOJA_PHOTO_NOTE =
 
 type Listed = Pick<Product, "slug" | "category" | "whatsIncluded">;
 const ALL_FLOWER_GROUPS: { id: string; label: string; note: string; test: (product: Listed) => boolean }[] = [
+  { id: "stems", label: "Flowers by the stem", note: "Loose stems to arrange yourself, priced on the day's flower market and confirmed on WhatsApp.", test: (product) => /^by stems$/i.test(product.category) },
   { id: "vase", label: "Arrangements in a vase", note: "Arranged in a vase and ready to stand on a table or a desk.", test: (product) => (product.whatsIncluded ?? []).some((item) => /\bvase\b/i.test(item)) },
   { id: "lilies", label: "Lily bouquets", note: "Fewer, larger flowers. Lilies usually arrive with some buds closed that open over the following days.", test: (product) => /^lilies$/i.test(product.category) },
   { id: "wrapped", label: "Hand-wrapped bouquets", note: "Wrapped and tied by hand. Each card lists the flowers on record; the wrapping is on the design's own page.", test: (product) => /^bouquets$/i.test(product.category) },
@@ -232,7 +238,31 @@ export function allFlowerSections<T extends Listed>(products: T[]): { id: string
     return { id: group.id, label: group.label, note: group.note, products: items };
   });
   const rest = products.filter((product) => !placed.has(product.slug));
-  // Shown in a shopper's order: wrapped bouquets first, then lilies, vase arrangements, boxes and baskets.
-  const order = ["wrapped", "lilies", "vase", "boxes-baskets"];
+  // Shown in a shopper's order: wrapped bouquets first, then lilies, vase arrangements, boxes and baskets, stems.
+  const order = ["wrapped", "lilies", "vase", "boxes-baskets", "stems"];
   return [...order.map((id) => sections.find((section) => section.id === id)!), ...(rest.length ? [{ ...ALL_FLOWERS_OTHER, products: rest }] : [])].filter((section) => section.products.length > 0);
+}
+
+// ---------------------------------------------------------------------------
+// Flower pages (/categories/rose, /categories/lilies): arrangements whose
+// recorded flowers include the flower, then that flower by the stem.
+// ---------------------------------------------------------------------------
+
+/** Category slugs that list one flower's arrangements and stems (src/pages/categories/[slug].astro). */
+export const FLOWER_PAGES: Record<string, FlowerKey> = { rose: "roses", lilies: "lilies" };
+
+const FLOWER_NAMES: Record<FlowerKey, { plural: string; stems: string }> = {
+  roses: { plural: "roses", stems: "Roses by the stem" },
+  lilies: { plural: "lilies", stems: "Lilies by the stem" },
+};
+
+/** Arrangements first (every listed product that isn't a loose stem), then stems; nothing dropped. */
+export function flowerSections<T extends Pick<Product, "slug" | "category">>(products: T[], flower: FlowerKey): { id: string; label: string; note: string | null; products: T[] }[] {
+  const names = FLOWER_NAMES[flower];
+  const stems = products.filter((product) => /^by stems$/i.test(product.category));
+  const arrangements = products.filter((product) => !stems.includes(product));
+  return [
+    { id: "arrangements", label: `Bouquets and arrangements with ${names.plural}`, note: `Every design whose recorded flowers include ${names.plural}. Many also have other flowers; each card's page lists them.`, products: arrangements },
+    { id: "stems", label: names.stems, note: `Loose ${names.plural} to arrange yourself, priced on the day's flower market and confirmed on WhatsApp.`, products: stems },
+  ].filter((section) => section.products.length > 0);
 }

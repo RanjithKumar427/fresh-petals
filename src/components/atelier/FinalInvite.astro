@@ -8,8 +8,13 @@
 // still.
 import { getFinalPhoto } from "../../data/atelierHome";
 import { whatsappLink } from "../../config/storefront";
+import type { Product } from "../../data/productCatalog";
 
-const shot = getFinalPhoto();
+interface Props {
+  /** This deployment's public catalogue (the photograph's bouquet must be public). */
+  catalogue: Product[];
+}
+const shot = getFinalPhoto(Astro.props.catalogue);
 const helpHref = whatsappLink(
   ["Hi Fresh Petals, could you help me choose flowers?", "Occasion: ", "Budget: ", "Delivery date (optional): ", "Recipient city (optional): "].join("\n")
 );

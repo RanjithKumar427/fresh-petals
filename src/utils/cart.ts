@@ -42,6 +42,48 @@ export type CartItem = {
 
 const CART_KEY = "fresh_petals_cart";
 
+// Products this deployment does not publish (archived or draft catalogue
+// records), embedded by the site header as #fp-unavailable-products. A basket
+// saved before a product was unpublished drops it here, the one place every
+// basket reader goes through, so it leaves the count, the basket page and the
+// WhatsApp draft together and cannot come back on a reload or a quantity
+// change. The names are kept under UNAVAILABLE_KEY until the basket page has
+// said what was removed. The basket page's own script (src/scripts/inline/
+// cart.js) applies the same rule.
+export const UNAVAILABLE_KEY = "fresh_petals_cart_unavailable";
+export const UNAVAILABLE_ELEMENT_ID = "fp-unavailable-products";
+
+/** Items (and add-ons) whose product is unavailable removed; `removed` names what went. */
+export function withoutUnavailable<T extends { slug?: string; name: string; addOns?: { id: string; name: string }[] }>(items: T[], unavailable: Set<string>): { items: T[]; removed: string[] } {
+  if (unavailable.size === 0) return { items, removed: [] };
+  const removed: string[] = [];
+  const kept = items.flatMap((item) => {
+    if (item.slug && unavailable.has(item.slug)) {
+      removed.push(item.name);
+      return [];
+    }
+    if (!Array.isArray(item.addOns) || !item.addOns.some((addOn) => unavailable.has(addOn.id))) return [item];
+    for (const addOn of item.addOns) if (unavailable.has(addOn.id)) removed.push(`${addOn.name} (add-on with ${item.name})`);
+    return [{ ...item, addOns: item.addOns.filter((addOn) => !unavailable.has(addOn.id)) }];
+  });
+  return { items: kept, removed };
+}
+
+function unavailableProducts(): Set<string> {
+  try {
+    return new Set(JSON.parse(document.getElementById(UNAVAILABLE_ELEMENT_ID)?.textContent || "[]"));
+  } catch {
+    return new Set();
+  }
+}
+
+function recordRemoved(names: string[]) {
+  try {
+    const earlier = JSON.parse(window.localStorage.getItem(UNAVAILABLE_KEY) || "[]");
+    window.localStorage.setItem(UNAVAILABLE_KEY, JSON.stringify([...new Set([...(Array.isArray(earlier) ? earlier : []), ...names])]));
+  } catch {}
+}
+
 export function getCartItems(): CartItem[] {
   if (typeof window === "undefined") return [];
 
@@ -49,11 +91,19 @@ export function getCartItems(): CartItem[] {
 
   if (!storedCart) return [];
 
+  let parsed: CartItem[];
   try {
-    return JSON.parse(storedCart) as CartItem[];
+    parsed = JSON.parse(storedCart) as CartItem[];
   } catch {
     return [];
   }
+  if (!Array.isArray(parsed)) return [];
+  const { items, removed } = withoutUnavailable(parsed, unavailableProducts());
+  if (removed.length) {
+    window.localStorage.setItem(CART_KEY, JSON.stringify(items));
+    recordRemoved(removed);
+  }
+  return items;
 }
 
 export function saveCartItems(items: CartItem[]) {

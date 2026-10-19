@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
-import { productCatalog, type Product } from "../data/productCatalog";
+import type { Product } from "../data/productCatalog";
+import { loadPublicCatalogue } from "../server/services/PublicCatalogue";
 import { getStaticPaths as getCategoryStaticPaths } from "./categories/[slug].astro";
 import { CANONICAL_CATEGORY, NOINDEX_CATEGORY_SLUGS, NOINDEX_STATIC_PAGES } from "../data/seoLanding";
 import { LOCATIONS_PATH, hasHub, hubPath, publishedHubs, serviceableCities } from "../data/serviceCities";
@@ -62,7 +63,9 @@ export const GET: APIRoute = async ({ site }) => {
   const categoryPaths = (await getCategoryStaticPaths())
     .filter((entry) => hasPublicProducts(entry.props.products) && !NOINDEX_CATEGORY_SLUGS.has(entry.params.slug) && !CANONICAL_CATEGORY[entry.params.slug])
     .map((entry) => `/categories/${entry.params.slug}`);
-  const productPaths = productCatalog.map((product) => `/products/${product.slug}`);
+  // Product pages exist for public catalogue products only (products/[slug].astro).
+  const publicCatalogue = await loadPublicCatalogue();
+  const productPaths = publicCatalogue.map((product) => `/products/${product.slug}`);
 
   // /categories/bouquets and /categories/garlands are rendered on request
   // and always list products; the occasion pages follow the admin's
@@ -95,7 +98,7 @@ export const GET: APIRoute = async ({ site }) => {
 
   // A product page lists its photograph only when it was reviewed as showing
   // the product (src/data/productPhotos.ts); see src/data/imageSitemap.ts.
-  const imagesFor = new Map(productCatalog.map((product) => [`/products/${product.slug}`, productImages(product)]));
+  const imagesFor = new Map(publicCatalogue.map((product) => [`/products/${product.slug}`, productImages(product)]));
   const urlEntries = [
     ...paths.map((path) => urlEntry(new URL(path, site).toString(), { images: imagesFor.get(path), site: site! })),
     ...[...cityEntries, ...guideEntries].map(({ path, lastmod }) => urlEntry(new URL(path, site).toString(), { lastmod, site: site! })),

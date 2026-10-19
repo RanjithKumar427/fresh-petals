@@ -2,18 +2,26 @@
 // homepage shortcuts and occasion section, the occasion landing pages, the
 // /occasions index and the bouquet filters. Nothing here is invented:
 //
-// - What a page offers comes from the launch range (src/data/launchCatalogue.ts,
-//   the products the owner has promoted) and, for ceremony flowers, the live
-//   public garlands. A journey with nothing eligible says so and offers a
-//   WhatsApp enquiry instead of substituting other products.
+// - What a page offers comes from the public catalogue (the products whose
+//   database record is published in this deployment; src/data/
+//   catalogueRange.ts) as assigned to the occasion in the admin, and, for
+//   ceremony flowers, the live public garlands. The gift occasions list every
+//   assigned public bouquet — not only the featured shortlist. A journey with
+//   nothing eligible says so and offers a WhatsApp enquiry instead of
+//   substituting other products.
 // - Colour filters come from each product's recorded flowers; budget bands
 //   from its database starting price. A filter only appears when it divides
 //   the products on that page.
 // - Intent ("Send a gift" / "For the ceremony") follows the product type:
 //   bouquets are gifts, garlands are ceremony flowers. There is no
 //   per-product override yet (see docs/occasion-journeys.md).
+//
+// Every function that lists products takes the public catalogue
+// (`catalogue`) explicitly: nothing here falls back to the whole static
+// catalogue, which also holds unpublished records.
 import { productCatalog, type Product } from "./productCatalog";
-import { LAUNCH_OCCASION_ROUTES, garlandsPromoted, launchProducts } from "./launchCatalogue";
+import { LAUNCH_OCCASIONS, LAUNCH_OCCASION_ROUTES, GARLAND_OCCASION_ROUTES, garlandsPromoted } from "./launchCatalogue";
+import { bouquetRange, isBouquet } from "./catalogueRange";
 import { OCCASION_PAGES, type OccasionMeta } from "./occasionPages";
 import { isListedGarland, type GarlandDesign } from "./garlandRules";
 
@@ -147,19 +155,28 @@ export function journeyFor(route: string): OccasionJourney {
 // Filters derived from catalogue facts.
 // ---------------------------------------------------------------------------
 
-export type ColourKey = "red" | "pink" | "peach" | "white" | "yellow" | "mixed";
+export type ColourKey = "red" | "pink" | "peach" | "orange" | "white" | "yellow" | "blue" | "purple" | "mixed";
 
-
+/**
+ * Colour words in the recorded flowers. One normalization rule: lavender,
+ * lilac, violet and mauve are shades of purple and are filed under Purple
+ * (a "Lavender roses" or "Lavender statice" record is a purple flower);
+ * a ?colour=lavender link is read as purple (src/utils/shopFilters.ts).
+ * Order is the order of the colour chips.
+ */
 const COLOUR_WORDS: [ColourKey, RegExp][] = [
   ["red", /\bred\b/i],
   ["pink", /\b(pink|blush)\b/i],
   ["peach", /\bpeach\b/i],
+  ["orange", /\borange\b/i],
   ["white", /\bwhite\b/i],
   ["yellow", /\b(yellow|sunflowers?)\b/i],
+  ["blue", /\bblue\b/i],
+  ["purple", /\b(purple|lavender|lilac|violet|mauve)\b/i],
   ["mixed", /\b(mixed|gerberas?|daisies)\b/i],
 ];
 
-/** Colours named in a product's recorded flowers (never guessed from the photograph). */
+/** Colours named in a product's recorded flowers (never guessed from the photograph or the name). */
 export function productColours(product: Pick<Product, "flowerTypes">): ColourKey[] {
   const text = (product.flowerTypes ?? []).join(" · ");
   return COLOUR_WORDS.filter(([, re]) => re.test(text)).map(([key]) => key);
@@ -243,25 +260,16 @@ export function filterGroups(products: Product[], groups: FilterGroup["id"][], {
 /** slug → assigned occasion slugs. */
 export type Membership = Map<string, string[]>;
 
-/** The launch range with each product's occasions taken from the admin's assignments. */
-export function launchWithMembership(membership: Membership): Product[] {
-  return launchProducts().map((product) => ({ ...product, occasionTags: [...(membership.get(product.slug) ?? [])] }));
-}
+/** Products with their occasions taken from the admin's assignments (never their catalogue seed tags). */
+export const withAssignments = <T extends Product>(products: T[], membership: Membership): T[] =>
+  products.map((product) => ({ ...product, occasionTags: [...(membership.get(product.slug) ?? [])] }));
 
-/** Slugs whose occasions the storefront reads from the database. */
-export const launchSlugs = () => launchProducts().map((product) => product.slug);
-
-/** Every catalogue product (each has a product page an older occasion page can list). */
+/** Every static catalogue slug (membership loads; the public catalogue is a subset). */
 export const catalogueSlugs = () => productCatalog.map((product) => product.slug);
 
 // ---------------------------------------------------------------------------
 // Eligibility: what can honestly be promoted right now.
 // ---------------------------------------------------------------------------
-
-/** Launch products a journey can show as gifts. Housewarming also counts pooja-assigned launch products. */
-export function giftProducts(route: string, membership: Membership): Product[] {
-  return launchWithMembership(membership).filter((product) => occasionProductEligible(product.slug, route, product.occasionTags ?? []));
-}
 
 /**
  * Homepage carousel occasions, in the owner's order. Each card links to its
@@ -277,27 +285,33 @@ export const CAROUSEL_OCCASIONS: { key: string; label: string; feature?: string 
   { key: "sympathy", label: "Condolence" },
 ];
 
-const BOUQUET_CATEGORIES = new Set(["Bouquets", "Lilies"]);
+/**
+ * Gift-list occasions: the Shop by Occasion routes (birthday, anniversary,
+ * wedding, engagement, housewarming, mom-to-be) and the carousel's Condolence
+ * (sympathy). Each lists public bouquets only — every assigned Bouquets/Lilies
+ * record, never add-ons or other product types — so a card, a menu entry and
+ * the page count the same list. The older pages (thank-you, romantic …) keep
+ * their wider scope.
+ */
+export const BOUQUET_ONLY_ROUTES = new Set([...LAUNCH_OCCASION_ROUTES, ...CAROUSEL_OCCASIONS.map((item) => item.key)]);
 
 /**
- * Carousel occasions outside the launch range (Condolence → sympathy) list
- * public bouquets only: assigned catalogue Bouquets/Lilies, never add-ons or
- * other product types, so the card and its page count the same list.
+ * Shared storefront/admin membership rule. A product is listed on an
+ * occasion page only when it is in the public `catalogue`, the admin assigned
+ * it to that occasion, and (on gift-list occasions) it is a bouquet. Removing
+ * an assignment is authoritative: no seed tag, related occasion (pooja for
+ * housewarming, new-mom for mom-to-be) or editorial reference restores it.
  */
-export const BOUQUET_ONLY_ROUTES = new Set(CAROUSEL_OCCASIONS.map((item) => item.key).filter((key) => !LAUNCH_OCCASION_ROUTES.has(key)));
+export function occasionProductEligible(slug: string, route: string, assigned: string[], catalogue: Product[]): boolean {
+  const product = catalogue.find((item) => item.slug === slug);
+  if (!product) return false;
+  if (BOUQUET_ONLY_ROUTES.has(route) && !isBouquet(product)) return false;
+  return assigned.includes(route);
+}
 
-const isBouquet = (slug: string) => {
-  const product = productCatalog.find((item) => item.slug === slug);
-  return !!product && BOUQUET_CATEGORIES.has(product.category) && !product.isAddon;
-};
-
-/** Shared storefront/admin membership rule; removing an assignment is authoritative. */
-export function occasionProductEligible(slug: string, route: string, assigned: string[]): boolean {
-  if (!catalogueSlugs().includes(slug)) return false;
-  const launch = launchSlugs().includes(slug);
-  if (LAUNCH_OCCASION_ROUTES.has(route) && !launch) return false;
-  if (BOUQUET_ONLY_ROUTES.has(route) && !isBouquet(slug)) return false;
-  return assigned.includes(route) || (launch && route === "housewarming" && assigned.includes("pooja"));
+/** Public bouquets assigned to a gift occasion, with their assigned occasions. */
+export function giftProducts(route: string, membership: Membership, catalogue: Product[]): Product[] {
+  return withAssignments(bouquetRange(catalogue), membership).filter((product) => occasionProductEligible(product.slug, route, product.occasionTags ?? [], catalogue));
 }
 
 /** Existing type suitability and public gates. Gift tags never imply ceremony suitability. */
@@ -309,25 +323,21 @@ export function ceremonyProducts(route: string, garlands: GarlandDesign[]): Garl
 export const CEREMONY_GARLAND_ROUTES = new Set(["wedding", "engagement"]);
 
 /** Whether a journey has anything eligible to show. Live garlands count only once the owner promotes garlands. */
-export function journeyEligible(route: string, membership: Membership, garlands: GarlandDesign[] = []): boolean {
-  return giftProducts(route, membership).length > 0 || (garlandsPromoted() && ceremonyProducts(route, garlands).length > 0);
+export function journeyEligible(route: string, membership: Membership, catalogue: Product[], garlands: GarlandDesign[] = []): boolean {
+  return giftProducts(route, membership, catalogue).length > 0 || (garlandsPromoted() && ceremonyProducts(route, garlands).length > 0);
 }
 
 /** Every occasion page; all are rendered on request from the admin's assignments (src/pages/occasions/[slug].astro). */
 export const LIVE_OCCASION_ROUTES = new Set(OCCASION_PAGES.map((occasion) => occasion.slug));
 
 /**
- * What an occasion page lists. Launch occasions (birthday, anniversary,
- * wedding, engagement, housewarming, mom-to-be) show the launch range only,
- * as assigned in the admin. The older pages (thank-you, romantic, sympathy…)
- * keep their wider scope — every catalogue product assigned to the occasion.
- * Editorial references never restore removed admin assignments.
- * `membership` must cover catalogueSlugs() for the older pages.
+ * What an occasion page lists: every product in the public `catalogue` the
+ * admin assigned to the occasion — bouquets only on the gift-list occasions
+ * (BOUQUET_ONLY_ROUTES), any product type on the older pages (thank-you,
+ * romantic …). `membership` must cover the catalogue's slugs.
  */
-export function occasionPageProducts(occasion: OccasionMeta, membership: Membership): Product[] {
-  if (LAUNCH_OCCASION_ROUTES.has(occasion.slug)) return giftProducts(occasion.slug, membership);
-  return productCatalog.filter((product) => occasionProductEligible(product.slug, occasion.slug, membership.get(product.slug) ?? []))
-    .map((product) => ({ ...product, occasionTags: [...(membership.get(product.slug) ?? [])] }));
+export function occasionPageProducts(occasion: OccasionMeta, membership: Membership, catalogue: Product[]): Product[] {
+  return withAssignments(catalogue, membership).filter((product) => occasionProductEligible(product.slug, occasion.slug, product.occasionTags ?? [], catalogue));
 }
 
 export type CarouselOccasion = { key: string; label: string; href: string; products: Product[]; feature?: string };
@@ -336,14 +346,31 @@ export type CarouselOccasion = { key: string; label: string; href: string; produ
  * The homepage carousel's occasions that currently have eligible public
  * products, from the admin's assignments. `products` is exactly what
  * /occasions/<key> lists (occasionPageProducts), so a card's count always
- * matches its page. `membership` must cover catalogueSlugs() (Condolence
- * can list bouquets outside the launch range).
+ * matches its page.
  */
-export function carouselOccasions(membership: Membership): CarouselOccasion[] {
+export function carouselOccasions(membership: Membership, catalogue: Product[]): CarouselOccasion[] {
   return CAROUSEL_OCCASIONS.flatMap(({ key, label, feature }) => {
     const page = OCCASION_PAGES.find((item) => item.slug === key);
-    const products = page ? occasionPageProducts(page, membership) : [];
+    const products = page ? occasionPageProducts(page, membership, catalogue) : [];
     return products.length > 0 ? [{ key, label, href: `/occasions/${key}`, products, feature }] : [];
+  });
+}
+
+/**
+ * Shop by Occasion menu entries whose page currently has eligible products.
+ * The site header is prebuilt, so it is given the deployment's snapshot of
+ * the assignments (src/server/services/PublicCatalogue.ts loadMenuMembership):
+ * the menu changes with a deployment, while the occasion pages themselves
+ * follow an admin save without one.
+ */
+export function menuOccasions(membership: Membership, catalogue: Product[]): { label: string; href: string; count: number }[] {
+  return LAUNCH_OCCASIONS.flatMap((item) => {
+    if (!item.route) return [];
+    const count = giftProducts(item.route, membership, catalogue).length;
+    // Garland-only occasions (engagement) are live pages; they join the menu
+    // once the owner promotes garlands.
+    const promotedGarlandOccasion = GARLAND_OCCASION_ROUTES.has(item.route) && garlandsPromoted();
+    return count > 0 || promotedGarlandOccasion ? [{ label: item.label, href: `/occasions/${item.route}`, count }] : [];
   });
 }
 
@@ -352,18 +379,18 @@ export function carouselOccasions(membership: Membership): CarouselOccasion[] {
  * only while it has eligible bouquets) and "More occasions". Ordinary links,
  * not a second deck — the deck itself is further down the page.
  */
-export function heroOccasionLinks(membership: Membership): { label: string; href: string }[] {
+export function heroOccasionLinks(membership: Membership, catalogue: Product[]): { label: string; href: string }[] {
   return [
     ...(["birthday", "anniversary"] as const)
-      .filter((route) => journeyEligible(route, membership))
+      .filter((route) => journeyEligible(route, membership, catalogue))
       .map((route) => ({ label: route === "birthday" ? "Birthday" : "Anniversary", href: `/occasions/${route}` })),
     { label: "More occasions", href: "/occasions" },
   ];
 }
 
 /** Homepage first-screen shortcuts; each appears only when its destination has public products. */
-export function homeShortcuts(_membership: Membership, publicGarlands: GarlandDesign[] = []): { label: string; href: string; primary?: boolean }[] {
-  const bouquets = launchProducts().length > 0;
+export function homeShortcuts(_membership: Membership, catalogue: Product[], publicGarlands: GarlandDesign[] = []): { label: string; href: string; primary?: boolean }[] {
+  const bouquets = bouquetRange(catalogue).length > 0;
   const garlands = garlandsPromoted() && publicGarlands.some(isListedGarland);
   const ceremonyRoute = ["wedding", "engagement"].find((route) => garlands && ceremonyProducts(route, publicGarlands).length > 0);
   return [
@@ -390,9 +417,12 @@ export type NeedDestination = {
   enquiry: string;
 };
 
-export function needDestinations(membership: Membership, publicGarlands: GarlandDesign[] = []): NeedDestination[] {
-  const range = launchWithMembership(membership);
-  const n = (route: string) => giftProducts(route, membership).length;
+export function needDestinations(membership: Membership, catalogue: Product[], publicGarlands: GarlandDesign[] = []): NeedDestination[] {
+  // Every public bouquet with its assigned occasions: the same list
+  // /categories/bouquets filters, so a ?occasion=… link shows exactly `count`.
+  const range = withAssignments(bouquetRange(catalogue), membership);
+  const n = (route: string) => giftProducts(route, membership, catalogue).length;
+  // Bouquets carrying any of the tags, each counted once.
   const tagged = (...tags: string[]) => range.filter((p) => tags.some((t) => p.occasionTags?.includes(t))).length;
   const withTags = (...tags: string[]) => tags.filter((t) => tagged(t) > 0);
   const weddingCeremony = garlandsPromoted() && ceremonyProducts("wedding", publicGarlands).length > 0;
@@ -400,6 +430,7 @@ export function needDestinations(membership: Membership, publicGarlands: Garland
   const ceremonyNote = weddingCeremony ? "Public ceremony garlands; availability and price are confirmed on WhatsApp." : "Our ceremony range isn't online yet — tell us what you need on WhatsApp.";
   const thanks = withTags("congratulations", "thank-you");
   const gentle = withTags("get-well-soon", "i-am-sorry");
+  const condolence = n("sympathy");
   const list: NeedDestination[] = [
     { need: "Birthday", href: n("birthday") ? "/occasions/birthday" : null, note: "Bouquets by colour; prices on WhatsApp.", count: n("birthday"), enquiry: "birthday flowers" },
     { need: "Anniversary, love & proposal", href: n("anniversary") ? "/occasions/anniversary" : null, note: "Roses and lilies; prices on WhatsApp.", count: n("anniversary"), enquiry: "anniversary flowers" },
@@ -418,10 +449,11 @@ export function needDestinations(membership: Membership, publicGarlands: Garland
       enquiry: "get-well or apology flowers",
     },
     {
+      // The Condolence page lists the assigned bouquets and checks timing first; it is the destination either way.
       need: "Condolence",
-      href: tagged("sympathy") ? "/categories/bouquets?occasion=sympathy" : "/occasions/sympathy",
-      note: tagged("sympathy") ? "Quiet bouquets from our range; we check timing with you first." : "Quiet flowers; we check timing and delivery with you first.",
-      count: tagged("sympathy"),
+      href: "/occasions/sympathy",
+      note: condolence ? "Quiet bouquets from our range; we check timing with you first." : "Quiet flowers; we check timing and delivery with you first.",
+      count: condolence,
       enquiry: "condolence flowers",
     },
     { need: "Wedding ceremony", href: "/occasions/wedding?for=ceremony", note: ceremonyNote, count: 0, enquiry: "wedding ceremony flowers" },

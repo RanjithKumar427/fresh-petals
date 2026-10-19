@@ -44,7 +44,7 @@ export const OCCASION_PAGES: OccasionMeta[] = [
     slug: "wedding",
     eyebrow: "Wedding Flowers",
     description:
-      "Fresh wedding flowers, bridal accessories, garlands, jasmine gajra and event flower requirements.",
+      "Fresh wedding flowers, bridal accessories, garlands and event flower requirements.",
     heroNote:
       "Wedding and event flower pricing depends on flower type, quantity, date and market rate.",
     fallbackProductSlugs: [

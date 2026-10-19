@@ -4,7 +4,11 @@ import ProductEditor from "../../../../features/admin/productEditor/ProductEdito
 import { ProductService } from "../../../../server/services/ProductService";
 import { CategoryService } from "../../../../server/services/CategoryService";
 import { TaxonomyService } from "../../../../server/services/TaxonomyService";
-import { catalogueSlugs, launchSlugs } from "../../../../data/occasionJourneys";
+import { isBouquet, editorialDrift, DRIFT_FIELD_LABELS, UNMAPPED_EDITORIAL_FIELDS, UNCOMPARED_EDITORIAL_FIELDS, DATABASE_DRIVEN_FIELDS } from "../../../../data/catalogueRange";
+import { productCatalog } from "../../../../data/productCatalog";
+import { loadAuthoritativePrices } from "../../../../server/services/ProductPricing";
+import { isQuoteOnly } from "../../../../shared/quoteOnly";
+import { loadPublicCatalogue, storefrontReadiness } from "../../../../server/services/PublicCatalogue";
 
 export const prerender = false;
 
@@ -32,6 +36,29 @@ const categories = categoryList.map((category) => ({
   slug: category.slug,
 }));
 const uncategorizedCategoryId = uncategorized.id;
+
+// Non-garland products: occasion help and storefront readiness follow this
+// deployment's public catalogue (a dashboard status change reaches the
+// storefront with the next deployment).
+const publicCatalogue = product.garland ? [] : await loadPublicCatalogue().catch(() => []);
+const readiness = product.garland ? null : await storefrontReadiness(product.slug);
+const publicProduct = publicCatalogue.find((item) => item.slug === product.slug);
+const liveOccasions = product.garland || !publicProduct ? null : isBouquet(publicProduct) ? "bouquet" : "catalogue";
+// What waits for a deployment (price) and which dashboard edits the
+// storefront doesn't show, compared field by field with the catalogue entry.
+const catalogueEntry = productCatalog.find((item) => item.slug === product.slug);
+const primaryImage = [...product.images].sort((a, b) => Number(b.isPrimary) - Number(a.isPrimary) || a.sortOrder - b.sortOrder)[0]?.url ?? null;
+const drift = catalogueEntry
+  ? editorialDrift(
+      { slug: product.slug, status: product.status, name: product.name, category: categoryList.find((category) => category.id === product.categoryId)?.name ?? "", shortDescription: product.shortDescription ?? null, description: product.description ?? null, stemCount: product.stemCount ?? null, image: primaryImage },
+      catalogueEntry
+    ).map((entry) => ({ field: DRIFT_FIELD_LABELS[entry.field], ...(entry.deliberate ? { deliberate: entry.deliberate } : {}) }))
+  : [];
+const priceShown = !!catalogueEntry && !isQuoteOnly(catalogueEntry);
+const deployedPrice = priceShown ? ((await loadAuthoritativePrices().catch(() => null))?.get(product.slug)?.sellingPrice ?? null) : null;
+const storefront = readiness
+  ? { ...readiness, deployedPrice, priceShown, drift, unmappedFields: [...UNMAPPED_EDITORIAL_FIELDS], uncomparedFields: [...UNCOMPARED_EDITORIAL_FIELDS], databaseFields: [...DATABASE_DRIVEN_FIELDS] }
+  : null;
 
 // Explicit mapping (rather than passing `product` straight through) keeps
 // the server Product type's optional (`?:`) fields from leaking `undefined`
@@ -63,6 +90,7 @@ const productDraft = {
     moods={moods}
     flowerTypes={flowerTypes}
     uncategorizedCategoryId={uncategorizedCategoryId}
-    liveOccasions={product.garland ? null : launchSlugs().includes(product.slug) ? "launch" : catalogueSlugs().includes(product.slug) ? "catalogue" : null}
+    liveOccasions={liveOccasions}
+    storefront={storefront}
   />
 </AdminLayout>

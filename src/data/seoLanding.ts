@@ -105,7 +105,7 @@ export const CATEGORY_LANDING: Record<string, LandingContent> = {
       `Hand-tied rose, lily and mixed-flower bouquets for delivery in ${CITY_COUNT} cities across India. Compare the designs, then get the price for your date on WhatsApp.`,
     h1: "Flower Bouquets",
     intro: [
-      "Our launch range: rose bouquets, mixed-flower bouquets with gerberas, sunflowers, chrysanthemums and daisies, and lily bouquets, each wrapped and finished by hand, for delivery in the cities we serve across India.",
+      "Every bouquet we list: rose bouquets, lily bouquets and bouquets of other flowers, each wrapped or arranged by hand, for delivery in the cities we serve across India. They are grouped by the flowers recorded for each design; a bouquet with both roses and lilies appears under both.",
       "Pick a bouquet, add the recipient city, a delivery date and recipient details, and send your cart on WhatsApp. We confirm the flowers available that day, delivery timing and the final total including delivery before you pay.",
     ],
     faqs: [
@@ -141,7 +141,7 @@ export const CATEGORY_LANDING: Record<string, LandingContent> = {
     description: `Order flowers online for delivery in ${CITY_COUNT} cities across India: every bouquet, lily design and arrangement we list, grouped by how it is presented. Price and date confirmed on WhatsApp.`,
     h1: "All Flowers",
     intro: [
-      "Every flower design we list, in one place: hand-wrapped bouquets, lily bouquets, arrangements in a vase, and flowers in a box or a basket. The bouquet collection shows a shorter featured range; this page is the whole catalogue.",
+      "Every fresh-flower product we list, in one place: hand-wrapped bouquets, lily bouquets, arrangements in a vase, flowers in a box or a basket, and flowers by the stem. The bouquet collection lists every bouquet by flower; this page adds the other fresh-flower products.",
       `Choose a design, tell us the recipient city (we take orders for ${CITY_COUNT} cities) and the date, and send it on WhatsApp. We confirm what is available for that day, the price and the delivery details before you pay.`,
     ],
     faqs: [
@@ -153,7 +153,7 @@ export const CATEGORY_LANDING: Record<string, LandingContent> = {
       {
         question: "How is this page different from the bouquet collection?",
         answer:
-          "The bouquet collection is a short featured range with selection help. This page lists every flower design that is public, grouped by how it is presented. A design on either page is ordered the same way.",
+          "The bouquet collection lists every bouquet, grouped by the flowers recorded for each, with selection help. This page lists every fresh-flower product that is public — bouquets and also flower boxes, baskets and stems — grouped by how it is presented. A design on either page is ordered the same way.",
       },
       {
         question: "Why do most designs show no price?",
@@ -163,7 +163,7 @@ export const CATEGORY_LANDING: Record<string, LandingContent> = {
       AREA_FAQ,
     ],
     links: [
-      { href: "/categories/bouquets", label: "Featured bouquets" },
+      { href: "/categories/bouquets", label: "All bouquets" },
       { href: "/guides/choosing-a-flower-bouquet", label: "How to choose a bouquet" },
       { href: "/occasions", label: "Flowers by occasion" },
       { href: "/locations", label: "Delivery cities" },
@@ -176,10 +176,10 @@ export const CATEGORY_LANDING: Record<string, LandingContent> = {
   "pooja-flowers": {
     title: "Pooja Flowers & Jasmine (Malli, Mallige) | Fresh Petals",
     description:
-      "Daily pooja flowers, jasmine (malli / mallige), pooja flower boxes, baskets and temple bulk flowers, priced on the day's flower market. Availability for your city confirmed on WhatsApp.",
+      "Pooja flowers and jasmine (malli / mallige) for daily pooja, festivals and temple offerings: the forms listed online, and any other you need described on WhatsApp. Priced on the day's flower market; availability for your city confirmed on WhatsApp.",
     h1: "Pooja Flowers",
     intro: [
-      "Fresh flowers for daily pooja, festivals and temple offerings: loose pooja flowers, jasmine (malli / mallige), pooja flower boxes and baskets, gajra and torans, and bulk flowers for temples and functions.",
+      "Fresh flowers for daily pooja, festivals and temple offerings. This page lists the pooja products online now, by form. For a form that is not listed here, such as loose jasmine (malli / mallige), gajra, a pooja box or basket, or bulk flowers for a temple, tell us on WhatsApp what you need.",
       "Loose and pooja flower prices move with the daily flower market, so items marked “market price” are quoted on WhatsApp for your date. For regular pooja flowers, see our flower subscriptions.",
     ],
     faqs: [
@@ -232,7 +232,7 @@ export const OCCASION_LANDING: Record<string, LandingContent> = {
       `Birthday bouquets with roses, lilies and bright mixed flowers, for delivery in ${CITY_COUNT} cities across India. Choose online, confirm the date and price on WhatsApp.`,
     h1: "Birthday Flowers",
     intro: [
-      "Birthday bouquets from our launch range — rose bouquets, bright mixed flowers and lilies — for someone in any of the cities we deliver to.",
+      "Birthday bouquets from our range — rose bouquets, bright mixed flowers and lilies — for someone in any of the cities we deliver to.",
       "Add the recipient city, the birthday date, the recipient's name and a message when you send your cart on WhatsApp. We confirm the flowers, delivery timing and the final total including delivery before you pay.",
     ],
     faqs: [ORDERING_FAQ, AREA_FAQ],
@@ -249,7 +249,7 @@ export const OCCASION_LANDING: Record<string, LandingContent> = {
       `Anniversary bouquets with roses, lilies and romantic arrangements, for delivery in ${CITY_COUNT} cities across India. Choose online, confirm the date and price on WhatsApp.`,
     h1: "Anniversary Flowers",
     intro: [
-      "Anniversary bouquets from our launch range — red, pink and peach rose bouquets and lilies — for a couple in any of the cities we deliver to.",
+      "Anniversary bouquets from our range — rose bouquets and lilies, as assigned to anniversaries — for a couple in any of the cities we deliver to.",
       "Add the recipient city, your anniversary date and a card message when you send your cart on WhatsApp. We confirm the flowers, delivery timing and the final total including delivery before you pay.",
     ],
     faqs: [ORDERING_FAQ, AREA_FAQ],

@@ -6,21 +6,31 @@
 // a save that adds or removes occasions, the pages of every occasion added or
 // removed (old and new memberships) — and the index tag those listings carry —
 // are purged. The editor then checks the affected live pages until each one
-// lists (or no longer lists) the bouquet, so "updated" means the website
+// lists (or no longer lists) the product, so "updated" means the website
 // really shows it, not merely that a purge was sent.
+//
+// Which pages can list a product follows the deployed public catalogue
+// (src/server/services/PublicCatalogue.ts): any public bouquet on the gift
+// occasions (birthday, anniversary, wedding, engagement, housewarming,
+// mom-to-be, sympathy), any public product on the older occasion pages. A
+// product the deployment doesn't publish is on no page until the next
+// deployment, whatever its assignments; the prebuilt header's occasion menu
+// also changes only with a deployment.
 import { OCCASION_MAX_STALE_SECONDS, occasionTagsFor, refreshWebsite, type RefreshResult } from "./GarlandWebsite";
 import { occasionSlugsForIds } from "./OccasionMembership";
-import { LIVE_OCCASION_ROUTES, catalogueSlugs, launchSlugs, occasionProductEligible } from "../../data/occasionJourneys";
-import { LAUNCH_OCCASION_ROUTES } from "../../data/launchCatalogue";
+import { BOUQUET_ONLY_ROUTES, LIVE_OCCASION_ROUTES, occasionProductEligible } from "../../data/occasionJourneys";
+import { isBouquet } from "../../data/catalogueRange";
+import type { Product } from "../../data/productCatalog";
+import { loadPublicCatalogue } from "./PublicCatalogue";
 
 type ProductLike = { slug: string; occasionIds: number[]; garland?: unknown };
 
 export type OccasionChange = {
   /** Occasion slugs added or removed by this save. */
   changed: string[];
-  /** The occasion pages those changes affect for this product (housewarming also covers pooja for launch bouquets). */
+  /** The occasion pages those changes affect for this product. */
   routes: string[];
-  /** Whether occasion pages can list this product (catalogue products; launch bouquets also on the homepage and bouquet list). */
+  /** Whether occasion pages can list this product (it is in this deployment's public catalogue). */
   listed: boolean;
   /** Null when nothing on the website depends on the change. */
   refresh: RefreshResult | null;
@@ -29,30 +39,27 @@ export type OccasionChange = {
 
 /**
  * Occasion pages a change to these occasion slugs affects for one product.
- * Launch bouquets appear on every occasion page they are assigned to (and
- * pooja ones on Housewarming); other catalogue products only on the older
- * pages — the launch occasion pages list the launch range alone.
+ * A public bouquet appears on every occasion page it is assigned to; any
+ * other public product only on the older pages (the gift occasions list
+ * bouquets only). No related occasion is implied (pooja does not add
+ * housewarming).
  */
-export function affectedRoutes(changed: string[], launch = true): string[] {
-  const routes = new Set<string>();
-  for (const slug of changed) {
-    if (LIVE_OCCASION_ROUTES.has(slug) && (launch || !LAUNCH_OCCASION_ROUTES.has(slug))) routes.add(slug);
-    if (launch && slug === "pooja") routes.add("housewarming");
-  }
-  return [...routes].sort();
+export function affectedRoutes(changed: string[], bouquet = true): string[] {
+  return [...new Set(changed.filter((slug) => LIVE_OCCASION_ROUTES.has(slug) && (bouquet || !BOUQUET_ONLY_ROUTES.has(slug))))].sort();
 }
 
-export async function occasionWebsiteChange(before: ProductLike | null, after: ProductLike): Promise<OccasionChange | null> {
+export async function occasionWebsiteChange(before: ProductLike | null, after: ProductLike, catalogue?: Product[]): Promise<OccasionChange | null> {
   if (after.garland) return null; // garland occasion sections refresh with the garland pages
   const old = new Set(before?.occasionIds ?? []);
   const now = new Set(after.occasionIds);
   const diff = [...new Set([...old, ...now])].filter((id) => old.has(id) !== now.has(id));
   if (diff.length === 0) return null;
   const changed = await occasionSlugsForIds(diff);
-  const listed = catalogueSlugs().includes(after.slug);
+  const product = (catalogue ?? (await loadPublicCatalogue())).find((item) => item.slug === after.slug);
+  const listed = !!product;
   return {
     changed,
-    routes: listed ? affectedRoutes(changed, launchSlugs().includes(after.slug)) : [],
+    routes: product ? affectedRoutes(changed, isBouquet(product)) : [],
     listed,
     refresh: listed ? await refreshWebsite(occasionTagsFor(changed)) : null,
     maxDelaySeconds: OCCASION_MAX_STALE_SECONDS,
@@ -61,7 +68,7 @@ export async function occasionWebsiteChange(before: ProductLike | null, after: P
 
 /** Retry: purge the given occasions' pages (or every occasion page) and the index. */
 export function refreshOccasionPages(changed: string[] | null): Promise<RefreshResult> {
-  return refreshWebsite(occasionTagsFor(changed && changed.length ? changed : [...LIVE_OCCASION_ROUTES, "pooja"]));
+  return refreshWebsite(occasionTagsFor(changed && changed.length ? changed : [...LIVE_OCCASION_ROUTES]));
 }
 
 export type OccasionPageCheck = {
@@ -74,13 +81,14 @@ export type OccasionPageCheck = {
 
 /**
  * Fetches each live occasion page through the same address (and CDN) visitors
- * use and reports whether it lists the bouquet as its assignments say it
- * should.
+ * use and reports whether it lists the product as its assignments and the
+ * deployed public catalogue say it should.
  */
-export async function checkOccasionPages(product: { slug: string }, assigned: string[], routes: string[], origin: string): Promise<OccasionPageCheck[]> {
+export async function checkOccasionPages(product: { slug: string }, assigned: string[], routes: string[], origin: string, catalogue?: Product[]): Promise<OccasionPageCheck[]> {
+  const publicCatalogue = catalogue ?? (await loadPublicCatalogue());
   return Promise.all(
     routes.map(async (route): Promise<OccasionPageCheck> => {
-      const expected = occasionProductEligible(product.slug, route, assigned) ? "listed" : "absent";
+      const expected = occasionProductEligible(product.slug, route, assigned, publicCatalogue) ? "listed" : "absent";
       try {
         const response = await fetch(new URL(`/occasions/${route}`, origin), {
           redirect: "manual",

@@ -10,8 +10,10 @@
 import GuideShell from "../../components/GuideShell.astro";
 import GuideProductCard from "../../components/GuideProductCard.astro";
 import { BOUQUET_GUIDE } from "../../data/guides";
-import { launchGroups } from "../../data/launchCatalogue";
-import { giftProducts, launchSlugs } from "../../data/occasionJourneys";
+import { featuredGroups } from "../../data/launchCatalogue";
+import { giftProducts } from "../../data/occasionJourneys";
+import { bouquetRange } from "../../data/catalogueRange";
+import { loadPublicCatalogue } from "../../server/services/PublicCatalogue";
 import { BOUQUET_GROUP_GUIDANCE, bouquetLine, bouquetPhotoAlt, bouquetPresentation, isVaseArrangement } from "../../data/collectionGuidance";
 import { loadOccasionMembership } from "../../server/services/OccasionMembership";
 import { OCCASION_INDEX_TAG, occasionCacheHeaders, occasionTag } from "../../server/services/GarlandWebsite";
@@ -19,12 +21,15 @@ import { OCCASION_INDEX_TAG, occasionCacheHeaders, occasionTag } from "../../ser
 export const prerender = false;
 for (const [name, value] of Object.entries(occasionCacheHeaders([OCCASION_INDEX_TAG, occasionTag("birthday"), occasionTag("anniversary")]))) Astro.response.headers.set(name, value);
 
-const groups = launchGroups("bouquets");
+// The guide's samples are the featured bouquets (an editorial selection);
+// the occasion lists are the full assigned sets the occasion pages show.
+const publicCatalogue = await loadPublicCatalogue();
+const groups = featuredGroups("bouquets", publicCatalogue);
 const all = groups.flatMap(({ products }) => products);
-const membership = await loadOccasionMembership(launchSlugs());
+const membership = await loadOccasionMembership(bouquetRange(publicCatalogue).map((product) => product.slug));
 const occasions = [
-  { route: "birthday", label: "a birthday", href: "/occasions/birthday", products: giftProducts("birthday", membership) },
-  { route: "anniversary", label: "an anniversary", href: "/occasions/anniversary", products: giftProducts("anniversary", membership) },
+  { route: "birthday", label: "a birthday", href: "/occasions/birthday", products: giftProducts("birthday", membership, publicCatalogue) },
+  { route: "anniversary", label: "an anniversary", href: "/occasions/anniversary", products: giftProducts("anniversary", membership, publicCatalogue) },
 ].filter((occasion) => occasion.products.length > 0);
 const wrapped = all.filter((product) => !isVaseArrangement(product) && bouquetPresentation(product));
 const vases = all.filter(isVaseArrangement);

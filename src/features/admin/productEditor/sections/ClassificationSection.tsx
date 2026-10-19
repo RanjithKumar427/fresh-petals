@@ -10,8 +10,8 @@ interface Props {
   occasions: TagOption[];
   moods: TagOption[];
   uncategorizedCategoryId: number;
-  /** Which occasion pages list this product: the launch range (also the homepage and bouquet list), other catalogue products (the older occasion pages), or none. */
-  liveOccasions?: "launch" | "catalogue" | null;
+  /** Which occasion pages can list this product in this deployment: a public bouquet (every occasion page, the bouquet list and the homepage), another public product (the older occasion pages), or none (not public in this deployment). */
+  liveOccasions?: "bouquet" | "catalogue" | null;
   /** What the last save did to the live occasion pages. */
   occasionChange?: OccasionChange | null;
 }
@@ -68,11 +68,11 @@ export default function ClassificationSection({
           <p className="mt-1 text-[12px] leading-5 text-[#77706F]" data-occasion-help>
             {draft.garland
               ? "Shown as ceremony flowers on the matching occasion pages (Wedding, Engagement) while the design is public. Changes reach the website without a deployment."
-              : liveOccasions === "launch"
-                ? "The occasion pages, the bouquet list's occasion filter and the homepage occasion cards follow these choices — no deployment needed. Removing an occasion takes the bouquet off that page."
+              : liveOccasions === "bouquet"
+                ? "The occasion pages, the bouquet list's occasion filter and the homepage occasion cards follow these choices — no deployment needed. Removing an occasion takes the bouquet off that page. The site header's occasion menu is prebuilt and changes with the next deployment."
                 : liveOccasions === "catalogue"
-                  ? "The occasion pages that list this product (such as Thank you or Love & proposal) follow these choices — no deployment needed. It isn't in the launch range, so it doesn't appear on the homepage or the bouquet list."
-                  : "Saved with the product. No occasion page lists this product."}
+                  ? "The older occasion pages that list this product (such as Thank you or Love & proposal) follow these choices — no deployment needed. It isn't a bouquet, so the gift occasions (Birthday, Anniversary, Housewarming …) don't list it."
+                  : "Saved with the product. It isn't public on the storefront in this deployment, so no occasion page lists it; once a deployment publishes it, these choices apply."}
           </p>
           {occasionChange && !draft.garland && <OccasionWebsiteStatus productId={draft.id} change={occasionChange} />}
           {isImportDefault && (

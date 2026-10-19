@@ -1,9 +1,10 @@
 ---
 import { productCatalog, type Product } from "../../data/productCatalog";
 import { loadAuthoritativePrices, withAuthoritativePrice } from "../../server/services/ProductPricing";
-import { launchGroups } from "../../data/launchCatalogue";
+import { loadPublicCatalogue } from "../../server/services/PublicCatalogue";
 import CategoryPage from "../../components/category/CategoryPage.astro";
-import { allFlowerSections, poojaSections } from "../../data/collectionGuidance";
+import { allFlowerSections, flowerSections, poojaSections, FLOWER_PAGES } from "../../data/collectionGuidance";
+import { allFlowersRange, arrangementsWith, stemsOf } from "../../data/catalogueRange";
 
 type CategoryMeta = {
   name: string;
@@ -15,7 +16,7 @@ export async function getStaticPaths() {
   // Catalog/Database Reconciliation milestone — see products/[slug].astro's
   // matching comment. One shared price map for every category page this
   // build generates, not one query per category.
-  const priceMap = await loadAuthoritativePrices();
+  const [priceMap, publicCatalogue] = await Promise.all([loadAuthoritativePrices(), loadPublicCatalogue()]);
 
   const slugify = (value: string) =>
     value
@@ -43,13 +44,16 @@ export async function getStaticPaths() {
       "Explore all fresh flowers, bouquets, lilies, flowerboxes, baskets and gifting arrangements from Fresh Petals.",
 
     lilies:
-      "Explore lilies from Fresh Petals. Final availability, pricing and delivery will be confirmed on WhatsApp.",
+      "Every bouquet and arrangement whose recorded flowers include lilies, and lilies sold by the stem. Final availability, pricing and delivery will be confirmed on WhatsApp.",
+
+    roses:
+      "Fresh roses sold by the stem, for arranging yourself. For bouquets and arrangements that include roses, see Rose Bouquets & Arrangements.",
 
     "fragrant-lilies":
       "Premium lily bouquets and fragrant flower arrangements based on fresh market availability.",
 
     "pooja-flowers":
-      "Fresh pooja flowers, jasmine, flower boxes and temple bulk flowers based on daily market availability.",
+      "Fresh pooja flowers and jasmine for daily pooja, festivals and temple offerings, based on daily market availability.",
 
     flowerbox:
       "Fresh flower boxes for DIY arrangements, gifting, pooja use and custom flower requirements.",
@@ -85,7 +89,7 @@ export async function getStaticPaths() {
       "Flowerbox options for homes with cats or dogs — tell us about your pet on WhatsApp and we will go through that day's flowers with you before confirming.",
 
     "flower-strings-and-torans":
-      "Fresh torans, jasmine gajra and traditional flower strings for pooja, functions and festive decor.",
+      "Fresh torans and traditional flower strings for pooja, functions and festive decor.",
 
     "room-mist-and-diffuser":
       "Room mist and diffuser add-ons for premium flower gifting, hampers, anniversaries and housewarming.",
@@ -115,7 +119,7 @@ export async function getStaticPaths() {
       "Elegant orchid bouquets and premium floral arrangements for birthdays, anniversaries and gifting.",
 
     rose:
-      "Fresh rose bouquets and rose arrangements for romantic gifting, birthdays, anniversaries and celebrations.",
+      "Every bouquet and arrangement whose recorded flowers include roses, and roses sold by the stem, for gifting, birthdays, anniversaries and celebrations.",
 
     "pastel-flowers":
       "Soft pastel flower arrangements for premium gifting, birthdays, anniversaries and aesthetic decor.",
@@ -203,13 +207,14 @@ export async function getStaticPaths() {
     wedding: "Wedding",
     "by-stems": "By Stems",
     "eid-al-adha": "Eid Al-Adha",
-    lilies: "Lilies",
+    lilies: "Lilies: Bouquets, Arrangements & Stems",
+    roses: "Roses by Stem",
     "fragrant-lilies": "Fragrant Lilies",
     "tuberose-rajnigandha": "Tuberose / Rajnigandha",
     hydrangeas: "Hydrangeas",
     sunflower: "Sunflower",
     orchid: "Orchid",
-    rose: "Rose",
+    rose: "Rose Bouquets & Arrangements",
     "pastel-flowers": "Pastel Flowers",
     "pink-flowers": "Pink Flowers",
     "white-flowers": "White Flowers",
@@ -289,8 +294,20 @@ export async function getStaticPaths() {
     "diy-kits": (product) => hasTag(product, ["diy"]),
   };
 
+  // Collections derived from product facts (src/data/catalogueRange.ts):
+  // All Flowers is the fresh-flower range; the flower pages list every
+  // arrangement whose recorded flowers include the flower, then its stems.
+  const derivedCollections: Record<string, () => Product[]> = {
+    "all-flowers": () => allFlowersRange(publicCatalogue),
+    ...Object.fromEntries(Object.entries(FLOWER_PAGES).map(([slug, flower]) => [slug, () => [...arrangementsWith(publicCatalogue, flower), ...stemsOf(publicCatalogue, flower)]])),
+  };
+
+  // Only public catalogue products are listed (src/server/services/PublicCatalogue.ts).
+  // The set of category addresses below still comes from the whole static
+  // catalogue, so a category whose products are all unpublished keeps its
+  // URL but is empty, noindexed and left out of the sitemap.
   const getProductsForSlug = (slug: string) =>
-    productCatalog.filter((product) => {
+    derivedCollections[slug]?.() ?? publicCatalogue.filter((product) => {
       const productCategorySlug = slugify(product.category);
 
       return (
@@ -328,16 +345,7 @@ export async function getStaticPaths() {
         `Explore ${titleFromSlug(slug).toLowerCase()} from Fresh Petals. Final availability, pricing and delivery will be confirmed on WhatsApp.`,
     };
 
-    // The launch range (src/data/launchCatalogue.ts) replaces the full
-    // listing for launch categories such as bouquets; the other products
-    // keep their pages and URLs.
-    const groups = launchGroups(slug).map(({ group, products: list }) => ({
-      ...group,
-      products: list.map((product) => withAuthoritativePrice(product, priceMap)),
-    }));
-    const products = groups.length
-      ? groups.flatMap((group) => group.products)
-      : getProductsForSlug(slug).map((product) => withAuthoritativePrice(product, priceMap));
+    const products = getProductsForSlug(slug).map((product) => withAuthoritativePrice(product, priceMap));
 
     return {
       params: {
@@ -346,20 +354,21 @@ export async function getStaticPaths() {
       props: {
         category,
         products,
-        groups,
       },
     };
   });
 }
 
-// The pooja collection is shown by product form (src/data/collectionGuidance.ts).
+// The pooja collection is shown by product form, All Flowers by presentation
+// and the flower pages as arrangements then stems (src/data/collectionGuidance.ts).
 const listed = (Astro.props as { products: Product[] }).products;
-const sections = Astro.params.slug === "pooja-flowers" ? poojaSections(listed) : Astro.params.slug === "all-flowers" ? allFlowerSections(listed) : [];
-const { category, products, groups } = Astro.props as {
+const slug = Astro.params.slug ?? "";
+const sections = slug === "pooja-flowers" ? poojaSections(listed) : slug === "all-flowers" ? allFlowerSections(listed) : FLOWER_PAGES[slug] ? flowerSections(listed, FLOWER_PAGES[slug]) : [];
+const { category, products } = Astro.props as {
   category: CategoryMeta;
   products: Product[];
-  groups?: { id: string; label: string; products: Product[] }[];
 };
+const publicSlugs = new Set((await loadPublicCatalogue()).map((product) => product.slug));
 ---
 
-<CategoryPage category={category} products={products} groups={groups} sections={sections} />
+<CategoryPage category={category} products={products} sections={sections} publicSlugs={publicSlugs} />

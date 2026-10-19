@@ -20,7 +20,7 @@
 // database already has, already lets the admin edit, and is the one thing
 // this migration is actually about: one number, one source, everywhere a
 // customer can see it.
-import { ProductRepository } from "../db/repositories/ProductRepository";
+import { ProductRepository, type ProductListItem } from "../db/repositories/ProductRepository";
 import { productCatalog } from "../../data/productCatalog";
 import { isExemptFromDatabasePrice, type GarlandDesign } from "../../data/garlandRules";
 import { QUOTE_ONLY_PRICE_LABEL, isQuoteOnly, publicPriceView } from "../../shared/quoteOnly";
@@ -73,9 +73,13 @@ const unpricedOfferSlugs = new Set(
     .map((product) => product.slug)
 );
 
-/** One read of every product's price from the database (no caching). */
-export async function readPriceMapFromDatabase(): Promise<Map<string, AuthoritativePrice>> {
-  const rows = await ProductRepository.list();
+/**
+ * Every product's price from the database (no caching). A build passes the
+ * rows it already read for its catalogue snapshot (src/content.config.ts), so
+ * prices and publication status come from one read.
+ */
+export async function readPriceMapFromDatabase(records?: ProductListItem[]): Promise<Map<string, AuthoritativePrice>> {
+  const rows = records ?? (await ProductRepository.list());
   const map = new Map<string, AuthoritativePrice>();
   for (const row of rows) {
     const unpricedOffer = row.sellingPrice == null && unpricedOfferSlugs.has(row.slug);

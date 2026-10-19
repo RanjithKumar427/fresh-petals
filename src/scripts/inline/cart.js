@@ -64,16 +64,79 @@
       }).catch(() => {});
     }
 
+    // Products this deployment does not publish (the site header's
+    // #fp-unavailable-products; src/utils/cart.ts applies the same rule on
+    // every other page). A basket saved before a product was unpublished drops
+    // it — and any such add-on — before anything is shown, counted or sent, so
+    // it is never in a WhatsApp draft and a reload or quantity change cannot
+    // bring it back. What was removed is said once, above the basket.
+    const UNAVAILABLE_KEY = "fresh_petals_cart_unavailable";
+    const unavailableProducts = (() => {
+      try {
+        return new Set(JSON.parse(document.getElementById("fp-unavailable-products")?.textContent || "[]"));
+      } catch {
+        return new Set();
+      }
+    })();
+
+    function withoutUnavailable(items) {
+      const removed = [];
+      const kept = [];
+      for (const item of items) {
+        if (item && item.slug && unavailableProducts.has(item.slug)) {
+          removed.push(item.name);
+          continue;
+        }
+        if (item && Array.isArray(item.addOns) && item.addOns.some((addOn) => unavailableProducts.has(addOn.id))) {
+          for (const addOn of item.addOns) if (unavailableProducts.has(addOn.id)) removed.push(`${addOn.name} (add-on with ${item.name})`);
+          kept.push({ ...item, addOns: item.addOns.filter((addOn) => !unavailableProducts.has(addOn.id)) });
+          continue;
+        }
+        kept.push(item);
+      }
+      return { items: kept, removed };
+    }
+
+    function recordRemoved(names) {
+      try {
+        const earlier = JSON.parse(window.localStorage.getItem(UNAVAILABLE_KEY) || "[]");
+        window.localStorage.setItem(UNAVAILABLE_KEY, JSON.stringify([...new Set([...(Array.isArray(earlier) ? earlier : []), ...names])]));
+      } catch {}
+    }
+
     function getCartItems() {
       const storedCart = window.localStorage.getItem(CART_KEY);
 
       if (!storedCart) return [];
 
+      let parsed;
       try {
-        return JSON.parse(storedCart);
+        parsed = JSON.parse(storedCart);
       } catch {
         return [];
       }
+      if (!Array.isArray(parsed)) return [];
+      const { items, removed } = withoutUnavailable(parsed);
+      if (removed.length) {
+        window.localStorage.setItem(CART_KEY, JSON.stringify(items));
+        recordRemoved(removed);
+      }
+      return items;
+    }
+
+    // Says once which products left the basket because they are no longer available.
+    function showUnavailableNotice() {
+      let names = [];
+      try {
+        names = JSON.parse(window.localStorage.getItem(UNAVAILABLE_KEY) || "[]");
+      } catch {}
+      const notice = document.querySelector("[data-cart-unavailable-notice]");
+      if (!notice || !Array.isArray(names) || names.length === 0) return;
+      notice.textContent = `No longer available, so removed from your basket: ${names.join(", ")}. Everything else in your basket is unchanged. If you would like something similar, ask us on WhatsApp.`;
+      notice.hidden = false;
+      try {
+        window.localStorage.removeItem(UNAVAILABLE_KEY);
+      } catch {}
     }
 
     function saveCartItems(items) {
@@ -1079,4 +1142,5 @@ ${priceRequest ? quoteOnly.closing : "Please confirm availability, final price, 
     }
 
     reconcilePrices();
+    showUnavailableNotice();
     renderCart();

@@ -4,19 +4,34 @@
 // search / saved / basket, and a full-screen mobile menu that lists every
 // existing menu entry. Menu data: src/data/navigation.ts.
 import Wordmark from "./Wordmark.astro";
-import { SITE_NAV } from "../../data/navigation";
+import { siteNav } from "../../data/navigation";
+import { menuOccasions } from "../../data/occasionJourneys";
 import { LOCATIONS_PATH, serviceCityCount } from "../../data/serviceCities";
+import { loadMenuMembership, loadPublicCatalogue } from "../../server/services/PublicCatalogue";
+import { productCatalog } from "../../data/productCatalog";
 
 interface Props {
   /** A compact homepage header; other pages keep their existing navigation. */
   home?: boolean;
 }
 const { home = false } = Astro.props;
+// The occasion menu is part of the prebuilt header, so it reads this
+// deployment's snapshot of the occasion assignments: it changes with the
+// next deployment, not with an admin save (the occasion pages do).
+const [menuMembership, publicCatalogue] = await Promise.all([loadMenuMembership(), loadPublicCatalogue()]);
+const SITE_NAV = siteNav(menuOccasions(menuMembership, publicCatalogue));
+// Catalogue products this deployment does not publish: a basket saved earlier
+// drops them (src/utils/cart.ts getCartItems; the basket page's script reads
+// the same list).
+const publicSlugs = new Set(publicCatalogue.map((product) => product.slug));
+const unavailableProducts = productCatalog.map((product) => product.slug).filter((slug) => !publicSlugs.has(slug));
 const primaryNav = home ? SITE_NAV.filter((item) => item.href !== "/about" && item.href !== "/contact") : SITE_NAV;
 
 const path = Astro.url.pathname.replace(/\/+$/, "") || "/";
 const isCurrent = (href: string) => path === href || (href !== "/" && path.startsWith(href + "/"));
 ---
+
+<script is:inline type="application/json" id="fp-unavailable-products" set:html={JSON.stringify(unavailableProducts)}></script>
 
 <a href="#main" class="sr-only-focusable fixed left-4 top-3 z-[80] rounded-full bg-ink px-5 py-3 text-sm text-ivory">
   Skip to content

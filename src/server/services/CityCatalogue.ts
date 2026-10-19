@@ -8,7 +8,8 @@
 //   - catalogue collections: the category pages' own getStaticPaths()
 //     (the source of truth for which category pages exist and what they list),
 //     at this deployment's published prices;
-//   - featured bouquets: the launch bouquet groups;
+//   - featured bouquets: the featured (editorial) bouquet selection, clearly
+//     labelled as featured; the full bouquet range is in "All flowers";
 //   - garlands: public, listed designs read fresh from the admin database,
 //     as one collection and by browsing group (rose, lotus, tuberose,
 //     designer/mixed). A browsing group is how photographs are sorted, not a
@@ -18,7 +19,8 @@
 import type { Product } from "../../data/productCatalog";
 import { getStaticPaths as getCategoryStaticPaths } from "../../pages/categories/[slug].astro";
 import { CANONICAL_CATEGORY, NOINDEX_CATEGORY_SLUGS } from "../../data/seoLanding";
-import { launchGroups } from "../../data/launchCatalogue";
+import { featuredBouquets } from "../../data/launchCatalogue";
+import { loadPublicCatalogue } from "./PublicCatalogue";
 import { isListedGarland, loadGarlands, type GarlandProduct } from "../../data/garlands";
 import { GARLAND_FILTER_LABELS, garlandPhotoSrcset } from "../../data/garlandRules";
 import { loadAuthoritativePrices, withAuthoritativePrice } from "./ProductPricing";
@@ -92,10 +94,11 @@ const GARLAND_LABELS: Record<string, string> = { rose: "Rose wedding garlands", 
 const titleFromSlug = (slug: string) => slug.split("-").map((word) => (word === "and" ? "and" : word.charAt(0).toUpperCase() + word.slice(1))).join(" ");
 
 export async function loadCityCatalogue(): Promise<{ collections: CatalogueCollection[]; all: CatalogueItem[] }> {
-  const [priceMap, categoryPaths, garlands] = await Promise.all([
+  const [priceMap, categoryPaths, garlands, publicCatalogue] = await Promise.all([
     loadAuthoritativePrices(),
     getCategoryStaticPaths(),
     loadGarlands().then((list) => list.filter((product) => isListedGarland(product.garland))),
+    loadPublicCatalogue(),
   ]);
 
   const featured: CatalogueCollection = {
@@ -103,7 +106,7 @@ export async function loadCityCatalogue(): Promise<{ collections: CatalogueColle
     label: "Featured bouquets",
     href: "/categories/bouquets",
     primary: true,
-    items: launchGroups("bouquets").flatMap(({ products }) => products).map((product) => productItem(withAuthoritativePrice(product, priceMap))),
+    items: featuredBouquets(publicCatalogue).map((product) => productItem(withAuthoritativePrice(product, priceMap))),
   };
 
   const categories: CatalogueCollection[] = categoryPaths

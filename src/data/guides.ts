@@ -52,12 +52,12 @@ export const GUIDES: Guide[] = [
     label: "Jasmine, pooja flowers and gajra",
     heading: "Jasmine, pooja flowers and gajra: which to order",
     title: "Jasmine, Pooja Flowers & Gajra: Which to Order | Fresh Petals",
-    description: "Loose jasmine or strung gajra, the two pooja flower boxes, baskets and bulk flowers compared, with their listed prices and what to tell us before ordering.",
-    summary: "Loose flowers or finished gajra, the two pooja boxes, baskets, and bulk requirements.",
+    description: "Loose jasmine or strung gajra, daily pooja flowers, boxes, baskets and bulk flowers: which form to ask for, the products listed now and what to tell us before ordering.",
+    summary: "Loose flowers or finished gajra, boxes and baskets, and bulk requirements.",
     published: "2026-10-13",
     // Card labels and the photograph note were rewritten on 16 Oct 2026
     // (labelled by reviewed relationship, not by shared file).
-    updated: "2026-10-16",
+    updated: "2026-10-19",
   },
   {
     slug: "sending-flowers-to-another-city",

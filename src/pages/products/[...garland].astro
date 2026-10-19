@@ -12,6 +12,7 @@ import { isListedGarland, loadGarlands } from "../../data/garlands";
 import { TaxonomyService } from "../../server/services/TaxonomyService";
 import { garlandCacheHeaders } from "../../server/services/GarlandWebsite";
 import { GARLANDS_PATH, GARLAND_COLLECTIONS, GARLAND_GUIDE_PATH } from "../../data/garlandCollections";
+import { productCatalog } from "../../data/productCatalog";
 
 export const prerender = false;
 
@@ -21,6 +22,11 @@ const slug = Astro.params.garland ?? "";
 const garlands = /^[a-z0-9-]+$/.test(slug) ? await loadGarlands() : [];
 const product = garlands.find((item) => item.slug === slug) ?? null;
 if (!product) Astro.response.status = 404;
+// A catalogue product that isn't published in this deployment (a draft or an
+// archived record; ./[slug].astro builds pages for public ones only) lands
+// here too. It gets the same unavailable answer: 404, noindex, no basket or
+// enquiry, and no redirect to a substitute product.
+const catalogueRecord = !product && productCatalog.some((item) => item.slug === slug);
 
 // Six alternatives sharing a flower filter, taken from the designs that
 // follow this one in the catalogue (wrapping round), so each design links to
@@ -104,13 +110,17 @@ const metaDescription = product
           )}
         </>
       ) : (
-        <section class="px-5 py-20 text-center md:px-8" data-garland-unavailable>
+        <section class="px-5 py-20 text-center md:px-8" data-garland-unavailable data-product-unavailable={catalogueRecord ? "catalogue" : "garland"}>
           <h1 class="fp-h1">This page isn't available</h1>
           <p class="mx-auto mt-4 max-w-xl text-sm leading-7 text-moss">
-            This garland design isn't on sale at the moment. Browse the garlands we're making now, or ask us for a custom order.
+            {catalogueRecord
+              ? "This product isn't on sale at the moment. Browse the flowers we're making now, or ask us for a custom order."
+              : "This garland design isn't on sale at the moment. Browse the garlands we're making now, or ask us for a custom order."}
           </p>
           <p class="mt-7 flex flex-wrap justify-center gap-3">
-            <a href="/categories/garlands" class="inline-flex min-h-[44px] items-center rounded-full bg-berry px-6 text-sm font-semibold text-white">See garlands</a>
+            {catalogueRecord
+              ? <a href="/categories/all-flowers" class="inline-flex min-h-[44px] items-center rounded-full bg-berry px-6 text-sm font-semibold text-white">See all flowers</a>
+              : <a href="/categories/garlands" class="inline-flex min-h-[44px] items-center rounded-full bg-berry px-6 text-sm font-semibold text-white">See garlands</a>}
             <a href="/custom-orders" class="inline-flex min-h-[44px] items-center rounded-full border border-ink px-6 text-sm font-semibold text-ink">Custom orders</a>
           </p>
         </section>

@@ -8,7 +8,7 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import ProductCard from "../../components/ProductCard.astro";
 import GarlandListing from "../../components/GarlandListing.astro";
-import { productCatalog } from "../../data/productCatalog";
+import { loadPublicCatalogue } from "../../server/services/PublicCatalogue";
 import { productPhotoAlt } from "../../data/productPhotos";
 import { isListedGarland, loadGarlands } from "../../data/garlands";
 import { loadAuthoritativePrices, withAuthoritativePrice } from "../../server/services/ProductPricing";
@@ -20,10 +20,10 @@ export const prerender = false;
 
 for (const [name, value] of Object.entries(garlandCacheHeaders())) Astro.response.headers.set(name, value);
 
-const [garlands, priceMap] = await Promise.all([loadGarlands(), loadAuthoritativePrices()]);
-// The other garland orders in the static catalogue (e.g. event garlands),
+const [garlands, priceMap, publicCatalogue] = await Promise.all([loadGarlands(), loadAuthoritativePrices(), loadPublicCatalogue()]);
+// The other garland orders in the public catalogue (e.g. event garlands),
 // at this deployment's published price, like their product pages.
-const otherProducts = productCatalog
+const otherProducts = publicCatalogue
   .filter((product) => product.collectionTags?.includes("garlands") || product.category.toLowerCase() === "garlands")
   .map((product) => withAuthoritativePrice(product, priceMap));
 const total = garlands.length + otherProducts.length;

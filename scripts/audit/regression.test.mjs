@@ -10,13 +10,17 @@ const context = load('src/utils/journey.ts');
 const { productCatalog } = load('src/data/productCatalog.ts');
 const { OCCASION_PAGES } = load('src/data/occasionPages.ts');
 const empty = () => new Map(productCatalog.map((p) => [p.slug, []]));
+// Fixture: every catalogue record treated as published. Tests that need an
+// unpublished record build their own subset; nothing here reads a database.
+const catalogue = productCatalog;
+const featuredRange = () => load('src/data/launchCatalogue.ts').featuredBouquets(catalogue);
 const json = (value) => JSON.parse(JSON.stringify(value));
 
 test('homepage edit keeps eligible designs and their supplied prices; no hidden design is invented', () => {
   const { getFeaturedBouquets } = sourceLoader({ mocks: {
     'src/server/services/ProductPricing.ts': { withAuthoritativePrice: (product) => product },
   } })('src/data/atelierHome.ts');
-  const range = load('src/data/launchCatalogue.ts').launchProducts().map((product, index) => ({ ...product, priceLabel: `From ₹${2100 + index}` }));
+  const range = featuredRange().map((product, index) => ({ ...product, priceLabel: `From ₹${2100 + index}` }));
   const featured = getFeaturedBouquets(range);
   assert.equal(featured.length, 4);
   assert.equal(new Set(featured.map((product) => product.slug)).size, 4);
@@ -26,7 +30,7 @@ test('homepage edit keeps eligible designs and their supplied prices; no hidden 
   assert.equal(replacement.length, Math.min(4, withoutFeatured.length));
   assert(replacement.every((product) => withoutFeatured.includes(product)));
   for (const count of [0, 1, 2, 3]) assert.equal(getFeaturedBouquets(range.slice(0, count)).length, count);
-  assert.equal(range.length, load('src/data/launchCatalogue.ts').launchProducts().length);
+  assert.equal(range.length, featuredRange().length);
 });
 
 test('valid empty occasion survives; invalid value is ignored; facets do not define validity', () => {
@@ -55,7 +59,7 @@ for (const slug of ['premium-card-addon', 'red-affair']) {
   test(`${slug}: admin assignments control additions, explicit removals, empty lists and restoration`, () => {
     const page = OCCASION_PAGES.find((p) => p.slug === 'thank-you');
     const membership = empty();
-    const has = () => journeys.occasionPageProducts(page, membership).some((p) => p.slug === slug);
+    const has = () => journeys.occasionPageProducts(page, membership, catalogue).some((p) => p.slug === slug);
     assert.equal(has(), false);
     membership.set(slug, ['thank-you', 'romantic']); assert.equal(has(), true);
     membership.set(slug, ['romantic']); assert.equal(has(), false);
@@ -63,14 +67,20 @@ for (const slug of ['premium-card-addon', 'red-affair']) {
     membership.set(slug, ['thank-you']); assert.equal(has(), true);
   });
 }
-test('wider catalogue remains available on assigned older routes; launch-route gates remain', () => {
-  assert.equal(journeys.occasionProductEligible('premium-card-addon', 'thank-you', ['thank-you']), true);
-  assert.equal(journeys.occasionProductEligible('premium-card-addon', 'birthday', ['birthday']), false);
-  assert.equal(journeys.occasionProductEligible('red-affair', 'housewarming', ['pooja']), true);
+test('wider catalogue remains available on assigned older routes; gift occasions list public bouquets only; no related-occasion inference', () => {
+  assert.equal(journeys.occasionProductEligible('premium-card-addon', 'thank-you', ['thank-you'], catalogue), true);
+  assert.equal(journeys.occasionProductEligible('premium-card-addon', 'birthday', ['birthday'], catalogue), false);
+  // A pooja assignment does not imply Housewarming, nor New baby imply Baby shower.
+  assert.equal(journeys.occasionProductEligible('red-affair', 'housewarming', ['pooja'], catalogue), false);
+  assert.equal(journeys.occasionProductEligible('pink-serenity-flowerbox', 'mom-to-be', ['new-mom'], catalogue), false);
+  // Any public bouquet, featured or not, once assigned.
+  assert.equal(journeys.occasionProductEligible('snow-white-saga', 'housewarming', ['housewarming'], catalogue), true);
+  // Not public in the deployment: never eligible, whatever its assignments.
+  assert.equal(journeys.occasionProductEligible('snow-white-saga', 'housewarming', ['housewarming'], catalogue.filter((p) => p.slug !== 'snow-white-saga')), false);
 });
 test('shared checker detects actual product cards and preserves genuine discrepancies', async () => {
   let html = '<a href="/products/premium-card-addon">Related link</a>';
-  const check = sourceLoader({ mocks: { 'src/server/services/GarlandWebsite.ts': {}, 'src/server/services/OccasionMembership.ts': {} }, globals: { fetch: async () => ({ status: 200, text: async () => html }) } })('src/server/services/OccasionWebsite.ts').checkOccasionPages;
+  const check = sourceLoader({ mocks: { 'src/server/services/GarlandWebsite.ts': {}, 'src/server/services/OccasionMembership.ts': {}, 'src/server/services/PublicCatalogue.ts': { loadPublicCatalogue: async () => catalogue } }, globals: { fetch: async () => ({ status: 200, text: async () => html }) } })('src/server/services/OccasionWebsite.ts').checkOccasionPages;
   assert.equal((await check({ slug: 'premium-card-addon' }, [], ['thank-you'], 'http://localhost'))[0].ok, true);
   html = '<li data-occasion-product-slug="premium-card-addon">';
   assert.equal((await check({ slug: 'premium-card-addon' }, [], ['thank-you'], 'http://localhost'))[0].ok, false);
@@ -78,10 +88,10 @@ test('shared checker detects actual product cards and preserves genuine discrepa
 });
 test('gift-only assignments do not enable ceremony shortcuts or ceremony inventory', () => {
   const membership = empty(); membership.set('red-affair', ['housewarming', 'pooja', 'wedding', 'engagement']);
-  assert(!journeys.homeShortcuts(membership).some((s) => s.label === 'Flowers for a ceremony'));
+  assert(!journeys.homeShortcuts(membership, catalogue).some((s) => s.label === 'Flowers for a ceremony'));
   assert.equal(journeys.ceremonyProducts('wedding', []).length, 0);
-  assert.equal(journeys.needDestinations(membership).find((n) => n.need === 'Wedding ceremony').count, 0);
-  assert(journeys.needDestinations(membership).find((n) => n.need === 'Housewarming & pooja').href.endsWith('for=gift'));
+  assert.equal(journeys.needDestinations(membership, catalogue).find((n) => n.need === 'Wedding ceremony').count, 0);
+  assert(journeys.needDestinations(membership, catalogue).find((n) => n.need === 'Housewarming & pooja').href.endsWith('for=gift'));
 });
 test('ceremony suitability uses supported routes and every public product gate', () => {
   const design = { occasionTags: ['wedding', 'housewarming'], published: true, archived: false, photoPermission: 'granted', sampleVerified: true, hasStoredPhoto: true };
@@ -171,16 +181,18 @@ test('delivery retains configuration gates and fees without the unconfirmed expr
 test('occasion carousel cards: owner order, occasion pages, counts equal the page list, admin assignments authoritative', () => {
   const home = sourceLoader({ mocks: { 'src/server/services/ProductPricing.ts': { withAuthoritativePrice: (product) => product } } })('src/data/atelierHome.ts');
   const page = (slug) => OCCASION_PAGES.find((p) => p.slug === slug);
-  assert.equal(home.getOccasionCarousel(empty()).length, 0);
-  const launch = journeys.launchSlugs();
+  assert.equal(home.getOccasionCarousel(empty(), catalogue).length, 0);
+  const launch = featuredRange().map((p) => p.slug);
   const membership = empty();
   membership.set(launch[0], ['birthday', 'wedding', 'engagement', 'sympathy']);
+  // Pooja alone adds nothing to Housewarming.
   membership.set(launch[1], ['birthday', 'pooja']);
-  // Outside the launch range: never counted on a launch occasion.
+  // Not a bouquet: never counted on a gift occasion.
   membership.set('premium-card-addon', ['birthday', 'anniversary', 'sympathy']);
-  // A public bouquet outside the launch range keeps its place on Condolence.
+  // Public bouquets outside the featured shortlist count like any other.
   membership.set('cloud-white', ['sympathy']);
-  const cards = json(home.getOccasionCarousel(membership));
+  membership.set('snow-white-saga', ['housewarming']);
+  const cards = json(home.getOccasionCarousel(membership, catalogue));
   assert.deepEqual(cards.map((card) => [card.key, card.title, card.href, card.countLabel]), [
     ['birthday', 'Birthday', '/occasions/birthday', '2 designs'],
     ['wedding', 'Wedding', '/occasions/wedding', '1 design'],
@@ -189,21 +201,25 @@ test('occasion carousel cards: owner order, occasion pages, counts equal the pag
     ['sympathy', 'Condolence', '/occasions/sympathy', '2 designs'],
   ]);
   // The card counts exactly what its occasion page lists (no add-ons, no fallbacks).
-  for (const card of cards) assert.equal(card.count, journeys.occasionPageProducts(page(card.key), membership).length);
-  assert.deepEqual(json(journeys.occasionPageProducts(page('sympathy'), membership).map((p) => p.slug).sort()), [launch[0], 'cloud-white'].sort());
+  for (const card of cards) assert.equal(card.count, journeys.occasionPageProducts(page(card.key), membership, catalogue).length);
+  assert.deepEqual(json(journeys.occasionPageProducts(page('sympathy'), membership, catalogue).map((p) => p.slug).sort()), [launch[0], 'cloud-white'].sort());
+  assert.deepEqual(json(journeys.occasionPageProducts(page('housewarming'), membership, catalogue).map((p) => p.slug)), ['snow-white-saga']);
   // No photograph repeats while an occasion still has an unused one.
   assert.notEqual(cards[3].image.src, cards[0].image.src);
+  assert.match(cards[3].image.src, /snow-white-saga/);
   assert.match(cards[4].image.src, /cloud-white/);
   // Removing assignments in the admin removes the card.
   membership.set('cloud-white', []);
   membership.set(launch[0], ['birthday', 'wedding', 'engagement']);
-  assert.equal(json(home.getOccasionCarousel(membership)).some((card) => card.key === 'sympathy'), false);
+  membership.set('snow-white-saga', []);
+  const after = json(home.getOccasionCarousel(membership, catalogue));
+  assert.equal(after.some((card) => card.key === 'sympathy' || card.key === 'housewarming'), false);
 });
 test('Condolence lists public bouquets only; other older routes keep their wider scope', () => {
-  assert.equal(journeys.occasionProductEligible('premium-card-addon', 'sympathy', ['sympathy']), false);
-  assert.equal(journeys.occasionProductEligible('cloud-white', 'sympathy', ['sympathy']), true);
-  assert.equal(journeys.occasionProductEligible('cloud-white', 'sympathy', []), false);
-  assert.equal(journeys.occasionProductEligible('premium-card-addon', 'thank-you', ['thank-you']), true);
+  assert.equal(journeys.occasionProductEligible('premium-card-addon', 'sympathy', ['sympathy'], catalogue), false);
+  assert.equal(journeys.occasionProductEligible('cloud-white', 'sympathy', ['sympathy'], catalogue), true);
+  assert.equal(journeys.occasionProductEligible('cloud-white', 'sympathy', [], catalogue), false);
+  assert.equal(journeys.occasionProductEligible('premium-card-addon', 'thank-you', ['thank-you'], catalogue), true);
 });
 test('hero campaigns: three slides with real destinations; garland routes only while garlands are public; no product claims', () => {
   const home = sourceLoader({ mocks: { 'src/server/services/ProductPricing.ts': { withAuthoritativePrice: (product) => product } } })('src/data/atelierHome.ts');
@@ -226,7 +242,7 @@ test('hero banner: three distinct launch bouquets, each with its own photograph 
   const home = sourceLoader({ mocks: {
     'src/server/services/ProductPricing.ts': { withAuthoritativePrice: (product) => product },
   } })('src/data/atelierHome.ts');
-  const range = load('src/data/launchCatalogue.ts').launchProducts().map((product, index) => ({ ...product, priceLabel: `From ₹${2100 + index}` }));
+  const range = featuredRange().map((product, index) => ({ ...product, priceLabel: `From ₹${2100 + index}` }));
   const slides = json(home.getHeroSlides(range));
   assert.deepEqual(slides.map((slide) => slide.slug), ['timeless-hug', 'rose-promise', 'blush-lily-letter']);
   assert.equal(new Set(slides.map((slide) => slide.image.src)).size, 3);
@@ -245,12 +261,12 @@ test('hero banner: three distinct launch bouquets, each with its own photograph 
   assert.ok(replaced.every((slide) => without.some((product) => product.slug === slide.slug)));
   for (const count of [0, 1, 2]) assert.equal(home.getHeroSlides(range.slice(0, count)).length, count);
   // The first slide is the bouquet the business check reads (scripts/audit/business.mjs).
-  assert.equal(home.getHeroPhoto().slug, slides[0].slug);
+  assert.equal(home.getHeroPhoto(catalogue).slug, slides[0].slug);
   // Condolence is the one quiet card.
   const membership = empty();
-  const launch = journeys.launchSlugs();
+  const launch = featuredRange().map((p) => p.slug);
   membership.set(launch[0], ['birthday', 'sympathy']);
-  assert.deepEqual(json(home.getOccasionCarousel(membership)).map((card) => [card.key, card.tone]), [['birthday', 'default'], ['sympathy', 'quiet']]);
+  assert.deepEqual(json(home.getOccasionCarousel(membership, catalogue)).map((card) => [card.key, card.tone]), [['birthday', 'default'], ['sympathy', 'quiet']]);
 });
 
 test('bouquets and garlands are quote-only: no amount in labels, price maps, filters or WhatsApp drafts', async () => {
@@ -357,10 +373,10 @@ test('measurement: no tracker without an owner-supplied ID; events carry paths a
 
 test('pooja discovery: menu, footer, homepage shortcut and the third hero slide link to the public pooja collection', () => {
   const nav = load('src/data/navigation.ts');
-  const shop = nav.SITE_NAV.find((item) => item.label === 'Shop Flowers');
+  const shop = nav.siteNav([]).find((item) => item.label === 'Shop Flowers');
   assert(shop.links.some((link) => link.href === '/categories/pooja-flowers' && link.label === 'Pooja flowers'));
   assert(shop.links.some((link) => link.href === '/categories/bouquets') && shop.links.some((link) => link.href === '/categories/garlands'));
-  assert(journeys.homeShortcuts(empty()).some((link) => link.href === '/categories/pooja-flowers'));
+  assert(journeys.homeShortcuts(empty(), catalogue).some((link) => link.href === '/categories/pooja-flowers'));
   assert(productCatalog.some((product) => product.collectionTags?.includes('pooja-flowers')));
   // A link only: pooja is not a launch category, so no homepage range or occasion page changes.
   assert(!load('src/data/launchCatalogue.ts').LAUNCH_CATEGORIES.some((category) => category.id === 'pooja'));
@@ -372,8 +388,7 @@ test('bouquet guidance is read from product records: flowers, wrapping or vase; 
   assert.equal(guide.bouquetPhotoAlt(bySlug('red-affair')), 'Red Affair: red roses and fresh rose foliage, in premium white wrapping');
   assert.equal(guide.bouquetPresentation(bySlug('colour-pop-love')), 'in a glass vase');
   assert.equal(guide.isVaseArrangement(bySlug('colour-pop-love')), true);
-  const launch = load('src/data/launchCatalogue.ts');
-  const bouquets = launch.launchProducts();
+  const bouquets = featuredRange();
   assert.deepEqual(json(bouquets.filter(guide.isVaseArrangement).map((product) => product.slug)), ['colour-pop-love']);
   for (const product of bouquets) {
     const line = guide.bouquetLine(product);
@@ -381,7 +396,8 @@ test('bouquet guidance is read from product records: flowers, wrapping or vase; 
     for (const flower of product.flowerTypes) assert(line.toLowerCase().includes(flower.toLowerCase()));
   }
   assert.equal(guide.bouquetPhotoAlt({ name: 'Plain', flowerTypes: [], whatsIncluded: [] }), 'Plain');
-  assert.deepEqual(json(Object.keys(guide.BOUQUET_GROUP_GUIDANCE).sort()), json(launch.launchGroups('bouquets').map(({ group }) => group.id).sort()));
+  // Guidance for each of the bouquet list's flower groups (#roses, #lilies, #mixed).
+  assert.deepEqual(json(Object.keys(guide.BOUQUET_GROUP_GUIDANCE).sort()), json(load('src/data/catalogueRange.ts').BOUQUET_FLOWER_GROUPS.map((group) => group.id).sort()));
   assert(!/₹|same[- ]day|express|guarantee|\d+\s?(stems|roses|hours)/i.test(JSON.stringify(guide.BOUQUET_GROUP_GUIDANCE)));
 });
 
@@ -480,7 +496,7 @@ test('city hubs: one authored page per published hub, distinct copy, real source
   for (const href of copy.match(/"href":"[^"]+"/g) ?? []) assert(/^"href":"\/(categories|occasions|guides|custom-orders|locations)(\/|"|#)/.test(href), href);
   for (const slug of copy.match(/\/locations\/[a-z-]+/g) ?? []) assert(registry.hubPath(registry.findCity(slug.split('/').pop())), slug);
   const page = readFileSync('src/pages/locations/[city].astro', 'utf8');
-  assert(/prerender = false/.test(page) && /if \(!city \|\| !city\.serviceable\) return Astro\.rewrite\("\/404"\)/.test(page) && /catalogueRoot\(city, serviceCityCount\(\)\)/.test(page) && /GARLAND_CACHE_TAG, OCCASION_INDEX_TAG/.test(page) && /isListedGarland/.test(page) && /giftProducts\(source\.route, membership\)/.test(page));
+  assert(/prerender = false/.test(page) && /if \(!city \|\| !city\.serviceable\) return Astro\.rewrite\("\/404"\)/.test(page) && /catalogueRoot\(city, serviceCityCount\(\)\)/.test(page) && /GARLAND_CACHE_TAG, OCCASION_INDEX_TAG/.test(page) && /isListedGarland/.test(page) && /giftProducts\(source\.route, membership, publicCatalogue\)/.test(page));
   // Garland comparisons describe the photograph and name a browsing group; they never present the group as the flowers used.
   assert(/design\.image\.alt/.test(page) && /Browse under:/.test(page) && !/Main flower/.test(page));
   // One H1, visible breadcrumbs, self-canonical (no canonical override), no rating or LocalBusiness markup.
@@ -566,7 +582,7 @@ test('discovery: footer groups, /occasions from the menu, linked garland names, 
   assert(/\/occasions\/sympathy/.test(footer) && /publishedHubs\(\)/.test(footer) && /LOCATIONS_PATH/.test(footer) && !/serviceableCities|SERVICE_CITIES/.test(footer));
   assert(/freshpetals\.hyderabad/.test(footer) && /whatsappLink/.test(footer));
   const nav = load('src/data/navigation.ts');
-  const occasions = nav.SITE_NAV.find((item) => item.label === 'Shop by Occasion');
+  const occasions = nav.siteNav([]).find((item) => item.label === 'Shop by Occasion');
   assert.equal(occasions.href, '/occasions');
   assert.deepEqual(json(occasions.links[0]), { label: 'All occasions', href: '/occasions' });
   const card = readFileSync('src/components/GarlandCard.astro', 'utf8');
@@ -632,7 +648,7 @@ test('guides: four published guides, one registry; real products only; no price 
   const shell = readFileSync('src/components/GuideShell.astro', 'utf8');
   const card = readFileSync('src/components/GuideProductCard.astro', 'utf8');
   // Products come from the catalogue and public services, never typed as markup.
-  assert(/launchGroups\("bouquets"\)/.test(pages['choosing-a-flower-bouquet']) && /loadOccasionMembership/.test(pages['choosing-a-flower-bouquet']) && /OCCASION_INDEX_TAG/.test(pages['choosing-a-flower-bouquet']));
+  assert(/featuredGroups\("bouquets", publicCatalogue\)/.test(pages['choosing-a-flower-bouquet']) && /loadOccasionMembership/.test(pages['choosing-a-flower-bouquet']) && /OCCASION_INDEX_TAG/.test(pages['choosing-a-flower-bouquet']));
   assert(/loadAuthoritativePrices/.test(pages['jasmine-pooja-flowers-and-gajra']) && /publishedHubs|hasHub/.test(pages['sending-flowers-to-another-city']));
   assert(/isListedGarland/.test(pages['choosing-wedding-garlands']) && /garlandCacheHeaders/.test(pages['choosing-wedding-garlands']));
   // Quote-only examples never render an amount; the card decides by product identity.
@@ -680,11 +696,11 @@ test('assistant referrals: labelled from a known hostname only; no referrer path
 
 test('All Flowers: linked first in the menu and footer; every listed product in exactly one presentation group; no empty group', () => {
   const nav = load('src/data/navigation.ts');
-  const shop = nav.SITE_NAV.find((item) => item.label === 'Shop Flowers');
+  const shop = nav.siteNav([]).find((item) => item.label === 'Shop Flowers');
   assert.deepEqual(json(shop.links[0]), { label: 'All flowers', href: '/categories/all-flowers' });
   assert(/ALL_FLOWERS_LINK,/.test(readFileSync('src/components/atelier/SiteFooter.astro', 'utf8')));
   const guide = load('src/data/collectionGuidance.ts');
-  const listed = productCatalog.filter((product) => product.collectionTags?.includes('all-flowers'));
+  const listed = load('src/data/catalogueRange.ts').allFlowersRange(catalogue);
   const sections = guide.allFlowerSections(listed);
   const placed = sections.flatMap((section) => section.products.map((product) => product.slug));
   assert.equal(placed.length, listed.length);
@@ -734,8 +750,8 @@ test('product titles and facts: flower and form from the record; model names kep
 
 test('city catalogue: one shared source with no sample limits or per-city restriction; a noindex shop view per city; SSR pagination; city kept in links and drafts', () => {
   const service = readFileSync('src/server/services/CityCatalogue.ts', 'utf8');
-  // Sources are the shop's own: category pages, launch bouquets, listed garlands; nothing is sliced or limited.
-  assert(/getCategoryStaticPaths\(\)/.test(service) && /launchGroups\("bouquets"\)/.test(service) && /isListedGarland/.test(service) && /loadAuthoritativePrices/.test(service));
+  // Sources are the shop's own: category pages, the featured bouquets (labelled), listed garlands; nothing is sliced or limited.
+  assert(/getCategoryStaticPaths\(\)/.test(service) && /featuredBouquets\(publicCatalogue\)/.test(service) && /label: "Featured bouquets"/.test(service) && /isListedGarland/.test(service) && /loadAuthoritativePrices/.test(service));
   assert(!/\.slice\(0|limit|each:/.test(service.replace(/^\s*\/\/.*$/gm, '')));
   assert(/quoteOnly \? QUOTE_ONLY_PRICE_LABEL : product\.priceLabel/.test(service) && /price: QUOTE_ONLY_PRICE_LABEL,\s+quoteOnly: true,\s+category: "Garlands"/.test(service));
   assert(/seen\.has\(item\.key\)/.test(service) && /collection\.items\.length > 0/.test(service));

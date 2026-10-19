@@ -7,11 +7,12 @@
 import GuideShell from "../../components/GuideShell.astro";
 import GuideProductCard from "../../components/GuideProductCard.astro";
 import { SENDING_GUIDE } from "../../data/guides";
-import { launchGroups } from "../../data/launchCatalogue";
+import { featuredGroups } from "../../data/launchCatalogue";
+import { loadPublicCatalogue } from "../../server/services/PublicCatalogue";
 import { bouquetLine, bouquetPhotoAlt } from "../../data/collectionGuidance";
 import { LOCATIONS_PATH, citiesByRegion, hubPath, hasHub, serviceCityCount } from "../../data/serviceCities";
 
-const examples = launchGroups("bouquets").flatMap(({ products }) => products.slice(0, 1));
+const examples = featuredGroups("bouquets", await loadPublicCatalogue()).flatMap(({ products }) => products.slice(0, 1));
 const regions = citiesByRegion().map((region) => ({ ...region, hubs: region.cities.filter(hasHub) })).filter((region) => region.hubs.length > 0);
 const cityCount = serviceCityCount();
 const contents = [

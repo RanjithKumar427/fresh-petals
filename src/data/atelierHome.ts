@@ -9,8 +9,9 @@ import imageDimensions from "./imageDimensions.json";
 import homePhotoVariants from "./homePhotoVariants.json";
 import heroCampaignImages from "./heroCampaignImages.json";
 import { withAuthoritativePrice, type AuthoritativePrice } from "../server/services/ProductPricing";
-import { launchGroups, launchProducts } from "./launchCatalogue";
+import { featuredBouquets, featuredGroups } from "./launchCatalogue";
 import { budgetBand, carouselOccasions, type Membership } from "./occasionJourneys";
+import { BOUQUET_FLOWER_GROUPS, bouquetRange } from "./catalogueRange";
 
 type Variants = Record<string, Record<string, string>>;
 type Dimensions = Record<string, { width: number; height: number }>;
@@ -108,8 +109,9 @@ export function getHeroSlides(products: EditProduct[]): HeroSlide[] {
 }
 
 /** The first hero bouquet and its photograph (scripts/audit/business.mjs checks it against the catalogue). */
-export function getHeroPhoto() {
-  const product = launchProducts().find((item) => item.slug === HERO_SLIDE_SLUGS[0]) ?? launchProducts()[0];
+export function getHeroPhoto(catalogue: Product[]) {
+  const featured = featuredBouquets(catalogue);
+  const product = featured.find((item) => item.slug === HERO_SLIDE_SLUGS[0]) ?? featured[0];
   const main = productPhoto(product.slug);
   return {
     slug: product.slug,
@@ -284,9 +286,9 @@ const OCCASION_FOCUS: Record<string, string> = {
 
 export const designCountLabel = (count: number) => `${count} ${count === 1 ? "design" : "designs"}`;
 
-export function getOccasionCarousel(membership: Membership): OccasionCard[] {
+export function getOccasionCarousel(membership: Membership, catalogue: Product[]): OccasionCard[] {
   const used = new Set<string>();
-  return carouselOccasions(membership).map(({ key, label, href, products, feature }) => {
+  return carouselOccasions(membership, catalogue).map(({ key, label, href, products, feature }) => {
     const featured = products.find((product) => product.slug === feature);
     const lead = featured && !used.has(featured.image) ? featured : (products.find((product) => !used.has(product.image)) ?? products[0]);
     used.add(lead.image);
@@ -303,9 +305,9 @@ export function getOccasionCarousel(membership: Membership): OccasionCard[] {
   });
 }
 
-/** Bouquet types, shown with the homepage bouquets ("See all bouquets"). */
+/** The bouquet list's flower groups, shown with the homepage bouquets ("See all bouquets"). */
 export function getBouquetBrowse(): { label: string; href: string }[] {
-  return launchGroups("bouquets").map(({ group }) => ({ label: group.label, href: `/categories/bouquets#${group.id}` }));
+  return BOUQUET_FLOWER_GROUPS.map((group) => ({ label: group.menuLabel, href: `/categories/bouquets#${group.id}` }));
 }
 
 /**
@@ -313,8 +315,9 @@ export function getBouquetBrowse(): { label: string; href: string }[] {
  * displayed (starting) price is under ₹1,500 — the bouquet price, not an
  * all-in order total. Counted from the same published prices the cards show.
  */
-export function getBudgetShortcut(priceMap: Map<string, AuthoritativePrice>): { label: string; href: string; count: number } | null {
-  const count = launchProducts().filter((product) => budgetBand(withAuthoritativePrice(product, priceMap)) === "under-1500").length;
+export function getBudgetShortcut(priceMap: Map<string, AuthoritativePrice>, catalogue: Product[]): { label: string; href: string; count: number } | null {
+  // The whole bouquet list the link opens, not the featured shortlist.
+  const count = bouquetRange(catalogue).filter((product) => budgetBand(withAuthoritativePrice(product, priceMap)) === "under-1500").length;
   return count > 0 ? { label: `Bouquets under ₹1,500 (${count})`, href: "/categories/bouquets?budget=under-1500", count } : null;
 }
 
@@ -325,11 +328,12 @@ export function getBudgetShortcut(priceMap: Map<string, AuthoritativePrice>): { 
 export type EditProduct = Product & { img: ResponsiveImage };
 
 /**
- * The launch bouquet range (src/data/launchCatalogue.ts), taken in turn from
- * each group (rose, mixed, lily) so the editorial spread alternates.
+ * The featured bouquets (src/data/launchCatalogue.ts) that are public, taken
+ * in turn from each featured group (rose, mixed, lily) so the editorial spread
+ * alternates. A shortlist: the bouquet list shows every public bouquet.
  */
-export function getBouquetEdit(priceMap: Map<string, AuthoritativePrice>): EditProduct[] {
-  const groups = launchGroups("bouquets").map(({ products }) => products);
+export function getBouquetEdit(priceMap: Map<string, AuthoritativePrice>, catalogue: Product[]): EditProduct[] {
+  const groups = featuredGroups("bouquets", catalogue).map(({ products }) => products);
   const interleaved: Product[] = [];
   for (let i = 0; i < Math.max(0, ...groups.map((list) => list.length)); i++) {
     for (const list of groups) if (list[i]) interleaved.push(list[i]);
@@ -378,8 +382,9 @@ export type ArrivalBouquet = {
   crops: { flowers: Crop; wrap: Crop } | null;
 };
 
-export function getArrivalBouquet(priceMap: Map<string, AuthoritativePrice>): ArrivalBouquet {
-  const product = launchProducts().find((item) => item.slug === ARRIVAL_PRODUCT_SLUG) ?? launchProducts()[0];
+export function getArrivalBouquet(priceMap: Map<string, AuthoritativePrice>, catalogue: Product[]): ArrivalBouquet {
+  const featured = featuredBouquets(catalogue);
+  const product = featured.find((item) => item.slug === ARRIVAL_PRODUCT_SLUG) ?? featured[0];
   return {
     slug: product.slug,
     name: product.name,
@@ -398,7 +403,8 @@ export function getArrivalBouquet(priceMap: Map<string, AuthoritativePrice>): Ar
 // editorial photograph of flowers we don't sell.
 const ASSIST_PRODUCT_SLUG = "pink-lily-wish";
 
-export function getFinalPhoto(): Photo & { slug: string; name: string } {
-  const product = launchProducts().find((item) => item.slug === ASSIST_PRODUCT_SLUG) ?? launchProducts()[0];
+export function getFinalPhoto(catalogue: Product[]): Photo & { slug: string; name: string } {
+  const featured = featuredBouquets(catalogue);
+  const product = featured.find((item) => item.slug === ASSIST_PRODUCT_SLUG) ?? featured[0];
   return { ...productPhoto(product.slug), alt: `${product.name}: ${product.description}`, slug: product.slug, name: product.name };
 }

@@ -4,10 +4,11 @@ import path from 'node:path';
 import { sourceLoader } from './source-loader.mjs';
 
 const load = sourceLoader({ mocks: { 'src/server/services/ProductPricing.ts': { withAuthoritativePrice: (product) => product } } });
-const products = load('src/data/launchCatalogue.ts').launchProducts();
+const { productCatalog } = load('src/data/productCatalog.ts');
+const products = load('src/data/launchCatalogue.ts').featuredBouquets(productCatalog);
 const { getHeroPhoto, getArrivalBouquet } = load('src/data/atelierHome.ts');
 const variants = JSON.parse(readFileSync('src/data/imageVariants.json', 'utf8'));
-const hero = getHeroPhoto(); const arrival = getArrivalBouquet(new Map());
+const hero = getHeroPhoto(productCatalog); const arrival = getArrivalBouquet(new Map(), productCatalog);
 for (const scene of [hero, arrival]) {
   const product = products.find((p) => p.slug === scene.slug);
   const photo = scene.main ?? scene.photo;

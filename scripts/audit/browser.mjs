@@ -17,7 +17,8 @@ const lines = [];
 const screenshots = path.join(OUT, 'screenshots'); mkdirSync(screenshots, { recursive: true });
 const log = (s) => { lines.push(s); console.log(s); };
 const load = sourceLoader();
-const { launchProducts } = load('src/data/launchCatalogue.ts');
+const { featuredBouquets } = load('src/data/launchCatalogue.ts');
+const { productCatalog } = load('src/data/productCatalog.ts');
 const { makeJourney } = load('src/utils/journey.ts');
 const access = [{ name: 'audit-access', value: 'full', domain: '127.0.0.1', path: '/' }];
 async function context(options = {}) {
@@ -155,7 +156,7 @@ try {
   const prices = Object.fromEntries((await pool.query('SELECT slug,selling_price FROM products')).rows.map((p) => [p.slug, p.selling_price]));
   const ctx = await context({ viewport: { width: 1440, height: 1000 } }); const page = await ctx.newPage();
   await page.goto(`${base}/categories/bouquets`);
-  for (const product of launchProducts()) {
+  for (const product of featuredBouquets(productCatalog)) {
     assert.match(await page.locator(`[data-cart-slug="${product.slug}"]`).getAttribute('data-cart-price-label'), new RegExp(String(prices[product.slug])));
     await page.goto(`${base}/products/${product.slug}`);
     assert.match(await page.locator('[data-product-options]').getAttribute('data-product-price-label'), new RegExp(String(prices[product.slug])));
