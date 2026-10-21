@@ -4,15 +4,17 @@
 // this repository (imported with `?raw` from src/scripts/inline/), plus at
 // most build-time configuration serialised with JSON.stringify — never
 // anything a visitor sent. Any other inline script is blocked by the policy.
-import { createHash } from "node:crypto";
+// Newlines are normalised to LF before both hashing and rendering, so the
+// hash matches what the browser parses whatever the checkout's line endings.
+import { inlineScriptHash, normalizeNewlines } from "../server/http/inlineScriptHash.mjs";
 
 interface Props {
   code: string;
 }
 
-const { code } = Astro.props;
-const hash = `sha256-${createHash("sha256").update(code, "utf8").digest("base64")}` as const;
+const script = normalizeNewlines(Astro.props.code);
+const hash = inlineScriptHash(script);
 Astro.csp?.insertScriptHash(hash);
 ---
 
-<script is:inline set:html={code} />
+<script is:inline set:html={script} />

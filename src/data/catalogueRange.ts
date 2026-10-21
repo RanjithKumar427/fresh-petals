@@ -242,6 +242,165 @@ export function allFlowersRange<T extends Parameters<typeof isAllFlowersProduct>
 }
 
 // ---------------------------------------------------------------------------
+// Presentation: what a product comes in, from its record
+// ---------------------------------------------------------------------------
+
+/**
+ * Designs whose photograph shows a different presentation from the record
+ * (checked by eye, 16 October 2026). Each record says wrapping; the
+ * photograph shows what is given here. Until the owner confirms which is
+ * right, no page states either: the record is shown qualified
+ * (presentationCheck in src/data/collectionGuidance.ts) and nothing derived
+ * from it (collections, lines, titles, photo descriptions) claims a
+ * presentation. The records are not changed.
+ */
+export const PRESENTATION_UNCONFIRMED: Record<string, string> = {
+  "mandarin-lily-glow": "a glass vase",
+  "luxe-lily-bloom": "a glass vase",
+  "stargazer-affair": "a round box, with red roses among the lilies",
+};
+
+/**
+ * - wrapped: wrapping or hand-tying recorded, and no container;
+ * - vase / box / basket: that container is recorded as included;
+ * - unresolved: an owner check above, two different presentations recorded,
+ *   or only a qualified one ("vase-style") that the product type does not
+ *   confirm;
+ * - unrecorded: the record names no presentation.
+ */
+export type PresentationKind = "wrapped" | "vase" | "box" | "basket" | "unresolved" | "unrecorded";
+export type RecordedPresentation = {
+  kind: PresentationKind;
+  /** The included items that establish it ("Pink flower box", "Kraft wrapping"). */
+  evidence: string[];
+  /** "Hand-tied" is recorded (not only wrapping). */
+  handTied: boolean;
+  reason?: "owner-check" | "conflicting" | "qualified";
+};
+
+// An item that offers, pairs or explains equipment is not an included
+// container: "Vase option based on availability", "Can be paired with
+// flowerbox orders", "Gift basket or hamper packing".
+const NOT_INCLUDED = /\b(option|optional|on request|can be|paired|pairing|suggestion|guidance)\b|\bor\b/i;
+const QUALIFIED = /\b(vase|basket|box|flowerbox|giftbox)-style\b/i;
+const CONTAINERS: ["vase" | "box" | "basket", RegExp][] = [
+  ["vase", /\bvase\b/i],
+  ["box", /\bbox\b|flowerbox|giftbox/i],
+  ["basket", /basket/i],
+];
+/** A product type that is itself the container: a Flowerbox or Baskets record. */
+const CONTAINER_CATEGORY: Record<string, "box" | "basket"> = { Flowerbox: "box", Baskets: "basket" };
+
+/**
+ * How a product is presented, read from its included items (whatsIncluded)
+ * and product type only — never the name, a photograph, a file name or a
+ * collection tag. Conflicting or insufficient evidence stays neutral.
+ */
+export function recordedPresentation(product: Pick<Product, "slug" | "category" | "whatsIncluded">): RecordedPresentation {
+  if (PRESENTATION_UNCONFIRMED[product.slug]) return { kind: "unresolved", evidence: [], handTied: false, reason: "owner-check" };
+  const found = new Map<"wrapped" | "vase" | "box" | "basket", string[]>();
+  const add = (kind: "wrapped" | "vase" | "box" | "basket", item: string) => found.set(kind, [...(found.get(kind) ?? []), item]);
+  let qualified: "vase" | "box" | "basket" | null = null;
+  let handTied = false;
+  for (const item of product.whatsIncluded ?? []) {
+    if (NOT_INCLUDED.test(item)) continue;
+    const style = item.match(QUALIFIED)?.[1]?.toLowerCase();
+    if (style) {
+      qualified = style === "vase" ? "vase" : style === "basket" ? "basket" : "box";
+      continue;
+    }
+    const container = CONTAINERS.find(([, pattern]) => pattern.test(item));
+    if (container) add(container[0], item);
+    else if (/\bhand-tied\b/i.test(item)) (handTied = true), add("wrapped", item);
+    else if (/\bwrapp(?:ing|ed)\b/i.test(item)) add("wrapped", item);
+  }
+  const typeContainer = CONTAINER_CATEGORY[product.category];
+  // A qualified container counts only when the product type is that container ("Basket-style arrangement" in Baskets).
+  if (qualified && qualified === typeContainer && !found.has(qualified)) add(qualified, product.whatsIncluded!.find((item) => QUALIFIED.test(item))!);
+  if (typeContainer && found.size === 0) found.set(typeContainer, []);
+  if (found.size > 1) return { kind: "unresolved", evidence: [...found.values()].flat(), handTied, reason: "conflicting" };
+  if (found.size === 1) {
+    const [[kind, evidence]] = [...found];
+    return { kind, evidence, handTied };
+  }
+  return qualified ? { kind: "unresolved", evidence: [], handTied: false, reason: "qualified" } : { kind: "unrecorded", evidence: [], handTied: false };
+}
+
+// ---------------------------------------------------------------------------
+// Collections whose membership is a recorded fact
+// ---------------------------------------------------------------------------
+
+/** A labelled group of products that go with a collection without being one of its products. */
+export type RelatedSection<T> = { id: string; label: string; note: string; products: T[] };
+export type CollectionMembership<T> = {
+  /** The collection's own products: what its count, sitemap entry and city views list. */
+  primary: T[];
+  /** Related choices, each labelled; never counted as the collection's products. */
+  related: RelatedSection<T>[];
+  /** The word the count uses ("plan" on Subscriptions). */
+  noun?: string;
+};
+
+type Selectable = Pick<Product, "slug" | "category" | "whatsIncluded" | "isAddon" | "isSubscription" | "collectionTags">;
+const tagged = (product: Selectable, tag: string) => (product.collectionTags ?? []).includes(tag);
+const kindOf = (product: Selectable) => recordedPresentation(product).kind;
+const related = <T,>(sections: RelatedSection<T>[]) => sections.filter((section) => section.products.length > 0);
+
+/**
+ * Collections where "is this product" and "can be used with this product"
+ * had been mixed by the category-or-tag union. The primary set comes from the
+ * record; anything the tag union also reached that is not one is kept as a
+ * labelled related choice. Every other collection keeps that union.
+ */
+export const RECORDED_COLLECTIONS: Record<string, <T extends Selectable>(catalogue: T[]) => CollectionMembership<T>> = {
+  // Plans are subscription records; a cutter or flower food is care equipment, not a plan.
+  subscriptions: (catalogue) => {
+    const primary = catalogue.filter((product) => product.isSubscription);
+    return {
+      primary,
+      noun: "plan",
+      related: related([{ id: "care", label: "Flower care to add to a plan", note: "Care products, not plans. Add one to a plan's order if you want it.", products: catalogue.filter((product) => !product.isSubscription && tagged(product, "subscriptions")) }]),
+    };
+  },
+  // Every one-off product whose record includes a flower box, in any category; a weekly plan and box equipment are related.
+  flowerbox: (catalogue) => {
+    const primary = catalogue.filter((product) => !product.isSubscription && kindOf(product) === "box");
+    const plans = catalogue.filter((product) => product.isSubscription && (kindOf(product) === "box" || tagged(product, "flowerbox")));
+    return {
+      primary,
+      related: related([
+        { id: "plan", label: "A flower box every week", note: "A recurring plan rather than a single box. Delivery days, start date and price are agreed on WhatsApp.", products: plans },
+        { id: "equipment", label: "To go with a flower box", note: "Equipment and care, not flower boxes.", products: catalogue.filter((product) => tagged(product, "flowerbox") && !primary.includes(product) && !plans.includes(product)) },
+      ]),
+    };
+  },
+  baskets: (catalogue) => ({ primary: catalogue.filter((product) => !product.isSubscription && kindOf(product) === "basket"), related: [] }),
+  // Wrapped or hand-tied bouquets: no vase, box, basket or open presentation. The URL is kept; the visible name says "wrapped".
+  "hand-tied-bouquets": (catalogue) => ({ primary: catalogue.filter((product) => isBouquet(product) && kindOf(product) === "wrapped"), related: [] }),
+  // Vases sold as products (an add-on vase is still a vase); arrangements that include one, and flowers for your own vase, are related.
+  vases: (catalogue) => {
+    const primary = catalogue.filter((product) => product.category === "Vases");
+    const arranged = catalogue.filter((product) => !primary.includes(product) && !product.isAddon && kindOf(product) === "vase");
+    return {
+      primary,
+      related: related([
+        { id: "arranged", label: "Arrangements that come in a vase", note: "Each of these records a vase as included.", products: arranged },
+        { id: "for-a-vase", label: "Flowers for your own vase", note: "These do not record an included vase. Arrange them in your own, or add one of the vases above.", products: catalogue.filter((product) => tagged(product, "vases") && !primary.includes(product) && !arranged.includes(product)) },
+      ]),
+    };
+  },
+  "bouquets-with-vases": (catalogue) => ({ primary: catalogue.filter((product) => isBouquet(product) && kindOf(product) === "vase"), related: [] }),
+  // Products sold by the stem; a box of loose flowers is a related choice, not a stem unit.
+  "by-stems": (catalogue) => {
+    const primary = catalogue.filter((product) => product.category === "By Stems");
+    return {
+      primary,
+      related: related([{ id: "loose", label: "Loose flowers in a box", note: "A box of loose flowers to arrange yourself, not flowers sold by the stem.", products: catalogue.filter((product) => tagged(product, "by-stems") && !primary.includes(product)) }]),
+    };
+  },
+};
+
+// ---------------------------------------------------------------------------
 // Flowers (recorded flower types only)
 // ---------------------------------------------------------------------------
 

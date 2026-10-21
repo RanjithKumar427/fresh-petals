@@ -9,24 +9,12 @@
 // what we confirm, not what a pack contains.
 import type { Product } from "./productCatalog";
 import { whatsappLink } from "../config/storefront";
-import type { FlowerKey } from "./catalogueRange";
+import { PRESENTATION_UNCONFIRMED, recordedPresentation, type FlowerKey, type PresentationKind } from "./catalogueRange";
 
 const lowerFirst = (text: string) => text.charAt(0).toLowerCase() + text.slice(1);
 const list = (items: string[]) => (items.length <= 1 ? items.join("") : `${items.slice(0, -1).join(", ")} and ${items.at(-1)}`);
 
-/**
- * Designs whose photograph shows a different presentation from the record
- * (checked by eye, 16 October 2026). Each record says wrapping; the
- * photograph shows what is given here. Until the owner confirms which is
- * right, no page states either: the record is shown qualified
- * (presentationCheck) and nothing derived from it (lines, examples, titles,
- * photo descriptions) claims a presentation. The records are not changed.
- */
-const PRESENTATION_UNCONFIRMED: Record<string, string> = {
-  "mandarin-lily-glow": "a glass vase",
-  "luxe-lily-bloom": "a glass vase",
-  "stargazer-affair": "a round box, with red roses among the lilies",
-};
+const PRESENTATION_ITEM = /wrapping|hand-tied|\bvase\b|\bbox\b|basket/i;
 
 /** The container a photograph shows, as one word ("vase", "box"), for the customer-facing question. */
 const containerWord = (photographed: string) => (/\bvase\b/i.test(photographed) ? "vase" : /\bbox\b/i.test(photographed) ? "box" : "container");
@@ -45,8 +33,33 @@ export function presentationCheck(product: Pick<Product, "slug" | "whatsIncluded
   };
 }
 
-/** How a bouquet is presented, from its record: "in a glass vase", "in kraft wrapping", or null when unrecorded or unconfirmed. */
+/**
+ * How a bouquet is presented, from its record (src/data/catalogueRange.ts
+ * recordedPresentation): "in a glass vase", "in a pink flower box", "in a
+ * wicker basket", "in kraft wrapping", "hand-tied", or null when unrecorded,
+ * conflicting or unconfirmed.
+ */
 export function bouquetPresentation(product: Product): string | null {
+  const { kind, evidence, handTied } = recordedPresentation(product);
+  const item = evidence[0];
+  if (!item) return null;
+  // "Pink flower box" → "in a pink flower box"; "Giftbox arrangement" → "in a giftbox"; "Basket packing" → "in a basket".
+  if (kind === "vase" || kind === "box" || kind === "basket") return `in a ${lowerFirst(item.replace(/^packed /i, "").replace(/-style\b/i, "").replace(/ (arrangement|packing|presentation)$/i, ""))}`;
+  if (kind === "wrapped") return handTied && !/wrapp/i.test(item) ? "hand-tied" : `in ${lowerFirst(item)}`;
+  return null;
+}
+
+/** Recorded as arranged in a vase (src/data/catalogueRange.ts recordedPresentation). */
+export const isVaseArrangement = (product: Product) => recordedPresentation(product).kind === "vase";
+export const presentationKind = (product: Product): PresentationKind => recordedPresentation(product).kind;
+
+/**
+ * The presentation words a photograph description has always used: a
+ * recorded vase or wrapping, nothing else. Photograph descriptions follow
+ * what the photograph shows (src/data/productPhotos.ts), so a container the
+ * record lists is not added to them.
+ */
+function photoPresentation(product: Product): string | null {
   if (PRESENTATION_UNCONFIRMED[product.slug]) return null;
   const included = product.whatsIncluded ?? [];
   const vase = included.find((item) => /\bvase\b/i.test(item));
@@ -54,8 +67,6 @@ export function bouquetPresentation(product: Product): string | null {
   const wrap = included.find((item) => /wrapping/i.test(item));
   return wrap ? `in ${lowerFirst(wrap)}` : null;
 }
-
-export const isVaseArrangement = (product: Product) => (product.whatsIncluded ?? []).some((item) => /\bvase\b/i.test(item));
 
 /** The flowers recorded for a bouquet, as a phrase ("red roses and fresh rose foliage"), or null. */
 export function bouquetFlowers(product: Product): string | null {
@@ -67,7 +78,7 @@ export function bouquetFlowers(product: Product): string | null {
 export function bouquetPhotoAlt(product: Product): string {
   const flowers = bouquetFlowers(product);
   if (!flowers) return product.name;
-  const presentation = bouquetPresentation(product);
+  const presentation = photoPresentation(product);
   return `${product.name}: ${flowers}${presentation ? `, ${presentation}` : ""}`;
 }
 
@@ -188,15 +199,29 @@ export const POOJA_PHOTO_NOTE =
 // All Flowers: groups by how a product is presented, read from its record.
 // ---------------------------------------------------------------------------
 
+// Each product's presentation comes from src/data/catalogueRange.ts
+// recordedPresentation, so this page, the bouquet note, the collections and
+// the product titles agree. A design whose presentation is open (an owner
+// check, conflicting or qualified items) is grouped as such, never guessed.
 type Listed = Pick<Product, "slug" | "category" | "whatsIncluded">;
 const ALL_FLOWER_GROUPS: { id: string; label: string; note: string; test: (product: Listed) => boolean }[] = [
   { id: "stems", label: "Flowers by the stem", note: "Loose stems to arrange yourself, priced on the day's flower market and confirmed on WhatsApp.", test: (product) => /^by stems$/i.test(product.category) },
-  { id: "vase", label: "Arrangements in a vase", note: "Arranged in a vase and ready to stand on a table or a desk.", test: (product) => (product.whatsIncluded ?? []).some((item) => /\bvase\b/i.test(item)) },
-  { id: "lilies", label: "Lily bouquets", note: "Fewer, larger flowers. Lilies usually arrive with some buds closed that open over the following days.", test: (product) => /^lilies$/i.test(product.category) },
-  { id: "wrapped", label: "Hand-wrapped bouquets", note: "Wrapped and tied by hand. Each card lists the flowers on record; the wrapping is on the design's own page.", test: (product) => /^bouquets$/i.test(product.category) },
-  { id: "boxes-baskets", label: "Flowers in a box or a basket", note: "Packed to carry or to give. These keep their listed prices.", test: (product) => /^(flowerbox|baskets)$/i.test(product.category) },
+  { id: "wrapped", label: "Wrapped and hand-tied bouquets", note: "Each records wrapping or hand-tying and no vase, box or basket; the design's own page says which. Handed over as they are, then put in water.", test: (product) => recordedPresentation(product).kind === "wrapped" },
+  { id: "vase", label: "Arrangements in a vase", note: "Each records a vase as included, so it can stand on a table or a desk as it arrives.", test: (product) => recordedPresentation(product).kind === "vase" },
+  { id: "boxes-baskets", label: "Flowers in a box or a basket", note: "Each records a flower box or a basket. Packed to carry or to give.", test: (product) => ["box", "basket"].includes(recordedPresentation(product).kind) },
+  { id: "to-confirm", label: "Presentation confirmed on WhatsApp", note: "For these designs the record does not settle how they arrive, or the photograph shows something different. Ask on WhatsApp before you order.", test: (product) => recordedPresentation(product).kind === "unresolved" },
 ];
 const ALL_FLOWERS_OTHER = { id: "more", label: "More flowers", note: "Other flower products in the catalogue, at their listed prices." };
+
+/**
+ * Old All Flowers addresses whose group no longer exists, and where their
+ * products now are (rendered as a titled signpost at that anchor, with the
+ * groups on the page that hold them, so a saved link still lands somewhere
+ * useful; no product card is repeated).
+ */
+export const ALL_FLOWERS_MOVED_GROUPS: { id: string; flower: FlowerKey; title: string; text: string; href: string; label: string }[] = [
+  { id: "lilies", flower: "lilies", title: "Looking for lilies?", text: "Lily designs are now grouped by how they arrive, like every other design on this page. All of them, with lilies by the stem, are on one page:", href: "/categories/lilies", label: "lilies" },
+];
 
 /**
  * All Flowers: wrapped bouquet, vase arrangement, or box/basket, compared from
@@ -205,27 +230,24 @@ const ALL_FLOWERS_OTHER = { id: "more", label: "More flowers", note: "Other flow
  * instructions recorded on at least half of the group's products. Nothing is
  * typed per product, so a catalogue change updates the table.
  */
-const PRESENTATION_ROWS: { id: string; label: string; suits: string; own: RegExp }[] = [
-  { id: "wrapped", label: "Wrapped bouquet", suits: "Handing over in person, or a home that already has a vase. It needs water soon after it arrives.", own: /wrapping|hand-tied/i },
-  { id: "vase", label: "Arrangement in a vase", suits: "An office desk, or a home without a vase. It can stand as it arrives.", own: /\bvase\b/i },
-  { id: "boxes-baskets", label: "Box or basket", suits: "Carrying, gifting or setting down without a vase. The flowers inside are confirmed with you on WhatsApp.", own: /\bbox\b|basket/i },
+const PRESENTATION_ROWS: { id: string; label: string; suits: string }[] = [
+  { id: "wrapped", label: "Wrapped or hand-tied bouquet", suits: "Handing over in person, or a home that already has a vase. It needs water soon after it arrives." },
+  { id: "vase", label: "Arrangement in a vase", suits: "An office desk, or a home without a vase. It can stand as it arrives." },
+  { id: "boxes-baskets", label: "Box or basket", suits: "Carrying, gifting or setting down without a vase. The flowers inside are confirmed with you on WhatsApp." },
 ];
-const PRESENTATION_ITEM = /wrapping|hand-tied|\bvase\b|\bbox\b|basket/i;
 
 export type PresentationRow = { id: string; label: string; suits: string; comesIn: string[]; alsoOnSome: string[]; care: string[]; examples: Product[] };
 
 export function presentationComparison<T extends Product>(sections: { id: string; products: T[] }[]): PresentationRow[] {
-  return PRESENTATION_ROWS.flatMap(({ own, ...row }) => {
+  return PRESENTATION_ROWS.flatMap((row) => {
     const products = sections.find((section) => section.id === row.id)?.products ?? [];
     if (products.length === 0) return [];
-    const items = [...new Set(products.flatMap((product) => (product.whatsIncluded ?? []).filter((item) => PRESENTATION_ITEM.test(item))))];
-    // The row's own presentation, then any other recorded on some of its designs (a wrapped bouquet that comes in a box).
-    const comesIn = items.filter((item) => own.test(item));
-    const alsoOnSome = items.filter((item) => !own.test(item));
+    // Only the items that established each design's presentation; a group holds one presentation, so there is no "also on some".
+    const comesIn = [...new Set(products.flatMap((product) => recordedPresentation(product).evidence))];
     const counts = new Map<string, number>();
     for (const product of products) for (const note of new Set(product.careNotes ?? [])) counts.set(note, (counts.get(note) ?? 0) + 1);
     const care = [...counts].filter(([, count]) => count * 2 >= products.length).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([note]) => note);
-    return [{ ...row, comesIn, alsoOnSome, care, examples: products.slice(0, 2) }];
+    return [{ ...row, comesIn, alsoOnSome: [], care, examples: products.slice(0, 2) }];
   });
 }
 
@@ -238,8 +260,8 @@ export function allFlowerSections<T extends Listed>(products: T[]): { id: string
     return { id: group.id, label: group.label, note: group.note, products: items };
   });
   const rest = products.filter((product) => !placed.has(product.slug));
-  // Shown in a shopper's order: wrapped bouquets first, then lilies, vase arrangements, boxes and baskets, stems.
-  const order = ["wrapped", "lilies", "vase", "boxes-baskets", "stems"];
+  // Shown in a shopper's order: wrapped bouquets first, then vase arrangements, boxes and baskets, stems, designs to confirm.
+  const order = ["wrapped", "vase", "boxes-baskets", "stems", "to-confirm"];
   return [...order.map((id) => sections.find((section) => section.id === id)!), ...(rest.length ? [{ ...ALL_FLOWERS_OTHER, products: rest }] : [])].filter((section) => section.products.length > 0);
 }
 

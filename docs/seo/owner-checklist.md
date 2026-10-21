@@ -39,7 +39,7 @@ Google verifies by video, phone or post. Do not create a profile for an address 
 
 ## 5. Reviews
 
-Ask customers after a completed order, with the direct review link from the Business Profile. Do not offer a discount for a review, do not write them yourself, and do not copy reviews between the profile and the website. The website's `/reviews` page carries earlier feedback labelled with Hyderabad areas; leave those labels as they are and add Bengaluru feedback as it arrives, with the customer's permission.
+Ask customers after a completed order, with the direct review link from the Business Profile. Do not offer a discount for a review, do not write them yourself, and do not copy reviews between the profile and the website. The website's `/reviews` page carries nine earlier feedback notes labelled with Hyderabad areas (May 2026). Since 21 October 2026 the four attributed to an enquiry are labelled "Enquiry", the others "Feedback", and none is presented as a verified or completed order: the repository holds no order record, consent note or source conversation for any of them. Their text, dates and areas are unchanged. Add Bengaluru feedback as it arrives, with the customer's permission.
 
 ## 6. Local references
 
@@ -54,7 +54,8 @@ Never buy links or pay for listings that promise rankings.
 
 ## 7. Vercel housekeeping
 
-- Redirect `fresh-petals-brown.vercel.app` to `onlyfreshpetals.in` in the project's domain settings.
+- Redirect the exact default host `fresh-petals-brown.vercel.app` to `onlyfreshpetals.in` in the project's domain settings. A separate release/account action; do not redirect preview deployments in general.
+- IndexNow receipts already recorded (`search-growth-2026-10.md`) are history; a new submission is a separate step after a release.
 - Image optimisation is now used for garland photographs. Check Usage → Image Optimization after a month; the catalogue needs roughly 500 resized images.
 
 ## Decisions still open
@@ -66,3 +67,17 @@ Never buy links or pay for listings that promise rankings.
 - For either list, a new photograph is described as the product, and listed in the image sitemap, only after someone looks at it and records it in `src/data/productPhotos.ts`; a matching file name is not enough. Reasons: `image-discovery-2026-10-16.md`.
 - **Mandarin Lily Glow, Luxe Lily Bloom, Stargazer Affair:** wrapped, as their records say, or in a vase or box, as their photographs show? Until you say, their pages show both and ask on WhatsApp; the records are unchanged.
 - **Chocolates, Flower Food Sachets, Pet Friendly Flowerbox** have no photograph at all.
+- **Sweet Petal Hour** records a "Vase-style arrangement". Is a vase included? Until you say, it is not listed as a vase arrangement, titled one or counted as wrapped; its page is unchanged.
+
+### Inputs for the 21 October 2026 corrections
+
+Only facts that are missing; nothing below is assumed in the meantime.
+
+| Input | Where it is used | Until it is supplied |
+|---|---|---|
+| The three lily presentations above, and Sweet Petal Hour's vase | Collections, titles, the All Flowers groups | Listed under "Presentation confirmed on WhatsApp" |
+| Photographs for the placeholder and representative lists above | Product pages, social previews, image sitemap | Placeholder or labelled representative picture |
+| For each `/reviews` note: an order or enquiry reference, and the customer's consent to publish | `/reviews` | Labelled "Feedback" or "Enquiry"; not called verified |
+| Evidence for "Bestselling" (request or sales counts for each design) | `/categories/bestselling-bouquets` | Named "Selected Bouquets", described as a selection, not a ranking |
+| Garland pilots FP-G001, FP-G034, FP-G106, FP-G035, FP-G086, FP-G085: sold as single or pair, length, flowers used, thickness, finish, preparation time, substitutions, in the existing admin fields | Garland pages and the wedding garland guide | "Confirmed on WhatsApp". FP-G106's photograph shows two garlands; that is not recorded as a pair until its "sold as" field says so. The two designs already recorded as pairs keep that |
+| City coverage | Delivery pages | The owner-confirmed list in `src/data/serviceCities.ts`. A delivery city is not a branch or a pickup address |

@@ -23,7 +23,7 @@ import { loadAuthoritativePrices, withAuthoritativePrice } from "../../server/se
 import { isListedGarland, loadGarlands, type GarlandProduct } from "../../data/garlands";
 import { GARLAND_FILTER_LABELS, garlandPhotoSrcset } from "../../data/garlandRules";
 import { garlandEnquiryHref } from "../../utils/garlandEnquiry";
-import { bouquetLine, bouquetPresentation, isVaseArrangement, poojaSections } from "../../data/collectionGuidance";
+import { bouquetLine, isVaseArrangement, poojaSections, presentationKind } from "../../data/collectionGuidance";
 import { productPhotoAlt } from "../../data/productPhotos";
 import { QUOTE_ONLY_ENQUIRE_LABEL, QUOTE_ONLY_PRICE_LABEL, isQuoteOnly } from "../../shared/quoteOnly";
 import { photoDimensions, photoVariants } from "../../data/photoManifest";
@@ -147,7 +147,7 @@ function cardsFor(source: HubSource): Card[] {
       return fresh(giftProducts(source.route, membership, publicCatalogue), source.limit).map(productCard);
     case "presentation": {
       const bouquets = bouquetGroups.flatMap(({ products }) => products);
-      const wrapped = fresh(bouquets.filter((product) => !isVaseArrangement(product) && bouquetPresentation(product)), 1);
+      const wrapped = fresh(bouquets.filter((product) => presentationKind(product) === "wrapped"), 1);
       return [...wrapped, ...fresh(bouquets.filter(isVaseArrangement), 1)].map(productCard);
     }
     case "garlands":

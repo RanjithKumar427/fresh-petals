@@ -13,12 +13,14 @@
 // 3. Fails the build if any prerendered page runs an inline script whose
 //    SHA-256 is not in that page's script-src, or if a script-src allows
 //    'unsafe-inline' or 'unsafe-eval'. Data blocks (application/json,
-//    application/ld+json) are not executed and need no hash.
-import { createHash } from 'node:crypto';
+//    application/ld+json) are not executed and need no hash. Script text
+//    is read as a browser parses it (CRLF and lone CR become LF) before
+//    hashing, so a page whose rendered script would be blocked fails here.
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SECURITY_HEADERS } from '../../src/server/http/securityHeaders.mjs';
+import { inlineScriptHash } from '../../src/server/http/inlineScriptHash.mjs';
 
 const EXECUTABLE = new Set(['', 'text/javascript', 'application/javascript', 'module']);
 const escapeRegex = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -36,7 +38,7 @@ export function inlineScripts(html) {
   return found;
 }
 
-const sha256 = (text) => `'sha256-${createHash('sha256').update(text, 'utf8').digest('base64')}'`;
+const sha256 = (text) => `'${inlineScriptHash(text)}'`;
 
 /** script-src sources of a policy string. */
 export function scriptSources(policy) {

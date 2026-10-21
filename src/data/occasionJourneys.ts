@@ -24,6 +24,7 @@ import { LAUNCH_OCCASIONS, LAUNCH_OCCASION_ROUTES, GARLAND_OCCASION_ROUTES, garl
 import { bouquetRange, isBouquet } from "./catalogueRange";
 import { OCCASION_PAGES, type OccasionMeta } from "./occasionPages";
 import { isListedGarland, type GarlandDesign } from "./garlandRules";
+import { CEREMONY_INDEXABLE_OCCASIONS, NOINDEX_OCCASION_SLUGS } from "./seoLanding";
 
 import { OCCASION_FILTER_LABELS, COLOUR_LABELS, BUDGET_LABELS } from "./shoppingTaxonomy";
 import { serviceCityCount } from "./serviceCities";
@@ -338,6 +339,39 @@ export const LIVE_OCCASION_ROUTES = new Set(OCCASION_PAGES.map((occasion) => occ
  */
 export function occasionPageProducts(occasion: OccasionMeta, membership: Membership, catalogue: Product[]): Product[] {
   return withAssignments(catalogue, membership).filter((product) => occasionProductEligible(product.slug, occasion.slug, product.occasionTags ?? [], catalogue));
+}
+
+/**
+ * Whether /occasions/<slug> is offered to search: the rule its own robots tag
+ * applies (OccasionPage.astro) and sitemap-occasions.xml lists. Explicit
+ * noindex occasions never are; otherwise the page must list products, or be a
+ * ceremony occasion (CEREMONY_INDEXABLE_OCCASIONS) with a public garland
+ * assigned to it. `garlands` are the listed garland products;
+ * `membership` must cover the whole public catalogue, because the older
+ * occasion pages list any product type.
+ */
+export function occasionIndexable(occasion: OccasionMeta, membership: Membership, catalogue: Product[], garlands: { occasionTags?: string[] }[]): boolean {
+  if (NOINDEX_OCCASION_SLUGS.has(occasion.slug)) return false;
+  if (occasionPageProducts(occasion, membership, catalogue).length > 0) return true;
+  return CEREMONY_INDEXABLE_OCCASIONS.has(occasion.slug) && garlands.some((garland) => garland.occasionTags?.includes(occasion.slug));
+}
+
+export type OccasionLink = { label: string; href: string; count: number; noun: string };
+
+/**
+ * The /occasions directory's other occasions: every indexable occasion page
+ * that no buying need already links to. Destinations are compared by path, so
+ * /occasions/wedding?for=ceremony covers /occasions/wedding, and a need that
+ * points at the filtered bouquet list does not cover the occasion's own page.
+ * The count is what that page lists, named for what it counts.
+ */
+export function moreOccasionLinks(needs: Pick<NeedDestination, "href">[], membership: Membership, catalogue: Product[], garlands: { occasionTags?: string[] }[]): OccasionLink[] {
+  const linked = new Set(needs.flatMap((need) => (need.href ? [need.href.split(/[?#]/)[0]] : [])));
+  return OCCASION_PAGES.filter((occasion) => !linked.has(`/occasions/${occasion.slug}`) && occasionIndexable(occasion, membership, catalogue, garlands)).map((occasion) => {
+    const products = occasionPageProducts(occasion, membership, catalogue);
+    const bouquets = products.length > 0 && products.every(isBouquet);
+    return { label: occasion.name, href: `/occasions/${occasion.slug}`, count: products.length, noun: `${bouquets ? "bouquet" : "product"}${products.length === 1 ? "" : "s"}` };
+  });
 }
 
 export type CarouselOccasion = { key: string; label: string; href: string; products: Product[]; feature?: string };

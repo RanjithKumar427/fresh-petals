@@ -12,6 +12,7 @@ import sharp from 'sharp';
 import { sourceLoader } from './source-loader.mjs';
 import { cspProblems, inlineScripts, scriptSources } from '../build/security-headers.mjs';
 import { CSP_DIRECTIVES, SECURITY_HEADERS } from '../../src/server/http/securityHeaders.mjs';
+import { inlineScriptHash, normalizeNewlines } from '../../src/server/http/inlineScriptHash.mjs';
 
 const web = { Response, Request, Headers, ReadableStream, TextDecoder, TextEncoder, FormData, Blob, File, Buffer, process };
 const load = sourceLoader({ globals: web });
@@ -616,10 +617,50 @@ test('CSP check: unhashed inline scripts and unsafe sources are caught; data blo
   assert.deepEqual(scriptSources("default-src 'self';script-src 'self' 'sha256-a'"), ["'self'", "'sha256-a'"]);
 });
 
+// Line-ending fixtures: the same reviewed script as checked out with LF, CRLF
+// (core.autocrlf on Windows) and lone CR. A browser parses all three to the LF text.
+const LINE_ENDINGS = {
+  LF: 'window.__ran = 1;\nwindow.__ran += 1;\n',
+  CRLF: 'window.__ran = 1;\r\nwindow.__ran += 1;\r\n',
+  CR: 'window.__ran = 1;\rwindow.__ran += 1;\r',
+};
+const quoted = (text) => `'${inlineScriptHash(text)}'`;
+const plainHash = (text) => `'sha256-${createHash('sha256').update(text, 'utf8').digest('base64')}'`;
+
+test('inline-script hash: LF, CRLF and lone CR give the browser\'s LF text and one hash; other edits change it', () => {
+  for (const [name, text] of Object.entries(LINE_ENDINGS)) {
+    assert.equal(normalizeNewlines(text), LINE_ENDINGS.LF, name);
+    assert.doesNotMatch(normalizeNewlines(text), /\r/, name);
+    assert.equal(inlineScriptHash(text), inlineScriptHash(LINE_ENDINGS.LF), name);
+  }
+  assert.equal(normalizeNewlines('a\r\r\nb\n\rc'), 'a\n\nb\n\nc', 'CR then CRLF is two newlines; LF then CR is two');
+  assert.equal(quoted(LINE_ENDINGS.LF), plainHash(LINE_ENDINGS.LF), 'LF text hashes as before');
+  for (const edit of ['window.__ran = 2;\nwindow.__ran += 1;\n', 'window.__ran = 1;\nwindow.__ran += 1;', ' window.__ran = 1;\nwindow.__ran += 1;\n']) {
+    assert.notEqual(inlineScriptHash(edit), inlineScriptHash(LINE_ENDINGS.LF), JSON.stringify(edit));
+  }
+});
+
+test('CSP check reads script text as a browser does: CRLF and lone-CR pages pass with the LF hash, fail with a raw-byte hash', () => {
+  const lfPolicy = `script-src 'self' ${quoted(LINE_ENDINGS.LF)}`;
+  for (const [name, text] of Object.entries(LINE_ENDINGS)) {
+    assert.deepEqual(cspProblems(`<script>${text}</script>`, lfPolicy), [], `${name} page, LF hash`);
+    // The old failure: a hash over the CR bytes, which the browser never hashes.
+    if (name !== 'LF') assert.equal(cspProblems(`<script>${text}</script>`, `script-src 'self' ${plainHash(text)}`).length, 1, `${name} page, raw-byte hash`);
+  }
+  assert.equal(cspProblems('<script>window.__ran = 2;\r\nwindow.__ran += 1;\r\n</script>', lfPolicy).length, 1, 'modified script');
+  assert.equal(cspProblems(`<script>${LINE_ENDINGS.LF}</script><script>alert(1)</script>`, lfPolicy).length, 1, 'extra script');
+  assert.deepEqual(cspProblems(`<script>${LINE_ENDINGS.CRLF}</script>`, `script-src 'self' 'unsafe-inline' ${quoted(LINE_ENDINGS.LF)}`), ["script-src allows 'unsafe-inline'"]);
+});
+
 test('CSP: reviewed inline scripts are rendered through InlineScript (hash of their literal code); no other is:inline code runs', () => {
   const component = read('src/components/InlineScript.astro');
-  assert.match(component, /createHash\("sha256"\)\.update\(code, "utf8"\)\.digest\("base64"\)/);
+  // One normalised text is both hashed and rendered.
+  assert.match(component, /const script = normalizeNewlines\(Astro\.props\.code\);/);
+  assert.match(component, /const hash = inlineScriptHash\(script\);/);
   assert.match(component, /Astro\.csp\?\.insertScriptHash\(hash\)/);
+  assert.match(component, /<script is:inline set:html=\{script\} \/>/);
+  assert.doesNotMatch(component, /set:html=\{(?!script\})/);
+  assert.match(read('scripts/build/security-headers.mjs'), /const sha256 = \(text\) => `'\$\{inlineScriptHash\(text\)\}'`;/);
   const files = [];
   const walk = (dir) => {
     for (const name of readdirSync(dir)) {
@@ -633,7 +674,7 @@ test('CSP: reviewed inline scripts are rendered through InlineScript (hash of th
   for (const file of files) {
     for (const match of read(file).matchAll(/<script\b[^>]*is:inline[^>]*>/g)) {
       const tag = match[0];
-      if (/type="application\/(ld\+)?json"/.test(tag) || /\ssrc=/.test(tag) || /set:html=\{code\}/.test(tag)) continue;
+      if (/type="application\/(ld\+)?json"/.test(tag) || /\ssrc=/.test(tag) || /set:html=\{script\}/.test(tag)) continue;
       inline.push(`${path.relative('.', file)}: ${tag}`);
     }
   }

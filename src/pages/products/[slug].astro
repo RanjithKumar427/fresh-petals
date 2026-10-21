@@ -512,11 +512,13 @@ const breadcrumbJsonLd = {
     )
   }
 
-  <!-- Customer Reviews -->
-  <section class="border-t border-line bg-ivory px-5 py-14 md:px-8 md:py-16">
+  <!-- Feedback: /reviews holds general, site-wide feedback, not reviews of
+       this product, and there is no product review system; the copy says
+       where the link goes rather than inviting a review of this product. -->
+  <section class="border-t border-line bg-ivory px-5 py-14 md:px-8 md:py-16" data-product-feedback>
     <div class="mx-auto max-w-5xl text-center">
       <h2 class="fp-h2">
-        Customer Reviews
+        Feedback
       </h2>
 
       <!-- P0.1 (Phase 1 discovery hardening) -- this block previously
@@ -530,10 +532,10 @@ const breadcrumbJsonLd = {
       <div class="mt-8 grid gap-6 border-t border-line pt-8 md:grid-cols-2 md:items-center">
         <div>
           <p class="text-sm font-medium text-ink">
-            Be the first to write a review
+            No reviews are shown for this product
           </p>
           <p class="mt-2 text-xs leading-6 text-moss">
-            Share your Fresh Petals experience and help others choose better.
+            General feedback about Fresh Petals is on one page. After an order, you can send yours on WhatsApp from there.
           </p>
         </div>
 
@@ -542,7 +544,7 @@ const breadcrumbJsonLd = {
             href="/reviews"
             class="inline-flex items-center justify-center bg-berry px-8 py-3 text-[10px] font-bold uppercase tracking-[0.22em] text-white transition hover:bg-berry-deep"
           >
-            Write a review
+            Read general feedback
           </a>
         </div>
       </div>

@@ -88,3 +88,32 @@ This cannot change a page already open in a browser, or a WhatsApp message or li
 | `/categories/roses` | Roses by the stem. Its URL and canonical are unchanged. |
 | Featured | The eight slugs in `src/data/launchCatalogue.ts`, filtered to public products. They feed the homepage four, the city "Featured bouquets" collection and guide examples, and never decide what a full list holds. |
 | Colours | From recorded flower types only. One rule: lavender, lilac, violet and mauve are filed under Purple, and `?colour=lavender` reads as purple. Unknown values are ignored. |
+
+## Presentation and recorded collections (21 October 2026)
+
+**Presentation** (`recordedPresentation` in `src/data/catalogueRange.ts`) is read from a product's included items and product type, never its name, photograph, file name or collection tags:
+
+| Result | When |
+|---|---|
+| wrapped | Wrapping or "Hand-tied" is recorded, and no container |
+| vase, box, basket | That container is recorded as included: "Glass vase", "Vase arrangement"; "Pink flower box", "Giftbox arrangement", "Flowerbox packing"; "Wicker basket", "Basket packing". A Flowerbox or Baskets product type is itself the container |
+| unresolved | One of the three owner checks (Mandarin Lily Glow, Luxe Lily Bloom, Stargazer Affair: `presentationCheck` still shows their qualified wording), two different presentations recorded, or only a qualified one ("Vase-style arrangement") that the product type does not confirm |
+| unrecorded | Nothing recorded |
+
+An optional, paired or explained item ("Vase option based on availability", "Can be paired with flowerbox orders", "Gift basket or hamper packing") is not an included container. The bouquet note, All Flowers groups and comparison, product titles ("Cotton Candy – Flower Box"), bouquet lines, guides and city examples all use this one result. Photograph descriptions do not: they keep describing what the photograph shows (`src/data/productPhotos.ts`), so a container found in the record is not added to alt text.
+
+**Recorded collections** (`RECORDED_COLLECTIONS`): for these category pages the category-or-tag union had mixed "is this product" with "goes with this product". Each now lists its own products, counted and used by city views and the sitemap, and shows anything else the union reached as a labelled related section that is not counted:
+
+| Collection | Its products | Related, not counted |
+|---|---|---|
+| Subscriptions | Subscription plans (the count says "plans") | Florist cutter, flower food |
+| Flowerbox | One-off products whose record includes a flower box, in any category | The weekly flower box plan; a vase and flower food |
+| Baskets | Products whose record includes a basket (Violet Picnic included) | — |
+| Wrapped & Hand-Tied Bouquets (`/categories/hand-tied-bouquets`, URL unchanged) | Bouquets resolved as wrapped, the wrapped lilies included | — |
+| Vases | Vases sold as products (add-on vases included) | Arrangements that include a vase; flowers for your own vase |
+| Bouquets With Vases | Bouquets resolved as vase | — |
+| By Stems | Products sold by the stem | Loose Flower Box |
+
+Nothing leaves search, the basket or its own category page. All Flowers places each product once (wrapped, vase, box or basket, stems, presentation to be confirmed, more); its old `#lilies` address lands on a titled signpost to `/categories/lilies` that names, with counts and links, the sections holding lily designs (the Lilies page's own rule: lilies recorded, plus lily stems), without repeating any product card.
+
+**Social previews.** Bouquets, All Flowers, Rose and Lilies pass the first photograph, in the full collection's order, that is reviewed as showing its product (the image sitemap's permission) to `BaseLayout` for Open Graph and Twitter; otherwise the default image stays. Filters on the page do not change it.

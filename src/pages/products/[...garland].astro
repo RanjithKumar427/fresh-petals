@@ -69,12 +69,17 @@ const jsonLd = product
       },
     ]
   : [];
-// Search snippet: what the photograph shows (the only confirmed details),
-// the design code, and how it is sold. An admin-written description leads
-// when there is one; the catalogue's placeholder ("… — design FP-G001.") does not.
+// Search snippet: an admin-written description when there is one (the
+// catalogue's placeholder "… — design FP-G001." is not), otherwise what the
+// photograph shows, said as a description of the photograph: two garlands in
+// a picture (FP-G106) are not a supplied pair. The unit is stated only when
+// recorded (soldUnit); otherwise it is one of the details confirmed on WhatsApp.
 const written = product && !/— design FP-G\d+\.$/.test(product.description) ? product.description.replace(/([^.!?])$/, "$1.") : "";
+const pictured = product ? `In the photograph: ${product.garland.image.alt.replace(/([^.!?])$/, "$1.")}` : "";
+const UNIT_WORDS = { single: "a single garland", pair: "a pair", set: "a set" } as const;
+const unitLine = product?.garland.soldUnit ? ` Sold as ${UNIT_WORDS[product.garland.soldUnit]}.` : " One garland or a pair, and the price, are confirmed on WhatsApp.";
 const metaDescription = product
-  ? `${written || product.garland.image.alt.replace(/([^.!?])$/, "$1.")} Design ${product.garland.code}, made to order by Fresh Petals. Price on WhatsApp.`
+  ? `${written || pictured} Design ${product.garland.code}, made to order by Fresh Petals.${unitLine}${product.garland.soldUnit ? " Price on WhatsApp." : ""}`
   : "This page isn't available.";
 ---
 

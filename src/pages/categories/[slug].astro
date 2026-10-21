@@ -4,7 +4,7 @@ import { loadAuthoritativePrices, withAuthoritativePrice } from "../../server/se
 import { loadPublicCatalogue } from "../../server/services/PublicCatalogue";
 import CategoryPage from "../../components/category/CategoryPage.astro";
 import { allFlowerSections, flowerSections, poojaSections, FLOWER_PAGES } from "../../data/collectionGuidance";
-import { allFlowersRange, arrangementsWith, stemsOf } from "../../data/catalogueRange";
+import { allFlowersRange, arrangementsWith, stemsOf, RECORDED_COLLECTIONS, type RelatedSection } from "../../data/catalogueRange";
 
 type CategoryMeta = {
   name: string;
@@ -56,10 +56,10 @@ export async function getStaticPaths() {
       "Fresh pooja flowers and jasmine for daily pooja, festivals and temple offerings, based on daily market availability.",
 
     flowerbox:
-      "Fresh flower boxes for DIY arrangements, gifting, pooja use and custom flower requirements.",
+      "Fresh flowers packed in a box, for gifting or for arranging yourself: every design whose record includes a flower box. A weekly flower box plan and box equipment are listed separately.",
 
     baskets:
-      "Fresh flower baskets for gifting, pooja, celebrations and premium custom arrangements.",
+      "Fresh flowers arranged in a basket, for gifting and celebrations: every design whose record includes a basket.",
 
     offers:
       "Budget flower picks, fresh bouquet deals and today’s available flower offers.",
@@ -68,7 +68,7 @@ export async function getStaticPaths() {
       "Add chocolates, candles, premium cards, vases, tools or decor items with your flower gifting order.",
 
     subscriptions:
-      "Recurring flower plans for pooja, jasmine, home styling and custom flower needs.",
+      "Recurring flower plans, with delivery days, start date and price agreed on WhatsApp. Flower care products are listed separately; they are not plans.",
 
     "dried-flowers":
       "Long-lasting dried flowers for home styling, desk decor, gifting and premium aesthetic corners.",
@@ -77,7 +77,7 @@ export async function getStaticPaths() {
       "Low-maintenance plants and succulent gifts paired with flowers for desk decor, housewarming and simple gifting.",
 
     vases:
-      "Glass vases and premium decor vase options to pair with flowerboxes, loose flowers and subscriptions.",
+      "Vases sold on their own, to pair with flowers. Arrangements that already include a vase, and flowers for your own vase, are listed separately.",
 
     "floral-tools":
       "Florist cutters, flower food and care essentials for customers who arrange flowers at home.",
@@ -101,7 +101,7 @@ export async function getStaticPaths() {
       "Fresh wedding flowers, bridal accessories, garlands and event flower requirements made on request.",
 
     "by-stems":
-      "Fresh flowers by stem for DIY arrangements, vases, gifting and custom flower styling.",
+      "Fresh flowers sold by the stem, for arranging yourself, priced on the day's flower market.",
 
     "eid-al-adha":
       "Elegant white bouquets, soft floral gifts and custom Bakrid flower arrangements available on request.",
@@ -139,14 +139,18 @@ export async function getStaticPaths() {
     "blue-flowers":
       "Blue-toned and cool pastel flower arrangements available as custom premium orders.",
 
+    // An owner-curated shortlist: no request or sales figures stand behind it (docs/seo/owner-checklist.md).
     "bestselling-bouquets":
-      "Fresh Petals’ most requested bouquet styles for gifting, celebrations and quick WhatsApp orders.",
+      "A shortlist of bouquet designs picked by Fresh Petals for gifting and celebrations. It is a selection, not a sales ranking.",
 
     "mini-bouquets":
       "Small, cute and affordable mini bouquets for simple gifting and daily flower moments.",
 
     "bouquets-with-vases":
-      "Ready-to-display flower bouquets paired with glass vases for home styling and gifting.",
+      "Bouquets and arrangements whose record includes a vase, ready to stand on a table as they arrive.",
+
+    "hand-tied-bouquets":
+      "Bouquets whose record lists wrapping or hand-tying, with no vase, box or basket: handed over as they are, then put in water.",
 
     "floral-torans-and-strings":
       "Fresh floral torans, strings and traditional decor flowers for pooja, functions and festivals.",
@@ -221,7 +225,9 @@ export async function getStaticPaths() {
     "red-flowers": "Red Flowers",
     "yellow-flowers": "Yellow Flowers",
     "blue-flowers": "Blue Flowers",
-    "bestselling-bouquets": "Bestselling Bouquets",
+    // The URL is kept; the name says what it is, an owner-curated selection.
+    "bestselling-bouquets": "Selected Bouquets",
+    "hand-tied-bouquets": "Wrapped & Hand-Tied Bouquets",
     "mini-bouquets": "Mini Bouquets",
     "bouquets-with-vases": "Bouquets With Vases",
     "floral-torans-and-strings": "Floral Torans & Strings",
@@ -284,9 +290,6 @@ export async function getStaticPaths() {
     tags.some((tag) => product.collectionTags?.includes(tag));
   const menuCategoryRules: Record<string, (product: Product) => boolean> = {
     sunflower: (product) => (product.flowerTypes ?? []).some((type) => /sunflower/i.test(type)),
-    "bouquets-with-vases": (product) =>
-      (product.category === "Bouquets" || product.category === "Lilies") &&
-      (product.whatsIncluded ?? []).some((item) => /\bvase/i.test(item)),
     "floral-torans-and-strings": (product) => hasTag(product, ["flower-strings-torans"]),
     "all-decor": (product) => hasTag(product, ["home-decor", "desk-decor", "premium-decor"]),
     "all-gifts": (product) => hasTag(product, ["gifting", "premium-gifting", "hampers"]),
@@ -302,12 +305,18 @@ export async function getStaticPaths() {
     ...Object.fromEntries(Object.entries(FLOWER_PAGES).map(([slug, flower]) => [slug, () => [...arrangementsWith(publicCatalogue, flower), ...stemsOf(publicCatalogue, flower)]])),
   };
 
+  // Collections whose membership is a recorded fact (subscriptions, flower
+  // boxes, baskets, wrapped bouquets, vases, stems): their own products, with
+  // anything the category-or-tag union also reached listed as a labelled
+  // related choice, never counted. City views read the same primary set.
+  const recorded = (slug: string) => RECORDED_COLLECTIONS[slug]?.(publicCatalogue);
+
   // Only public catalogue products are listed (src/server/services/PublicCatalogue.ts).
   // The set of category addresses below still comes from the whole static
   // catalogue, so a category whose products are all unpublished keeps its
   // URL but is empty, noindexed and left out of the sitemap.
   const getProductsForSlug = (slug: string) =>
-    derivedCollections[slug]?.() ?? publicCatalogue.filter((product) => {
+    derivedCollections[slug]?.() ?? recorded(slug)?.primary ?? publicCatalogue.filter((product) => {
       const productCategorySlug = slugify(product.category);
 
       return (
@@ -346,6 +355,8 @@ export async function getStaticPaths() {
     };
 
     const products = getProductsForSlug(slug).map((product) => withAuthoritativePrice(product, priceMap));
+    const membership = recorded(slug);
+    const related = (membership?.related ?? []).map((section) => ({ ...section, products: section.products.map((product) => withAuthoritativePrice(product, priceMap)) }));
 
     return {
       params: {
@@ -354,6 +365,8 @@ export async function getStaticPaths() {
       props: {
         category,
         products,
+        related,
+        countNoun: membership?.noun,
       },
     };
   });
@@ -364,11 +377,13 @@ export async function getStaticPaths() {
 const listed = (Astro.props as { products: Product[] }).products;
 const slug = Astro.params.slug ?? "";
 const sections = slug === "pooja-flowers" ? poojaSections(listed) : slug === "all-flowers" ? allFlowerSections(listed) : FLOWER_PAGES[slug] ? flowerSections(listed, FLOWER_PAGES[slug]) : [];
-const { category, products } = Astro.props as {
+const { category, products, related = [], countNoun } = Astro.props as {
   category: CategoryMeta;
   products: Product[];
+  related?: RelatedSection<Product>[];
+  countNoun?: string;
 };
 const publicSlugs = new Set((await loadPublicCatalogue()).map((product) => product.slug));
 ---
 
-<CategoryPage category={category} products={products} sections={sections} publicSlugs={publicSlugs} />
+<CategoryPage category={category} products={products} sections={sections} related={related} countNoun={countNoun} publicSlugs={publicSlugs} />

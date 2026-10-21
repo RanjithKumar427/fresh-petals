@@ -484,3 +484,221 @@ test('admin drift: only equivalent fields compared; placeholders and deliberate 
   assert.equal(storefrontMessage('published', { mapped: false, deployedStatus: 'published' }).tone, 'problem');
   assert.equal(storefrontMessage('published', { mapped: true, deployedStatus: null }).tone, 'pending');
 });
+
+// ---------------------------------------------------------------------------
+// Catalogue accuracy (21 October 2026): collection semantics, presentation,
+// occasion directory, metadata and feedback wording
+// ---------------------------------------------------------------------------
+
+const guidance = load('src/data/collectionGuidance.ts');
+const bySlug = (slug) => productCatalog.find((p) => p.slug === slug);
+const membershipOf = (slug, list = catalogue) => {
+  const m = range.RECORDED_COLLECTIONS[slug](list);
+  return { primary: slugs(m.primary), related: Object.fromEntries(Array.from(m.related, (s) => [s.id, slugs(s.products)])), noun: m.noun };
+};
+
+test('presentation resolver: inclusion phrases, optional equipment, qualified and conflicting items, the three owner checks; never the name', () => {
+  const kind = (whatsIncluded, extra = {}) => range.recordedPresentation({ slug: 'fixture', category: 'Bouquets', whatsIncluded, ...extra }).kind;
+  // The phrases the catalogue actually uses ("\bbox\b" alone misses Giftbox/Flowerbox).
+  assert.equal(kind(['Fresh lilies', 'Giftbox arrangement']), 'box');
+  assert.equal(kind(['Pastel gypsophila', 'Pink flower box']), 'box');
+  assert.equal(kind(['Fresh loose flowers', 'Flowerbox packing']), 'box');
+  assert.equal(kind(['Fresh statice flowers', 'Wicker basket']), 'basket');
+  assert.equal(kind(['Fresh gerberas', 'Glass vase']), 'vase');
+  assert.equal(kind(['Fresh roses', 'Kraft wrapping']), 'wrapped');
+  assert.equal(range.recordedPresentation({ slug: 'x', category: 'Bouquets', whatsIncluded: ['Hand-tied bouquet'] }).handTied, true);
+  // Optional or paired equipment and care are not an included container.
+  assert.equal(kind(['Dried flower arrangement', 'Vase option based on availability']), 'unrecorded');
+  assert.equal(kind(['Florist cutter option', 'Can be paired with flowerbox orders']), 'unrecorded');
+  assert.equal(kind(['Fresh flower arrangement', 'Gift basket or hamper packing']), 'unrecorded');
+  // Conflicting or merely qualified evidence stays neutral; a product type can confirm a qualified container.
+  assert.equal(kind(['Kraft wrapping', 'Wicker basket']), 'unresolved');
+  assert.equal(kind(['Fresh gerberas', 'Vase-style arrangement']), 'unresolved');
+  assert.equal(kind(['Fresh seasonal flowers', 'Basket-style arrangement'], { category: 'Baskets' }), 'basket');
+  // Names, photographs and tags are not evidence.
+  assert.equal(range.recordedPresentation({ slug: 'x', name: 'Rose Box Deluxe', category: 'Bouquets', whatsIncluded: ['Kraft wrapping'], collectionTags: ['flowerbox', 'vases'] }).kind, 'wrapped');
+  // presentationCheck() comes first: the three designs whose photograph differs stay unresolved, records unchanged.
+  for (const slug of ['mandarin-lily-glow', 'luxe-lily-bloom', 'stargazer-affair']) {
+    const product = bySlug(slug);
+    assert.deepEqual(json(range.recordedPresentation(product)), { kind: 'unresolved', evidence: [], handTied: false, reason: 'owner-check' }, slug);
+    assert(product.whatsIncluded.some((item) => /wrapping/i.test(item)), `${slug} record unchanged`);
+    assert(/to be confirmed: the photograph shows/.test(guidance.presentationCheck(product).note), slug);
+  }
+  assert.equal(range.recordedPresentation(bySlug('sweet-petal-hour')).reason, 'qualified');
+});
+
+test('subscriptions count plans only; flower boxes come from records across categories; plans and equipment are related, never counted', () => {
+  const subs = membershipOf('subscriptions');
+  assert.deepEqual(subs.primary, ['weekly-flowerbox-subscription', 'jasmine-malli-subscription', 'custom-flower-subscription']);
+  assert.deepEqual(subs.related, { care: ['florist-cutter', 'flower-food-sachets'] });
+  assert.equal(subs.noun, 'plan');
+  assert(!subs.primary.includes('daily-pooja-flower-subscription'), 'archived plan stays out');
+  const box = membershipOf('flowerbox');
+  assert.deepEqual(box.primary, ['cotton-candy', 'fragrance-festive-giftbox', 'pink-serenity-flowerbox', 'diy-flowerbox', 'loose-flower-box', 'gift-flower-box', 'pet-friendly-flowerbox']);
+  assert.deepEqual(box.related, { plan: ['weekly-flowerbox-subscription'], equipment: ['clear-glass-vase', 'flower-food-sachets'] });
+  for (const related of Object.values(box.related).flat()) assert(!box.primary.includes(related), `${related} is not counted as a flower box`);
+  // Publication still decides: the archived pooja flower boxes appear only once published.
+  const republished = range.publicProducts(productCatalog, new Map(productCatalog.map((p) => [p.slug, 'published'])));
+  assert(membershipOf('flowerbox', republished).primary.includes('pooja-flowerbox') && membershipOf('flowerbox', republished).primary.includes('pooja-flower-box'));
+  assert(!membershipOf('flowerbox', catalogue.filter((p) => p.slug !== 'cotton-candy')).primary.includes('cotton-candy'));
+});
+
+test('baskets, wrapped bouquets, vases and stems: primary sets from records; exceptions, containers and loose boxes kept apart', () => {
+  assert.deepEqual(membershipOf('baskets').primary, ['violet-picnic', 'flower-basket', 'gift-basket', 'premium-flower-basket']);
+  const wrapped = membershipOf('hand-tied-bouquets').primary;
+  assert.equal(wrapped.length, 34);
+  for (const slug of ['all-white-fragrance', 'blush-lily-letter', 'coral-lily-bloom', 'ivory-lily-grace', 'rainbow-hug', 'red-affair']) assert(wrapped.includes(slug), slug);
+  for (const slug of ['colour-pop-love', 'sunrise-asiatic-vase', 'cotton-candy', 'violet-picnic', 'fragrance-festive-giftbox', 'mandarin-lily-glow', 'luxe-lily-bloom', 'stargazer-affair', 'sweet-petal-hour', 'bouquets-under-999']) assert(!wrapped.includes(slug), slug);
+  const vases = membershipOf('vases');
+  assert.deepEqual(vases.primary, ['clear-glass-vase', 'premium-decor-vase']);
+  assert(vases.primary.every((slug) => bySlug(slug).isAddon), 'an add-on vase is still a vase product');
+  assert.deepEqual(vases.related.arranged, ['colour-pop-love', 'daisy-morning', 'dear-sunshine', 'sunshine-confession', 'sunrise-asiatic-vase']);
+  assert.deepEqual(vases.related['for-a-vase'], ['diy-flowerbox', 'weekly-flowerbox-subscription', 'dried-flower-vase-set']);
+  assert.deepEqual(membershipOf('bouquets-with-vases').primary, vases.related.arranged);
+  // Sweet Petal Hour records only a "vase-style arrangement": not counted until the owner confirms a vase (five, not the old six).
+  assert.equal(membershipOf('bouquets-with-vases').primary.length, 5);
+  assert(!membershipOf('bouquets-with-vases').primary.includes('sweet-petal-hour') && !vases.related.arranged.includes('sweet-petal-hour'));
+  assert.equal(guidance.isVaseArrangement(bySlug('sweet-petal-hour')), false);
+  const stems = membershipOf('by-stems');
+  assert.deepEqual(stems.primary, ['roses-by-stem', 'lilies-by-stem']);
+  assert.deepEqual(stems.related, { loose: ['loose-flower-box'] });
+  // Category pages and city views read the same primary set; related products stay on their own pages, search and basket.
+  const page = readFileSync('src/pages/categories/[slug].astro', 'utf8');
+  assert(/recorded\(slug\)\?\.primary \?\?/.test(page) && /related,\s+countNoun: membership\?\.noun/.test(page));
+  assert(/items: \(entry\.props\.products as Product\[\]\)\.map\(productItem\)/.test(readFileSync('src/server/services/CityCatalogue.ts', 'utf8')));
+  const component = readFileSync('src/components/category/CategoryPage.astro', 'utf8');
+  assert(/\{products\.length\} \{countNoun\}/.test(component) && /Related, not counted above/.test(component));
+  // Every product a recorded collection now lists as related is still the primary product of another collection or range.
+  const allFlowers = slugs(range.allFlowersRange(catalogue));
+  const recordedPrimary = new Set(Object.keys(range.RECORDED_COLLECTIONS).flatMap((slug) => membershipOf(slug).primary));
+  const ownCategory = (p) => !['Bouquets', 'Lilies'].includes(p.category) && !Object.keys(range.RECORDED_COLLECTIONS).includes(p.category.toLowerCase().replace(/&/g, 'and').replace(/\s+/g, '-'));
+  for (const slug of Object.keys(range.RECORDED_COLLECTIONS).flatMap((key) => Object.values(membershipOf(key).related).flat())) assert(recordedPrimary.has(slug) || allFlowers.includes(slug) || ownCategory(bySlug(slug)), slug);
+});
+
+test('presentation copy: titles name a box or basket; All Flowers places each product once; the bouquet note no longer calls every other bouquet wrapped; alt text unchanged', () => {
+  const titles = load('src/data/productTitles.ts');
+  assert.equal(titles.productTitle(bySlug('cotton-candy')), 'Cotton Candy – Flower Box | Fresh Petals');
+  assert.equal(titles.productTitle(bySlug('violet-picnic')), 'Violet Picnic Mixed Statice Flower Basket | Fresh Petals');
+  assert.equal(titles.productTitle(bySlug('pink-serenity-flowerbox')), 'Pink Serenity Flowerbox – Pink Lily Box | Fresh Petals');
+  assert.equal(titles.productTitle(bySlug('sweet-petal-hour')).includes('Vase'), false, 'a "vase-style" record is not titled a vase arrangement');
+  assert(/Arrangement \| Fresh Petals$/.test(titles.productTitle(bySlug('mandarin-lily-glow'))));
+  assert.equal(titles.productTitle(bySlug('red-affair')), 'Red Affair – Red Rose Bouquet | Fresh Petals');
+  // Lines say what the record includes; photograph descriptions keep their earlier form (no container added).
+  assert.equal(guidance.bouquetLine(bySlug('cotton-candy')), 'Pastel gypsophila, pink baby’s breath, blue baby’s breath and lavender baby’s breath, in a pink flower box.');
+  assert.equal(guidance.bouquetLine(bySlug('violet-picnic')), 'Purple statice, pink statice and white statice, in a wicker basket.');
+  assert.equal(guidance.bouquetPhotoAlt(bySlug('cotton-candy')), 'Cotton Candy: pastel gypsophila, pink baby’s breath, blue baby’s breath and lavender baby’s breath');
+  assert.equal(guidance.bouquetPhotoAlt(bySlug('violet-picnic')), 'Violet Picnic: purple statice, pink statice and white statice');
+  assert.equal(guidance.bouquetPhotoAlt(bySlug('red-affair')), 'Red Affair: red roses and fresh rose foliage, in premium white wrapping');
+  // All Flowers: one group each; the box and basket designs are no longer "wrapped"; the old #lilies address is signposted.
+  const listed = range.allFlowersRange(catalogue);
+  const sections = guidance.allFlowerSections(listed);
+  const groupOf = (slug) => sections.find((s) => s.products.some((p) => p.slug === slug))?.id;
+  assert.equal(sections.flatMap((s) => s.products).length, listed.length);
+  assert.equal(groupOf('cotton-candy'), 'boxes-baskets');
+  assert.equal(groupOf('violet-picnic'), 'boxes-baskets');
+  assert.equal(groupOf('all-white-fragrance'), 'wrapped');
+  assert.equal(groupOf('stargazer-affair'), 'to-confirm');
+  assert(!sections.some((s) => s.id === 'lilies'));
+  assert.deepEqual(json(guidance.ALL_FLOWERS_MOVED_GROUPS.map((g) => [g.id, g.href])), [['lilies', '/categories/lilies']]);
+  const wrappedRow = json(guidance.presentationComparison(sections)).find((row) => row.id === 'wrapped');
+  assert(!wrappedRow.comesIn.some((item) => /box|basket|vase/i.test(item)));
+  const component = readFileSync('src/components/category/CategoryPage.astro', 'utf8');
+  assert(!/The other bouquets are wrapped/.test(component) && /data-presentation-kind="box-basket"/.test(component) && /data-moved-group/.test(component));
+  // The old #lilies anchor: a titled signpost naming the groups that hold lily designs, with no product cards.
+  assert.equal(guidance.ALL_FLOWERS_MOVED_GROUPS[0].flower, 'lilies');
+  const signpost = component.slice(component.indexOf('movedGroups.map((moved)'), component.indexOf('collectionLinks.length > 0 &&'));
+  assert(/<section id=\{moved\.id\}/.test(signpost) && /<h2 id=\{`\$\{moved\.id\}-title`\}/.test(signpost) && /data-moved-where/.test(signpost) && !/ProductCard/.test(signpost), signpost);
+  assert.match(component, /recordsFlower\(product, moved\.flower\) \|\| stemsOf\(\[product\], moved\.flower\)\.length > 0/);
+  // Its per-section counts, by that rule, add up to the Lilies collection (designs with lilies plus lily stems).
+  const lilyRule = (p) => range.recordsFlower(p, 'lilies') || range.stemsOf([p], 'lilies').length > 0;
+  const lilyPage = [...range.arrangementsWith(catalogue, 'lilies'), ...range.stemsOf(catalogue, 'lilies')];
+  assert.equal(sections.reduce((n, s) => n + s.products.filter(lilyRule).length, 0), lilyPage.length);
+  assert.equal(lilyPage.length, 16);
+  const landing = load('src/data/seoLanding.ts').CATEGORY_LANDING;
+  assert(!/each wrapped or arranged by hand|^Hand-tied/.test(landing.bouquets.intro[0] + landing.bouquets.description) && !/hand-wrapped/.test(landing['all-flowers'].intro[0]));
+  // Rose and lily groups still overlap; their #roses/#lilies/#mixed addresses are unchanged.
+  assert.deepEqual(Array.from(range.BOUQUET_FLOWER_GROUPS, (g) => g.id), ['roses', 'lilies', 'mixed']);
+});
+
+test('contextual links and social previews: bouquet and All Flowers lists link the flower and vase collections; previews use a reviewed photograph from the full collection', () => {
+  const component = readFileSync('src/components/category/CategoryPage.astro', 'utf8');
+  for (const href of ['/categories/rose', '/categories/lilies', '/categories/bouquets-with-vases']) assert((component.match(new RegExp(`href: "${href}"`, 'g')) ?? []).length >= 2, href);
+  assert(/PREVIEW_COLLECTIONS = new Set\(\["bouquets", "all-flowers", "rose", "lilies"\]\)/.test(component) && /collectionPreviewImage\(listedProducts\)/.test(component) && /image=\{previewImage\}/.test(component));
+  const images = load('src/data/imageSitemap.ts');
+  const photos = load('src/data/productPhotos.ts');
+  const bouquets = range.bouquetRange(catalogue);
+  const preview = images.collectionPreviewImage(bouquets);
+  const first = bouquets.find((p) => photos.isProductPhotograph(p));
+  assert.equal(preview, first.image);
+  assert(!/hero-main-banner|\.svg$/.test(preview));
+  // Deterministic and permission-bound: a placeholder, an illustrative or an unreviewed photograph never qualifies.
+  assert.equal(images.collectionPreviewImage([{ slug: 'x', image: '/images/product-placeholder.svg' }, { slug: 'red-affair', image: '/images/renamed.webp' }]), undefined);
+  assert.equal(images.collectionPreviewImage([]), undefined);
+  for (const [slug, flower] of [['rose', 'roses'], ['lilies', 'lilies']]) {
+    const list = [...range.arrangementsWith(catalogue, flower), ...range.stemsOf(catalogue, flower)];
+    const image = images.collectionPreviewImage(list);
+    assert(image && photos.isProductPhotograph(list.find((p) => p.image === image)), slug);
+  }
+});
+
+test('occasion directory: every other indexable occasion is linked once, by the sitemap rule, over the whole public catalogue', () => {
+  const membership = empty();
+  const assign = (list, occasion) => list.forEach((slug) => membership.set(slug, [...(membership.get(slug) ?? []), occasion]));
+  assign(['cloud-white', 'red-affair'], 'thank-you');
+  assign(['gift-flower-box', 'mini-succulent-gift'], 'get-well-soon'); // older routes list any product type
+  assign(['red-affair'], 'i-am-sorry');
+  assign(['plant-and-flower-hamper'], 'new-mom');
+  assign(['dear-sunshine'], 'just-because');
+  assign(['rose-promise'], 'congratulations');
+  assign(['midnight-romance'], 'romantic');
+  assign(['snow-white-saga'], 'housewarming');
+  assign(['jasmine-malli-subscription'], 'pooja'); // explicitly noindexed
+  const garlands = [{ occasionTags: ['wedding', 'engagement'] }];
+  const needs = journeys.needDestinations(membership, catalogue);
+  const more = json(journeys.moreOccasionLinks(needs, membership, catalogue, garlands));
+  assert.deepEqual(more.map((o) => o.href), ['/occasions/thank-you', '/occasions/get-well-soon', '/occasions/i-am-sorry', '/occasions/new-mom', '/occasions/just-because', '/occasions/congratulations', '/occasions/romantic']);
+  assert.deepEqual(more.find((o) => o.href === '/occasions/get-well-soon'), { label: 'Get Well Soon', href: '/occasions/get-well-soon', count: 2, noun: 'products' });
+  assert.equal(more.find((o) => o.href === '/occasions/thank-you').noun, 'bouquets');
+  // Not repeated: destinations already linked by a need (housewarming), the noindexed pooja page, and engagement, which is not indexable on garlands alone.
+  for (const slug of ['housewarming', 'pooja', 'engagement', 'wedding', 'birthday']) assert(!more.some((o) => o.href === `/occasions/${slug}`), slug);
+  // The same rule as the sitemap and the page's robots tag.
+  for (const occasion of OCCASION_PAGES) {
+    const products = journeys.occasionPageProducts(occasion, membership, catalogue);
+    const expected = occasion.slug !== 'pooja' && (products.length > 0 || occasion.slug === 'wedding');
+    assert.equal(journeys.occasionIndexable(occasion, membership, catalogue, garlands), expected, occasion.slug);
+  }
+  // A removed assignment or an unpublished product removes the link.
+  membership.set('dear-sunshine', []);
+  assign(['pooja-basket'], 'just-because'); // archived: not in the public catalogue
+  assert(!journeys.moreOccasionLinks(needs, membership, catalogue, garlands).some((o) => o.href === '/occasions/just-because'));
+  // Wiring: full-catalogue membership, the garland cache tag, the shared rule in the sitemap.
+  const index = readFileSync('src/pages/occasions/index.astro', 'utf8');
+  assert(/loadOccasionMembership\(publicCatalogue\.map/.test(index) && /occasionCacheHeaders\(\[OCCASION_INDEX_TAG, GARLAND_CACHE_TAG\]\)/.test(index) && /data-more-occasions/.test(index) && /<a href=\{occasion\.href\}>/.test(index));
+  const sitemap = readFileSync('src/pages/sitemap-occasions.xml.ts', 'utf8');
+  assert(/occasionIndexable\(occasion, membership, publicCatalogue, garlands\)/.test(sitemap) && /GARLAND_CACHE_TAG/.test(sitemap));
+  assert(/const noindex = NOINDEX_OCCASION_SLUGS\.has\(occasion\.slug\) \|\| \(products\.length === 0 && !ceremonyLanding\)/.test(readFileSync('src/components/occasion/OccasionPage.astro', 'utf8')));
+});
+
+test('metadata and claims: subscriptions name no archived plan; housewarming and mom-to-be claim no absent format; garland snippets describe the photograph; feedback and selection wording neutral', () => {
+  const landing = load('src/data/seoLanding.ts').CATEGORY_LANDING.subscriptions;
+  assert(!/daily pooja/i.test(JSON.stringify([landing.title, landing.description, landing.intro])));
+  for (const slug of ['housewarming', 'mom-to-be']) {
+    const { description, heroNote } = page(slug);
+    assert(!/hamper|basket|plant|toran/i.test(description.split('.')[0]) && /discussed on WhatsApp|WhatsApp/.test(description + heroNote), slug);
+  }
+  const garland = readFileSync('src/pages/products/[...garland].astro', 'utf8');
+  assert(/In the photograph: \$\{product\.garland\.image\.alt/.test(garland) && /product\?\.garland\.soldUnit \? ` Sold as/.test(garland) && /One garland or a pair, and the price, are confirmed on WhatsApp/.test(garland));
+  // Reviews: the four enquiry entries are labelled; no blanket confirmation or verified-order badge; quotations unchanged.
+  const reviews = readFileSync('src/pages/reviews.astro', 'utf8');
+  assert.equal((reviews.match(/customer: "[^"]+ Enquiry"/g) ?? []).length, 4);
+  assert(/const ENQUIRY = \/Enquiry\$\//.test(reviews) && /\{label\(review\)\}/.test(reviews));
+  assert(!/WhatsApp Confirmed|Early Brand Proof|Early Review|verified (order|purchase)(?! )/i.test(reviews.replace('none is shown as a verified purchase', '').replace('Not verified purchase reviews', '')));
+  assert.equal((reviews.match(/^\s+text: "/gm) ?? []).length, 9);
+  assert(reviews.includes('Ordered morning pooja flowers. The flowers were fresh, neatly packed and the WhatsApp confirmation made the process simple.'));
+  const product = readFileSync('src/pages/products/[slug].astro', 'utf8').replace(/<!--[\s\S]*?-->/g, '');
+  assert(!/Be the first to write a review|>\s*Write a review/.test(product) && /Read general feedback/.test(product) && /No reviews are shown for this product/.test(product));
+  // The bestselling shortlist keeps its URL and members; it is not called a sales ranking.
+  const category = readFileSync('src/pages/categories/[slug].astro', 'utf8');
+  assert(/"bestselling-bouquets": "Selected Bouquets"/.test(category) && !/most requested/.test(category) && /not a sales ranking/.test(category));
+  assert(catalogue.filter((p) => p.collectionTags.includes('bestselling-bouquets')).length > 0);
+});

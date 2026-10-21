@@ -415,7 +415,7 @@ test('pooja sections: every product on the page appears exactly once; unknown pr
   assert.deepEqual(json(withNew.at(-1).products), [{ slug: 'new-pooja-item' }]);
   assert.equal(guide.poojaSections([]).length, 0);
   const copy = JSON.stringify([guide.POOJA_SECTIONS, guide.POOJA_ENQUIRY_POINTS, guide.POOJA_PHOTO_NOTE]);
-  assert(!/₹|\d+\s?(g|gm|grams|kg|ft|cm|pieces)|same[- ]day|every day|guarantee|free delivery/i.test(copy));
+  assert(!/₹|\d+\s?(g|gm|grams|kg|ft|cm|pieces)\b|same[- ]day|every day|guarantee|free delivery/i.test(copy));
   assert(/wa\.me\/919652012274/.test(guide.POOJA_ENQUIRY_HREF) && !/%E2%82%B9/.test(guide.POOJA_ENQUIRY_HREF));
 });
 
@@ -680,10 +680,11 @@ test('guides: four published guides, one registry; real products only; no price 
 test('assistant referrals: labelled from a known hostname only; no referrer path, query or prompt is read into an event', () => {
   const analytics = (readFileSync('src/components/Analytics.astro', 'utf8') + readFileSync('src/scripts/inline/analytics.js', 'utf8'));
   const script = analytics.split('---')[2];
-  assert(/AI_HOSTS = \{ "chatgpt\.com": "chatgpt"/.test(script) && /new URL\(document\.referrer\)\.hostname/.test(script) && /data\.ai_referrer = aiReferrer/.test(script) && /data\.ai_attribution = aiMethod/.test(script) && /"referrer" : AI_HOSTS\[utm\] \? "campaign"/.test(script));
-  // The referrer is used for its hostname and nowhere else; google.com is not an AI host.
-  // Two reads for the assistant label (hostname) and two for page_referrer (origin only).
+  assert(/AI_HOSTS = \{ "chatgpt\.com": "chatgpt"/.test(script) && /ref\.hostname\.toLowerCase\(\)/.test(script) && /data\.ai_referrer = current\.ai/.test(script) && /data\.ai_attribution = current\.method/.test(script) && /method: "referrer" \} : AI_HOSTS\[utm\] \? \{ ai: AI_HOSTS\[utm\], method: "campaign" \}/.test(script));
+  // The referrer is used for its hostname (and, for the old-key migration, its origin) and nowhere else; google.com is not an AI host.
+  // Two reads for page_referrer (origin only) and two in referrerUrl(), the only other reader.
   assert.equal(script.match(/document\.referrer/g).length, 4);
+  assert(/ref\.origin === location\.origin/.test(script) && !/ref\.(pathname|search|href)/.test(script));
   assert(/page_referrer: \(function \(\) \{\s+try \{\s+return document\.referrer \? new URL\(document\.referrer\)\.origin \+ "\/" : "";/.test(script) && /page_location: location\.origin \+ location\.pathname/.test(script));
   assert(!/google\.com": "|"bing\.com"/.test(script.replace('gemini.google.com', '')));
   assert(!/location\.href|location\.search\)\.toString|pathname \+ location\.search/.test(script));
@@ -708,14 +709,15 @@ test('All Flowers: linked first in the menu and footer; every listed product in 
   assert(sections.every((section) => section.products.length > 0 && section.label && section.note));
   // Groups come from the records: a vase arrangement is one whose record lists a vase; lilies are the Lilies category.
   for (const product of sections.find((section) => section.id === 'vase')?.products ?? []) assert(product.whatsIncluded.some((item) => /vase/i.test(item)), product.slug);
-  for (const product of sections.find((section) => section.id === 'wrapped').products) assert(product.category === 'Bouquets' && !product.whatsIncluded.some((item) => /vase/i.test(item)), product.slug);
+  const range = load('src/data/catalogueRange.ts');
+  for (const product of sections.find((section) => section.id === 'wrapped').products) assert(range.recordedPresentation(product).kind === 'wrapped' && !product.whatsIncluded.some((item) => /vase|basket|\bbox\b|flowerbox|giftbox/i.test(item)), product.slug);
   assert.equal(guide.allFlowerSections([]).length, 0);
   assert.deepEqual(json(guide.allFlowerSections([{ slug: 'x', category: 'Offers', whatsIncluded: [] }]).map((section) => section.id)), ['more']);
   const landing = load('src/data/seoLanding.ts');
   const all = landing.CATEGORY_LANDING['all-flowers'];
   // Distinct from the homepage and the bouquet collection; no count typed into the copy.
   assert.equal(new Set([all.title, landing.HOME_LANDING.title, landing.CATEGORY_LANDING.bouquets.title]).size, 3);
-  assert(!/(51|37|eight|8)/.test(JSON.stringify([all.intro, all.faqs])) && !/₹|same[- ]day|guarantee/i.test(JSON.stringify(all)));
+  assert(!/\b(51|37|eight|8)\b/.test(JSON.stringify([all.intro, all.faqs])) && !/₹|same[- ]day|guarantee/i.test(JSON.stringify(all)));
   assert(/category\.slug === "pooja-flowers" && \(/.test(readFileSync('src/components/category/CategoryPage.astro', 'utf8')));
 });
 
@@ -835,7 +837,9 @@ test('search evidence: Bengaluru tasks link complete collections with what a quo
   const rows = json(guidance.presentationComparison([{ id: 'wrapped', products: [p('a', ['Kraft wrapping'], ['Keep cool.']), p('b', ['Premium wrapping'], ['Keep cool.', 'Rare.']), p('c', ['Kraft wrapping'], [])] }, { id: 'vase', products: [] }]));
   assert.deepEqual(rows.map((row) => row.id), ['wrapped']);
   assert.deepEqual(rows[0].comesIn, ['Kraft wrapping', 'Premium wrapping']);
-  assert.deepEqual(json(guidance.presentationComparison([{ id: 'wrapped', products: [p('d', ['Kraft wrapping', 'Wicker basket'], [])] }]))[0].alsoOnSome, ['Wicker basket']);
+  // A record listing wrapping and a basket is conflicting: neutral, never placed in the wrapped group (so nothing is "also on some").
+  assert.equal(load('src/data/catalogueRange.ts').recordedPresentation(p('d', ['Kraft wrapping', 'Wicker basket'], [])).kind, 'unresolved');
+  assert.deepEqual(json(guidance.presentationComparison([{ id: 'wrapped', products: [p('a', ['Kraft wrapping'], [])] }]))[0].alsoOnSome, []);
   assert.deepEqual(rows[0].care, ['Keep cool.']);
   // The garland total names its parts.
   assert(/coded design/.test(readFileSync('src/pages/categories/garlands.astro', 'utf8')));

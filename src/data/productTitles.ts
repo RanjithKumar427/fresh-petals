@@ -8,13 +8,21 @@
 // keeps its plain "Name – Category" title. Garlands have their own titles
 // (name and FP-G code) and are not handled here.
 import type { Product } from "./productCatalog";
-import { presentationCheck } from "./collectionGuidance";
+import { recordedPresentation, type PresentationKind } from "./catalogueRange";
 
 const SUPPORTING = /foliage|filler|greenery|gypsophila|eucalyptus|baby|leaves|leaf|fern|seasonal|buds?$|spray/i;
 const SINGULAR: [RegExp, string][] = [[/ies$/i, "y"], [/(gerbera|dahlia|hydrangea|peon)s$/i, "$1"], [/ses$/i, "se"], [/s$/i, ""]];
 const singular = (word: string) => { for (const [pattern, to] of SINGULAR) if (pattern.test(word)) return word.replace(pattern, to); return word; };
 const titleCase = (text: string) => text.replace(/\b[a-z]/g, (letter) => letter.toUpperCase());
-const VASE = (product: Product) => (product.whatsIncluded ?? []).some((item) => /\bvase\b/i.test(item));
+// The form named in a title, from the recorded presentation
+// (src/data/catalogueRange.ts): a design that comes in a box or a basket is
+// not called a bouquet; an open presentation gets the neutral "Arrangement".
+const FORM: Record<PresentationKind, string> = { wrapped: "Bouquet", unrecorded: "Bouquet", vase: "Vase Arrangement", box: "Flower Box", basket: "Flower Basket", unresolved: "Arrangement" };
+const formOf = (product: Product) => {
+  const form = FORM[recordedPresentation(product).kind];
+  // "Pink Serenity Flowerbox – Pink Lily Box", not "… Flowerbox … Flower Box".
+  return form === "Flower Box" && /box\b/i.test(product.name) ? "Box" : form;
+};
 
 /** "Red Rose", "Pink & White Tulip", "Mixed Flower" — or null when the record does not support one. */
 export function flowerDescriptor(product: Pick<Product, "flowerTypes">): string | null {
@@ -36,10 +44,10 @@ const BRAND = "Fresh Petals";
 export function productTitle(product: Product): string {
   const plain = `${product.name} – ${product.category} | ${BRAND}`;
   if (!/^(bouquets|lilies)$/i.test(product.category)) return plain;
+  const form = formOf(product);
   const descriptor = flowerDescriptor(product);
-  if (!descriptor) return plain;
-  // An unconfirmed presentation (presentationCheck) gets the neutral form its own description uses.
-  const form = presentationCheck(product) ? "Arrangement" : VASE(product) ? "Vase Arrangement" : "Bouquet";
+  // A box or basket with no main flower recorded is still named by what it is, not its legacy category.
+  if (!descriptor) return /box|basket/i.test(form) ? `${product.name} – ${form === "Box" ? "Flower Box" : form} | ${BRAND}` : plain;
   // Words the name already says are not said again right after it.
   const nameWords = new Set(product.name.toLowerCase().split(/\s+/));
   const repeats = descriptor.toLowerCase().split(/[\s&]+/).filter(Boolean).some((word) => nameWords.has(word));

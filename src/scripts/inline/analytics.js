@@ -2,11 +2,6 @@
   var path = function (value) {
     return (value || "/").split("?")[0].split("#")[0].replace(/\/+$/, "") || "/";
   };
-  var landing = path(location.pathname);
-  try {
-    landing = sessionStorage.getItem("fp_landing") || landing;
-    sessionStorage.setItem("fp_landing", landing);
-  } catch (e) {}
 
   if (measurementId) {
     window.dataLayer = window.dataLayer || [];
@@ -33,26 +28,129 @@
 
   // Known assistant hostnames only. Anything else is left unlabelled.
   var AI_HOSTS = { "chatgpt.com": "chatgpt", "chat.openai.com": "chatgpt", "perplexity.ai": "perplexity", "www.perplexity.ai": "perplexity", "copilot.microsoft.com": "copilot", "gemini.google.com": "gemini", "claude.ai": "claude", "search.chatgpt.com": "chatgpt", "meta.ai": "meta-ai", "www.meta.ai": "meta-ai" };
-  var aiReferrer = "";
-  var aiMethod = "";
-  try {
-    aiReferrer = sessionStorage.getItem("fp_ai_ref") || "";
-    aiMethod = sessionStorage.getItem("fp_ai_method") || "";
-    if (!aiReferrer) {
-      var refHost = "";
+  var AI_LABELS = {};
+  for (var host in AI_HOSTS) AI_LABELS[AI_HOSTS[host]] = true;
+  var METHODS = { referrer: true, campaign: true };
+
+  // Application context (docs/seo/measurement.md): the visit's landing path
+  // and assistant label, with the time of the last activity, in
+  // sessionStorage. It ends after 30 minutes without activity. This is the
+  // site's own grouping for event parameters, not GA4's session.
+  var IDLE_MS = 30 * 60 * 1000;
+  var CONTEXT_KEY = "fp_context";
+  var OLD_KEYS = ["fp_landing", "fp_ai_ref", "fp_ai_method"];
+  var memory = null;
+  var storage = function () {
+    try {
+      return window.sessionStorage || null;
+    } catch (e) {
+      return null;
+    }
+  };
+  var valid = function (context) {
+    return !!context && typeof context.landing === "string" && context.landing.charAt(0) === "/" && typeof context.at === "number" && isFinite(context.at) && context.at <= Date.now() + 60000 && (context.ai === "" || AI_LABELS[context.ai] === true) && (context.method === "" || METHODS[context.method] === true);
+  };
+  // The stored context, or this document's copy when storage is unavailable; null when absent or malformed.
+  var load = function () {
+    var raw = null;
+    try {
+      raw = storage() ? storage().getItem(CONTEXT_KEY) : null;
+    } catch (e) {}
+    var saved = memory;
+    if (raw) {
       try {
-        refHost = document.referrer ? new URL(document.referrer).hostname.toLowerCase() : "";
-      } catch (e) {}
-      var utm = (new URLSearchParams(location.search).get("utm_source") || "").toLowerCase();
-      // "referrer": the browser named the assistant. "campaign": the link carried an allowlisted utm_source.
-      aiMethod = AI_HOSTS[refHost] ? "referrer" : AI_HOSTS[utm] ? "campaign" : "";
-      aiReferrer = AI_HOSTS[refHost] || AI_HOSTS[utm] || "";
-      if (aiReferrer) {
-        sessionStorage.setItem("fp_ai_ref", aiReferrer);
-        sessionStorage.setItem("fp_ai_method", aiMethod);
+        saved = JSON.parse(raw);
+      } catch (e) {
+        saved = null;
       }
     }
-  } catch (e) {}
+    return valid(saved) ? saved : null;
+  };
+  var save = function (context) {
+    memory = context;
+    try {
+      if (storage()) storage().setItem(CONTEXT_KEY, JSON.stringify(context));
+    } catch (e) {}
+  };
+  var expired = function (context, at) {
+    return !context || at - context.at > IDLE_MS;
+  };
+  var referrerUrl = function () {
+    try {
+      return document.referrer ? new URL(document.referrer) : null;
+    } catch (e) {
+      return null;
+    }
+  };
+  // This document's own entry: an allowlisted referring hostname, else a utm_source that is exactly one.
+  // "referrer": the browser named the assistant. "campaign": the link carried an allowlisted utm_source.
+  var entrySource = function () {
+    var ref = referrerUrl();
+    var refHost = ref ? ref.hostname.toLowerCase() : "";
+    var utm = "";
+    try {
+      utm = (new URLSearchParams(location.search).get("utm_source") || "").toLowerCase();
+    } catch (e) {}
+    return AI_HOSTS[refHost] ? { ai: AI_HOSTS[refHost], method: "referrer" } : AI_HOSTS[utm] ? { ai: AI_HOSTS[utm], method: "campaign" } : { ai: "", method: "" };
+  };
+  var startNew = function (at, source) {
+    return { landing: path(location.pathname), ai: source.ai, method: source.method, at: at };
+  };
+
+  // On load: an active context continues (ordinary internal navigation keeps
+  // its landing path and label). Otherwise a new one starts here and may
+  // classify this document's own referrer or campaign.
+  var context = (function () {
+    var at = Date.now();
+    var current = load();
+    if (expired(current, at)) {
+      current = null;
+      // Keys from before the timestamped context carry no time: they are
+      // continued only on an internal navigation (an active visit), then removed.
+      try {
+        var store = storage();
+        var oldLanding = store ? store.getItem("fp_landing") : null;
+        var ref = referrerUrl();
+        if (oldLanding && ref && ref.origin === location.origin) {
+          var migrated = { landing: path(oldLanding), ai: store.getItem("fp_ai_ref") || "", method: store.getItem("fp_ai_method") || "", at: at };
+          if (!migrated.ai) migrated.method = "";
+          else if (!migrated.method) migrated.method = "referrer";
+          if (valid(migrated)) current = migrated;
+        }
+        if (store) for (var i = 0; i < OLD_KEYS.length; i += 1) store.removeItem(OLD_KEYS[i]);
+      } catch (e) {}
+    }
+    if (!current) current = startNew(at, entrySource());
+    current.at = at;
+    save(current);
+    return current;
+  })();
+
+  // Activity: a tap, a key press, a page shown again, or an event. After 30
+  // idle minutes the next activity starts a new context for this page with no
+  // assistant label: the entry referrer or campaign of a document loaded
+  // hours ago is not a fresh referral. No timer keeps a context alive.
+  var touch = function () {
+    var at = Date.now();
+    var current = load() || context;
+    if (expired(current, at)) {
+      current = startNew(at, { ai: "", method: "" });
+      save(current);
+    } else if (at - current.at > 15000) {
+      current.at = at;
+      save(current);
+    }
+    context = current;
+    return current;
+  };
+  var activity = function () {
+    touch();
+  };
+  document.addEventListener("pointerdown", activity, { capture: true, passive: true });
+  document.addEventListener("keydown", activity, { capture: true, passive: true });
+  window.addEventListener("pageshow", function (event) {
+    if (event.persisted) touch();
+  });
 
   // Destination city: the stored choice, else the city page in view. Only a
   // lower-case slug ever leaves here; never an address or a pincode.
@@ -62,19 +160,21 @@
       slug = localStorage.getItem("fresh_petals_destination_city") || "";
     } catch (e) {}
     if (!slug) {
-      var context = document.querySelector("[data-city-context]");
-      slug = (context && context.getAttribute("data-city-context")) || "";
+      var cityContext = document.querySelector("[data-city-context]");
+      slug = (cityContext && cityContext.getAttribute("data-city-context")) || "";
     }
     return /^[a-z][a-z-]{1,40}$/.test(slug) ? slug : "";
   };
 
   window.fpTrack = function (name, params) {
-    var data = { page_path: path(location.pathname), landing_path: landing };
+    // Checked when the event happens, not only when the page loaded.
+    var current = touch();
+    var data = { page_path: path(location.pathname), landing_path: current.landing };
     var city = destinationCity();
     if (city) data.destination_city = city;
-    if (aiReferrer) {
-      data.ai_referrer = aiReferrer;
-      data.ai_attribution = aiMethod || "referrer";
+    if (current.ai) {
+      data.ai_referrer = current.ai;
+      data.ai_attribution = current.method || "referrer";
     }
     for (var key in params || {}) if (params[key] !== undefined && params[key] !== null && params[key] !== "") data[key] = String(params[key]).slice(0, 100);
     try {

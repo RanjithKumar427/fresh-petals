@@ -12,9 +12,22 @@ Nothing is recorded until the owner sets `PUBLIC_GA_MEASUREMENT_ID` (see `owner-
 | `whatsapp_enquiry_click` | a direct WhatsApp enquiry link or button is tapped | `item_id`, `item_category`, `link_type` (`card`, `page`, `site`) |
 | `basket_quote_request` | the basket is sent on WhatsApp | `item_id` (slugs), `item_category`, `item_count`, `request_type` (`price_request` or `order_request`) |
 
-Every event also carries `page_path` and `landing_path` (the first page of the visit, path only). From the national-coverage release, an event also carries `destination_city` (a city slug such as `mumbai`) when the visitor has chosen a recipient city or is on a city page; city pages report `view_item_list` with `item_category` `city:<slug>`. The city is where the flowers are going, not where the visitor is. Never sent: names, phone numbers, addresses, recipient details, card messages or the WhatsApp text.
+Every event also carries `page_path` and `landing_path` (the first page of the visit, path only; see "Application context" below). From the national-coverage release, an event also carries `destination_city` (a city slug such as `mumbai`) when the visitor has chosen a recipient city or is on a city page; city pages report `view_item_list` with `item_category` `city:<slug>`. The city is where the flowers are going, not where the visitor is. Never sent: names, phone numbers, addresses, recipient details, card messages or the WhatsApp text.
 
 In GA4, once the property exists: register `landing_path`, `item_category`, `link_type`, `request_type` and `destination_city` as event-scoped custom dimensions, and mark `whatsapp_enquiry_click` and `basket_quote_request` as key events.
+
+## Application context (from 21 October 2026)
+
+`landing_path`, `ai_referrer` and `ai_attribution` come from the site's own application context (`src/scripts/inline/analytics.js`), kept in the browser tab's `sessionStorage` as `fp_context` with the time of the last activity. It is not GA4's session and changes no GA4 setting.
+
+- **Activity:** a page load, a tap, a key press, a page shown again from the back/forward cache, or an event. Nothing runs on a timer.
+- **Ends after 30 minutes without activity.** The next page then starts a new context: its landing path is that page, and it may label an allowlisted assistant from that page's own referrer (`ai_attribution` `referrer`) or exact `utm_source` (`campaign`).
+- **A tab left open past 30 minutes:** the next tap or event starts a new context on that page with no assistant label, so the entry referrer or campaign of a page loaded hours earlier is never reported as a fresh referral.
+- **Active internal navigation** keeps the landing path and label.
+- **Earlier keys** (`fp_landing`, `fp_ai_ref`, `fp_ai_method`, which had no time) are continued only when the page was reached from another page of the site, then removed. A malformed or future-dated context is discarded. Without storage, the context lives in the page only.
+- Still never read or sent: the referrer's path or query, the page's query string, customer details or message text. Google or direct traffic is never labelled as AI.
+
+Before 21 October the label and landing path lasted for the whole browser-tab session, so `ai_referrer` events from that time can carry a label from a much earlier entry.
 
 ## Enquiries are not orders
 
@@ -27,9 +40,9 @@ date,landing_path,orders
 
 Ask the customer how they found the page if you can; otherwise leave `landing_path` empty. Keep the file outside the repository: it is business data.
 
-## The 28-day review
+## The periodic review
 
-Compare the latest 28 complete days with the 28 days before, and keep a 3- or 6-month export for context. Search Console data is about two days behind, so end the period three days ago.
+Choose two periods of equal length, the previous one ending before the current one starts, and note the exact dates you exported. Check in Search Console that the last day of the current period has complete data before relying on it; this document assumes no fixed delay. Keep a 3- or 6-month export for context.
 
 Exports to place in one folder:
 
@@ -40,23 +53,29 @@ Exports to place in one folder:
 | `context/` | The same for the last 3 or 6 months |
 | `query-pages.csv` | Query-by-page rows (`query,page,clicks,impressions,position`) from the Search Console API or a Looker Studio table. The website export cannot produce this. |
 | `events.csv` | GA4 → Explore → rows `landing_path`, `event_name`; value event count. Rename the columns to `landing_path,event_name,count`. |
-| `referrals.csv` | GA4 → Traffic acquisition → session source; columns `source,sessions` |
+| `referrals.csv` | GA4 → Traffic acquisition → session source; columns `source,sessions`, and `medium` if you add session medium (otherwise a browser referral and a tagged link cannot be told apart) |
 | `orders.csv` | The hand-kept file above |
 
 Then:
 
 ```powershell
-node scripts/seo/report.mjs C:\path\to\exports --out C:\path\to\review.md
+node scripts/seo/report.mjs C:\path\to\exports --out C:\path\to\review.md --current-period 2026-11-01..2026-11-28 --previous-period 2026-10-04..2026-10-31
 ```
 
-The report covers brand against non-brand queries, Bengaluru and Bangalore commercial queries, queries and landing pages with clicks, impressions, CTR and position, Web against Image search, devices, countries, queries answered by more than one page, enquiries and recorded orders by landing page, and visits referred by AI assistants. Anything not supplied is reported as not supplied.
+Add `--city <slug>` (repeatable) to look at particular cities; without it every serviceable city in `src/data/serviceCities.ts`, with its aliases (Bangalore, Gurgaon …), is used.
+
+The report covers brand against non-brand queries, queries naming a service city, queries and landing pages with clicks, impressions, CTR and position, Web against Image search, devices, countries, queries shown with more than one page, enquiries and recorded orders by landing page, and visits from AI assistant hostnames. Anything not supplied is reported as not supplied, and a file missing a required column as not usable.
 
 Reading it:
 
-- Rows under 30 impressions are marked and are not evidence of a change.
+- **Periods:** without both `--current-period` and `--previous-period` the periods are "unknown" and no change (Δ) is computed; the same when the lengths differ or the periods overlap. A change from zero is shown as a number, a row absent from the previous export as "new row", and a missing previous export as "–".
+- Rows under 30 impressions are marked: a triage heuristic, not a test.
+- Totals and averages are over the rows supplied, not the whole property. Average position is weighted by impressions over the rows that have a valid position; rows without one are counted and left out, never treated as position 0.
 - Query totals are lower than page totals because Search Console hides rare queries.
-- Two pages showing for one query is a problem only when the query-by-page rows show the less suitable page taking the impressions.
-- AI assistant visits are only those that send a referrer; many do not.
+- **City rows** count city names typed in the query, not where the searcher was. A query naming two cities appears in both rows; the total counts it once.
+- Two pages for one query is a candidate to review, not a finding: it matters only when the query-by-page rows show the less suitable page taking the impressions. Separate Queries and Pages exports cannot show which page answered which query.
+- **AI assistants:** only exact hostnames count (`chatgpt.com`, `chat.openai.com`, `perplexity.ai`, `copilot.microsoft.com`, `gemini.google.com`, `claude.ai`, `meta.ai` and their listed variants). A lookalike or an `openai.com` page does not. Without a medium column the report says the provenance is unknown. Many assistant visits send no referrer, and no row shows that an assistant cited the site.
+- A missing `events.csv` means no enquiry rows were read, not zero enquiries.
 - For the first cycles after a release, expect new pages to have impressions before clicks.
 - Choose at most three priorities, each tied to a row in the report.
 
@@ -87,6 +106,27 @@ None of these was inspected for the image-discovery release; each is **unverifie
 | Key events and custom dimensions | GA4 Admin → Events, Custom definitions | `whatsapp_enquiry_click` and `basket_quote_request` marked as key events; the seven dimensions registered |
 
 ## Baseline
+
+### Pre-release figures, 13–18 October 2026 (historical)
+
+GA4 figures for 13–18 October 2026, before the catalogue release of 19 October. They are a dated record, not current performance, and the WhatsApp figures are taps, not orders:
+
+| Measure | 13–18 Oct 2026 |
+|---|---|
+| Google organic sessions / engaged sessions | 5 / 4 |
+| Direct sessions / engaged sessions | 586 / 23 |
+| WhatsApp enquiry clicks, all sources | 13 |
+| WhatsApp enquiry clicks attributed to Google organic | 2 |
+
+The five Google organic landing paths: `/`, `/locations/bengaluru`, `/categories/garlands/lotus`, `/categories/pooja-flowers` and `/categories/subscriptions`.
+
+- Tracking began on 13 October 2026, so there is no earlier period to compare with, and no 28-day pre-tracking baseline exists.
+- 19 October 2026 is the catalogue release transition: periods that span it mix two catalogues.
+- 20 October 2026 is a past day, but whether its data is complete in GA4 and Search Console still has to be checked in the accounts.
+- The application context changed on 21 October (above); `landing_path` and `ai_referrer` before and after it are not strictly comparable.
+- No Search Console export was available for this release, so no query, page, indexing, ranking or AI-visibility figure is recorded here.
+
+### Earlier state
 
 As of 12 October 2026 the Search Console property exists but holds no data yet ("processing"), there is no analytics, and therefore there is no measured baseline for impressions, clicks, enquiries or orders. The technical baseline (titles, canonicals, indexing, structured data, images) is in `search-growth-2026-10.md`. The measured baseline is the first full 28 days of Search Console data.
 

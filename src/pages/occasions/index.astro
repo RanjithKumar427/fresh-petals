@@ -5,11 +5,12 @@
 // otherwise a WhatsApp enquiry that already says what it's for. Plus the
 // two shortcuts that skip occasions altogether (budget, exact design).
 // Rendered on request: the counts follow the admin's occasion assignments
-// (cached briefly, purged when an assignment changes).
+// (cached briefly, purged when an assignment changes). Below the needs, every
+// other indexable occasion page (the occasion sitemap's rule) is linked once.
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { loadOccasionMembership } from "../../server/services/OccasionMembership";
-import { OCCASION_INDEX_TAG, occasionCacheHeaders } from "../../server/services/GarlandWebsite";
-import { needDestinations, journeyEnquiryText, SERVICE_AREA_LINE } from "../../data/occasionJourneys";
+import { GARLAND_CACHE_TAG, OCCASION_INDEX_TAG, occasionCacheHeaders } from "../../server/services/GarlandWebsite";
+import { needDestinations, journeyEnquiryText, moreOccasionLinks, SERVICE_AREA_LINE } from "../../data/occasionJourneys";
 import { garlandsPromoted } from "../../data/launchCatalogue";
 import { bouquetRange } from "../../data/catalogueRange";
 import { loadPublicCatalogue } from "../../server/services/PublicCatalogue";
@@ -20,15 +21,19 @@ import { loadAuthoritativePrices, withAuthoritativePrice } from "../../server/se
 
 export const prerender = false;
 
-for (const [name, value] of Object.entries(occasionCacheHeaders([OCCASION_INDEX_TAG]))) Astro.response.headers.set(name, value);
+// Garlands decide whether a ceremony occasion is listed, so a garland change purges this page too.
+for (const [name, value] of Object.entries(occasionCacheHeaders([OCCASION_INDEX_TAG, GARLAND_CACHE_TAG]))) Astro.response.headers.set(name, value);
 
 // Counts are of the full eligible sets (every public bouquet as assigned in the
 // admin), the same lists the linked pages show.
 const [publicCatalogue, priceMap] = await Promise.all([loadPublicCatalogue(), loadAuthoritativePrices()]);
 const bouquets = bouquetRange(publicCatalogue);
-const membership = await loadOccasionMembership(bouquets.map((product) => product.slug));
-const publicGarlands = garlandsPromoted() ? (await loadGarlands()).map((product) => product.garland).filter(isListedGarland) : [];
+// The whole public catalogue: the older occasion pages list any product type, not only bouquets.
+const membership = await loadOccasionMembership(publicCatalogue.map((product) => product.slug));
+const listedGarlands = (await loadGarlands()).filter((product) => isListedGarland(product.garland));
+const publicGarlands = garlandsPromoted() ? listedGarlands.map((product) => product.garland) : [];
 const needs = needDestinations(membership, publicCatalogue, publicGarlands);
+const moreOccasions = moreOccasionLinks(needs, membership, publicCatalogue, listedGarlands);
 // Availability for today is asked, never promised.
 const todayHref = whatsappLink(["Hi Fresh Petals, I need flowers today.", "What can you make and deliver today, and by what time?", "Occasion: ", "Delivery area: "].join("\n"));
 // Counted from the published prices the bouquet cards show.
@@ -81,6 +86,17 @@ const breadcrumbJsonLd = {
         ))
       }
     </ul>
+
+    {moreOccasions.length > 0 && (
+      <section class="occ-index__more" aria-labelledby="more-occasions-title" data-more-occasions>
+        <h2 id="more-occasions-title" class="occ-index__more-title">More occasions</h2>
+        <ul role="list">
+          {moreOccasions.map((occasion) => (
+            <li><a href={occasion.href}>{occasion.label}</a> <span>({occasion.count} {occasion.noun})</span></li>
+          ))}
+        </ul>
+      </section>
+    )}
 
     <p class="occ-index__area">{SERVICE_AREA_LINE}</p>
   </main>
@@ -192,6 +208,42 @@ const breadcrumbJsonLd = {
     font-size: 0.8125rem;
     font-weight: 700;
     color: var(--color-berry);
+  }
+
+  .occ-index__more {
+    margin: 1.8rem 0 0;
+  }
+
+  .occ-index__more-title {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 1.35rem;
+    color: var(--color-ink);
+  }
+
+  .occ-index__more ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 1.4rem;
+    margin: 0.6rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .occ-index__more li {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-height: 44px;
+    color: var(--color-moss);
+    font-size: 0.875rem;
+  }
+
+  .occ-index__more a {
+    font-weight: 700;
+    color: var(--color-ink);
+    text-underline-offset: 0.2em;
   }
 
   .occ-index__area {

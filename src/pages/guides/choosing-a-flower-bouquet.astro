@@ -14,7 +14,7 @@ import { featuredGroups } from "../../data/launchCatalogue";
 import { giftProducts } from "../../data/occasionJourneys";
 import { bouquetRange } from "../../data/catalogueRange";
 import { loadPublicCatalogue } from "../../server/services/PublicCatalogue";
-import { BOUQUET_GROUP_GUIDANCE, bouquetLine, bouquetPhotoAlt, bouquetPresentation, isVaseArrangement } from "../../data/collectionGuidance";
+import { BOUQUET_GROUP_GUIDANCE, bouquetLine, bouquetPhotoAlt, bouquetPresentation, isVaseArrangement, presentationKind } from "../../data/collectionGuidance";
 import { loadOccasionMembership } from "../../server/services/OccasionMembership";
 import { OCCASION_INDEX_TAG, occasionCacheHeaders, occasionTag } from "../../server/services/GarlandWebsite";
 
@@ -31,7 +31,8 @@ const occasions = [
   { route: "birthday", label: "a birthday", href: "/occasions/birthday", products: giftProducts("birthday", membership, publicCatalogue) },
   { route: "anniversary", label: "an anniversary", href: "/occasions/anniversary", products: giftProducts("anniversary", membership, publicCatalogue) },
 ].filter((occasion) => occasion.products.length > 0);
-const wrapped = all.filter((product) => !isVaseArrangement(product) && bouquetPresentation(product));
+// Presentation from each record (src/data/catalogueRange.ts recordedPresentation); a box, basket or open presentation is not counted as wrapped.
+const wrapped = all.filter((product) => presentationKind(product) === "wrapped");
 const vases = all.filter(isVaseArrangement);
 // How the wrapped designs are finished, from their records ("in kraft wrapping" …).
 const wrappings = [...new Set(wrapped.map((product) => bouquetPresentation(product)!.replace(/^in /, "")))];
@@ -72,11 +73,11 @@ const contents = [
   <section class="guide-section" id="presentation" aria-labelledby="presentation-title" data-guide-section="presentation">
     <h2 id="presentation-title" class="fp-serif text-2xl text-ink md:text-3xl">Wrapped, or in a vase</h2>
     <p>
-      Most of these bouquets are hand-wrapped{wrappings.length > 0 && <>: the records list {wrappings.join(", ")}</>}. A wrapped bouquet is handed over as a gift and then needs a vase and water at the other end.
+      {wrapped.length} of these {all.length} designs record wrapping or hand-tying{wrappings.length > 0 && <>: {wrappings.join(", ")}</>}. A wrapped bouquet is handed over as a gift and then needs a vase and water at the other end.
     </p>
     {vases.length > 0 && (
       <p>
-        {vases.length === 1 ? "One design" : `${vases.length} designs`} ({vases.map((product, index) => <>{index > 0 && ", "}<a href={`/products/${product.slug}`}>{product.name}</a></>)}) {vases.length === 1 ? "is" : "are"} arranged in a glass vase and can go straight onto a table or a desk. That matters when the flowers are going to an office, or to someone who may not have a vase to hand.
+        {vases.length === 1 ? "One design" : `${vases.length} designs`} ({vases.map((product, index) => <>{index > 0 && ", "}<a href={`/products/${product.slug}`}>{product.name}</a></>)}) {vases.length === 1 ? "records" : "record"} a vase and can go straight onto a table or a desk. That matters when the flowers are going to an office, or to someone who may not have a vase to hand.
       </p>
     )}
     <p>A vase can also be added to a wrapped bouquet; ask when you send your order. The wrapping and ribbon in a photograph are what the record lists, and a different finish can be requested.</p>

@@ -36,7 +36,7 @@ export const BUSINESS = {
 } as const;
 
 export const businessSummary = () =>
-  `${BUSINESS.name} takes orders for hand-tied bouquets, made-to-order wedding garlands and pooja flowers in ${serviceCityCount()} cities across India. ${BUSINESS.ordering}`;
+  `${BUSINESS.name} takes orders for bouquets, made-to-order wedding garlands and pooja flowers in ${serviceCityCount()} cities across India. ${BUSINESS.ordering}`;
 
 type Site = URL | string | undefined;
 const root = (site: Site) => new URL("/", site).toString();

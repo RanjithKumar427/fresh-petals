@@ -13,8 +13,10 @@ import { parseShopFilters, withoutUnpricedBudget, matchesShopFilters, shopFilter
 import { makeJourney } from "../../utils/journey";
 import { whatsappLink } from "../../config/storefront";
 import { filterGroups, shopItemData, type Membership } from "../../data/occasionJourneys";
-import { BOUQUET_GROUP_GUIDANCE, POOJA_ENQUIRY_HREF, POOJA_ENQUIRY_POINTS, POOJA_PHOTO_NOTE, bouquetLine, isVaseArrangement, presentationComparison } from "../../data/collectionGuidance";
+import { ALL_FLOWERS_MOVED_GROUPS, BOUQUET_GROUP_GUIDANCE, POOJA_ENQUIRY_HREF, POOJA_ENQUIRY_POINTS, POOJA_PHOTO_NOTE, bouquetLine, bouquetPresentation, presentationComparison, presentationKind } from "../../data/collectionGuidance";
 import { productPhotoAlt } from "../../data/productPhotos";
+import { recordsFlower, stemsOf } from "../../data/catalogueRange";
+import { collectionPreviewImage } from "../../data/imageSitemap";
 
 type CategoryMeta = {
   name: string;
@@ -43,9 +45,16 @@ interface Props {
   sections?: { id: string; label: string; note: string | null; products: Product[] }[];
   /** Public catalogue slugs, for copy that links to a named product (only shown while it is public). */
   publicSlugs?: Set<string>;
+  /**
+   * Labelled related choices (src/data/catalogueRange.ts RECORDED_COLLECTIONS):
+   * shown after the collection's own products and never counted with them.
+   */
+  related?: { id: string; label: string; note: string; products: Product[] }[];
+  /** The word the count uses ("plan"); "option" by default. */
+  countNoun?: string;
 }
 
-const { category, products: listedProducts, groups: listedGroups = [], membership = null, priceNote, sections = [], publicSlugs = new Set<string>() } = Astro.props;
+const { category, products: listedProducts, groups: listedGroups = [], membership = null, priceNote, sections = [], publicSlugs = new Set<string>(), related = [], countNoun = "option" } = Astro.props;
 
 // The bouquet list: each bouquet's occasions come from the admin's
 // assignments (product_occasions), never the catalogue's original tags; the
@@ -80,7 +89,38 @@ const facets = countShopFacets(shopGroups, products.map((product) => shopItemDat
 const helpHref = whatsappLink("Hi Fresh Petals, please help me choose flowers.\nOccasions: " + (contextualJourney?.occasionLabel ?? "Please advise") + "\nPlease confirm availability, delivery and the complete price before I accept the order.");
 // Bouquet groups: how the designs in a group differ, read from their records.
 const guidanceFor = (groupId: string) => (category.slug === "bouquets" ? BOUQUET_GROUP_GUIDANCE[groupId] : undefined);
-const vaseArrangements = category.slug === "bouquets" ? products.filter(isVaseArrangement) : [];
+// How the bouquets arrive, from each record (src/data/catalogueRange.ts recordedPresentation): never "every other bouquet is wrapped".
+const byPresentation = (kinds: string[]) => (category.slug === "bouquets" ? products.filter((product) => kinds.includes(presentationKind(product))) : []);
+const vaseArrangements = byPresentation(["vase"]);
+const wrappedBouquets = byPresentation(["wrapped"]);
+const boxedBouquets = byPresentation(["box", "basket"]);
+const openPresentation = byPresentation(["unresolved", "unrecorded"]);
+// Ordinary links from the indexable bouquet and flower lists to the flower and vase collections.
+const COLLECTION_LINKS: Record<string, { href: string; label: string }[]> = {
+  bouquets: [
+    { href: "/categories/rose", label: "Rose bouquets and arrangements" },
+    { href: "/categories/lilies", label: "Lily bouquets, arrangements and stems" },
+    { href: "/categories/bouquets-with-vases", label: "Bouquets with a vase" },
+    { href: "/categories/hand-tied-bouquets", label: "Wrapped and hand-tied bouquets" },
+  ],
+  "all-flowers": [
+    { href: "/categories/rose", label: "Rose bouquets and arrangements" },
+    { href: "/categories/lilies", label: "Lily bouquets, arrangements and stems" },
+    { href: "/categories/bouquets-with-vases", label: "Bouquets with a vase" },
+  ],
+};
+const collectionLinks = COLLECTION_LINKS[category.slug] ?? [];
+// Each moved group with the sections on this page that now hold its designs (counted, linked; no cards repeated).
+const movedGroups = (category.slug === "all-flowers" ? ALL_FLOWERS_MOVED_GROUPS : []).map((moved) => ({
+  ...moved,
+  // The flower page's own rule: designs recording the flower, plus its stems (src/pages/categories/[slug].astro).
+  where: sections.map((section) => ({ id: section.id, label: section.label, count: section.products.filter((product) => recordsFlower(product, moved.flower) || stemsOf([product], moved.flower).length > 0).length })).filter((section) => section.count > 0),
+}));
+// Social preview for the main flower collections: a reviewed photograph from
+// the full collection (before any ?occasion/colour filter), else the default.
+const PREVIEW_COLLECTIONS = new Set(["bouquets", "all-flowers", "rose", "lilies"]);
+const previewImage = PREVIEW_COLLECTIONS.has(category.slug) ? collectionPreviewImage(listedProducts) : undefined;
+const nameLinks = (list: Product[]) => list.map((product, index) => ({ product, separator: index === 0 ? "" : index === list.length - 1 ? " and " : ", " }));
 // All Flowers: how the presentations compare, read from the grouped records.
 const presentations = category.slug === "all-flowers" ? presentationComparison(sections) : [];
 const OCCASION_LINKS = [
@@ -100,6 +140,7 @@ const breadcrumbJsonLd = {
 <BaseLayout
   title={pageTitle}
   description={pageDescription}
+  image={previewImage}
   showCategoryCarousel={false}
   noindex={noindex}
   canonical={canonical}
@@ -139,7 +180,7 @@ const breadcrumbJsonLd = {
 
           <div class="mt-5 flex max-w-2xl flex-wrap items-center gap-2">
             <span class="rounded-full border border-line bg-linen px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-berry">
-              {products.length} option{products.length === 1 ? "" : "s"}
+              {products.length} {countNoun}{products.length === 1 ? "" : "s"}
             </span>
 
             <span class="rounded-full border border-mint-soft bg-mint-soft px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-ink">
@@ -239,13 +280,30 @@ const breadcrumbJsonLd = {
               </div>
               {category.slug === "bouquets" && (
                 <div class="max-w-3xl rounded-[24px] border border-line bg-paper p-6 text-sm leading-7 text-moss" data-presentation-note>
-                  <h2 class="text-base font-semibold text-ink">Wrapped bouquet or vase arrangement</h2>
-                  <p class="mt-2">
-                    {vaseArrangements.length > 0
-                      ? <Fragment>{vaseArrangements.map((product, index) => <Fragment>{index > 0 && ", "}<a href={`/products/${product.slug}`} class="font-semibold text-ink underline underline-offset-4">{product.name}</a></Fragment>)}{vaseArrangements.length === 1 ? " is" : " are"} arranged in a glass vase and can be placed straight on a table. The other bouquets are wrapped and tied, ready to hand over, and need a vase at home.</Fragment>
-                      : "These bouquets are wrapped and tied, ready to hand over, and need a vase at home."}{" "}
-                    A vase can be added to a wrapped bouquet when you choose its options. Say on WhatsApp if you would like a different wrapping.
-                  </p>
+                  <h2 class="text-base font-semibold text-ink">How each bouquet arrives</h2>
+                  <ul class="mt-2 space-y-2">
+                    {wrappedBouquets.length > 0 && (
+                      <li data-presentation-kind="wrapped">
+                        {wrappedBouquets.length} of the {products.length} record wrapping or hand-tying and no container: they are handed over as they are and need a vase at home. See the <a href="/categories/hand-tied-bouquets" class="font-semibold text-ink underline underline-offset-4">wrapped and hand-tied bouquets</a>.
+                      </li>
+                    )}
+                    {vaseArrangements.length > 0 && (
+                      <li data-presentation-kind="vase">
+                        {nameLinks(vaseArrangements).map(({ product, separator }) => <Fragment>{separator}<a href={`/products/${product.slug}`} class="font-semibold text-ink underline underline-offset-4">{product.name}</a></Fragment>)}{vaseArrangements.length === 1 ? " records" : " record"} a vase, so {vaseArrangements.length === 1 ? "it" : "they"} can stand on a table as {vaseArrangements.length === 1 ? "it arrives" : "they arrive"} (<a href="/categories/bouquets-with-vases" class="text-ink underline underline-offset-4">bouquets with a vase</a>).
+                      </li>
+                    )}
+                    {boxedBouquets.length > 0 && (
+                      <li data-presentation-kind="box-basket">
+                        {nameLinks(boxedBouquets).map(({ product, separator }) => <Fragment>{separator}<a href={`/products/${product.slug}`} class="font-semibold text-ink underline underline-offset-4">{product.name}</a>{bouquetPresentation(product) && !/box|basket/i.test(product.name) ? ` (${bouquetPresentation(product)!.replace(/^in /, "")})` : ""}</Fragment>)}{boxedBouquets.length === 1 ? " comes" : " come"} in a box or a basket rather than wrapping.
+                      </li>
+                    )}
+                    {openPresentation.length > 0 && (
+                      <li data-presentation-kind="to-confirm">
+                        For {nameLinks(openPresentation).map(({ product, separator }) => <Fragment>{separator}<a href={`/products/${product.slug}`} class="font-semibold text-ink underline underline-offset-4">{product.name}</a></Fragment>)}, the record does not settle how {openPresentation.length === 1 ? "it arrives" : "they arrive"}, or the photograph shows something different; ask on WhatsApp before you order.
+                      </li>
+                    )}
+                  </ul>
+                  <p class="mt-2">A vase can be added to a wrapped bouquet when you choose its options. Say on WhatsApp if you would like a different wrapping.</p>
                 </div>
               )}
               <p class="text-sm leading-7 text-moss">
@@ -418,6 +476,67 @@ const breadcrumbJsonLd = {
                 Check on WhatsApp
               </a>
             </div>
+          )
+        }
+        {
+          related.length > 0 && (
+            <div class="mt-14 space-y-14 border-t border-line pt-10" data-related-sections>
+              {related.map((section) => (
+                <section id={section.id} aria-labelledby={`${section.id}-title`} class="scroll-mt-28" data-related-section={section.id}>
+                  <p class="fp-eyebrow">Related, not counted above</p>
+                  <h2 id={`${section.id}-title`} class="fp-serif mb-3 mt-2 text-2xl text-ink md:text-3xl">{section.label}</h2>
+                  <p class="mb-6 max-w-3xl text-sm leading-7 text-moss">{section.note}</p>
+                  <div class="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+                    {section.products.map((product) => (
+                      <ProductCard
+                        id={product.id}
+                        name={product.name}
+                        image={product.image}
+                        imageAlt={productPhotoAlt(product)}
+                        priceLabel={product.priceLabel}
+                        priceType={product.priceType}
+                        category={product.category}
+                        description={product.description}
+                        slug={product.slug}
+                        isAvailable={product.isAvailable}
+                      />
+                    ))}
+                  </div>
+                </section>
+              ))}
+            </div>
+          )
+        }
+        {
+          movedGroups.map((moved) => (
+            <section id={moved.id} aria-labelledby={`${moved.id}-title`} class="mt-10 max-w-3xl scroll-mt-28 border-t border-line pt-8 text-sm leading-7 text-moss" data-moved-group={moved.id}>
+              <h2 id={`${moved.id}-title`} class="fp-serif mb-2 text-2xl text-ink">{moved.title}</h2>
+              <p>
+                {moved.text} <a href={moved.href} class="font-semibold text-ink underline underline-offset-4">{moved.label}</a>.
+              </p>
+              {moved.where.length > 0 && (
+                <p class="mt-2" data-moved-where>
+                  On this page:{" "}
+                  {moved.where.map((group, index) => (
+                    <>
+                      {index === 0 ? "" : index === moved.where.length - 1 ? " and " : ", "}
+                      <a href={`#${group.id}`} class="font-semibold text-ink underline underline-offset-4">{group.label}</a> ({group.count})
+                    </>
+                  ))}
+                  .
+                </p>
+              )}
+            </section>
+          ))
+        }
+        {
+          collectionLinks.length > 0 && (
+            <nav aria-label="More flower collections" class="mt-10 max-w-3xl text-sm leading-7 text-moss" data-collection-links>
+              <p>
+                Browse by flower or by how it arrives:{" "}
+                {collectionLinks.map((link, index) => <Fragment>{index > 0 && ", "}<a href={link.href} class="font-semibold text-ink underline underline-offset-4">{link.label.toLowerCase()}</a></Fragment>)}.
+              </p>
+            </nav>
           )
         }
         </div>

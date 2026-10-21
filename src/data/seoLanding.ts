@@ -102,10 +102,10 @@ export const CATEGORY_LANDING: Record<string, LandingContent> = {
   bouquets: {
     title: "Flower Bouquets Online | Rose, Lily & Mixed | Fresh Petals",
     description:
-      `Hand-tied rose, lily and mixed-flower bouquets for delivery in ${CITY_COUNT} cities across India. Compare the designs, then get the price for your date on WhatsApp.`,
+      `Rose, lily and mixed-flower bouquets for delivery in ${CITY_COUNT} cities across India, wrapped or in a vase, box or basket as each design records. Price for your date on WhatsApp.`,
     h1: "Flower Bouquets",
     intro: [
-      "Every bouquet we list: rose bouquets, lily bouquets and bouquets of other flowers, each wrapped or arranged by hand, for delivery in the cities we serve across India. They are grouped by the flowers recorded for each design; a bouquet with both roses and lilies appears under both.",
+      "Every bouquet we list: rose bouquets, lily bouquets and bouquets of other flowers, for delivery in the cities we serve across India. Most are wrapped; some come in a vase, a box or a basket, as each design's record says. They are grouped by the flowers recorded for each design; a bouquet with both roses and lilies appears under both.",
       "Pick a bouquet, add the recipient city, a delivery date and recipient details, and send your cart on WhatsApp. We confirm the flowers available that day, delivery timing and the final total including delivery before you pay.",
     ],
     faqs: [
@@ -141,7 +141,7 @@ export const CATEGORY_LANDING: Record<string, LandingContent> = {
     description: `Order flowers online for delivery in ${CITY_COUNT} cities across India: every bouquet, lily design and arrangement we list, grouped by how it is presented. Price and date confirmed on WhatsApp.`,
     h1: "All Flowers",
     intro: [
-      "Every fresh-flower product we list, in one place: hand-wrapped bouquets, lily bouquets, arrangements in a vase, flowers in a box or a basket, and flowers by the stem. The bouquet collection lists every bouquet by flower; this page adds the other fresh-flower products.",
+      "Every fresh-flower product we list, in one place: wrapped and hand-tied bouquets, arrangements in a vase, flowers in a box or a basket, and flowers by the stem, each placed once by what its record says it comes in. The bouquet collection lists every bouquet by flower; this page adds the other fresh-flower products.",
       `Choose a design, tell us the recipient city (we take orders for ${CITY_COUNT} cities) and the date, and send it on WhatsApp. We confirm what is available for that day, the price and the delivery details before you pay.`,
     ],
     faqs: [
@@ -193,7 +193,7 @@ export const CATEGORY_LANDING: Record<string, LandingContent> = {
     links: [
       { href: "/guides/jasmine-pooja-flowers-and-gajra", label: "Jasmine, pooja flowers and gajra: which to order" },
       { href: "/categories/garlands", label: "Wedding garlands" },
-      { href: "/categories/subscriptions", label: "Pooja flower subscriptions" },
+      { href: "/categories/subscriptions", label: "Flower subscriptions" },
       { href: "/categories/flowerbox", label: "Flower boxes" },
       { href: "/categories/baskets", label: "Flower baskets" },
       { href: "/occasions/wedding", label: "Wedding flowers" },
@@ -201,12 +201,13 @@ export const CATEGORY_LANDING: Record<string, LandingContent> = {
   },
 
   subscriptions: {
-    title: "Flower Subscriptions | Pooja Flowers & Jasmine | Fresh Petals",
+    // Names no individual plan: the plans listed are read from the published records, and one may be withdrawn between releases.
+    title: "Flower Subscriptions | Regular Flower Delivery Plans | Fresh Petals",
     description:
-      "Daily pooja flower, jasmine (malli) and weekly flowerbox subscriptions. Plans, delivery days, your city and prices confirmed on WhatsApp.",
+      "Flower subscription plans for regular deliveries at home. Delivery days, your city and the price are confirmed on WhatsApp; a custom plan can be discussed.",
     h1: "Flower Subscriptions",
     intro: [
-      "Regular fresh flowers for homes: a daily pooja flower subscription, a jasmine (malli) subscription, a weekly flowerbox and custom plans for homes, pooja and events.",
+      "Regular fresh flowers for homes. The plans listed below are the ones available now; if none fits, a custom plan for a home, pooja or an event can be discussed on WhatsApp.",
       "Choose a plan and send it on WhatsApp. We confirm your delivery days, start date, city and address, and price before the first delivery.",
     ],
     faqs: [

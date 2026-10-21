@@ -23,6 +23,15 @@ const isPhotograph = (path: string | undefined | null): path is string => Boolea
 /** The catalogue product's photograph when it is reviewed as showing the product, or none. */
 export const productImages = (product: Pick<Product, "slug" | "image">) => (isPhotograph(product.image) && isProductPhotograph(product) ? [product.image] : []);
 
+/**
+ * A collection's social preview: the first product photograph, in the
+ * collection's own order, that is reviewed as showing its product (the same
+ * permission the image sitemap uses). Pass the full collection, not a
+ * filtered view, so a shared link always previews the same photograph.
+ * Undefined when there is none: the page then keeps the site's default image.
+ */
+export const collectionPreviewImage = (products: Pick<Product, "slug" | "image">[]): string | undefined => products.flatMap(productImages)[0];
+
 /** A garland's main photograph and its confirmed gallery, as its page shows them. */
 export const garlandImages = (design: Pick<GarlandDesign, "image" | "gallery">) => [design.image.path, ...design.gallery.map((photo) => photo.path)].filter(isPhotograph);
 

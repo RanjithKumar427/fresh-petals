@@ -88,10 +88,11 @@ export const OCCASION_PAGES: OccasionMeta[] = [
     name: "Housewarming",
     slug: "housewarming",
     eyebrow: "Housewarming Flowers",
+    // The gift list is bouquets only (BOUQUET_ONLY_ROUTES): no hamper, basket, plant or toran is claimed for it.
     description:
-      "Flower hampers, baskets, plants, decor flowers and torans for housewarming gifting and pooja.",
+      "Gift bouquets for a housewarming or Gruhapravesam, as assigned to the occasion. Pooja flowers, a toran or a hamper for the new home can be discussed on WhatsApp.",
     heroNote:
-      "Ideal for Gruhapravesam, new home gifting, pooja decor and premium flower hampers.",
+      "Choose a gift bouquet below, or tell us on WhatsApp what the pooja or the new home needs and we confirm what we can make.",
     fallbackProductSlugs: [
       "housewarming-flower-hamper",
       "plant-and-flower-hamper",
@@ -146,10 +147,11 @@ export const OCCASION_PAGES: OccasionMeta[] = [
     name: "Mom To Be",
     slug: "mom-to-be",
     eyebrow: "Mom To Be Flowers",
+    // The gift list is bouquets only (BOUQUET_ONLY_ROUTES): no hamper or basket is claimed for it.
     description:
-      "Soft premium bouquets, hampers, baskets and gentle flower gifts for mom-to-be celebrations.",
+      "Gift bouquets for a baby shower or Seemantham, as assigned to the occasion. Ceremony flowers or a hamper can be discussed on WhatsApp.",
     heroNote:
-      "Best for baby shower gifting, soft pastel flowers, hampers and thoughtful message cards.",
+      "Add a message card when you choose the bouquet, and confirm the flowers and delivery on WhatsApp.",
     fallbackProductSlugs: [
       "flower-chocolate-hamper",
       "housewarming-flower-hamper",
