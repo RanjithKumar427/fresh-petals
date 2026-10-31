@@ -430,7 +430,7 @@ export function homeShortcuts(_membership: Membership, catalogue: Product[], pub
   return [
     ...(bouquets ? [{ label: "Browse bouquets", href: "/categories/bouquets", primary: true }] : []),
     ...(garlands ? [{ label: "Choose garlands", href: "/categories/garlands" }] : []),
-    ...(ceremonyRoute ? [{ label: "Flowers for a ceremony", href: `/occasions/${ceremonyRoute}?for=ceremony` }] : []),
+    ...(ceremonyRoute ? [{ label: "Flowers for a ceremony", href: `/occasions/${ceremonyRoute}#for=ceremony` }] : []),
     // The pooja collection is a prebuilt public page (src/data/navigation.ts).
     { label: "Pooja flowers", href: "/categories/pooja-flowers" },
     { label: "Help me choose", href: "/occasions" },
@@ -470,14 +470,14 @@ export function needDestinations(membership: Membership, catalogue: Product[], p
     { need: "Anniversary, love & proposal", href: n("anniversary") ? "/occasions/anniversary" : null, note: "Roses and lilies; prices on WhatsApp.", count: n("anniversary"), enquiry: "anniversary flowers" },
     {
       need: "Congratulations, thanks & farewell",
-      href: thanks.length ? `/categories/bouquets?occasion=${thanks.join(",")}` : null,
+      href: thanks.length ? `/categories/bouquets#occasion=${thanks.join(",")}` : null,
       note: "Bright bouquets from our range.",
       count: tagged(...thanks),
       enquiry: "congratulations or thank-you flowers",
     },
     {
       need: "Get well & apology",
-      href: gentle.length ? `/categories/bouquets?occasion=${gentle.join(",")}` : null,
+      href: gentle.length ? `/categories/bouquets#occasion=${gentle.join(",")}` : null,
       note: tagged("get-well-soon") ? "Gentle bouquets from our range." : "Apology bouquets from our range; for get-well flowers, ask us on WhatsApp.",
       count: tagged(...gentle),
       enquiry: "get-well or apology flowers",
@@ -490,10 +490,10 @@ export function needDestinations(membership: Membership, catalogue: Product[], p
       count: condolence,
       enquiry: "condolence flowers",
     },
-    { need: "Wedding ceremony", href: "/occasions/wedding?for=ceremony", note: ceremonyNote, count: 0, enquiry: "wedding ceremony flowers" },
+    { need: "Wedding ceremony", href: "/occasions/wedding#for=ceremony", note: ceremonyNote, count: 0, enquiry: "wedding ceremony flowers" },
     {
       need: "Engagement & reception",
-      href: n("engagement") || engagementCeremony ? `/occasions/engagement?for=${engagementCeremony ? "ceremony" : "gift"}` : null,
+      href: n("engagement") || engagementCeremony ? `/occasions/engagement#for=${engagementCeremony ? "ceremony" : "gift"}` : null,
       note: engagementCeremony ? "Ceremony garlands and gifts; availability is confirmed on WhatsApp." : n("engagement") ? "Gift bouquets; ask on WhatsApp about ceremony flowers." : "Tell us whether it's for the ceremony or a gift — we'll reply with options.",
       count: n("engagement"),
       enquiry: "engagement or reception flowers",
@@ -501,14 +501,14 @@ export function needDestinations(membership: Membership, catalogue: Product[], p
     { need: "Haldi & Mehendi", href: null, note: "Ask on WhatsApp about suitable flowers and décor for your ceremony.", count: 0, enquiry: "Haldi or Mehendi flowers" },
     {
       need: "Baby shower, new baby & naming ceremony",
-      href: n("mom-to-be") ? "/occasions/mom-to-be?for=gift" : null,
+      href: n("mom-to-be") ? "/occasions/mom-to-be#for=gift" : null,
       note: n("mom-to-be") ? "Gift bouquets for the family; ceremony requirements are checked on WhatsApp." : "Tell us about the ceremony on WhatsApp.",
       count: n("mom-to-be"),
       enquiry: "baby shower, new baby or naming ceremony flowers",
     },
     {
       need: "Housewarming & pooja",
-      href: n("housewarming") ? "/occasions/housewarming?for=gift" : null,
+      href: n("housewarming") ? "/occasions/housewarming#for=gift" : null,
       note: n("housewarming") ? "Housewarming gift bouquets; pooja flower requirements are checked on WhatsApp." : "Pooja flowers and housewarming gifts are confirmed on WhatsApp.",
       count: n("housewarming"),
       enquiry: "housewarming or pooja flowers",

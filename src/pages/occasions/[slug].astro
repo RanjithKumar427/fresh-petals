@@ -17,12 +17,18 @@ import { loadPublicCatalogue } from "../../server/services/PublicCatalogue";
 import { loadOccasionMembership } from "../../server/services/OccasionMembership";
 import { loadAuthoritativePrices, withAuthoritativePrice } from "../../server/services/ProductPricing";
 import { occasionCacheHeaders, occasionTag, GARLAND_CACHE_TAG } from "../../server/services/GarlandWebsite";
+import { filterQueryRedirect, filterRedirectResponse } from "../../utils/shopFilters";
 
 export const prerender = false;
 
 const slug = Astro.params.slug ?? "";
 const occasion = OCCASION_PAGES.find((item) => item.slug === slug);
 if (!occasion) return Astro.rewrite("/404");
+
+// An older ?colour=…/?for=… link: same view at its fragment address, before any
+// rendering or database work (src/utils/shopFilters.ts).
+const filterRedirect = filterQueryRedirect(Astro.url);
+if (filterRedirect) return filterRedirectResponse(filterRedirect);
 
 for (const [name, value] of Object.entries(occasionCacheHeaders([occasionTag(slug), ...(GARLAND_OCCASION_ROUTES.has(slug) ? [GARLAND_CACHE_TAG] : [])]))) Astro.response.headers.set(name, value);
 

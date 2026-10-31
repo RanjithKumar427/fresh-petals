@@ -77,7 +77,10 @@ try {
     assert.equal(check.data.allOk, true); assert.equal(check.data.pages[0].seen, 'absent');
     log(`PASS ${width}px actual admin assignment removal, checker and failed-refresh feedback (180-second header contract).`);
 
-    await page.goto(`${base}/categories/bouquets?occasion=housewarming`);
+    // Older ?occasion=… links answer with a 301 to the fragment address, before rendering.
+    const legacy = await fetch(`${base}/categories/bouquets?occasion=housewarming&utm_source=audit`, { redirect: 'manual' });
+    assert.equal(legacy.status, 301); assert.equal(legacy.headers.get('location'), '/categories/bouquets?utm_source=audit#occasion=housewarming');
+    await page.goto(`${base}/categories/bouquets?occasion=housewarming`); assert.equal(new URL(page.url()).hash, '#occasion=housewarming');
     const chip = page.locator('[data-filter-value="housewarming"]');
     assert.equal(await chip.getAttribute('aria-pressed'), 'true'); assert(await chip.isVisible());
     assert.equal(await page.locator('[data-shop-item]:visible').count(), 0);
@@ -88,10 +91,10 @@ try {
     await page.reload(); assert.equal(await page.locator('[data-shop-item]:visible').count(), 0);
     await page.locator('[data-filters-clear]').first().click(); assert.equal(await page.locator('[data-shop-item]:visible').count(), 8);
     await page.goBack(); assert.equal(await page.locator('[data-shop-item]:visible').count(), 0); assert.equal(await chip.getAttribute('aria-pressed'), 'true');
-    await page.goto(`${base}/categories/bouquets?occasion=invalid-value`); assert.equal(await page.locator('[data-shop-item]:visible').count(), 8);
+    await page.goto(`${base}/categories/bouquets#occasion=invalid-value`); assert.equal(await page.locator('[data-shop-item]:visible').count(), 8);
     log(`PASS ${width}px valid empty filters: direct arrival, reload, Clear, Back, counts, assistance; invalid value stays unselected.`);
 
-    await page.goto(`${base}/categories/bouquets?occasion=birthday&for=gift`);
+    await page.goto(`${base}/categories/bouquets#occasion=birthday&for=gift`);
     const card = page.locator('[data-shop-item]:visible').first();
     const productLink = card.locator('[data-journey-link]').first();
     const href = await productLink.getAttribute('href'); assert.equal(new URL(href, base).searchParams.get('occ'), 'birthday');
@@ -124,7 +127,7 @@ try {
     await noOverflow(page); await capture(page, `mixed-context-cart-${width}`);
     log(`PASS ${width}px list/product enquiry, canonical, subsequent choice, unfiltered visit, persisted mixed basket and intercepted WhatsApp draft.`);
 
-    await page.goto(`${base}/occasions/housewarming?for=ceremony`);
+    await page.goto(`${base}/occasions/housewarming#for=ceremony`);
     assert.equal(await page.locator('[data-shop-item]:visible').count(), 0); assert.equal(await page.locator('[data-garland-card]:visible').count(), 0);
     assert.match(await page.locator('[data-intent-section="ceremony"]').innerText(), /aren't online yet/);
     await page.goto(`${base}/`); assert.equal(await page.getByRole('link', { name: 'Flowers for a ceremony', exact: true }).count(), 0);
@@ -134,13 +137,12 @@ try {
     await ctx.close();
 
     const nojs = await context({ javaScriptEnabled: false, viewport: { width, height: 844 } });
+    // Selections live in the fragment, which only the browser reads: without
+    // JavaScript a filter link shows the whole list (src/utils/shopFilters.ts).
     const plain = await nojs.newPage(); await plain.goto(`${base}/categories/bouquets?occasion=housewarming`);
-    assert.equal(await plain.locator('[data-shop-item]:visible').count(), 0); assert(await plain.locator('[data-filter-value="housewarming"]').isVisible());
-    assert.match(await plain.locator('[data-shop-count]').innerText(), /Showing 0 of 8/);
-    await plain.locator('[data-filters-clear]').first().click(); assert.equal(await plain.locator('[data-shop-item]:visible').count(), 8);
-    await plain.goto(`${base}/categories/bouquets?occasion=birthday&for=gift`);
-    assert.equal(new URL(await plain.locator('[data-shop-item]:visible [data-journey-link]').first().getAttribute('href'), base).searchParams.get('occ'), 'birthday');
-    await nojs.close(); log(`PASS ${width}px JavaScript-disabled filter, count, Clear and contextual links.`);
+    assert.equal(new URL(plain.url()).hash, '#occasion=housewarming');
+    assert.equal(await plain.locator('[data-shop-item]:visible').count(), 8); assert.equal(await plain.locator('[data-filter-value][aria-pressed="true"]').count(), 0);
+    await nojs.close(); log(`PASS ${width}px JavaScript-disabled: an older filter link redirects and shows the full list.`);
   }
 
   // Older catalogue fallback: real API saves and real request-rendered HTML.

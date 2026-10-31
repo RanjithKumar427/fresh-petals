@@ -143,19 +143,19 @@ test('directory: counts are the real eligible sets; get-well offers its products
   assign(['chocolates-addon'], 'thank-you');
   const needs = Object.fromEntries(journeys.needDestinations(membership, catalogue).map((n) => [n.need, n]));
   const getWell = needs['Get well & apology'];
-  assert.equal(getWell.href, '/categories/bouquets?occasion=get-well-soon');
+  assert.equal(getWell.href, '/categories/bouquets#occasion=get-well-soon');
   assert.equal(getWell.count, 3);
   assert.equal(getWell.note, 'Gentle bouquets from our range.');
   const thanks = needs['Congratulations, thanks & farewell'];
-  assert.equal(thanks.href, '/categories/bouquets?occasion=congratulations,thank-you');
+  assert.equal(thanks.href, '/categories/bouquets#occasion=congratulations,thank-you');
   assert.equal(thanks.count, 4, 'red-affair counted once; the add-on is not a bouquet');
-  assert.equal(needs['Housewarming & pooja'].href, '/occasions/housewarming?for=gift');
+  assert.equal(needs['Housewarming & pooja'].href, '/occasions/housewarming#for=gift');
   assert.equal(needs['Housewarming & pooja'].count, 3);
-  assert.equal(needs['Baby shower, new baby & naming ceremony'].href, '/occasions/mom-to-be?for=gift');
+  assert.equal(needs['Baby shower, new baby & naming ceremony'].href, '/occasions/mom-to-be#for=gift');
   assert.equal(needs['Baby shower, new baby & naming ceremony'].count, 1);
   assert.equal(needs.Condolence.href, '/occasions/sympathy');
   assert.equal(needs.Condolence.count, 2);
-  assert.equal(needs['Wedding ceremony'].href, '/occasions/wedding?for=ceremony');
+  assert.equal(needs['Wedding ceremony'].href, '/occasions/wedding#for=ceremony');
   assert.equal(needs['Haldi & Mehendi'].href, null);
   // The link's own list shows the same number: the bouquet list filtered by those occasions.
   const listed = journeys.withAssignments(range.bouquetRange(catalogue), membership).filter((p) => ['congratulations', 'thank-you'].some((o) => p.occasionTags.includes(o)));

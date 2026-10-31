@@ -318,7 +318,7 @@ export function getBouquetBrowse(): { label: string; href: string }[] {
 export function getBudgetShortcut(priceMap: Map<string, AuthoritativePrice>, catalogue: Product[]): { label: string; href: string; count: number } | null {
   // The whole bouquet list the link opens, not the featured shortlist.
   const count = bouquetRange(catalogue).filter((product) => budgetBand(withAuthoritativePrice(product, priceMap)) === "under-1500").length;
-  return count > 0 ? { label: `Bouquets under ₹1,500 (${count})`, href: "/categories/bouquets?budget=under-1500", count } : null;
+  return count > 0 ? { label: `Bouquets under ₹1,500 (${count})`, href: "/categories/bouquets#budget=under-1500", count } : null;
 }
 
 // ---------------------------------------------------------------------

@@ -32,11 +32,61 @@ export function matchesShopFilters(item: ShopItemData, state: ShopFilterState, e
   const values: Record<FilterKey, string[]> = { occasion: item.occasions, colour: item.colours, budget: item.budget ? [item.budget] : [] };
   return FILTER_GROUPS.every((group) => group === except || !state[group].length || state[group].some((value) => values[group].includes(value)));
 }
+/** The URL parameters a filter selection is written in (groups plus the gift/ceremony intent). */
+const FILTER_PARAMS: readonly string[] = [...FILTER_GROUPS, "for"];
+const hasFilterParam = (params: URLSearchParams) => FILTER_PARAMS.some((key) => params.has(key));
+
+/**
+ * A filtered view's address keeps the selection in the fragment
+ * (/categories/bouquets#colour=red&occasion=birthday), never the query.
+ * The fragment never reaches the server, so every selection is served from
+ * the one CDN copy of the page and filtered in the browser (ShopFilters).
+ * With ?colour=…, each combination was its own cache entry: measured on
+ * 31 Oct 2026, 1,863 of 1,868 function renders in an hour were filter URLs,
+ * 1,848 of them distinct, mostly from crawlers following the chip links.
+ * `pathname` may carry a non-filter query (?utm_source=…), which is kept.
+ */
 export function shopFilterUrl(pathname: string, state: ShopFilterState): string {
   const params = new URLSearchParams();
   for (const group of FILTER_GROUPS) if (state[group].length) params.set(group, state[group].join(","));
   if (state.intent) params.set("for", state.intent);
-  return pathname + (params.size ? `?${params}` : "");
+  return pathname + (params.size ? `#${params}` : "");
+}
+
+/** Where a selection is read from: the fragment, or an older ?colour=… query link. */
+export function shopFilterParams(location: { search: string; hash: string }): URLSearchParams {
+  const fragment = new URLSearchParams(location.hash.replace(/^#/, ""));
+  return hasFilterParam(fragment) ? fragment : new URLSearchParams(location.search);
+}
+
+/** True for an in-page anchor such as #roses (a fragment with no filter in it). */
+export function isPlainAnchor(hash: string): boolean {
+  return hash.length > 1 && !hasFilterParam(new URLSearchParams(hash.slice(1)));
+}
+
+/** A query string with the filter parameters removed ("" or "?utm_source=…"). */
+export function withoutFilterQuery(search: string): string {
+  const params = new URLSearchParams(search);
+  for (const key of FILTER_PARAMS) params.delete(key);
+  return params.size ? `?${params}` : "";
+}
+
+/**
+ * For an older filter link (?colour=red&utm_source=x), the same view at its
+ * fragment address (?utm_source=x#colour=red); null when the query has no
+ * filter. Other parameters, such as campaign tags, stay in the query.
+ */
+export function filterQueryRedirect(url: URL): string | null {
+  if (!hasFilterParam(url.searchParams)) return null;
+  return shopFilterUrl(url.pathname + withoutFilterQuery(url.search), parseShopFilters(url.searchParams));
+}
+
+/** The 301 for filterQueryRedirect: no rendering or database work for an older filter link. */
+export function filterRedirectResponse(location: string): Response {
+  return new Response(null, {
+    status: 301,
+    headers: { Location: location, "Cache-Control": "public, max-age=0, s-maxage=120, stale-while-revalidate=60" },
+  });
 }
 export function toggleShopFilter(state: ShopFilterState, group: FilterKey, value: string): ShopFilterState {
   return { ...state, [group]: state[group].includes(value) ? state[group].filter((key) => key !== value) : [...state[group], value] };

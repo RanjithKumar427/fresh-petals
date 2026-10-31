@@ -45,7 +45,29 @@ test('filters round trip, OR within a group, AND across groups, clear explicitly
   const state = filters.parseShopFilters(new URLSearchParams('occasion=birthday,anniversary&colour=red&budget=under-1500&for=gift'));
   assert.equal(filters.matchesShopFilters({ occasions: ['anniversary'], colours: ['red'], budget: 'under-1500', intent: 'gift' }, state), true);
   assert.equal(filters.matchesShopFilters({ occasions: ['anniversary'], colours: ['pink'], budget: 'under-1500', intent: 'gift' }, state), false);
-  assert.deepEqual(json(filters.parseShopFilters(new URL(filters.shopFilterUrl('/categories/bouquets', state), 'http://localhost').searchParams)), json(state));
+  assert.deepEqual(json(filters.parseShopFilters(filters.shopFilterParams(new URL(filters.shopFilterUrl('/categories/bouquets', state), 'http://localhost')))), json(state));
+});
+test('filter selections live in the fragment; older query links redirect there and keep campaign parameters', () => {
+  const state = filters.parseShopFilters(new URLSearchParams('occasion=birthday&colour=red'));
+  const href = filters.shopFilterUrl('/categories/bouquets', state);
+  assert.equal(new URL(href, 'http://localhost').search, '', 'no query: one CDN copy serves every selection');
+  assert.equal(filters.shopFilterUrl('/categories/bouquets', filters.parseShopFilters(new URLSearchParams())), '/categories/bouquets');
+  // An older ?colour=… link is still read when the fragment carries no selection.
+  assert.deepEqual(json(filters.parseShopFilters(filters.shopFilterParams({ search: '?colour=red', hash: '' }))).colour, ['red']);
+  assert.deepEqual(json(filters.parseShopFilters(filters.shopFilterParams({ search: '?colour=red', hash: '#colour=pink' }))).colour, ['pink']);
+  const redirect = (u) => filters.filterQueryRedirect(new URL(u, 'http://localhost'));
+  assert.equal(redirect('/categories/bouquets'), null);
+  assert.equal(redirect('/categories/bouquets?utm_source=ig&fbclid=x'), null, 'campaign-only links are not touched');
+  assert.equal(redirect('/categories/bouquets?occasion=birthday&colour=red'), '/categories/bouquets#occasion=birthday&colour=red');
+  assert.equal(redirect('/categories/bouquets?colour=red&utm_source=ig'), '/categories/bouquets?utm_source=ig#colour=red');
+  assert.equal(redirect('/occasions/wedding?for=ceremony'), '/occasions/wedding#for=ceremony');
+  assert.equal(redirect('/categories/bouquets?colour=not-a-colour'), '/categories/bouquets');
+  const response = sourceLoader({ globals: { Response } })('src/utils/shopFilters.ts').filterRedirectResponse('/categories/bouquets#colour=red');
+  assert.equal(response.status, 301);
+  assert.equal(response.headers.get('location'), '/categories/bouquets#colour=red');
+  assert.equal(filters.isPlainAnchor('#roses'), true);
+  assert.equal(filters.isPlainAnchor('#colour=red'), false);
+  assert.equal(filters.isPlainAnchor(''), false);
 });
 test('selected zero-count budget/colour are present and facet counts apply other filters', () => {
   const products = [{ ...productCatalog[0], priceLabel: 'From ₹1000', flowerTypes: ['Red roses'], occasionTags: ['birthday'] }];
