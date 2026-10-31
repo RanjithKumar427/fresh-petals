@@ -16,14 +16,14 @@ const clearHref = shopFilterUrl(Astro.url.pathname, { occasion: [], budget: [], 
     <div class="filters__row" role="group" aria-label="Filter the list">
       {groups.map((group) => <div class="filters__group" role="group" aria-label={group.label} hidden={group.options.every((option) => option.count === 0 && !state[group.id].includes(option.key))}>
         <span class="filters__label" aria-hidden="true">{group.label}</span>
-        {group.options.map((option) => <a href={shopFilterUrl(Astro.url.pathname, toggleShopFilter(state, group.id, option.key))} role="button" class="chip" aria-pressed={state[group.id].includes(option.key)} data-filter-group={group.id} data-filter-value={option.key} aria-label={group.label + ": " + option.label} hidden={option.count === 0 && !state[group.id].includes(option.key)}>
+        {group.options.map((option) => <a href={shopFilterUrl(Astro.url.pathname, toggleShopFilter(state, group.id, option.key))} rel="nofollow" role="button" class="chip" aria-pressed={state[group.id].includes(option.key)} data-filter-group={group.id} data-filter-value={option.key} aria-label={group.label + ": " + option.label} hidden={option.count === 0 && !state[group.id].includes(option.key)}>
           {option.label} <span class="chip__count" data-chip-count>({option.count})</span>
         </a>)}
       </div>)}
     </div>
     <p class="filters__status" aria-live="polite">
       <span data-shop-count>{active.length ? "Showing " + shown + " of " + total : shown} {noun}</span>
-      <span data-active-list class="filters__active">{active.map((option) => <a class="active-pill" href={shopFilterUrl(Astro.url.pathname, toggleShopFilter(state, option.group, option.key))} data-active-remove={option.key} data-active-group={option.group} aria-label={"Remove filter " + option.label}>{option.label} ✕</a>)}</span>
+      <span data-active-list class="filters__active">{active.map((option) => <a class="active-pill" rel="nofollow" href={shopFilterUrl(Astro.url.pathname, toggleShopFilter(state, option.group, option.key))} data-active-remove={option.key} data-active-group={option.group} aria-label={"Remove filter " + option.label}>{option.label} ✕</a>)}</span>
       <a href={clearHref} class="filters__clear" data-filters-clear hidden={!active.length && (!state.intent || !!intents)}>Clear filters</a>
     </p>
   </div>}
@@ -70,7 +70,7 @@ const clearHref = shopFilterUrl(Astro.url.pathname, { occasion: [], budget: [], 
       if (count) { const noun = root.dataset.shopNoun ?? "bouquets"; count.textContent = selected.length ? "Showing " + shown + " of " + distinct(scoped) + " " + noun : shown + " " + noun; }
       const activeList = root.querySelector("[data-active-list]");
       activeList?.replaceChildren(...selected.map(({ group, value }) => {
-        const link = document.createElement("a"); link.className = "active-pill"; link.textContent = labels[group][value] + " ✕";
+        const link = document.createElement("a"); link.className = "active-pill"; link.rel = "nofollow"; link.textContent = labels[group][value] + " ✕";
         link.href = shopFilterUrl(location.pathname, toggleShopFilter(state, group, value)); link.dataset.activeRemove = value; link.dataset.activeGroup = group; link.setAttribute("aria-label", "Remove filter " + labels[group][value]); return link;
       }));
       root.querySelectorAll<HTMLAnchorElement>("[data-filters-clear]").forEach((link) => { link.href = shopFilterUrl(location.pathname, { occasion: [], budget: [], colour: [], intent: intents.length ? state.intent : null }); if (link.closest("[data-filters]")) link.hidden = !selected.length && (!state.intent || !!intents.length); });

@@ -7,7 +7,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 import ProductCard from "../ProductCard.astro";
 import type { Product } from "../../data/productCatalog";
 import LandingDetails from "../LandingDetails.astro";
-import { CATEGORY_LANDING, NOINDEX_CATEGORY_SLUGS, CANONICAL_CATEGORY, lowestPrice } from "../../data/seoLanding";
+import { CATEGORY_LANDING, CATEGORY_META, NOINDEX_CATEGORY_SLUGS, CANONICAL_CATEGORY, lowestPrice } from "../../data/seoLanding";
 import ShopFilters from "../occasion/ShopFilters.astro";
 import { parseShopFilters, withoutUnpricedBudget, matchesShopFilters, shopFilterUrl, countShopFacets } from "../../utils/shopFilters";
 import { makeJourney } from "../../utils/journey";
@@ -70,8 +70,9 @@ const groups = listedGroups.map((group) => ({ ...group, products: group.products
 // menu but are noindexed (and left out of sitemap.xml) — a page with no
 // products is not a useful search result.
 const landing = CATEGORY_LANDING[category.slug];
-const pageTitle = landing?.title ?? `${category.name} | Fresh Petals`;
-const pageDescription = landing?.description ?? category.description;
+const meta = CATEGORY_META[category.slug];
+const pageTitle = landing?.title ?? meta?.title ?? `${category.name} | Fresh Petals`;
+const pageDescription = landing?.description ?? meta?.description ?? category.description;
 const pageHeading = landing?.h1 ?? category.name;
 // All Flowers is mostly quoted designs; a "from" amount taken from its few priced products would misdescribe the page.
 const fromPrice = landing && category.slug !== "all-flowers" ? lowestPrice(products) : null;

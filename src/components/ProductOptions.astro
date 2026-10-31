@@ -546,6 +546,15 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
   // The recipient city's name for drafts, or null when none is chosen.
   const recipientCity = () => cityName(getDestination());
 
+  // GA4 whatsapp_enquiry_click for this panel's two WhatsApp buttons, sent
+  // only when WhatsApp is actually opened: after the double-tap guard and,
+  // for the detailed request, after its fields and delivery check pass.
+  // (src/scripts/inline/analytics.js leaves these two buttons to us.)
+  function trackWhatsappEnquiry(meta: { slug: string; category: string }) {
+    const track = (window as Window & { fpTrack?: (name: string, params?: Record<string, string>) => void }).fpTrack;
+    track?.("whatsapp_enquiry_click", { item_id: meta.slug, item_category: meta.category || "general", link_type: "page" });
+  }
+
   // ---------------------------------------------------------------------
   // Journey A — Simple Order: "Order on WhatsApp", no fields.
   // ---------------------------------------------------------------------
@@ -611,6 +620,7 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
           "Please confirm today's availability and price.",
         ].join("\n");
 
+    trackWhatsappEnquiry(meta);
     window.open(`https://wa.me/${meta.whatsappNumber}?text=${encodeURIComponent(message)}`, "_blank");
 
     // Short cooldown, not a permanent lock: absorbs a rapid double/triple
@@ -939,6 +949,7 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
       quoteOnly ? QUOTE_ONLY_CLOSING : "Please confirm availability, final price, delivery fee and payment details.",
     ].join("\n");
 
+    trackWhatsappEnquiry(meta);
     window.open(`https://wa.me/${meta.whatsappNumber}?text=${encodeURIComponent(whatsappMessage)}`, "_blank");
     } finally {
       deliveryDetailsInFlight = false;

@@ -195,8 +195,13 @@
     function (event) {
       var target = event.target && event.target.closest ? event.target.closest("a[href], button") : null;
       if (!target || target.hasAttribute("data-send-cart-whatsapp")) return;
+      // The product page's two WhatsApp buttons report the event themselves
+      // (src/components/ProductOptions.astro), once WhatsApp actually opens:
+      // a double tap or a detailed request that fails validation is not an
+      // enquiry.
+      if (target.hasAttribute("data-simple-whatsapp") || target.hasAttribute("data-delivery-details-whatsapp")) return;
       var href = target.getAttribute("href") || "";
-      var direct = /^https:\/\/(wa\.me|api\.whatsapp\.com)\//.test(href) || href.indexOf("/garland-enquiry") === 0 || target.hasAttribute("data-simple-whatsapp") || target.hasAttribute("data-whatsapp-order-link") || target.hasAttribute("data-detailed-whatsapp");
+      var direct = /^https:\/\/(wa\.me|api\.whatsapp\.com)\//.test(href) || href.indexOf("/garland-enquiry") === 0 || target.hasAttribute("data-whatsapp-order-link");
       if (!direct) return;
       var scope = target.closest("[data-track-item]") || document.querySelector("[data-track-item]");
       var card = target.closest("[data-garland-card], [data-product-card], article");

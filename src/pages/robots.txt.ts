@@ -14,6 +14,15 @@ import type { APIRoute } from "astro";
 // content="noindex">, and a disallowed URL can't be crawled, so Google
 // would never see that noindex and could still index the bare URL from
 // links. Crawlable + noindex is what keeps it out of results.
+//
+// Filtered listings (/categories/<slug>?occasion=…&colour=…&budget=…,
+// /occasions/<slug>?…) are disallowed. Every filter chip is a link to another
+// combination, so crawlers following them reach an effectively unlimited set
+// of URLs; each one misses the CDN cache (the cache key includes the query)
+// and renders the full ~380 KB list in a Vercel Function. Measured 30–31 Oct
+// 2026: about 56k such renders a day on /categories/bouquets alone. Each
+// filtered page already declares the unfiltered path as its canonical, so
+// nothing indexable is lost; the unfiltered pages stay crawlable.
 export const prerender = true;
 
 export const GET: APIRoute = ({ site }) => {
@@ -27,6 +36,8 @@ export const GET: APIRoute = ({ site }) => {
 Allow: /
 Disallow: /admin
 Disallow: /api
+Disallow: /categories/*?
+Disallow: /occasions/*?
 
 Sitemap: ${sitemapUrl}
 Sitemap: ${garlandSitemapUrl}

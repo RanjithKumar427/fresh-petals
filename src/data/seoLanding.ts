@@ -226,6 +226,28 @@ export const CATEGORY_LANDING: Record<string, LandingContent> = {
   },
 };
 
+/**
+ * Title and description only, for category pages without landing copy whose
+ * default title was the bare category name ("Bride | Fresh Petals"). The
+ * wording follows the products each page lists (checked on the live site,
+ * 31 Oct 2026); headings, intros and product lists are unchanged.
+ */
+export const CATEGORY_META: Record<string, { title: string; description?: string }> = {
+  flowerbox: {
+    title: "Flower Boxes | Fresh Flowers Packed in a Box | Fresh Petals",
+  },
+  sunflower: {
+    title: "Sunflower Bouquets for Gifting | Fresh Petals",
+    description:
+      "Sunflower bouquets, from sunflowers with greenery to sunflowers with white roses and chrysanthemums, for birthdays, congratulations and thank-you gifts. Price and availability for your date confirmed on WhatsApp.",
+  },
+  bride: {
+    title: "Bridal Flower Accessories | Gajra & Poola Jada | Fresh Petals",
+    description:
+      "Bridal flower accessories made on request for wedding functions: floral hair styling, poola jada, gajra and other traditional flower requirements. Design and quote discussed on WhatsApp.",
+  },
+};
+
 export const OCCASION_LANDING: Record<string, LandingContent> = {
   birthday: {
     title: "Birthday Flowers & Bouquets | Send Birthday Flowers | Fresh Petals",
