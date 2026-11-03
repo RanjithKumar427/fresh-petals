@@ -1,13 +1,22 @@
 # Cloudflare Worker build and deploy (docs/cloudflare-migration.md).
 #
-# Runs only when started by hand ("Run workflow"), by the rebuild hook
-# (repository_dispatch type "rebuild-site"), or on pushes to main once the
-# repository variable CLOUDFLARE_AUTO_DEPLOY is "true" (set at cutover). It
-# does not touch the Vercel project, which keeps deploying from its own
-# GitHub connection until it is retired.
+# preview    — every push to migrate/cloudflare-workers (and "Run workflow"
+#              with preview, once this file is on main). Deploys only the
+#              separate Worker fresh-petals-preview on workers.dev (noindex,
+#              no analytics, admin and enquiry log refused), runs checks and
+#              load phases, and posts the evidence as the check run
+#              "Cloudflare preview evidence" on the commit.
+# production — only "Run workflow" with production, the rebuild hook
+#              (repository_dispatch "rebuild-site"), or pushes to main once the
+#              repository variable CLOUDFLARE_AUTO_DEPLOY is "true" (cutover).
+#              Deploying production routes no traffic until the custom domain
+#              is attached at cutover.
+# Neither job touches the Vercel project.
 name: Cloudflare deploy
 
 on:
+  push:
+    branches: [main, migrate/cloudflare-workers]
   workflow_dispatch:
     inputs:
       environment:
@@ -18,27 +27,45 @@ on:
         options: [preview, production]
   repository_dispatch:
     types: [rebuild-site]
-  push:
-    branches: [main]
-
-concurrency:
-  group: cloudflare-${{ github.event.inputs.environment || 'production' }}
-  cancel-in-progress: false
 
 permissions:
   contents: read
 
 jobs:
-  deploy:
-    if: github.event_name != 'push' || vars.CLOUDFLARE_AUTO_DEPLOY == 'true'
+  preview:
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/migrate/cloudflare-workers') || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'preview')
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-    environment: cloudflare-${{ github.event.inputs.environment || 'production' }}
+    timeout-minutes: 30
+    concurrency: { group: cloudflare-preview, cancel-in-progress: false }
+    permissions:
+      contents: read
+      checks: write
     env:
-      TARGET: ${{ github.event.inputs.environment || 'production' }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      # Build-time catalogue read (a read-only database role is enough).
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      HYPERDRIVE_ORIGIN_URL: ${{ secrets.HYPERDRIVE_ORIGIN_URL }}
+      HYPERDRIVE_ID: ${{ vars.HYPERDRIVE_ID }}
+      SITE_URL: https://onlyfreshpetals.in
+      GITHUB_TOKEN: ${{ github.token }}
+      WRANGLER_SEND_METRICS: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: npm }
+      - run: npm ci
+      - run: node --test scripts/audit/security.test.mjs scripts/audit/cloudflare.test.mjs
+      - run: node scripts/cloudflare/preview-pipeline.mjs
+
+  production:
+    if: (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production') || github.event_name == 'repository_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.CLOUDFLARE_AUTO_DEPLOY == 'true')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    concurrency: { group: cloudflare-production, cancel-in-progress: false }
+    environment: cloudflare-production
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       SITE_URL: https://onlyfreshpetals.in
       PUBLIC_GA_MEASUREMENT_ID: ${{ vars.PUBLIC_GA_MEASUREMENT_ID }}
@@ -48,15 +75,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: npm
+        with: { node-version: 24, cache: npm }
       - run: npm ci
       - run: node --test scripts/audit/security.test.mjs scripts/audit/cloudflare.test.mjs
-      - name: Deploy
-        run: |
-          if [ "$TARGET" = production ]; then
-            node scripts/cloudflare/deploy.mjs production --confirm-production
-          else
-            node scripts/cloudflare/deploy.mjs preview
-          fi
+      - run: node scripts/cloudflare/deploy.mjs production --confirm-production

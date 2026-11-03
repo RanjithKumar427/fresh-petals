@@ -9,7 +9,7 @@
 // onlyfreshpetals.in once the custom domain is attached at cutover
 // (docs/cloudflare-migration.md). It never touches the Vercel project.
 import { spawnSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 
 const target = process.argv[2];
 if (!['preview', 'production'].includes(target)) {
@@ -20,7 +20,12 @@ if (target === 'production' && !process.argv.includes('--confirm-production')) {
   console.error('Production deploys need --confirm-production.');
   process.exit(2);
 }
-const config = readFileSync('wrangler.jsonc', 'utf8');
+let config = readFileSync('wrangler.jsonc', 'utf8');
+if (process.env.HYPERDRIVE_ID && config.includes('REPLACE_WITH_HYPERDRIVE_ID')) {
+  // CI supplies the id (repository variable); the working copy is patched, never committed.
+  config = config.replaceAll('REPLACE_WITH_HYPERDRIVE_ID', process.env.HYPERDRIVE_ID);
+  writeFileSync('wrangler.jsonc', config);
+}
 if (config.includes('REPLACE_WITH_HYPERDRIVE_ID')) {
   console.error('Set the Hyperdrive id in wrangler.jsonc first (runbook step "Hyperdrive").');
   process.exit(1);
@@ -31,4 +36,10 @@ const run = (args, env = process.env) => {
 };
 run([process.execPath, 'scripts/cloudflare/build.mjs', target]);
 // The build wrote dist/server/wrangler.json with this environment already selected.
+const worker = JSON.parse(readFileSync('dist/server/wrangler.json', 'utf8'));
+const expected = target === 'preview' ? { name: 'fresh-petals-preview', workers_dev: true } : { name: 'fresh-petals', workers_dev: false };
+if (worker.name !== expected.name || worker.workers_dev !== expected.workers_dev || (target === 'preview' && (worker.routes?.length || worker.route))) {
+  console.error(`Refusing to deploy: built Worker ${worker.name} (workers_dev=${worker.workers_dev}) is not the expected ${target} Worker.`);
+  process.exit(1);
+}
 run([process.execPath, 'node_modules/wrangler/bin/wrangler.js', 'deploy', '--config', 'dist/server/wrangler.json']);

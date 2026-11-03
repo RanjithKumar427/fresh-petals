@@ -34,25 +34,42 @@ Public vars (`wrangler.jsonc`): `SITE_URL=https://onlyfreshpetals.in`; preview a
 
 Build-time (GitHub Actions secrets/vars): `CLOUDFLARE_API_TOKEN` (Workers Scripts edit + Account Hyperdrive read), `CLOUDFLARE_ACCOUNT_ID`, `DATABASE_URL` (build reads the catalogue; a read-only role suffices), optional `PUBLIC_GA_MEASUREMENT_ID`, `PUBLIC_GOOGLE_SITE_VERIFICATION`, `PUBLIC_BING_SITE_VERIFICATION`. The preview build drops the three public ones.
 
-### Hyperdrive (once)
+### Preview: what the owner sets up (once)
+
+The preview deploys from GitHub Actions on every push to `migrate/cloudflare-workers` (job `preview`). It needs three repository secrets (Settings → Secrets and variables → Actions → New repository secret):
+
+| Secret | Value |
+|---|---|
+| `CLOUDFLARE_API_TOKEN` | A Cloudflare API token (My Profile → API Tokens → Create custom token) with **Account** permissions: Workers Scripts – Edit, Hyperdrive – Edit, Account Analytics – Read, SSL and Certificates – Edit (for the CA upload), Account Settings – Read. Account resources: your account only. No zone permissions are needed for the preview |
+| `CLOUDFLARE_ACCOUNT_ID` | Dashboard → Workers & Pages → Account ID |
+| `DATABASE_URL` | The same transaction-pooler URL Vercel uses (build-time catalogue read) |
+
+Optional: `HYPERDRIVE_ORIGIN_URL` (secret) if the session pooler should not be derived from `DATABASE_URL`; `HYPERDRIVE_ID` (variable) to pin an existing config. Your workers.dev subdomain must exist (Workers & Pages → it is created on first visit).
+
+Then push any commit to the branch (or re-run the latest "Cloudflare deploy" run). `scripts/cloudflare/preview-pipeline.mjs`:
+1. reports missing secret **names** and stops if any are absent;
+2. reuses the Hyperdrive config `fresh-petals-db`, or uploads `supabase-ca.pem` as `fresh-petals-supabase-ca` and creates the config from the session pooler (`DATABASE_URL` with port 6543 → 5432), `--caching-disabled --sslmode verify-full`; the id is patched into the runner's checkout only;
+3. builds the preview and refuses to deploy unless the output is the Worker `fresh-petals-preview`, workers.dev only, no routes, `FP_DEPLOY_ENV=preview`;
+4. deploys, runs 20 functional checks (pages, filters, redirects, 404, sitemaps, admin/API/enquiry refusal, image endpoint, noindex, canonicals, no analytics ID), then timed load phases per route;
+5. reads Cloudflare GraphQL analytics (`workersInvocationsAdaptive`: requests, errors, subrequests, CPU P50/P90/P99) per phase.
+
+Results appear on the commit as the check run **"Cloudflare preview evidence"** (also the run's job summary). The repository is public, so the pipeline writes no secret, connection string or account detail there.
+
+Re-check an existing preview without deploying: `PREVIEW_URL=https://fresh-petals-preview.<sub>.workers.dev node scripts/cloudflare/preview-pipeline.mjs` (add `MEASURE=1` and the two Cloudflare variables for metrics).
+
+Write workflows (sign-in, MFA, recovery, uploads, enquiries, admin edits) stay refused on this preview because it reads the production database. Testing them remotely needs a separate free Supabase project with synthetic users and its own Storage bucket, and a second preview Worker bound to it; that has not been set up.
+
+### Hyperdrive by hand (alternative)
 
 ```sh
-npx wrangler cert upload certificate-authority --ca-cert src/server/db/postgres/supabase-ca.pem --name supabase-ca
-npx wrangler hyperdrive create fresh-petals-db \
-  --connection-string="postgres://postgres:<DB_PASSWORD>@db.hjhmetomcaskrrwkgrbp.supabase.co:5432/postgres" \
+npx wrangler cert upload certificate-authority --ca-cert src/server/db/postgres/supabase-ca.pem --name fresh-petals-supabase-ca
+npx wrangler hyperdrive create fresh-petals-db --connection-string="<session pooler URL, port 5432>" \
   --ca-certificate-id <CA_ID> --sslmode verify-full --caching-disabled
 ```
 
-Use the **direct** connection (Cloudflare's Supabase guidance). If the direct host is IPv6-only and Hyperdrive cannot reach it, use the session pooler (`aws-0-<region>.pooler.supabase.com:5432`, user `postgres.hjhmetomcaskrrwkgrbp`) instead. Put the returned id in both `hyperdrive` entries of `wrangler.jsonc`. Caching stays disabled: prices and admin edits must be read fresh.
-
 ## Deploy
 
-```sh
-node scripts/cloudflare/deploy.mjs preview                          # https://fresh-petals-preview.<account>.workers.dev
-node scripts/cloudflare/deploy.mjs production --confirm-production  # no traffic until the custom domain is attached
-```
-
-or GitHub → Actions → *Cloudflare deploy* → Run workflow. `build.mjs` fails the build if preview controls leak into production (or the reverse), if any static page lacks a CSP or runs an unhashed inline script, or if a canonical leaves onlyfreshpetals.in.
+Preview: automatic, above. Production (only at cutover): Actions → *Cloudflare deploy* → Run workflow → production (requires this workflow on `main`), or locally `HYPERDRIVE_ID=<id> node scripts/cloudflare/deploy.mjs production --confirm-production`. `deploy.mjs` refuses a build whose Worker name and workers.dev setting don't match the requested environment.
 
 ## Content updates
 
