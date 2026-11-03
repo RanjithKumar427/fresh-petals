@@ -1,4 +1,5 @@
 import { defineMiddleware } from "astro:middleware";
+import type { MiddlewareHandler } from "astro";
 import { AuthService } from "./server/services/AuthService";
 import { SECURITY_HEADERS } from "./server/http/securityHeaders.mjs";
 import {
@@ -11,6 +12,10 @@ import {
   isUnsafeMethod,
   normalisePath,
 } from "./server/http/requestGuard";
+import { ON_CLOUDFLARE, inWorkersRuntime } from "./server/platform/target";
+import { requestScope, workerScope } from "./server/platform/requestScope";
+import { edgeCacheMatch, edgeCacheStore, edgeCacheable } from "./server/platform/edgeCache";
+import { STORED_PHOTO_WIDTHS } from "./data/garlandRules";
 
 // Every on-demand request passes through here, in this order:
 //
@@ -90,7 +95,7 @@ function page(status: number, message: string): Response {
   return new Response(body, { status, headers: { "content-type": "text/html; charset=utf-8" } });
 }
 
-export const onRequest = defineMiddleware(async (context, next) => {
+const handle = async (context: Parameters<MiddlewareHandler>[0], next: Parameters<MiddlewareHandler>[1]): Promise<Response> => {
   const { url, cookies, request, redirect } = context;
   const path = normalisePath(url.pathname);
   const adminPage = isAdminPage(path);
@@ -142,4 +147,55 @@ export const onRequest = defineMiddleware(async (context, next) => {
   if (MFA_PATHS.has(path)) return withPrivateHeaders(redirect("/admin/dashboard"));
   context.locals.admin = { id: access.admin.id, email: access.admin.email };
   return withPrivateHeaders(await next());
+};
+
+/**
+ * Vercel adds HSTS at its domain layer; on Cloudflare the Worker sends the
+ * same value (public/_headers carries it for static files).
+ */
+const PLATFORM_HEADERS: Record<string, string> = ON_CLOUDFLARE ? { "strict-transport-security": "max-age=63072000" } : {};
+/** The Cloudflare preview Worker (wrangler env "preview") is never indexed. */
+const previewHeaders = (): Record<string, string> => (process.env.FP_DEPLOY_ENV === "preview" ? { "x-robots-tag": "noindex, nofollow" } : {});
+
+const STORED_MEDIA_PREFIX = "https://hjhmetomcaskrrwkgrbp.supabase.co/storage/v1/object/public/media/";
+
+/**
+ * Cloudflare's /_image endpoint (Images binding) accepts only what
+ * storedPhotoUrl() generates, as Vercel's optimiser accepts only its
+ * configured sizes: a stored media photo, an allowed width, WebP, quality 75.
+ * Anything else would let a stranger mint unlimited distinct transformations.
+ */
+function imageRequestAllowed(url: URL): boolean {
+  const params = [...url.searchParams.keys()].sort().join(",");
+  if (params !== "f,href,q,w") return false;
+  const href = url.searchParams.get("href") ?? "";
+  return (
+    href.startsWith(STORED_MEDIA_PREFIX) &&
+    !href.includes("..") &&
+    STORED_PHOTO_WIDTHS.includes(Number(url.searchParams.get("w"))) &&
+    url.searchParams.get("q") === "75" &&
+    url.searchParams.get("f") === "webp"
+  );
+}
+
+export const onRequest = defineMiddleware(async (context, next) => {
+  if (!inWorkersRuntime()) return handle(context, next);
+  if (context.url.pathname === "/_image" && !imageRequestAllowed(context.url)) {
+    return withHeaders(new Response("Not found", { status: 404, headers: { "cache-control": "public, max-age=300" } }), SECURITY_HEADERS);
+  }
+  // Cloudflare Workers: a per-request database scope, and the shared cache
+  // that Vercel's CDN provided for public on-demand pages.
+  const scope = await workerScope();
+  return requestScope.run(scope, async () => {
+    const path = normalisePath(context.url.pathname);
+    const cacheable = edgeCacheable(context.request, path);
+    if (cacheable) {
+      const hit = await edgeCacheMatch(context.request);
+      if (hit) return hit;
+    }
+    const response = withHeaders(await handle(context, next), PLATFORM_HEADERS, previewHeaders());
+    if (!cacheable) return response;
+    const cf = (context.locals as { cfContext?: { waitUntil(promise: Promise<unknown>): void } }).cfContext;
+    return edgeCacheStore(context.request, response, cf ? (promise) => cf.waitUntil(promise) : undefined);
+  });
 });

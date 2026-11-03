@@ -21,6 +21,7 @@
 // defence in depth against a mislabelled or hostile file, not a malware
 // scanner.
 import sharp, { type Metadata, type OutputInfo } from "sharp";
+import { ON_CLOUDFLARE } from "../platform/target";
 
 export type ImageFormat = "jpeg" | "png" | "webp" | "gif";
 
@@ -80,6 +81,17 @@ export async function sanitizeImage(input: { buffer: Buffer; declaredMime: strin
   if (!format) return refuse("Only JPEG, PNG, WebP or GIF images are supported.");
   const declared = input.declaredMime.toLowerCase().trim();
   if (declared !== IMAGE_MIME[format]) return refuse("The file's contents don't match its type. Save it again as a JPEG, PNG, WebP or GIF and retry.");
+
+  // Cloudflare Workers cannot run sharp: the same checks and re-encode run
+  // through the Images binding instead (./imageSafetyCloudflare.ts).
+  if (ON_CLOUDFLARE) {
+    const { sanitizeWithImagesBinding } = await import("./imageSafetyCloudflare");
+    return sanitizeWithImagesBinding(
+      { buffer, format, filename: input.filename },
+      { maxPixels: MAX_PIXELS, maxFrames: MAX_FRAMES, maxOutputBytes: MAX_OUTPUT_BYTES },
+      { sniff: sniffImageFormat, filename: safeImageFilename },
+    );
+  }
 
   const options = { animated: format === "gif" || format === "webp", failOn: "error" as const, limitInputPixels: MAX_PIXELS };
   let metadata: Metadata;

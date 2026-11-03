@@ -14,7 +14,7 @@ export const isAdminPage = (path: string) => path === "/admin" || path.startsWit
 export const isAdminApi = (path: string) => path === "/api/admin" || path.startsWith("/api/admin/");
 
 /**
- * Preview deployments use the production database and Auth project (the
+ * Preview deployments (Vercel previews, the Cloudflare preview Worker) use the production database and Auth project (the
  * Vercel variables are shared with Production), so they are NOT an
  * isolated staging environment. Nothing there may sign in, refresh or
  * exchange a session, or write: every /admin page and /api/admin endpoint
@@ -23,7 +23,8 @@ export const isAdminApi = (path: string) => path === "/api/admin" || path.starts
  * only) and WhatsApp drafts keep working.
  */
 export function isPreviewDeployment(env: Record<string, string | undefined> = process.env): boolean {
-  return env.VERCEL_ENV === "preview";
+  // FP_DEPLOY_ENV=preview marks the Cloudflare preview Worker (wrangler.jsonc env.preview).
+  return env.VERCEL_ENV === "preview" || env.FP_DEPLOY_ENV === "preview";
 }
 
 export function blockedOnPreview(path: string): boolean {

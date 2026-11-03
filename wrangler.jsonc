@@ -1,0 +1,55 @@
+// Cloudflare Workers configuration for Fresh Petals (DEPLOY_TARGET=cloudflare).
+// Build and deploy only through scripts/cloudflare/build.mjs and
+// scripts/cloudflare/deploy.mjs; see docs/cloudflare-migration.md.
+//
+// The Vercel deployment does not read this file and is unaffected by it.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "fresh-petals",
+  "main": "@astrojs/cloudflare/entrypoints/server",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat"],
+
+  // Production serves only onlyfreshpetals.in (added at cutover, see the
+  // runbook): no *.workers.dev copy of the site for search engines to find.
+  "workers_dev": false,
+  "preview_urls": false,
+  "observability": { "enabled": true },
+
+  // Static pages are served at their canonical, slash-less address (/faqs),
+  // as on Vercel; /faqs/ redirects there instead of the reverse.
+  "assets": { "html_handling": "drop-trailing-slash" },
+
+  // Resizes stored garland photos (/_image) and re-encodes admin uploads.
+  "images": { "binding": "IMAGES" },
+
+  // Pooled, TLS-verified connection to the existing Supabase database.
+  // Replace the id with the Hyperdrive configuration created in the runbook
+  // (step "Hyperdrive"). Query caching is disabled there: prices, stock and
+  // admin edits must be read fresh, as they are on Vercel.
+  "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "REPLACE_WITH_HYPERDRIVE_ID" }],
+
+  // Public, non-secret settings. Secrets (SUPABASE_URL, SUPABASE_ANON_KEY,
+  // SUPABASE_SERVICE_ROLE_KEY, CF_ZONE_ID, CF_CACHE_PURGE_TOKEN) are set with
+  // `wrangler secret put`, never here.
+  "vars": {
+    "SITE_URL": "https://onlyfreshpetals.in"
+  },
+
+  "env": {
+    // Separate preview Worker on *.workers.dev. It reads the production
+    // database through the same Hyperdrive configuration, but FP_DEPLOY_ENV
+    // makes the application refuse every admin page/API and the enquiry log
+    // (src/server/http/requestGuard.ts), and adds noindex to every response.
+    "preview": {
+      "workers_dev": true,
+      "preview_urls": false,
+      "images": { "binding": "IMAGES" },
+      "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "REPLACE_WITH_HYPERDRIVE_ID" }],
+      "vars": {
+        "SITE_URL": "https://onlyfreshpetals.in",
+        "FP_DEPLOY_ENV": "preview"
+      }
+    }
+  }
+}

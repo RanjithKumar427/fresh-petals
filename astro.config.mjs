@@ -3,6 +3,7 @@ import tailwindcss from '@tailwindcss/vite';
 
 import react from '@astrojs/react';
 import vercel from '@astrojs/vercel';
+import cloudflare from '@astrojs/cloudflare';
 import { loadEnv } from 'vite';
 import { copyFile, link, mkdir, readdir, readFile, rm, rmdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
@@ -38,6 +39,14 @@ for (const key of SERVER_ENV_KEYS) {
 // canonicals, OG URLs or a sitemap pointing search engines at the
 // vercel.app duplicate.
 const SITE_URL = process.env.SITE_URL || 'https://onlyfreshpetals.in';
+
+// Which host this build is for. Unset (every existing Vercel build) keeps the
+// Vercel adapter and behaviour unchanged; DEPLOY_TARGET=cloudflare builds the
+// Cloudflare Worker (see docs/cloudflare-migration.md and wrangler.jsonc).
+// Source code reads the same choice through src/server/platform/target.ts.
+const DEPLOY_TARGET = process.env.DEPLOY_TARGET === 'cloudflare' ? 'cloudflare' : 'vercel';
+const ON_CLOUDFLARE = DEPLOY_TARGET === 'cloudflare';
+const STORED_MEDIA = { protocol: 'https', hostname: 'hjhmetomcaskrrwkgrbp.supabase.co', pathname: '/storage/v1/object/public/media/**' };
 
 // Garland draft photographs (public/images/garlands/, git-ignored until
 // photo-publication permission is confirmed — see docs/garlands.md) must not
@@ -166,15 +175,29 @@ export default defineConfig({
   // storage host). garlandPhotoSrcset() asks for them through
   // /_vercel/image at exactly these widths, as WebP, cached for 31 days.
   // Keep `sizes` equal to STORED_PHOTO_WIDTHS in src/data/garlandRules.ts.
-  adapter: vercel({
-    imagesConfig: {
-      sizes: [240, 480, 720, 1080],
-      formats: ['image/webp'],
-      minimumCacheTTL: 2678400,
-      remotePatterns: [{ protocol: 'https', hostname: 'hjhmetomcaskrrwkgrbp.supabase.co', pathname: '/storage/v1/object/public/media/**' }],
-    },
-    staticHeaders: true,
-  }),
+  //
+  // Cloudflare (DEPLOY_TARGET=cloudflare): prerendering stays in Node, exactly
+  // as on Vercel (build-time catalogue reads use pg and node:fs); on-demand
+  // routes run in the Worker. Stored photos are resized through Astro's
+  // /_image endpoint by the Images binding, restricted in src/middleware.ts
+  // to the same four widths. Astro sessions are not used, so no KV namespace
+  // is provisioned. The adapter has no staticHeaders support: prerendered
+  // pages carry their hash-based CSP in a <meta> tag (checked after the
+  // build by scripts/build/security-headers.mjs), and the other security
+  // headers come from public/_headers.
+  adapter: ON_CLOUDFLARE
+    ? cloudflare({ prerenderEnvironment: 'node', imageService: 'cloudflare-binding' })
+    : vercel({
+        imagesConfig: {
+          sizes: [240, 480, 720, 1080],
+          formats: ['image/webp'],
+          minimumCacheTTL: 2678400,
+          remotePatterns: [STORED_MEDIA],
+        },
+        staticHeaders: true,
+      }),
+
+  ...(ON_CLOUDFLARE ? { session: false, image: { remotePatterns: [STORED_MEDIA] } } : {}),
 
   // Content-Security-Policy for every page, static and on-demand. Scripts
   // run only from this site, Google's tag host, or an inline body whose
@@ -198,6 +221,8 @@ export default defineConfig({
 
   vite: {
     plugins: [tailwindcss()],
+    define: { __FP_DEPLOY_TARGET__: JSON.stringify(DEPLOY_TARGET) },
+    ...(ON_CLOUDFLARE ? { resolve: { alias: { sharp: fileURLToPath(new URL('./src/server/platform/sharp-unavailable.ts', import.meta.url)) } } } : {}),
   },
 
   // photoReviewCheck: a catalogue photograph replaced at the same path must

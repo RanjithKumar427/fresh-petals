@@ -112,10 +112,108 @@ export function pagesWithoutPolicy(outputDir = path.resolve('.vercel/output'), s
   return missing;
 }
 
+/** The policy a prerendered page carries in its <meta http-equiv> tag (Cloudflare builds). */
+export function metaPolicy(html) {
+  for (const match of html.matchAll(/<meta\b[^>]*>/gi)) {
+    const tag = match[0];
+    if (!/http-equiv\s*=\s*["']?content-security-policy["'\s>]/i.test(tag)) continue;
+    const content = tag.match(/\scontent\s*=\s*"([^"]*)"/i) ?? tag.match(/\scontent\s*=\s*'([^']*)'/i);
+    if (content) return content[1].replaceAll('&#39;', "'").replaceAll('&quot;', '"').replaceAll('&amp;', '&');
+  }
+  return null;
+}
+
+/**
+ * Astro writes a static page's <meta> policy before the body runs, so hashes
+ * that src/components/InlineScript.astro registers (Astro.csp.insertScriptHash)
+ * reach the response header on Vercel but not the meta tag. Add the hash of
+ * each script carrying InlineScript's data-fp-inline marker, and nothing else:
+ * any other inline script still fails cspProblems().
+ */
+export function withReviewedHashes(html) {
+  const reviewed = [];
+  for (const match of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)) {
+    if (/\sdata-fp-inline(\s|=|$)/i.test(match[1])) reviewed.push(sha256(match[2]));
+  }
+  if (!reviewed.length) return html;
+  return html.replace(/(<meta\b[^>]*http-equiv\s*=\s*["']?content-security-policy[^>]*\scontent\s*=\s*")([^"]*)(")/i, (all, before, content, after) => {
+    const directives = content.split(';');
+    const index = directives.findIndex((part) => part.trim().startsWith('script-src '));
+    if (index === -1) return all;
+    const existing = directives[index].trim().split(/\s+/);
+    const add = [...new Set(reviewed)].filter((hash) => !existing.includes(hash) && !existing.includes(hash.replaceAll("'", '&#39;')));
+    const quote = content.includes('&#39;') ? (hash) => hash.replaceAll("'", '&#39;') : (hash) => hash;
+    directives[index] = `${directives[index]} ${add.map(quote).join(' ')}`.trimEnd();
+    return before + directives.join(';') + after;
+  });
+}
+
+/**
+ * A <meta> policy governs only what follows it, and Astro places it after
+ * some head content (including a reviewed inline script). Move it to directly
+ * after <meta charset>, so nothing on the page runs outside the policy.
+ */
+export function policyFirst(html) {
+  const meta = html.match(/<meta\b[^>]*http-equiv\s*=\s*["']?content-security-policy[^>]*>/i);
+  const charset = html.match(/<meta\s+charset\s*=\s*["']?[^"'>\s]+["']?\s*\/?>/i);
+  if (!meta || !charset || html.indexOf(meta[0]) < html.indexOf(charset[0])) return html;
+  const without = html.replace(meta[0], '');
+  const at = without.indexOf(charset[0]) + charset[0].length;
+  return without.slice(0, at) + meta[0] + without.slice(at);
+}
+
+/** HSTS, which Vercel adds at its domain layer, is sent by Cloudflare builds themselves. */
+export const CLOUDFLARE_EXTRA_HEADERS = { 'strict-transport-security': 'max-age=63072000' };
+
+/**
+ * Cloudflare Workers static assets: one `/*` rule in _headers gives every
+ * static file the security headers (merged with any rule the adapter adds),
+ * and every prerendered page must carry a meta CSP that hashes each inline
+ * script it runs. A <meta> policy cannot express frame-ancestors; framing is
+ * still refused by X-Frame-Options: DENY from the same rule.
+ */
+export function applyCloudflareHeaders(staticDir) {
+  const headersFile = path.join(staticDir, '_headers');
+  const existing = existsSync(headersFile) ? readFileSync(headersFile, 'utf8') : '';
+  // The preview Worker is built separately (FP_DEPLOY_ENV=preview) and must never be indexed.
+  const preview = process.env.FP_DEPLOY_ENV === 'preview' ? { 'x-robots-tag': 'noindex, nofollow' } : {};
+  const lines = Object.entries({ ...SECURITY_HEADERS, ...CLOUDFLARE_EXTRA_HEADERS, ...preview }).map(([name, value]) => `  ${name}: ${value}`);
+  if (!existing.includes('# fresh-petals security headers')) {
+    writeFileSync(headersFile, `# fresh-petals security headers\n/*\n${lines.join('\n')}\n\n${existing}`);
+  }
+  const problems = [];
+  let pages = 0;
+  const walk = (dir) => {
+    for (const name of readdirSync(dir)) {
+      const full = path.join(dir, name);
+      if (statSync(full).isDirectory()) walk(full);
+      else if (name.endsWith('.html')) {
+        pages += 1;
+        const rel = '/' + path.relative(staticDir, full).split(path.sep).join('/');
+        const html = policyFirst(withReviewedHashes(readFileSync(full, 'utf8')));
+        writeFileSync(full, html);
+        const policy = metaPolicy(html);
+        const head = html.slice(0, html.search(/content-security-policy/i));
+        if (/<script\b|<link\b[^>]*rel\s*=\s*["']?(?:stylesheet|modulepreload)/i.test(head)) problems.push(`${rel}: script or stylesheet before the Content-Security-Policy`);
+        if (!policy) problems.push(`${rel}: prerendered page without a Content-Security-Policy`);
+        else for (const problem of cspProblems(html, policy)) problems.push(`${rel}: ${problem}`);
+      }
+    }
+  };
+  walk(staticDir);
+  return { pages, problems };
+}
+
 export const securityHeaders = {
   name: 'fresh-petals:security-headers',
   hooks: {
     'astro:build:done': async ({ dir, logger }) => {
+      if (process.env.DEPLOY_TARGET === 'cloudflare') {
+        const { pages, problems } = applyCloudflareHeaders(fileURLToPath(dir));
+        if (problems.length) throw new Error(`Content-Security-Policy check failed:\n  ${problems.slice(0, 20).join('\n  ')}`);
+        logger.info(`Security headers in _headers for every static file; ${pages} prerendered pages checked: each has a CSP and every inline script is in its script-src.`);
+        return;
+      }
       const outputDir = path.resolve('.vercel/output');
       if (!existsSync(path.join(outputDir, 'config.json'))) return;
       const staticDir = fileURLToPath(dir);

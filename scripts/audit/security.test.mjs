@@ -658,7 +658,7 @@ test('CSP: reviewed inline scripts are rendered through InlineScript (hash of th
   assert.match(component, /const script = normalizeNewlines\(Astro\.props\.code\);/);
   assert.match(component, /const hash = inlineScriptHash\(script\);/);
   assert.match(component, /Astro\.csp\?\.insertScriptHash\(hash\)/);
-  assert.match(component, /<script is:inline set:html=\{script\} \/>/);
+  assert.match(component, /<script is:inline data-fp-inline set:html=\{script\} \/>/);
   assert.doesNotMatch(component, /set:html=\{(?!script\})/);
   assert.match(read('scripts/build/security-headers.mjs'), /const sha256 = \(text\) => `'\$\{inlineScriptHash\(text\)\}'`;/);
   const files = [];

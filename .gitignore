@@ -42,3 +42,4 @@ scripts/_tmp-*
 # Supplier-catalogue garland photos: kept out of the public repository until
 # photo-publication permission is confirmed (see docs/garlands.md).
 /public/images/garlands/
+.wrangler/

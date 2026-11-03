@@ -10,7 +10,17 @@ import { fileURLToPath } from "node:url";
 import path from "node:path";
 
 // project root = two levels up from src/server/db/
-const ROOT = path.resolve(fileURLToPath(new URL("../../../", import.meta.url)));
+// In the Cloudflare Workers runtime a bundled module has no file URL; there is
+// no local data or uploads directory there either, so the paths point nowhere
+// and /media answers 404 exactly as it does on Vercel.
+function projectRoot() {
+  try {
+    return path.resolve(fileURLToPath(new URL("../../../", import.meta.url)));
+  } catch {
+    return "/__fresh-petals-no-local-files__";
+  }
+}
+const ROOT = projectRoot();
 
 export const DATA_DIR = path.join(ROOT, "data");
 export const DB_PATH = path.join(DATA_DIR, "freshpetals.sqlite");

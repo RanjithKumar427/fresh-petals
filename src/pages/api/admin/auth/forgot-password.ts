@@ -19,7 +19,7 @@ function looksLikeEmail(value: string): boolean {
  */
 function resetRedirect(request: Request): string | null {
   const configured = process.env.SITE_URL;
-  const nonProduction = process.env.VERCEL_ENV === "preview" || process.env.VERCEL_ENV === "development" || !import.meta.env.PROD;
+  const nonProduction = process.env.VERCEL_ENV === "preview" || process.env.VERCEL_ENV === "development" || process.env.FP_DEPLOY_ENV === "preview" || !import.meta.env.PROD;
   if (!nonProduction) {
     if (!configured) return null;
     return new URL("/admin/reset-password", configured).toString();

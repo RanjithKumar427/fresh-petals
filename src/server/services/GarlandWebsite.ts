@@ -13,8 +13,14 @@
 //      token or configuration inside a Vercel Function.
 //   2. SITE_CACHE_PURGE_URL (optional): POST {"tags":[...]} to another CDN's
 //      purge hook. Also used by the local test harness.
-//   3. Neither (local development): there is no shared cache to purge.
+//   3. On Cloudflare (DEPLOY_TARGET=cloudflare): Cloudflare's zone purge-by-tag
+//      API, using the CF_ZONE_ID and CF_CACHE_PURGE_TOKEN secrets (a token
+//      with only the Zone > Cache Purge permission). The Worker stores these
+//      pages with the same tags (src/server/platform/edgeCache.ts). The
+//      *.workers.dev preview has no shared cache, so nothing is purged there.
+//   4. None of these (local development): there is no shared cache to purge.
 import { dangerouslyDeleteByTag } from "@vercel/functions";
+import { ON_CLOUDFLARE } from "../platform/target";
 import { garlandSampleRequired } from "../../data/garlandRules";
 
 export const GARLAND_CACHE_TAG = "garlands";
@@ -72,7 +78,7 @@ export function occasionTagsFor(changed: string[]): string[] {
 
 export type RefreshResult = {
   ok: boolean;
-  method: "vercel" | "purge-url" | "none";
+  method: "vercel" | "purge-url" | "cloudflare" | "none";
   at: string;
   error?: string;
   /** Plain-language explanation for the admin. */
@@ -109,6 +115,28 @@ export async function refreshWebsite(tags: string[]): Promise<RefreshResult> {
       if (!response.ok) throw new Error(`purge request returned ${response.status}`);
       return { ok: true, method: "purge-url", at, message: "Website cache cleared — the next visitor gets the saved version." };
     }
+    if (ON_CLOUDFLARE) {
+      const zone = process.env.CF_ZONE_ID;
+      const token = process.env.CF_CACHE_PURGE_TOKEN;
+      if (zone && token) {
+        // Cloudflare accepts at most 100 tags per purge request.
+        for (let i = 0; i < tags.length; i += 100) {
+          const response = await fetch(`https://api.cloudflare.com/client/v4/zones/${encodeURIComponent(zone)}/purge_cache`, {
+            method: "POST",
+            headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
+            body: JSON.stringify({ tags: tags.slice(i, i + 100) }),
+            signal: AbortSignal.timeout(8000),
+          });
+          const result = (await response.json().catch(() => null)) as { success?: boolean } | null;
+          if (!response.ok || result?.success !== true) throw new Error(`Cloudflare purge returned ${response.status}`);
+        }
+        return { ok: true, method: "cloudflare", at, message: "Website cache cleared — the next visitor gets the saved version." };
+      }
+      if (process.env.FP_DEPLOY_ENV !== "preview") {
+        // A shared cache exists on the live domain: never report success without a purge.
+        throw new Error("the Cloudflare cache purge isn't configured (CF_ZONE_ID, CF_CACHE_PURGE_TOKEN)");
+      }
+    }
     if (process.env.VERCEL) {
       // On Vercel but the purge API isn't reachable from this request: never report success.
       throw new Error("the Vercel cache-purge API isn't available to this request");
@@ -118,7 +146,7 @@ export async function refreshWebsite(tags: string[]): Promise<RefreshResult> {
     const reason = error instanceof Error ? error.message : String(error);
     return {
       ok: false,
-      method: vercelPurgeAvailable() ? "vercel" : process.env.SITE_CACHE_PURGE_URL ? "purge-url" : "none",
+      method: vercelPurgeAvailable() ? "vercel" : process.env.SITE_CACHE_PURGE_URL ? "purge-url" : ON_CLOUDFLARE ? "cloudflare" : "none",
       at,
       error: reason,
       message: `The website refresh failed (${reason}). The change is saved and appears on its own within ${Math.ceil(GARLAND_MAX_STALE_SECONDS / 60)} minutes, or retry now.`,

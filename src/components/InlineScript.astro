@@ -17,4 +17,8 @@ const hash = inlineScriptHash(script);
 Astro.csp?.insertScriptHash(hash);
 ---
 
-<script is:inline set:html={script} />
+{/* data-fp-inline marks a reviewed script for Cloudflare builds, whose static
+    pages carry the policy in a <meta> tag written before this hash is known;
+    scripts/build/security-headers.mjs adds the hash there (and only for
+    scripts with this marker). */}
+<script is:inline data-fp-inline set:html={script} />

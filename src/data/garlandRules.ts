@@ -1,6 +1,7 @@
 // Garland record types and the publication / selling rules, kept apart from
 // the draft data (src/data/garlandDrafts.json) so server code such as
 // ProductPricing.ts can apply the rules without bundling any draft records.
+import { ON_CLOUDFLARE, inWorkersRuntime } from "../server/platform/target";
 
 /** Unpublished drafts are shown only in a local preview (`astro dev`, or PUBLIC_FP_PREVIEW_DRAFTS=1). */
 export const GARLAND_PREVIEW: boolean = import.meta.env.DEV || import.meta.env.PUBLIC_FP_PREVIEW_DRAFTS === "1";
@@ -118,15 +119,23 @@ export function formatGarlandPrice(design: GarlandDesign): string | null {
 
 /**
  * Widths the deployment's image optimiser may be asked for. Must match
- * `imagesConfig.sizes` in astro.config.mjs exactly: Vercel refuses any other.
+ * `imagesConfig.sizes` in astro.config.mjs exactly: Vercel refuses any other,
+ * and on Cloudflare src/middleware.ts refuses any other at /_image.
  */
 export const STORED_PHOTO_WIDTHS = [240, 480, 720, 1080];
 
-/** Stored uploads are resized by Vercel's image optimiser, which exists only on a Vercel deployment. */
-const optimiserAvailable = () => typeof process !== "undefined" && process.env?.VERCEL === "1";
+/**
+ * Stored uploads are resized by the host's image optimiser: Vercel's, or on a
+ * Cloudflare Worker the Images binding behind Astro's /_image endpoint. Neither
+ * exists in local development or while prerendering.
+ */
+const optimiserAvailable = () => (ON_CLOUDFLARE ? inWorkersRuntime() : typeof process !== "undefined" && process.env?.VERCEL === "1");
 
 /** A stored photograph at one of STORED_PHOTO_WIDTHS (WebP where the browser accepts it), cached by the CDN. */
-export const storedPhotoUrl = (url: string, width: number) => `/_vercel/image?url=${encodeURIComponent(url)}&w=${width}&q=75`;
+export const storedPhotoUrl = (url: string, width: number) =>
+  ON_CLOUDFLARE
+    ? `/_image?href=${encodeURIComponent(url)}&w=${width}&q=75&f=webp`
+    : `/_vercel/image?url=${encodeURIComponent(url)}&w=${width}&q=75`;
 
 /**
  * srcset for a garland photo: its own recorded derivatives (catalogue

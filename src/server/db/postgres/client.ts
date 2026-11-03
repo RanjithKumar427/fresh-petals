@@ -20,9 +20,33 @@ import { Pool } from "pg";
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import * as schema from "./schema";
 import { supabasePoolSsl } from "./supabaseCa";
+import { inWorkersRuntime } from "../../platform/target";
+import { requestScope } from "../../platform/requestScope";
 
 type Globals = typeof globalThis & { __fpPgPool?: Pool; __fpDrizzleDb?: NodePgDatabase<typeof schema> };
 const globals = globalThis as Globals;
+
+/**
+ * Cloudflare Workers: one small pool per request (an isolate may not reuse
+ * another request's socket). Through Hyperdrive the hop to Hyperdrive is
+ * local and Hyperdrive itself holds the TLS connection to Supabase; without
+ * Hyperdrive the Supabase CA pin applies exactly as in Node.
+ */
+function workerDb(): NodePgDatabase<typeof schema> {
+  const scope = requestScope.getStore();
+  if (!scope) throw new Error("Database used outside a request scope on Cloudflare Workers.");
+  if (scope.db) return scope.db as NodePgDatabase<typeof schema>;
+  if (!scope.connectionString) {
+    throw new Error("No database connection on Cloudflare: bind HYPERDRIVE (wrangler.jsonc) or set the DATABASE_URL secret.");
+  }
+  const pool = new Pool({ connectionString: scope.connectionString, max: 3, ssl: scope.viaHyperdrive ? false : supabasePoolSsl });
+  pool.on("error", (error) => {
+    console.error(`[db] idle connection closed (${error.message}); it was removed from the pool`);
+  });
+  const db = drizzle(pool, { schema });
+  scope.db = db;
+  return db;
+}
 
 /**
  * Returns the shared Drizzle instance, creating the pool on first access.
@@ -41,6 +65,7 @@ const globals = globalThis as Globals;
  * each serverless instance's module scope is fresh exactly once anyway.
  */
 export function getDb(): NodePgDatabase<typeof schema> {
+  if (inWorkersRuntime()) return workerDb();
   if (globals.__fpDrizzleDb) return globals.__fpDrizzleDb;
 
   const connectionString = process.env.DATABASE_URL;

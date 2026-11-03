@@ -1,0 +1,62 @@
+# Cloudflare Worker build and deploy (docs/cloudflare-migration.md).
+#
+# Runs only when started by hand ("Run workflow"), by the rebuild hook
+# (repository_dispatch type "rebuild-site"), or on pushes to main once the
+# repository variable CLOUDFLARE_AUTO_DEPLOY is "true" (set at cutover). It
+# does not touch the Vercel project, which keeps deploying from its own
+# GitHub connection until it is retired.
+name: Cloudflare deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "preview (workers.dev) or production (onlyfreshpetals.in after cutover)"
+        required: true
+        default: preview
+        type: choice
+        options: [preview, production]
+  repository_dispatch:
+    types: [rebuild-site]
+  push:
+    branches: [main]
+
+concurrency:
+  group: cloudflare-${{ github.event.inputs.environment || 'production' }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    if: github.event_name != 'push' || vars.CLOUDFLARE_AUTO_DEPLOY == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: cloudflare-${{ github.event.inputs.environment || 'production' }}
+    env:
+      TARGET: ${{ github.event.inputs.environment || 'production' }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      # Build-time catalogue read (a read-only database role is enough).
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      SITE_URL: https://onlyfreshpetals.in
+      PUBLIC_GA_MEASUREMENT_ID: ${{ vars.PUBLIC_GA_MEASUREMENT_ID }}
+      PUBLIC_GOOGLE_SITE_VERIFICATION: ${{ vars.PUBLIC_GOOGLE_SITE_VERIFICATION }}
+      PUBLIC_BING_SITE_VERIFICATION: ${{ vars.PUBLIC_BING_SITE_VERIFICATION }}
+      WRANGLER_SEND_METRICS: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: node --test scripts/audit/security.test.mjs scripts/audit/cloudflare.test.mjs
+      - name: Deploy
+        run: |
+          if [ "$TARGET" = production ]; then
+            node scripts/cloudflare/deploy.mjs production --confirm-production
+          else
+            node scripts/cloudflare/deploy.mjs preview
+          fi
