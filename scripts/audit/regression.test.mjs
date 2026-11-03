@@ -790,7 +790,7 @@ test('city catalogue: one shared source with no sample limits or per-city restri
   assert(!existsSync('src/pages/locations/[city]/[collection].astro'));
   assert(!/\/shop/.test(readFileSync('src/pages/sitemap.xml.ts', 'utf8')));
   // City pages link the whole catalogue; the directory gives every city without a page its shop view.
-  assert(/loadCityCatalogue\(\)/.test(readFileSync('src/pages/locations/[city].astro', 'utf8')) && /data-city-shop-link=\{city\.slug\}/.test(readFileSync('src/pages/locations/index.astro', 'utf8')));
+  assert(/loadCityCatalogue\((\{ listedGarlands \})?\)/.test(readFileSync('src/pages/locations/[city].astro', 'utf8')) && /data-city-shop-link=\{city\.slug\}/.test(readFileSync('src/pages/locations/index.astro', 'utf8')));
 });
 
 test('city roots: every serviceable city has an indexable root; the catalogue root states only what is true of every city', () => {

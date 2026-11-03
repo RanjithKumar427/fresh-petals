@@ -5,7 +5,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import sharp from 'sharp';
 import { sourceLoader } from './source-loader.mjs';
-import { withReviewedHashes, policyFirst, metaPolicy, cspProblems } from '../build/security-headers.mjs';
+import { withReviewedHashes, policyFirst, metaPolicy, cspProblems, withoutMetaFrameAncestors } from '../build/security-headers.mjs';
 import { inlineScriptHash } from '../../src/server/http/inlineScriptHash.mjs';
 
 const cf = (env = {}, extra = {}) => sourceLoader({ globals: { __FP_DEPLOY_TARGET__: 'cloudflare', process: { env }, ...extra } });
@@ -119,4 +119,6 @@ test('static pages: reviewed inline hashes join the meta policy, which moves bef
   assert(policy.includes(`'${inlineScriptHash(reviewed)}'`));
   assert(!policy.includes(`'${inlineScriptHash(rogue)}'`), 'unmarked script is not hashed');
   assert.deepEqual(cspProblems(out, policy).length, 1, 'the unreviewed inline script still fails the build check');
+  const framed = withoutMetaFrameAncestors(`<meta http-equiv="content-security-policy" content="default-src 'self';frame-ancestors 'none';object-src 'none'">`);
+  assert.equal(metaPolicy(framed), "default-src 'self';object-src 'none'");
 });

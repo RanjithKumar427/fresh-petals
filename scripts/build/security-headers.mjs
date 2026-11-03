@@ -162,6 +162,15 @@ export function policyFirst(html) {
   return without.slice(0, at) + meta[0] + without.slice(at);
 }
 
+/**
+ * Browsers ignore frame-ancestors in a <meta> policy and log an error on every
+ * page; the same protection comes from X-Frame-Options: DENY in _headers.
+ */
+export function withoutMetaFrameAncestors(html) {
+  return html.replace(/(<meta\b[^>]*http-equiv\s*=\s*["']?content-security-policy[^>]*\scontent\s*=\s*")([^"]*)(")/i, (all, before, content, after) =>
+    before + content.split(';').filter((part) => !part.trim().startsWith('frame-ancestors')).join(';') + after);
+}
+
 /** HSTS, which Vercel adds at its domain layer, is sent by Cloudflare builds themselves. */
 export const CLOUDFLARE_EXTRA_HEADERS = { 'strict-transport-security': 'max-age=63072000' };
 
@@ -190,7 +199,7 @@ export function applyCloudflareHeaders(staticDir) {
       else if (name.endsWith('.html')) {
         pages += 1;
         const rel = '/' + path.relative(staticDir, full).split(path.sep).join('/');
-        const html = policyFirst(withReviewedHashes(readFileSync(full, 'utf8')));
+        const html = withoutMetaFrameAncestors(policyFirst(withReviewedHashes(readFileSync(full, 'utf8'))));
         writeFileSync(full, html);
         const policy = metaPolicy(html);
         const head = html.slice(0, html.search(/content-security-policy/i));

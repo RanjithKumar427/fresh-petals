@@ -93,11 +93,31 @@ const PRIMARY = ["all-flowers", "lilies", "pooja-flowers"];
 const GARLAND_LABELS: Record<string, string> = { rose: "Rose wedding garlands", lotus: "Lotus wedding garlands", tuberose: "Tuberose wedding garlands", "designer-mixed": "Designer and mixed garlands" };
 const titleFromSlug = (slug: string) => slug.split("-").map((word) => (word === "and" ? "and" : word.charAt(0).toUpperCase() + word.slice(1))).join(" ");
 
-export async function loadCityCatalogue(): Promise<{ collections: CatalogueCollection[]; all: CatalogueItem[] }> {
-  const [priceMap, categoryPaths, garlands, publicCatalogue] = await Promise.all([
+// The category collections depend only on this deployment's published
+// snapshot (prices and publication from PublishedPrices, the static
+// catalogue), never on live rows, so in a built deployment they are computed
+// once per server instance instead of on every city page request. Development
+// reads the live database and recomputes every time, as before.
+let categoryPathsOnce: ReturnType<typeof getCategoryStaticPaths> | null = null;
+function categoryPaths(): ReturnType<typeof getCategoryStaticPaths> {
+  if (import.meta.env.DEV) return getCategoryStaticPaths();
+  if (!categoryPathsOnce) {
+    categoryPathsOnce = getCategoryStaticPaths();
+    categoryPathsOnce.catch(() => (categoryPathsOnce = null));
+  }
+  return categoryPathsOnce;
+}
+
+/**
+ * `listedGarlands`: the caller's own fresh read of the public garlands, when
+ * it already has one for this request (the city page does), so the same rows
+ * are not read and mapped twice. Otherwise they are read here, fresh.
+ */
+export async function loadCityCatalogue({ listedGarlands }: { listedGarlands?: Promise<GarlandProduct[]> } = {}): Promise<{ collections: CatalogueCollection[]; all: CatalogueItem[] }> {
+  const [priceMap, categoryEntries, garlands, publicCatalogue] = await Promise.all([
     loadAuthoritativePrices(),
-    getCategoryStaticPaths(),
-    loadGarlands().then((list) => list.filter((product) => isListedGarland(product.garland))),
+    categoryPaths(),
+    listedGarlands ?? loadGarlands().then((list) => list.filter((product) => isListedGarland(product.garland))),
     loadPublicCatalogue(),
   ]);
 
@@ -109,7 +129,7 @@ export async function loadCityCatalogue(): Promise<{ collections: CatalogueColle
     items: featuredBouquets(publicCatalogue).map((product) => productItem(withAuthoritativePrice(product, priceMap))),
   };
 
-  const categories: CatalogueCollection[] = categoryPaths
+  const categories: CatalogueCollection[] = categoryEntries
     .filter((entry) => !NOINDEX_CATEGORY_SLUGS.has(entry.params.slug) && !CANONICAL_CATEGORY[entry.params.slug])
     .map((entry) => ({
       id: entry.params.slug,

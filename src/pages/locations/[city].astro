@@ -52,10 +52,16 @@ for (const [name, value] of Object.entries(occasionCacheHeaders([GARLAND_CACHE_T
 
 const needsGarlands = hub.sections.some((section) => section.sources.some((source) => source.kind === "garlands"));
 const publicCatalogue = await loadPublicCatalogue();
+// One fresh read of the public garlands serves both this page's sections and
+// the full catalogue below (loadCityCatalogue), instead of two identical reads.
+const listedGarlands = loadGarlands().then((list) => list.filter((product) => isListedGarland(product.garland)));
+// Awaited below (directly or by loadCityCatalogue); marked handled so a failed read
+// surfaces there as the page error, not as an unhandled rejection meanwhile.
+listedGarlands.catch(() => {});
 const [priceMap, membership, garlands] = await Promise.all([
   loadAuthoritativePrices(),
   loadOccasionMembership(publicCatalogue.map((product) => product.slug)),
-  needsGarlands ? loadGarlands().then((list) => list.filter((product) => isListedGarland(product.garland))) : Promise.resolve([] as GarlandProduct[]),
+  needsGarlands ? listedGarlands : Promise.resolve([] as GarlandProduct[]),
 ]);
 
 type Card = {
@@ -174,7 +180,7 @@ const withGuides = (section: (typeof hub.sections)[number]) => {
 // The full catalogue for this city: every public collection, with its count
 // and a photograph, linking to the city's shop view. The sections are advice
 // with a few examples; this is everything.
-const catalogue = await loadCityCatalogue();
+const catalogue = await loadCityCatalogue({ listedGarlands });
 const shopBase = `${LOCATIONS_PATH}/${city.slug}/shop`;
 
 // A section's complete collections (its `collections` ids), each with its
