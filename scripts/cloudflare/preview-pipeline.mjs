@@ -100,9 +100,39 @@ async function checks(base) {
   await check('admin API refused', '/api/admin/products', (r) => (r.status === 403 ? '' : `status ${r.status}`));
   await check('enquiry log refused', '/api/inquiries', (r) => (r.status === 403 ? '' : `status ${r.status}`), { method: 'POST', headers: { origin: base, 'content-type': 'application/json' }, body: '{}' });
   await check('image endpoint rejects other hosts', '/_image?href=https%3A%2F%2Fexample.com%2Fa.jpg&w=480&q=75&f=webp', (r) => (r.status === 404 ? '' : `status ${r.status}`));
-  const img = (garlands.body ?? '').match(/\/_image\?href=[^"\s,]+/);
-  if (img) await check('stored photo resized by Images binding', img[0].replaceAll('&amp;', '&'), (r) => (r.status === 200 && /image\/webp/.test(r.headers.get('content-type') ?? '') ? '' : `status ${r.status} ${r.headers.get('content-type')}`));
-  else results.push({ name: 'stored photo resized by Images binding', path: '-', status: 0, ok: true, problem: 'not exercised: no stored (uploaded) garland photo is public' });
+  // Every distinct stored photo on the garland page, one width each: the
+  // original from Storage (status, type, signature) next to the resized
+  // response, so a missing source is told apart from a resizing fault.
+  const imagePaths = [...new Set([...(garlands.body ?? '').matchAll(/\/_image\?href=[^"\s,]+/g)].map((m) => m[0].replaceAll('&amp;', '&')))];
+  const byHref = new Map();
+  for (const p of imagePaths) { const href = new URL(p, base).searchParams.get('href'); if (!byHref.has(href)) byHref.set(href, p); }
+  report.data.images = [];
+  let img = null;
+  for (const [href, p] of [...byHref].slice(0, 12)) {
+    const row = { source: href.replace(/^.*\/media\//, 'media/'), resized: p.replace(/^.*?&/, '&') };
+    try {
+      const src = await fetch(href);
+      const bytes = new Uint8Array(await src.arrayBuffer());
+      row.sourceStatus = src.status; row.sourceType = src.headers.get('content-type'); row.sourceBytes = bytes.length;
+      row.sourceSignature = [...bytes.slice(0, 4)].map((b) => b.toString(16).padStart(2, '0')).join('');
+      if (!src.ok) row.sourceBody = new TextDecoder().decode(bytes.slice(0, 160));
+    } catch (error) { row.sourceStatus = 0; row.sourceBody = error.message; }
+    try {
+      const res = await fetch(base + p);
+      row.status = res.status; row.type = res.headers.get('content-type');
+      const body = new Uint8Array(await res.arrayBuffer());
+      row.bytes = body.length;
+      if (!res.ok) row.body = new TextDecoder().decode(body.slice(0, 160));
+    } catch (error) { row.status = 0; row.body = error.message; }
+    report.data.images.push(row);
+    if (!img && row.status === 200) img = [p];
+  }
+  const sourced = report.data.images.filter((r) => r.sourceStatus === 200);
+  const resized = sourced.filter((r) => r.status === 200 && /image\/webp/.test(r.type ?? ''));
+  const broken = report.data.images.filter((r) => r.sourceStatus === 200 && r.status !== 200);
+  if (!report.data.images.length) results.push({ name: 'stored photo resized by Images binding', path: '-', status: 0, ok: true, problem: 'not exercised: no stored (uploaded) garland photo is public' });
+  else results.push({ name: 'stored photos resized by Images binding', path: `${report.data.images.length} sources`, status: broken.length ? 500 : 200, ok: broken.length === 0 && resized.length > 0, problem: `${resized.length}/${sourced.length} available sources resized; ${report.data.images.length - sourced.length} source(s) unavailable in Storage` });
+  if (!img && imagePaths.length) img = [imagePaths[0]];
   return { results, imagePath: img?.[0]?.replaceAll('&amp;', '&') };
 }
 
@@ -165,6 +195,7 @@ async function publish() {
   const md = [`Stage reached: **${report.stage}** — ${ok ? 'completed' : 'FAILED'}`, '', ...report.lines.map((l) => (l.includes('\n') ? '```\n' + l + '\n```' : `- ${l}`))];
   if (report.data.url) md.push('', `Preview: ${report.data.url}`);
   if (report.data.checks) md.push('', '| check | path | status | result |', '|---|---|---|---|', ...report.data.checks.map((c) => `| ${c.name} | \`${c.path.slice(0, 60)}\` | ${c.status} | ${c.ok ? 'ok' : 'FAIL'} ${c.problem} |`));
+  if (report.data.images?.length) md.push('', 'Stored photos (original from Supabase Storage vs /_image):', '', '| source | source status | source type | bytes | signature | resized status | resized type | error text |', '|---|---|---|---|---|---|---|---|', ...report.data.images.map((r) => `| ${r.source} | ${r.sourceStatus} | ${r.sourceType ?? ''} | ${r.sourceBytes ?? ''} | ${r.sourceSignature ?? ''} | ${r.status} | ${r.type ?? ''} | ${(r.body ?? r.sourceBody ?? '').replace(/[|\n]/g, ' ')} |`));
   if (report.data.metrics) md.push('', 'Cloudflare analytics (workersInvocationsAdaptive; CPU in microseconds as reported; P90/P99 are the maximum over status groups):', '', '| phase | sent | 5xx seen | Worker requests | Worker errors | subrequests | CPU P50 | CPU P90 | CPU P99 | statuses | wall median ms |', '|---|---|---|---|---|---|---|---|---|---|---|', ...report.data.metrics.map((m) => `| ${m.name} | ${m.sent} | ${m.http5xx} | ${m.workerRequests ?? '-'} | ${m.workerErrors ?? '-'} | ${m.subrequests ?? '-'} | ${m.cpuP50us ?? '-'} | ${m.cpuP90us ?? '-'} | ${m.cpuP99us ?? '-'} | ${m.statuses ?? m.analytics ?? ''} | ${m.wallMedianMs} |`));
   const summary = redact(md.join('\n')).slice(0, 60000);
   if (env.GITHUB_STEP_SUMMARY) appendFileSync(env.GITHUB_STEP_SUMMARY, summary + '\n');
