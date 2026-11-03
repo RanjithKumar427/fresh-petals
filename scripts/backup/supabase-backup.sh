@@ -7,8 +7,15 @@
 #   scripts/backup/supabase-backup.sh [/secure/backup/dir]
 #
 # Use the SESSION pooler (port 5432) or the direct connection, not the
-# transaction pooler (6543): pg_dump needs a session. Nothing here writes to
-# the database or to Storage. Requires pg_dump/psql 15+ and Node 24.
+# transaction pooler (6543): pg_dump needs a session. pg_dump/psql must be at
+# least the server's major version. Nothing here writes to the database or to
+# Storage. Exit status is non-zero on any failure; a partial directory is then
+# not a backup.
+#
+# Consistency: the database dump is one snapshot. The inventory is taken
+# before and after it, and Storage is read after it, so a write that lands
+# during the run is reported (inventory differs) rather than hidden. Storage
+# files and database rows are not captured at the same instant.
 set -euo pipefail
 : "${SUPABASE_DB_URL:?set SUPABASE_DB_URL (session pooler, port 5432)}"
 : "${SUPABASE_URL:?set SUPABASE_URL}"
@@ -16,38 +23,49 @@ set -euo pipefail
 case "$SUPABASE_DB_URL" in *hjhmetomcaskrrwkgrbp*) ;; *) echo "Refusing: SUPABASE_DB_URL is not project hjhmetomcaskrrwkgrbp" >&2; exit 1;; esac
 
 STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
-ROOT="${1:-$HOME/fresh-petals-backups}"
+ROOT="$(realpath -m "${1:-$HOME/fresh-petals-backups}")"
+REPO="$(git -C "$(dirname "$0")" rev-parse --show-toplevel 2>/dev/null || true)"
+if [ -n "$REPO" ] && { [ "$ROOT" = "$REPO" ] || [ "${ROOT#"$REPO"/}" != "$ROOT" ]; }; then
+  echo "Refusing: backup directory $ROOT is inside the repository" >&2; exit 1
+fi
 OUT="$ROOT/$STAMP"
-case "$(cd "$(dirname "$ROOT")" 2>/dev/null && pwd)/" in "$(git rev-parse --show-toplevel 2>/dev/null || echo /nonexistent)"/*) echo "Refusing: backup directory is inside the repository" >&2; exit 1;; esac
 umask 077
 mkdir -p "$OUT"
 echo "Backup → $OUT"
 
-# 1. Timestamped inventory (read-only queries).
-psql "$SUPABASE_DB_URL" -X -v ON_ERROR_STOP=1 -At -F $'\t' > "$OUT/inventory.tsv" <<'SQL'
-BEGIN TRANSACTION READ ONLY;
-SELECT 'taken_at', now()::text;
-SELECT 'table', schemaname || '.' || relname, n_live_tup::text FROM pg_stat_user_tables WHERE schemaname = 'public' ORDER BY 2;
-SELECT 'exact_count', 'public.inquiries', count(*)::text FROM public.inquiries;
-SELECT 'exact_count', 'public.products', count(*)::text FROM public.products;
+inventory() {
+  psql "$SUPABASE_DB_URL" -X -q -v ON_ERROR_STOP=1 -At -F $'\t' <<'SQL'
+BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY;
+SELECT 'exact_count', table_schema || '.' || table_name,
+       (xpath('/row/c/text()', query_to_xml(format('SELECT count(*) AS c FROM %I.%I', table_schema, table_name), false, true, '')))[1]::text
+  FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE' ORDER BY 2;
 SELECT 'auth', 'users', count(*)::text FROM auth.users;
+SELECT 'auth', 'identities', count(*)::text FROM auth.identities;
 SELECT 'auth', 'mfa_factors', count(*)::text FROM auth.mfa_factors;
-SELECT 'storage', bucket_id, count(*)::text || ' objects, ' || coalesce(sum((metadata->>'size')::bigint), 0)::text || ' bytes' FROM storage.objects GROUP BY bucket_id ORDER BY 2;
-SELECT 'latest_inquiry', coalesce(max(created_at)::text, '-'), '' FROM public.inquiries;
+SELECT 'storage_objects', bucket_id, count(*)::text FROM storage.objects GROUP BY bucket_id ORDER BY 2;
+SELECT 'storage_bytes', bucket_id, coalesce(sum((metadata->>'size')::bigint), 0)::text FROM storage.objects GROUP BY bucket_id ORDER BY 2;
+SELECT 'latest', 'public.inquiries', coalesce(max(created_at)::text, '-') FROM public.inquiries;
 COMMIT;
 SQL
+}
 
-# 2. Database: application data, Auth users/identities/MFA factors, Storage
-#    object metadata. Custom format, restorable table by table.
+# 1. Inventory, database snapshot, inventory again.
+{ echo -e "taken_at\t$(date -u +%FT%TZ)\t"; inventory; } > "$OUT/inventory.tsv"
 pg_dump "$SUPABASE_DB_URL" --format=custom --no-owner --no-privileges \
   --schema=public --schema=auth --schema=storage --file="$OUT/database.dump"
 pg_dump "$SUPABASE_DB_URL" --schema-only --no-owner --schema=public --file="$OUT/public-schema.sql"
 pg_restore --list "$OUT/database.dump" > "$OUT/database.toc"
+{ echo -e "taken_at\t$(date -u +%FT%TZ)\t"; inventory; } > "$OUT/inventory-after.tsv"
+if diff <(grep -v '^taken_at' "$OUT/inventory.tsv") <(grep -v '^taken_at' "$OUT/inventory-after.tsv") > "$OUT/inventory.diff"; then
+  rm "$OUT/inventory.diff"; echo "Inventory unchanged during the dump."
+else
+  echo "WARNING: data changed while the dump ran (see inventory.diff). The dump is still one consistent snapshot; compare it with inventory-after.tsv." >&2
+fi
 
-# 3. Storage objects with their paths, sizes and SHA-256.
-node "$(dirname "$0")/storage-backup.mjs" "$OUT/storage"
+# 2. Storage objects with their paths, sizes and SHA-256, checked against storage.objects.
+node "$(dirname "$0")/storage-backup.mjs" "$OUT/storage" "$OUT/inventory-after.tsv"
 
-# 4. Integrity.
+# 3. Integrity.
 ( cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS )
 echo "Done. Verify with: (cd '$OUT' && sha256sum -c SHA256SUMS) and scripts/backup/restore-rehearsal.sh '$OUT'"
 echo "This directory holds password hashes, MFA secrets and customer enquiries: encrypt it (e.g. gpg --symmetric) and keep it off shared drives."
