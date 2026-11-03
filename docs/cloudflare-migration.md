@@ -10,6 +10,14 @@ Status (2026-11-03): **tested locally in the Cloudflare runtime against the prod
 
 **Production baseline:** `f0e85b1` (`main`), the last commit Vercel deployed to Production (GitHub deployment 7458090058, 2026-10-31).
 
+## Remote preview results (2026-11-03, runs for `d0b6173`, `97cbba2`, `4a7123c`)
+
+Preview: https://fresh-petals-preview.branjith-kumar24-01.workers.dev (Worker `fresh-petals-preview`, workers.dev only, noindex, no analytics, admin/API/enquiry log 403). Hyperdrive `fresh-petals-db` created by the pipeline (CA-verified, caching off). 19/20 functional checks pass on every run.
+
+**Stored-photo resizing (the failing check):** every stored photo's original returns **HTTP 402** from Supabase Storage: `Service for this project is restricted due to the following violations: exceed_egress_quota. The project owner must upgrade their plan or remove spe[nd caps]…`. The Images binding then receives that JSON instead of image bytes and the endpoint answers 400 "Source is not an image". The resizing path (allowlist → fetch → binding) is unchanged and correct. The cause is the Supabase project's egress restriction, which equally breaks those photos on the live site, since their `src` is the same Supabase URL. Resizing on Cloudflare stays unverified until Storage serves the files again.
+
+**Cloudflare CPU (GraphQL `workersInvocationsAdaptive`, µs; 25 sequential uncached requests per route, workers.dev has no edge cache):** P50 1.1–2.1 ms and P90 1.3–2.8 ms on every page route across two runs; P99 up to 6 ms on most routes, with single outliers of 24–95 ms on `/occasions/birthday` and `/categories/garlands`; first requests in fresh isolates up to 29–74 ms; 404s ~3.6–4 ms; `/_image` ~4–7 ms. 0 Worker errors and 0 HTTP 5xx in ~300 requests per run; static pages never invoked the Worker. These are far below the local Node estimates further down, which overstated CPU.
+
 ## What changed (branch `migrate/cloudflare-workers`)
 
 One codebase, two build targets. `DEPLOY_TARGET` unset (every Vercel build) keeps the Vercel adapter and behaviour; `DEPLOY_TARGET=cloudflare` builds a Worker with static assets (`@astrojs/cloudflare` 14.4.4, Astro 7.4.0, wrangler 4.156.2).
