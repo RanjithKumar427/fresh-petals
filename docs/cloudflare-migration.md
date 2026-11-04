@@ -6,7 +6,8 @@ Status (2026-11-03): **tested locally in the Cloudflare runtime against the prod
 |---|---|
 | Verified locally | Routes, content, SEO and workflows vs the production baseline; browser pass; CPU/query measurements (Node V8, not Cloudflare); backup scripts end to end against stand-ins |
 | Verified remotely | Nothing on Cloudflare (no account access). GitHub: the Vercel integration refuses new builds ("Account is blocked") since 2026-11-03; last successful production deploy 2026-10-31 (`f0e85b1`) |
-| Untested / blocked | Deployed Worker CPU and invocations, Hyperdrive → Supabase, zone purge, Images on real photos, GIF/EXIF upload output, Supabase sign-in/MFA/logout/recovery, production backup, any recovery target |
+| Verified on staging (2026-11-04, `0f75e03`) | Isolated Worker `fresh-petals-staging` on workers.dev, Hyperdrive to the staging database, stored photos through Images, admin sign-in, TOTP MFA, logout and the password-only block. Not production |
+| Untested / blocked | Deployed Worker CPU and invocations, zone purge, GIF/EXIF upload output, **email delivery and email-based password recovery**, editing, upload, enquiry and bot-resilience workflows on staging, any recovery target |
 
 **Production baseline:** `f0e85b1` (`main`), the last commit Vercel deployed to Production (GitHub deployment 7458090058, 2026-10-31).
 
@@ -124,7 +125,9 @@ Request volume: a full page view is typically one Worker request (the HTML of an
 
 If Cloudflare's metrics confirm the overrun, the practical options are: Workers Paid (US$5/month, 30 s CPU; needs approval); or prerendering `/`, the bouquet list and city pages and refreshing them by rebuild on save (minutes instead of seconds; a behaviour change to approve first).
 
-## Backups (owner-run; no production backup exists from this work)
+## Backups (owner-run)
+
+Status (2026-11-04): a production export taken on 2026-11-03 is held as an encrypted archive with an off-PC copy on the owner's Google Drive. The Drive copy was downloaded and its SHA-256 matched, and the export's records and 156 photos were restored to the staging project with 0 verification failures. The archive holds a point-in-time copy only, so take a fresh backup before any cutover. The stand-in results below describe the scripts, which were not exercised by this status.
 
 ```sh
 SUPABASE_DB_URL=… SUPABASE_URL=https://hjhmetomcaskrrwkgrbp.supabase.co SUPABASE_SERVICE_ROLE_KEY=… \
@@ -144,8 +147,9 @@ Excluded: Auth configuration (providers, email templates, redirect URLs, MFA set
 |---|---|
 | Preview deploy, Cloudflare CPU/invocation metrics | GitHub Actions secrets `CLOUDFLARE_API_TOKEN` (Account: Workers Scripts Edit, Workers Observability Read, Hyperdrive Edit, Account Settings Read) and `CLOUDFLARE_ACCOUNT_ID`, plus build `DATABASE_URL`; or a Cloudflare dashboard session in the browser for reading metrics. This workspace cannot reach api.cloudflare.com, so deploys run from GitHub Actions or your machine |
 | Hyperdrive config | Supabase database password (direct or session-pooler connection), entered by you in `wrangler hyperdrive create` |
-| Production backup | Supabase session-pooler `SUPABASE_DB_URL` and `SUPABASE_SERVICE_ROLE_KEY`, run on your machine (this workspace cannot reach supabase.co) |
-| Auth/MFA/recovery/upload tests | A separate free Supabase project (synthetic users, own Storage bucket) wired to the preview Worker with write protections switched off for that project only; never the production project |
+| Fresh production backup before cutover | Supabase session-pooler `SUPABASE_DB_URL` and `SUPABASE_SERVICE_ROLE_KEY`, run on your machine |
+| Email recovery test | Confirmed delivery to the staging admin's inbox; the default email service reaches team members only, at 2 emails an hour. Never the production project |
+| Upload and workflow tests | The staging Worker and project; never the production project |
 | Recovery host | Vercel account unblocked and confirmed serving, or approval of another host |
 
 ## Cutover (needs approval; nothing here has been done)
