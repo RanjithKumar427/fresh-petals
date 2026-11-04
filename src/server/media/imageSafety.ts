@@ -20,7 +20,7 @@
 // The admin is the only uploader (approved administrator, aal2); this is
 // defence in depth against a mislabelled or hostile file, not a malware
 // scanner.
-import sharp, { type Metadata, type OutputInfo } from "sharp";
+import type { Metadata, OutputInfo } from "sharp";
 import { ON_CLOUDFLARE } from "../platform/target";
 
 export type ImageFormat = "jpeg" | "png" | "webp" | "gif";
@@ -93,6 +93,9 @@ export async function sanitizeImage(input: { buffer: Buffer; declaredMime: strin
     );
   }
 
+  // Loaded only here: the Cloudflare adapter marks sharp as external, and a
+  // static import would leave a module the Worker does not have, failing every route that loads this file.
+  const { default: sharp } = await import("sharp");
   const options = { animated: format === "gif" || format === "webp", failOn: "error" as const, limitInputPixels: MAX_PIXELS };
   let metadata: Metadata;
   try {

@@ -4,6 +4,9 @@ export function safeAdminPath(value: string | null | undefined): string {
   if (!next.startsWith("/admin/") || next.startsWith("//") || next.includes("\\") || /[\r\n]/.test(next)) {
     return "/admin/dashboard";
   }
-  if (next.startsWith("/admin/mfa") || next.startsWith("/admin/login")) return "/admin/dashboard";
+  // Judge the path a browser would actually visit, after resolving ".." and encoded forms.
+  const resolved = new URL(next, "https://admin.invalid");
+  if (resolved.origin !== "https://admin.invalid" || !resolved.pathname.startsWith("/admin/")) return "/admin/dashboard";
+  if (resolved.pathname.startsWith("/admin/mfa") || resolved.pathname.startsWith("/admin/login")) return "/admin/dashboard";
   return next;
 }

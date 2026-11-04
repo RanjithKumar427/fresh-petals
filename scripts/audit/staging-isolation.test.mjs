@@ -55,6 +55,14 @@ test('only an explicit staging build changes the media host', () => {
   for (const env of [{}, { FP_DEPLOY_ENV: 'preview' }, { FP_DEPLOY_ENV: 'production' }]) assert.equal(storedMediaOrigin(env), 'https://hjhmetomcaskrrwkgrbp.supabase.co');
 });
 
+test('post-sign-in paths are judged after resolving them', () => {
+  const { safeAdminPath } = sourceLoader()('src/server/auth/safeAdminPath.ts');
+  assert.equal(safeAdminPath('/admin/products?page=2'), '/admin/products?page=2');
+  for (const bad of ['/admin/../../evil', '/admin/%2e%2e/evil', '/admin/x/../../evil', '/admin/x/../mfa', '/admin/%2e%2e/admin/login', '//evil.example', 'https://evil.example', '/\\evil.example', 'javascript:alert(1)']) {
+    assert.equal(safeAdminPath(bad), '/admin/dashboard', bad);
+  }
+});
+
 const expected = { host: 'aws-1-eu-west-1.pooler.supabase.com', port: 5432, database: 'postgres', user: 'postgres.wyndmywdtacucojvudxg' };
 const config = { id: 'stg', name: HYPERDRIVE_NAME, origin: expected, caching: { disabled: true }, mtls: { sslmode: 'verify-full', ca_certificate_id: 'c' } };
 

@@ -72,6 +72,13 @@ const walk = (dir) => {
   }
 };
 walk('dist/client');
+// A static import of a module the Worker lacks fails every route that loads the chunk.
+const chunks = path.join('dist', 'server', 'chunks');
+if (existsSync(chunks)) {
+  for (const name of readdirSync(chunks)) {
+    if (name.endsWith('.mjs') && /(?:^|[;\n])\s*import\s+(?:[^'"]*\sfrom\s+)?["']sharp["']/.test(readFileSync(path.join(chunks, name), 'utf8'))) problems.push(`${name}: static import of sharp in the Worker bundle`);
+  }
+}
 const hyperdrive = (worker.hyperdrive ?? [])[0]?.id;
 if (target !== 'staging' && (!hyperdrive || hyperdrive.startsWith('REPLACE_'))) console.warn('Note: wrangler.jsonc still has the placeholder Hyperdrive id; deploy.mjs will refuse until it is set.');
 if (existsSync('dist/client/images/garlands')) console.warn('Note: dist/client/images/garlands exists; the garland photo safety net ran during the build.');
