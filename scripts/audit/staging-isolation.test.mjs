@@ -1,5 +1,6 @@
 // Staging isolation: request guards, media origin and deploy checks. No network.
 import { test } from 'node:test';
+import { readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
 import { sourceLoader } from './source-loader.mjs';
 import { storedMediaOrigin, STAGING_MEDIA_ORIGIN } from '../../src/server/http/securityHeaders.mjs';
@@ -77,6 +78,15 @@ test('Hyperdrive is judged by its actual origin, not its name', () => {
 });
 
 const worker = { name: 'fresh-petals-staging', workers_dev: true, preview_urls: false, observability: { enabled: false }, images: { binding: 'IMAGES' }, hyperdrive: [{ binding: 'HYPERDRIVE', id: 'stg' }], vars: { FP_DEPLOY_ENV: 'staging', SITE_URL: 'https://onlyfreshpetals.in', FP_AUTH_ORIGIN: AUTH_ORIGIN, FP_STAGING_DB_ID: '1' } };
+
+test('the password page claims success only with the cookie set after an accepted change', () => {
+  const page = readFileSync('src/pages/admin/reset-password.astro', 'utf8');
+  const endpoint = readFileSync('src/pages/api/admin/auth/reset-password.ts', 'utf8');
+  assert.match(page, /const done = Astro\.url\.searchParams\.get\("done"\) === "1" && Astro\.cookies\.get\(PASSWORD_CHANGED_COOKIE\)\?\.value === "1";/);
+  assert.match(page, /if \(done\) Astro\.cookies\.delete\(PASSWORD_CHANGED_COOKIE/);
+  assert.ok(endpoint.indexOf('if (!result.ok) return fail') < endpoint.indexOf('cookies.set(PASSWORD_CHANGED_COOKIE'), 'cookie is set only after the failure return');
+  assert.match(endpoint, /cookies\.set\(PASSWORD_CHANGED_COOKIE, "1", \{[^}]*httpOnly: true/);
+});
 
 test('only the staging Worker configuration may deploy', () => {
   assert.deepEqual(workerConfigFailures(worker, 'stg', 'prod'), []);

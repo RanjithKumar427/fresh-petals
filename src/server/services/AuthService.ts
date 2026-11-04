@@ -47,6 +47,14 @@ function isOutage(error: unknown): boolean {
   return name === "AuthRetryableFetchError" || (typeof status === "number" && (status === 0 || status === 429 || status >= 500));
 }
 
+/**
+ * Set only after Supabase accepted a new password, and consumed by the next
+ * view of the password page. The "done" query parameter alone proves nothing:
+ * anyone can type it, and another site cannot set this cookie for this site.
+ */
+export const PASSWORD_CHANGED_COOKIE = "fp_password_changed";
+export const PASSWORD_CHANGED_COOKIE_PATH = "/admin/reset-password";
+
 export const PASSWORD_MIN_LENGTH = 12;
 // Supabase Auth hashes with bcrypt, which only uses the first 72 bytes.
 export const PASSWORD_MAX_LENGTH = 72;

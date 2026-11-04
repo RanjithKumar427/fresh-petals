@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro";
-import { AuthService, PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "../../../../server/services/AuthService";
+import { AuthService, PASSWORD_CHANGED_COOKIE, PASSWORD_CHANGED_COOKIE_PATH, PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "../../../../server/services/AuthService";
 import { BODY_LIMITS, readForm } from "../../../../server/http/body";
 
 export const prerender = false;
@@ -21,5 +21,6 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
   const result = await AuthService.updatePassword(password, code, request, cookies);
   if (!result.ok) return fail(result.error);
 
+  cookies.set(PASSWORD_CHANGED_COOKIE, "1", { path: PASSWORD_CHANGED_COOKIE_PATH, maxAge: 60, httpOnly: true, secure: import.meta.env.PROD, sameSite: "lax" });
   return redirect("/admin/reset-password?done=1");
 };
