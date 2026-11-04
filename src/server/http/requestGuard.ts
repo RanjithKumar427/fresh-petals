@@ -32,6 +32,56 @@ export function blockedOnPreview(path: string): boolean {
 }
 
 /**
+ * The staging Worker (wrangler.jsonc env.staging) has its own database, Auth
+ * project and Storage, so admin and Auth routes work there. Public enquiry
+ * submission stays refused: the restored enquiries must not change.
+ */
+export function isStagingDeployment(env: Record<string, string | undefined> = process.env): boolean {
+  return env.FP_DEPLOY_ENV === "staging";
+}
+
+export const blockedOnStaging = (path: string) => path === "/api/inquiries";
+
+const STAGING_SUPABASE_URL = "https://wyndmywdtacucojvudxg.supabase.co";
+const PRODUCTION_REF = "hjhmetomcaskrrwkgrbp";
+const CANONICAL_SITE = "https://onlyfreshpetals.in";
+const STAGING_AUTH_ORIGIN = /^https:\/\/fresh-petals-staging\.[a-z0-9-]+\.workers\.dev$/;
+
+/**
+ * Where staging's Auth links return: the explicitly configured origin only.
+ * Never SITE_URL, which stays the production canonical, and never the request's Host.
+ */
+export function stagingAuthOrigin(env: Record<string, string | undefined> = process.env): string | null {
+  const origin = env.FP_AUTH_ORIGIN ?? "";
+  return STAGING_AUTH_ORIGIN.test(origin) ? origin : null;
+}
+
+/**
+ * Everything a staging Worker must prove before it answers a dynamic request.
+ * Returns fixed descriptions, never a value. The database's own identity is
+ * checked separately, by a query (src/middleware.ts).
+ */
+export function stagingConfigProblems(
+  env: Record<string, string | undefined>,
+  context: { stagingBuild: boolean; viaHyperdrive: boolean; requestOrigin: string }
+): string[] {
+  const problems: string[] = [];
+  if (!context.stagingBuild) problems.push("the bundle was not built for staging");
+  if (env.FP_DEPLOY_ENV !== "staging") problems.push("FP_DEPLOY_ENV is not staging");
+  if (env.SUPABASE_URL !== STAGING_SUPABASE_URL) problems.push("SUPABASE_URL is not the staging project");
+  if (!env.SUPABASE_ANON_KEY) problems.push("SUPABASE_ANON_KEY is missing");
+  if (!env.SUPABASE_SERVICE_ROLE_KEY) problems.push("SUPABASE_SERVICE_ROLE_KEY is missing");
+  if (env.SITE_URL !== CANONICAL_SITE) problems.push("SITE_URL is not the production canonical");
+  if (!stagingAuthOrigin(env)) problems.push("FP_AUTH_ORIGIN is missing or not the staging Worker");
+  else if (context.requestOrigin !== env.FP_AUTH_ORIGIN) problems.push("the request did not arrive on the staging Worker's address");
+  if (!/^\d+$/.test(env.FP_STAGING_DB_ID ?? "")) problems.push("FP_STAGING_DB_ID is missing");
+  if (!context.viaHyperdrive) problems.push("the HYPERDRIVE binding is missing");
+  for (const name of ["DATABASE_URL", "CF_ZONE_ID", "CF_CACHE_PURGE_TOKEN"]) if (env[name]) problems.push(`${name} must not be set on staging`);
+  if (Object.values(env).some((value) => typeof value === "string" && value.includes(PRODUCTION_REF))) problems.push("a setting references the production project");
+  return problems;
+}
+
+/**
  * Browser CSRF check for unsafe methods: the Origin must be exactly this
  * site's origin, and Fetch Metadata (when the browser sends it) must say
  * same-origin. A request with neither header is refused too: every real

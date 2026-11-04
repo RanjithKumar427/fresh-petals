@@ -184,8 +184,8 @@ export const CLOUDFLARE_EXTRA_HEADERS = { 'strict-transport-security': 'max-age=
 export function applyCloudflareHeaders(staticDir) {
   const headersFile = path.join(staticDir, '_headers');
   const existing = existsSync(headersFile) ? readFileSync(headersFile, 'utf8') : '';
-  // The preview Worker is built separately (FP_DEPLOY_ENV=preview) and must never be indexed.
-  const preview = process.env.FP_DEPLOY_ENV === 'preview' ? { 'x-robots-tag': 'noindex, nofollow' } : {};
+  // The preview and staging Workers are built separately and must never be indexed.
+  const preview = process.env.FP_DEPLOY_ENV === 'preview' || process.env.FP_DEPLOY_ENV === 'staging' ? { 'x-robots-tag': 'noindex, nofollow' } : {};
   const lines = Object.entries({ ...SECURITY_HEADERS, ...CLOUDFLARE_EXTRA_HEADERS, ...preview }).map(([name, value]) => `  ${name}: ${value}`);
   if (!existing.includes('# fresh-petals security headers')) {
     writeFileSync(headersFile, `# fresh-petals security headers\n/*\n${lines.join('\n')}\n\n${existing}`);

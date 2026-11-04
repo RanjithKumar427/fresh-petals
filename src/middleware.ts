@@ -1,18 +1,21 @@
 import { defineMiddleware } from "astro:middleware";
 import type { MiddlewareHandler } from "astro";
 import { AuthService } from "./server/services/AuthService";
-import { SECURITY_HEADERS } from "./server/http/securityHeaders.mjs";
+import { SECURITY_HEADERS, storedMediaOrigin } from "./server/http/securityHeaders.mjs";
 import {
   blockedOnPreview,
+  blockedOnStaging,
   bodyProblem,
   crossOriginReason,
   isAdminApi,
   isAdminPage,
   isPreviewDeployment,
+  isStagingDeployment,
   isUnsafeMethod,
   normalisePath,
+  stagingConfigProblems,
 } from "./server/http/requestGuard";
-import { ON_CLOUDFLARE, inWorkersRuntime } from "./server/platform/target";
+import { ON_CLOUDFLARE, STAGING_BUILD, inWorkersRuntime } from "./server/platform/target";
 import { requestScope, workerScope } from "./server/platform/requestScope";
 import { edgeCacheMatch, edgeCacheStore, edgeCacheable } from "./server/platform/edgeCache";
 import { STORED_PHOTO_WIDTHS } from "./data/garlandRules";
@@ -109,6 +112,10 @@ const handle = async (context: Parameters<MiddlewareHandler>[0], next: Parameter
     return refuse(403, "Not available on preview deployments: they share the production database and sign-in.");
   }
 
+  if (isStagingDeployment() && blockedOnStaging(path)) {
+    return refuse(403, "Not available on the staging deployment.");
+  }
+
   // 2. Unsafe methods: same origin, bounded and of the expected type.
   if (isUnsafeMethod(request.method)) {
     if (crossOriginReason(request.headers, url.origin)) return refuse(403, "Cross-site request refused.");
@@ -154,10 +161,38 @@ const handle = async (context: Parameters<MiddlewareHandler>[0], next: Parameter
  * same value (public/_headers carries it for static files).
  */
 const PLATFORM_HEADERS: Record<string, string> = ON_CLOUDFLARE ? { "strict-transport-security": "max-age=63072000" } : {};
-/** The Cloudflare preview Worker (wrangler env "preview") is never indexed. */
-const previewHeaders = (): Record<string, string> => (process.env.FP_DEPLOY_ENV === "preview" ? { "x-robots-tag": "noindex, nofollow" } : {});
+/** The Cloudflare preview and staging Workers are never indexed. */
+const previewHeaders = (): Record<string, string> => (process.env.FP_DEPLOY_ENV === "preview" || process.env.FP_DEPLOY_ENV === "staging" ? { "x-robots-tag": "noindex, nofollow" } : {});
 
-const STORED_MEDIA_PREFIX = "https://hjhmetomcaskrrwkgrbp.supabase.co/storage/v1/object/public/media/";
+const storedMediaPrefix = () => `${storedMediaOrigin()}/storage/v1/object/public/media/`;
+
+/**
+ * A staging bundle, or a Worker configured as staging, answers nothing until
+ * its configuration is exact and the database behind Hyperdrive reports the
+ * expected system identifier. A binding's name proves nothing: this asks the
+ * database itself. Success is remembered per isolate; failure never is.
+ */
+let stagingDatabaseVerified = false;
+async function stagingRefusal(requestOrigin: string, viaHyperdrive: boolean): Promise<Response | null> {
+  if (!STAGING_BUILD && !isStagingDeployment()) return null;
+  const problems = stagingConfigProblems(process.env, { stagingBuild: STAGING_BUILD, viaHyperdrive, requestOrigin });
+  if (!problems.length && !stagingDatabaseVerified) {
+    try {
+      const [{ sql }, { getDb }] = await Promise.all([import("drizzle-orm"), import("./server/db/postgres/client")]);
+      const result = await getDb().execute(sql`select system_identifier::text as id from pg_control_system()`);
+      if (result.rows[0]?.id === process.env.FP_STAGING_DB_ID) stagingDatabaseVerified = true;
+      else problems.push("the database behind Hyperdrive is not the staging database");
+    } catch {
+      problems.push("the database identity could not be read");
+    }
+  }
+  if (!problems.length) return null;
+  console.error(`[staging] refused: ${problems.join("; ")}`);
+  return withHeaders(page(503, "This staging deployment is not correctly configured."), SECURITY_HEADERS, PRIVATE_HEADERS);
+}
+
+/** On staging, dynamic responses name the deployed source revision. */
+const revisionHeader = (): Record<string, string> => (process.env.FP_DEPLOY_ENV === "staging" && process.env.FP_SOURCE_REVISION ? { "x-fp-source-revision": process.env.FP_SOURCE_REVISION } : {});
 
 /**
  * Cloudflare's /_image endpoint (Images binding) accepts only what
@@ -170,7 +205,7 @@ function imageRequestAllowed(url: URL): boolean {
   if (params !== "f,href,q,w") return false;
   const href = url.searchParams.get("href") ?? "";
   return (
-    href.startsWith(STORED_MEDIA_PREFIX) &&
+    href.startsWith(storedMediaPrefix()) &&
     !href.includes("..") &&
     STORED_PHOTO_WIDTHS.includes(Number(url.searchParams.get("w"))) &&
     url.searchParams.get("q") === "75" &&
@@ -187,13 +222,15 @@ export const onRequest = defineMiddleware(async (context, next) => {
   // that Vercel's CDN provided for public on-demand pages.
   const scope = await workerScope();
   return requestScope.run(scope, async () => {
+    const refusal = await stagingRefusal(context.url.origin, scope.viaHyperdrive === true);
+    if (refusal) return withHeaders(refusal, PLATFORM_HEADERS);
     const path = normalisePath(context.url.pathname);
     const cacheable = edgeCacheable(context.request, path);
     if (cacheable) {
       const hit = await edgeCacheMatch(context.request);
       if (hit) return hit;
     }
-    const response = withHeaders(await handle(context, next), PLATFORM_HEADERS, previewHeaders());
+    const response = withHeaders(await handle(context, next), PLATFORM_HEADERS, previewHeaders(), revisionHeader());
     if (!cacheable) return response;
     const cf = (context.locals as { cfContext?: { waitUntil(promise: Promise<unknown>): void } }).cfContext;
     return edgeCacheStore(context.request, response, cf ? (promise) => cf.waitUntil(promise) : undefined);

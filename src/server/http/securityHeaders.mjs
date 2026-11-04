@@ -21,7 +21,13 @@ export const SECURITY_HEADERS = {
   'cross-origin-opener-policy': 'same-origin-allow-popups',
 };
 
-const SUPABASE_STORAGE = 'https://hjhmetomcaskrrwkgrbp.supabase.co';
+const PRODUCTION_MEDIA_ORIGIN = 'https://hjhmetomcaskrrwkgrbp.supabase.co';
+export const STAGING_MEDIA_ORIGIN = 'https://wyndmywdtacucojvudxg.supabase.co';
+
+/** The Supabase host stored photographs come from. Only an explicit staging build differs. */
+export const storedMediaOrigin = (env = globalThis.process?.env ?? {}) => (env.FP_DEPLOY_ENV === 'staging' ? STAGING_MEDIA_ORIGIN : PRODUCTION_MEDIA_ORIGIN);
+
+const SUPABASE_STORAGE = storedMediaOrigin();
 
 /**
  * CSP directives besides script-src / style-src, which Astro builds from

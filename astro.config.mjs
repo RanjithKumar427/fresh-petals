@@ -11,7 +11,7 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { photoReviewCheck } from './scripts/build/photo-review-check.mjs';
 import { securityHeaders } from './scripts/build/security-headers.mjs';
-import { CSP_DIRECTIVES } from './src/server/http/securityHeaders.mjs';
+import { CSP_DIRECTIVES, storedMediaOrigin } from './src/server/http/securityHeaders.mjs';
 
 // Server-only secrets are read via `process.env` (src/server/db/postgres/
 // client.ts, src/server/auth/*), but `astro dev` does not copy .env /
@@ -46,7 +46,7 @@ const SITE_URL = process.env.SITE_URL || 'https://onlyfreshpetals.in';
 // Source code reads the same choice through src/server/platform/target.ts.
 const DEPLOY_TARGET = process.env.DEPLOY_TARGET === 'cloudflare' ? 'cloudflare' : 'vercel';
 const ON_CLOUDFLARE = DEPLOY_TARGET === 'cloudflare';
-const STORED_MEDIA = { protocol: 'https', hostname: 'hjhmetomcaskrrwkgrbp.supabase.co', pathname: '/storage/v1/object/public/media/**' };
+const STORED_MEDIA = { protocol: 'https', hostname: new URL(storedMediaOrigin()).hostname, pathname: '/storage/v1/object/public/media/**' };
 
 // Garland draft photographs (public/images/garlands/, git-ignored until
 // photo-publication permission is confirmed — see docs/garlands.md) must not
@@ -221,7 +221,7 @@ export default defineConfig({
 
   vite: {
     plugins: [tailwindcss()],
-    define: { __FP_DEPLOY_TARGET__: JSON.stringify(DEPLOY_TARGET) },
+    define: { __FP_DEPLOY_TARGET__: JSON.stringify(DEPLOY_TARGET), __FP_BUILD_ENV__: JSON.stringify(process.env.FP_DEPLOY_ENV === 'staging' ? 'staging' : '') },
     ...(ON_CLOUDFLARE ? { resolve: { alias: { sharp: fileURLToPath(new URL('./src/server/platform/sharp-unavailable.ts', import.meta.url)) } } } : {}),
   },
 

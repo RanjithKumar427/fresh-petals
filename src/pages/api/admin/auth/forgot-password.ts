@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { AuthService } from "../../../../server/services/AuthService";
 import { BODY_LIMITS, readForm } from "../../../../server/http/body";
+import { isStagingDeployment, stagingAuthOrigin } from "../../../../server/http/requestGuard";
 
 export const prerender = false;
 
@@ -18,6 +19,11 @@ function looksLikeEmail(value: string): boolean {
  * so local and preview runs never email a production link.
  */
 function resetRedirect(request: Request): string | null {
+  // Staging keeps SITE_URL as the production canonical, so its links have their own origin.
+  if (isStagingDeployment()) {
+    const origin = stagingAuthOrigin();
+    return origin ? new URL("/admin/reset-password", origin).toString() : null;
+  }
   const configured = process.env.SITE_URL;
   const nonProduction = process.env.VERCEL_ENV === "preview" || process.env.VERCEL_ENV === "development" || process.env.FP_DEPLOY_ENV === "preview" || !import.meta.env.PROD;
   if (!nonProduction) {
@@ -43,7 +49,7 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
   if (redirectTo) {
     await AuthService.requestPasswordReset(email, redirectTo, request, cookies);
   } else {
-    console.error("[forgot-password] SITE_URL is not set in production; no reset email sent.");
+    console.error("[forgot-password] the reset link's origin is not configured; no reset email sent.");
   }
 
   // Same response whether or not this email belongs to an administrator,

@@ -50,6 +50,28 @@
         "SITE_URL": "https://onlyfreshpetals.in",
         "FP_DEPLOY_ENV": "preview"
       }
+    },
+
+    // Isolated staging Worker on *.workers.dev, with its own Supabase project and
+    // Hyperdrive configuration. Deploy only through scripts/staging/deploy-worker.mjs:
+    // it fills in the Hyperdrive id and database identity after checking the live
+    // resources, and writes them to the build output, never to this file.
+    // Secrets (SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY) are Worker secrets.
+    // Observability stays off so recovery-link URLs are not retained in logs.
+    "staging": {
+      "name": "fresh-petals-staging",
+      "workers_dev": true,
+      "preview_urls": false,
+      "observability": { "enabled": false },
+      "images": { "binding": "IMAGES" },
+      "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "REPLACE_WITH_STAGING_HYPERDRIVE_ID" }],
+      "vars": {
+        // Canonical URLs stay on production; Auth links use FP_AUTH_ORIGIN.
+        "SITE_URL": "https://onlyfreshpetals.in",
+        "FP_DEPLOY_ENV": "staging",
+        "FP_AUTH_ORIGIN": "https://fresh-petals-staging.branjith-kumar24-01.workers.dev",
+        "SITE_CHECK_ORIGIN": "https://fresh-petals-staging.branjith-kumar24-01.workers.dev"
+      }
     }
   }
 }

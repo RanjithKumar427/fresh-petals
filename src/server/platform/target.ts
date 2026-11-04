@@ -10,6 +10,11 @@ export const DEPLOY_TARGET: "vercel" | "cloudflare" =
 
 export const ON_CLOUDFLARE = DEPLOY_TARGET === "cloudflare";
 
+declare const __FP_BUILD_ENV__: string | undefined;
+
+/** True only for a bundle built by `scripts/cloudflare/build.mjs staging`. */
+export const STAGING_BUILD = typeof __FP_BUILD_ENV__ === "string" && __FP_BUILD_ENV__ === "staging";
+
 /** True only inside the Cloudflare Workers runtime (not while prerendering in Node). */
 export function inWorkersRuntime(): boolean {
   const nav = (globalThis as { navigator?: { userAgent?: string } }).navigator;

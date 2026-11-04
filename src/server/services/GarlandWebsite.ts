@@ -132,7 +132,7 @@ export async function refreshWebsite(tags: string[]): Promise<RefreshResult> {
         }
         return { ok: true, method: "cloudflare", at, message: "Website cache cleared — the next visitor gets the saved version." };
       }
-      if (process.env.FP_DEPLOY_ENV !== "preview") {
+      if (process.env.FP_DEPLOY_ENV !== "preview" && process.env.FP_DEPLOY_ENV !== "staging") {
         // A shared cache exists on the live domain: never report success without a purge.
         throw new Error("the Cloudflare cache purge isn't configured (CF_ZONE_ID, CF_CACHE_PURGE_TOKEN)");
       }
