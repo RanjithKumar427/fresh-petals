@@ -242,13 +242,15 @@ export const AuthService = {
   },
 
   /**
-   * Recovery link, token-hash form (works on any device): used when the
-   * Supabase "Reset password" email template links to
-   * /admin/reset-password?token_hash={{ .TokenHash }}&type=recovery.
+   * Recovery or invitation link, token-hash form (works on any device): used
+   * when the Supabase "Reset password" or "Invite user" email template links to
+   * /admin/reset-password?token_hash={{ .TokenHash }}&type=recovery (or invite).
+   * Either gives a first-factor session only. It grants no admin access, and
+   * setting the password ends it (updatePassword).
    */
-  async verifyRecoveryTokenHash(tokenHash: string, request: Request, cookies: AstroCookies): Promise<boolean> {
+  async verifyEmailTokenHash(tokenHash: string, type: "recovery" | "invite", request: Request, cookies: AstroCookies): Promise<boolean> {
     const supabase = createSupabaseServerClient(request, cookies);
-    const { error } = await supabase.auth.verifyOtp({ type: "recovery", token_hash: tokenHash });
+    const { error } = await supabase.auth.verifyOtp({ type, token_hash: tokenHash });
     return !error;
   },
 
