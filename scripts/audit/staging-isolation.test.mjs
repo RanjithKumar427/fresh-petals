@@ -88,6 +88,32 @@ test('the password page claims success only with the cookie set after an accepte
   assert.match(endpoint, /cookies\.set\(PASSWORD_CHANGED_COOKIE, "1", \{[^}]*httpOnly: true/);
 });
 
+// The real Supabase cookie client with only the network and the admin table replaced.
+async function signIn(row) {
+  const session = { access_token: 'a.b.c', token_type: 'bearer', expires_in: 3600, expires_at: Math.floor(Date.now() / 1000) + 3600, refresh_token: 'refresh', user: { id: 'user-1', aud: 'authenticated', email: 'someone@example.com' } };
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = async (url) => (String(url).includes('/logout') ? new Response(null, { status: 204 }) : new Response(JSON.stringify(session), { status: 200, headers: { 'content-type': 'application/json' } }));
+  try {
+    const { AuthService } = sourceLoader({ mocks: { 'src/server/db/repositories/AdminUserRepository.ts': { AdminUserRepository: { findById: async () => row, touchLastLogin: async () => {} }, isApprovedAdmin: (x) => !!x } }, globals: { process: { env: { SUPABASE_URL: 'https://stub.supabase.co', SUPABASE_ANON_KEY: 'anon' } } } })('src/server/services/AuthService.ts');
+    const jar = new Map();
+    const cookies = { set: (name, value) => jar.set(name, value), delete: (name) => jar.set(name, null) };
+    const result = await AuthService.login('someone@example.com', 'a-password-for-this-test', { headers: new Headers() }, cookies);
+    return { result, jar };
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+}
+
+test('a refused sign-in leaves no session cookie; an approved one keeps it', async () => {
+  const refused = await signIn(null);
+  assert.equal(refused.result.ok, false);
+  assert.ok(refused.jar.size > 0, 'the sign-in wrote cookies, so this exercises the cleanup');
+  assert.deepEqual([...refused.jar.values()].filter(Boolean), [], 'every session cookie is deleted');
+  const approved = await signIn({ id: 'user-1' });
+  assert.equal(approved.result.ok, true);
+  assert.ok([...approved.jar.values()].filter(Boolean).length > 0);
+});
+
 test('only the staging Worker configuration may deploy', () => {
   assert.deepEqual(workerConfigFailures(worker, 'stg', 'prod'), []);
   for (const change of [{ name: 'fresh-petals-preview' }, { name: 'fresh-petals' }, { workers_dev: false }, { routes: ['x'] }, { hyperdrive: [{ binding: 'HYPERDRIVE', id: 'prod' }] }, { hyperdrive: [] }, { observability: { enabled: true } }, { images: undefined }, { vars: { ...worker.vars, FP_DEPLOY_ENV: 'preview' } }, { vars: { ...worker.vars, SUPABASE_URL: 'https://hjhmetomcaskrrwkgrbp.supabase.co' } }])

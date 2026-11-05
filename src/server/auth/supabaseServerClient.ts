@@ -45,8 +45,12 @@ function requiredEnv(name: string): string {
  * service-role key is reserved for genuinely admin-only operations
  * (creating/inviting users, listing all users) that never run as part of
  * a normal request — see scripts/link-admin-identity.mjs.
+ *
+ * `written` collects the name of every cookie set on this response. Supabase's
+ * sign-out removes only cookies the request arrived with, so a caller ending a
+ * session it started in this same request must delete these itself.
  */
-export function createSupabaseServerClient(request: Request, cookies: AstroCookies) {
+export function createSupabaseServerClient(request: Request, cookies: AstroCookies, written?: Set<string>) {
   return createServerClient(requiredEnv("SUPABASE_URL"), requiredEnv("SUPABASE_ANON_KEY"), {
     cookies: {
       getAll() {
@@ -58,6 +62,7 @@ export function createSupabaseServerClient(request: Request, cookies: AstroCooki
       },
       setAll(cookiesToSet) {
         for (const { name, value, options } of cookiesToSet) {
+          written?.add(name);
           cookies.set(name, value, {
             ...options,
             // Supabase's default cookie options don't set httpOnly — this

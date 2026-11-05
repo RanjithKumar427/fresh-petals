@@ -114,7 +114,8 @@ export const AuthService = {
    * Nothing is written for unapproved accounts.
    */
   async login(email: string, password: string, request: Request, cookies: AstroCookies): Promise<AuthResult> {
-    const supabase = createSupabaseServerClient(request, cookies);
+    const written = new Set<string>();
+    const supabase = createSupabaseServerClient(request, cookies, written);
     const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
     if (isOutage(error)) return { ok: false, error: UNAVAILABLE_ERROR };
     if (error || !data.user) return { ok: false, error: GENERIC_LOGIN_ERROR };
@@ -122,6 +123,7 @@ export const AuthService = {
     const row = await AdminUserRepository.findById(data.user.id).catch(() => null);
     if (!isApprovedAdmin(row)) {
       await endSession(supabase, request, cookies);
+      for (const name of written) cookies.delete(name, { path: "/" });
       return { ok: false, error: GENERIC_LOGIN_ERROR };
     }
 

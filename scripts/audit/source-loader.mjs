@@ -17,7 +17,7 @@ export function sourceLoader({ root = process.cwd(), dev = false, mocks = {}, gl
     if (file.endsWith('.json')) return JSON.parse(readFileSync(file, 'utf8'));
     const exports = {};
     cache.set(file, exports);
-    const source = readFileSync(file, 'utf8').replaceAll('import.meta.env.DEV', String(dev)).replaceAll('import.meta.env.PUBLIC_FP_PREVIEW_DRAFTS', 'undefined');
+    const source = readFileSync(file, 'utf8').replaceAll('import.meta.env.DEV', String(dev)).replaceAll('import.meta.env.PROD', String(!dev)).replaceAll('import.meta.env.PUBLIC_FP_PREVIEW_DRAFTS', 'undefined');
     const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true } }).outputText;
     const require = (specifier) => specifier.startsWith('.') ? load(path.resolve(path.dirname(file), specifier)) : bare.has(specifier) ? bare.get(specifier) : createRequire(file)(specifier);
     vm.runInNewContext(code, { exports, require, console, URL, URLSearchParams, AbortSignal, Event, Date, setTimeout, clearTimeout, ...globals }, { filename: file });
