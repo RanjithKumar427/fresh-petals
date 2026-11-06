@@ -16,8 +16,12 @@
 //   - the lifetime is the response's own s-maxage, so a failed purge is
 //     bounded exactly as before.
 //
-// The Cache API is per data centre and does nothing on *.workers.dev
-// (previews), which then simply render every request.
+// The Cache API is per data centre. It does store responses on *.workers.dev
+// (the staging Worker returned x-fp-edge-cache: HIT with Age on 6 Nov 2026),
+// but a workers.dev Worker has no zone to purge, so there an admin save reaches
+// the cached public pages only when their s-maxage runs out (120 s for garland
+// pages and sitemaps). A request with a new query string is a new key and
+// renders fresh.
 
 const SKIP_PREFIXES = ["/admin", "/api/", "/_image", "/media/"];
 

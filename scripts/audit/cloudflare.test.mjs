@@ -3,6 +3,7 @@
 //   node --test scripts/audit/cloudflare.test.mjs
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import sharp from 'sharp';
 import { sourceLoader } from './source-loader.mjs';
 import { withReviewedHashes, policyFirst, metaPolicy, cspProblems, withoutMetaFrameAncestors } from '../build/security-headers.mjs';
@@ -148,4 +149,11 @@ test('Images-binding uploads: JPEG and PNG are re-encoded without asking for ani
     assert.equal(result.image.width, 40);
   }
   assert.deepEqual(calls.map((c) => c.anim === true), [false, false, true]);
+});
+
+test('deleting media waits for the Storage object removal (a Worker drops unawaited requests)', () => {
+  const source = readFileSync('src/server/services/MediaService.ts', 'utf8');
+  const remove = source.slice(source.indexOf('async remove('), source.indexOf('async rename('));
+  assert.match(remove, /await getStorageService\(\)\s*\.delete\(media\.path\)/);
+  assert.doesNotMatch(remove, /^\s*(?!await)\S*getStorageService\(\)\.delete\(media\.path\)\.catch/m);
 });

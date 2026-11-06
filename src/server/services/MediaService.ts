@@ -39,7 +39,13 @@ export const MediaService = {
 
     await MediaRepository.delete(id);
     // Best-effort: a seeded row (path === null) has nothing on disk to remove.
-    if (media.path) getStorageService().delete(media.path).catch(() => {});
+    // Awaited: on a Worker an unawaited request is dropped once the response is
+    // sent, which left every deleted image's Storage object behind on staging.
+    if (media.path) {
+      await getStorageService()
+        .delete(media.path)
+        .catch((error: unknown) => console.warn(`[media] Storage object not removed for deleted media ${id}: ${error instanceof Error ? error.message.slice(0, 160) : "unknown error"}`));
+    }
     return ok(null);
   },
 
