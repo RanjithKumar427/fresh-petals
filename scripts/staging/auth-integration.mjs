@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Staging Auth integration run against the deployed staging Worker. No browser, no email.
 //
-//   node scripts/staging/auth-integration.mjs --env=<staging env file> [--out=<results.json>] [--require=<commit>]
+//   node scripts/staging/auth-integration.mjs --env=<staging env file> [--out=<results.json>] [--require=<commit>] [--db-port=6543]
 //
 // Creates, and removes in `finally` on success or failure:
 //   - one synthetic approved administrator (admin_users row) with a test-only TOTP factor;

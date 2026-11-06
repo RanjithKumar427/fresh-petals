@@ -65,8 +65,14 @@ export function startRun({ envFile, minFreeMb = 1000, deadlineMinutes = 15 }) {
     if (!s.startsWith(`${STAGING_ORIGIN}/`) && !s.startsWith(`${WORKER}/`)) throw new Error("refused non-staging request");
     return fetch(url, { signal: AbortSignal.timeout(45000), ...init });
   };
+  // --db-port=6543 uses the same pooler host in transaction mode. Each query below
+  // opens its own connection, so nothing relies on session state. (On 6 Nov 2026
+  // the session-mode port stopped answering this PC's handshake while 6543 worked.)
+  const dbPort = parseArgs()["db-port"];
+  if (dbPort !== undefined && !["5432", "6543"].includes(String(dbPort))) throw new Error("--db-port must be 5432 or 6543");
+  const databaseUrl = (() => { const u = new URL(values.DATABASE_URL); if (dbPort) u.port = String(dbPort); return u.toString(); })();
   const q = async (sql, params = []) => {
-    const c = new pg.Client({ connectionString: values.DATABASE_URL, ssl: supabasePoolSsl });
+    const c = new pg.Client({ connectionString: databaseUrl, ssl: supabasePoolSsl });
     c.on("error", () => {});
     await c.connect();
     try { return (await c.query(sql, params)).rows; } finally { await c.end().catch(() => {}); }
