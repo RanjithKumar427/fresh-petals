@@ -1,5 +1,16 @@
 # Catalogue publication and discovery (19 October 2026)
 
+**Update (7 Nov 2026, Cloudflare builds).** Each Cloudflare build now also reads the admin's product records (`scripts/build/dashboard-catalogue.mjs` → `src/data/dashboardCatalogue.ts`), and this changes two rules below:
+- A product **added in the admin** gets a storefront entry built from its record: name, descriptions, category, photo (through `/_image`), included items, care, flowers and occasions. It is live with the next build once published; it no longer needs a code entry.
+- For a product with an entry, the dashboard's **name, short and long description, stem count and main photo** now replace the entry's. Three things still keep the entry's value:
+  - deliberate rewrites (`DELIBERATE_CATALOGUE_COPY`);
+  - a reviewed placeholder;
+  - a photo the build can't serve (a local path with no file).
+
+  Category, collections, flowers, included items and care stay with the entry.
+
+The storefront is prebuilt on Cloudflare, so "next deployment" below means the next build, which publishing starts by itself (`docs/cloudflare-migration.md`, *Publishing*). Garlands are prebuilt too, so their changes also appear with the next build. Vercel builds are unchanged.
+
 How a catalogue product (anything that is not a garland design) becomes visible on the storefront, and what the admin can and cannot change without a deployment.
 
 ## Two sources

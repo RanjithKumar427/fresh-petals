@@ -1,160 +1,228 @@
 # Vercel → Cloudflare Workers migration
 
-## Status (2026-11-06)
+## Status (2026-11-07)
 
-**Functionally verified end to end on the staging Worker; not yet cut over.** Production DNS, Supabase, the live domain and Vercel are unchanged. `onlyfreshpetals.in` itself answers **402** (Vercel `DEPLOYMENT_DISABLED`), and the production Supabase project answers **402 `exceed_egress_quota`** until its usage cycle resets on 8 Nov 2026.
+**Staging runs reliably on the free plans, with the storefront prebuilt as static files.** Every workflow verified on staging passes. Automatic publishing is built and tested end to end except its GitHub trigger, which needs a push (see *Publishing*). Production, DNS, the live domain and Vercel are unchanged:
+- `onlyfreshpetals.in` answers **402** (Vercel `DEPLOYMENT_DISABLED`).
+- The production Supabase project answered **402 `exceed_egress_quota`** on 6 Nov; its cycle resets on 8 Nov 2026.
 
-**Blocking decision (owner): Workers Free enforces its 10 ms CPU limit, and an uncached page render costs 35–75 ms.** See *Free hosting* below. Either approve Workers Paid (US$5 a month), or accept prerendering the storefront, which means garland edits appear after a deployment instead of within seconds. Everything else in this document works on either choice.
+Staging setup:
+- Worker `fresh-petals-staging`: `https://fresh-petals-staging.branjith-kumar24-01.workers.dev`. It is noindex, carries no analytics, and refuses visitors' enquiry writes.
+- Supabase project `wyndmywdtacucojvudxg`, holding the 3 Nov production export.
+- Hyperdrive `fresh-petals-staging-db`, origin limit 10.
 
-Staging: Worker `fresh-petals-staging` on `https://fresh-petals-staging.branjith-kumar24-01.workers.dev` (noindex, no analytics, enquiry writes refused), Supabase project `wyndmywdtacucojvudxg` holding the 3 Nov production export, Hyperdrive `fresh-petals-staging-db`.
+### What runs where (since `ea3d212`)
 
-### Verified on staging (synthetic accounts and records, all removed afterwards; original records, photos and the owner's admin account unchanged by digest)
+| Request | Served by | Database |
+|---|---|---|
+| Every storefront page (home, categories, bouquets, garland list and collections, garland pages, product pages, occasions, 59 city pages and 59 city shops, guides, search, sitemaps, robots.txt, the search fragment) with **any** query string | **Static files.** Workers static assets serve them without running the Worker | none |
+| `/studio/*` | static `_redirects` (301) | none |
+| An address with no file: a city's other spelling (301), `/products/<slug>` (404 "not on sale"), anything else (404) | Worker, answered statically before any database scope (`src/server/platform/staticFallback.ts`) | none |
+| Stored photos `/_image` (four widths, WebP) | Worker + Images binding. Cloudflare caches the result; the original is read from Storage once per photo, width and data centre | none |
+| `/garland-enquiry`, `/api/*` (enquiries, delivery check, `/api/publish/state`), `/admin/*` | Worker | yes |
+
+Query-string behaviour moved to the browser:
+- **Filter links:** old `?colour=` and `?occasion=` links show their selection and move to the fragment address (the server 301 did this before).
+- **Garland list:** the `?unavailable=` notice is filled in by the page.
+- **City shop:** `?collection=` and `?page=` work as before (24 a page; an unknown collection shows everything; an out-of-range page shows the last). Without scripts every product is listed on one page.
+
+The edge-cache code (`edgeCache.ts`) now has nothing public to cache, and the zone purge was removed (`GarlandWebsite.ts`).
+
+### Verified on staging
+
+Synthetic accounts and records only, all removed afterwards. Original records, photos and the owner's admin account were unchanged by digest.
 
 | Area | Runner (`scripts/staging/`) | Result | Revision |
 |---|---|---|---|
-| Auth: login, MFA, recovery, reset cookies, logout, non-admin and no-profile refusal, CSRF | `auth-integration.mjs` | 52/52 | `6b5a1c0` |
-| Auth UI in a browser: forms, recovery link cleared from the address bar, autofill hints, cross-site POST, CSP | `browser-auth.mjs` | 25/25 | `a5a1ceb` |
-| Catalogue, uploads (JPEG/PNG/WebP), image replacement and deletion, garland publish/edit/photo/archive, sitemaps, filters, enquiries (keyed window) | `catalogue-lifecycle.mjs` | see the 6 Nov report | `5a4df99` |
-| Catalogue addition, photo edit and removal through a deployment | temporary branch, removed | 15/15 | throwaway commits on `6b5a1c0` |
-| Customer basket → WhatsApp draft → enquiry stored (keyed) / refused for visitors while WhatsApp still opens | `browser-basket.mjs` | 15/15 | app source of `6b5a1c0` |
-| Every sitemap page (387): status, canonical, noindex, no analytics, title, description, JSON-LD; redirects; 404s; WhatsApp links; garland enquiry; image delivery; robots; headers | `public-site.mjs` | 36/37: one page 503 under a 6-way crawl (CPU limit) | app source of `6b5a1c0` |
-| Bot/crawler cost per traffic pattern (Cloudflare analytics) | `traffic-cost.mjs` | below | `ab6e7ed` |
-| Password-reset email: Worker gives one answer for every address; nothing delivered | `email-probe.mjs` | see below | `6b5a1c0` |
-| Rollback: `wrangler rollback <version>` and back | manual drill | about 14 s each way | `6b5a1c0` ↔ `4116662` |
+| Auth: login, MFA, recovery, reset cookies, logout, non-admin and no-profile refusal, CSRF | `auth-integration.mjs` | 52/52 | `8f48c0c` |
+| Auth UI in a browser | `browser-auth.mjs` | 25/25 | `8f48c0c` |
+| Catalogue lifecycle through real builds; details below the table | `catalogue-lifecycle.mjs` | 53/53 | `8f48c0c` |
+| Basket → WhatsApp draft → enquiry stored with the test key; refused for visitors while WhatsApp still opens | `browser-basket.mjs` | 15/15 | `8f48c0c` |
+| All 387 sitemap pages as static files, plus redirects, 404s, WhatsApp links, garland enquiry, photos, robots and headers | `public-site.mjs` | 41/41 | `206f545` |
+| Browser-side query behaviour (city shop collection and page, filter links, unavailable notice, garland filter, search), no script or CSP errors | `browser-static.mjs` | 14/14 | `206f545` |
+| Publishing run the way CI runs it (`--ci-token`, token in the environment) | `publish.mjs` | published, 160 s | `206f545` |
+| Password-reset request: one answer for every address; nothing delivered | `email-probe.mjs` | 8/8 | `ffcafb3` |
+| Rollback `wrangler rollback <version>` and back | manual drill | about 14 s each way | `6b5a1c0` ↔ `4116662` |
 
-Local: `astro check` 0 errors, 0 warnings; `node --test` 162/162 tracked; staging builds pass their output checks.
+The catalogue lifecycle run covered:
+- admin product create, edit, photo replace and publish;
+- uploads (JPEG/PNG/WebP), media delete including the Storage object;
+- three builds, plus a simulated failed build and a no-change check;
+- filters in a browser;
+- keyed enquiries.
 
-### Defects found on staging and fixed (6 Nov 2026)
+Local: `astro check` 0 errors, 0 warnings; `node --test` 166/166 tracked; the staging build passes its output checks (473 pages, 919 files, 97 MB).
 
-- Recovery-link tokens stayed in the address bar in a signed-in browser (`a5a1ceb`).
-- JPEG/PNG uploads refused by the Images binding (`d7b9a03`).
-- Deleted images left their Storage objects (`d25a8b7`).
-- **Bot cost.** Every unknown query parameter forced a fresh render, costing 60–150 KB of database results and 35–75 ms of CPU. `/products/<anything>` read every garland. Fixed in `f08ba5c` and `ee97ccc`: the cache key keeps only the parameters each path reads, an invented garland slug or code costs one indexed lookup, and robots.txt also disallows `/locations/*/shop?` and `/garland-enquiry`.
-- **500s under a crawl.** Supavisor's session mode allows 15 clients, but Hyperdrive opened up to 20 (`EMAXCONNSESSION`). The staging Hyperdrive is now limited to 10, and deploys refuse a config above 10 (`5b07423`). **The production config `fresh-petals-db` still has 20; fixing it is a cutover step.**
-- Worker database errors now log the driver's code and message (`4116662`).
+### Defects found on staging and fixed
 
-### Free hosting (measured on the deployed staging Worker, 6 Nov 2026)
+- **6 Nov:**
+  - Recovery-link tokens were left in the address bar (`a5a1ceb`).
+  - JPEG/PNG uploads were refused (`d7b9a03`).
+  - Deleted images left their Storage objects (`d25a8b7`).
+  - Bot URLs bypassed the cache (`f08ba5c`, `ee97ccc`).
+  - Crawls caused 500s: Hyperdrive opened more connections than Supavisor's 15 clients allow (`5b07423`).
+- **6–7 Nov:**
+  - Uncached renders exceeded Workers Free's 10 ms CPU, so crawls got 503s. Fixed by prerendering the storefront (`ea3d212`).
+  - Static garland pages pointed visitors at the full-size Storage originals. They now use `/_image` (`4c618a2`).
+  - Addresses with no file skipped the middleware. Fixed with a catch-all route (`4c618a2`).
+  - The admin website check read the Worker, not the deployed files. It now reads them through `ASSETS` (`8f48c0c`).
 
-Cloudflare GraphQL analytics (`workersInvocationsAdaptive`, `hyperdriveQueriesAdaptiveGroups`), 25 distinct URLs per pattern, 4 at a time (`traffic-cost.mjs`):
+### Free feasibility (6–7 Nov 2026)
 
-| Pattern | DB results per request, before → after the bot fixes | Worker CPU p50 before → after |
+**Measured on the deployed staging Worker** (Cloudflare GraphQL analytics, `scripts/staging/traffic-cost.mjs`, photo bursts, builds instrumented on this PC):
+
+| What | Before prebuilding (on-demand, 6 Nov) | Now |
 |---|---|---|
-| `/?<unknown param>` | 91 KB → 8 KB | 39 → 1.6 ms |
-| `/categories/garlands?<unknown>` | 61 KB → 25 KB | 62 → 2.2 ms |
-| `/occasions/wedding?<unknown>` | 80 KB → 9 KB | 60 → 3.8 ms |
-| `/locations/<city>?<unknown>` | 146 KB → 20 KB | 76 → 1.9 ms |
-| `/products/<invented slug>` | 106 KB → 0 KB (one indexed lookup) | 59 ms → (too few to report) |
-| old `?colour=` filter link (301) | 0 KB | 6 ms |
-| cache hit | 0 KB | 2–3 ms |
-| full sitemap crawl (213 URLs, 58 Worker renders) | 9.5 MB in total, about 163 KB per render | 35 ms |
+| Page with an invented query string (5 page types × 25) | p50 35–75 ms CPU, 8–146 KB of database results each | **0 Worker requests, 0 queries** |
+| October incident replayed: 200 distinct filter-chip URLs, 8 at a time | 25% refused (`exceededCpu`, HTTP 503) in a smaller burst | **0 Worker requests, 0 queries** |
+| Full sitemap crawl (213 URLs) | 58 renders, 9.5 MB of results, some 503s | **0 Worker requests, 0 queries** |
+| Address with no file, city spelling | full render | Worker, p50 2.5 ms, no database |
+| Stored photos, cold: 60 at 12 at a time / 137 at 24 at a time | — | 0 refusals; p50 11 / 8.8 ms, p99 61 / 47 ms |
+| Publishing check `/api/publish/state` | — | p50 7.3 ms, about 0.1 KB of results |
+| Everything on staging 16:45–19:00 UTC (two lifecycle runs, Auth, admin uploads, photo bursts, traffic tests) | — | 1,313 Worker requests: **0 CPU refusals, 0 errors**; p50 9.2, p90 37, p99 128 ms (sign-in and uploads); 1,862 Hyperdrive queries, 2.1 MB |
+| One build: database bytes received | — | **356 KB** (4 connections) |
+| One build and deploy, from this PC | — | 156–262 s; the first upload of all files took 511 s |
+| A failed build | — | stopped after 81–93 s; nothing deployed, previous release served |
+| Delay after deploy before visitors' plain addresses show the new build | — | 1–13 s |
 
-The remaining "after" cost comes from the first concurrent batch, before the cache fills. Across the six bot patterns, database results fell from 14.0 MB to 2.1 MB.
+**Estimates** (not measured; for a small shop's traffic):
+- **Worker requests.** Only photos, missing addresses, enquiries and the admin run the Worker. A first visit to a garland list loads about 8–24 photos; repeat visits use the browser's year-long cache. 1,000 page views a day is under about 25,000 requests, against 100,000 a day free. The October bot peak (about 56,000 filter-URL renders a day) now costs 0.
+- **CPU.** Page renders no longer happen. Photo requests average about 9–11 ms with occasional peaks. Cloudflare tolerated every burst tried, but sustained heavy photo traffic could still hit the 10 ms limit; that is the remaining risk on the Free plan.
+  - The fix, if it ever shows up, is resizing the photos at build time into static files. It isn't done: it needs a photo cache between builds.
+- **Supabase egress (5 GB a month, about 170 MB a day):**
+  - Builds: 0.36 MB each, so 20 builds a day is about 7 MB.
+  - Scheduled checks: about 0.1 MB a day.
+  - Enquiries and the admin: small.
+  - Photo originals for the resizer: at most about 88 MB per data centre to fill every width once (156 photos × 4 widths × about 140 KB), repeated only when Cloudflare evicts its cached copies.
+  - Visitors' page views read nothing. Comfortably inside the free quota unless photo caches churn across many data centres.
+- **Images.** 156 photos × 4 widths is about 624 unique transformations, against 5,000 a month free; each new photo adds 4.
+- **Static assets.** 919 files and 97 MB, within 20,000 files and 25 MiB per file. Static requests are free and unlimited.
+- **GitHub Actions** (public repository, standard runners at no charge):
+  - The scheduled check runs 96 times a day, about 15 s each.
+  - A publish is about 3–5 minutes.
+  - GitHub suspends scheduled workflows in a public repository after 60 days without repository activity; re-enable it in the Actions tab if that happens.
 
-- **Workers Free, CPU: not demonstrated.** An uncached render costs p50 34–76 ms and p90 78–220 ms, against a 10 ms limit. Isolated renders were tolerated, but bursts were not:
-  - 20 of 80 uncached requests at 4 at a time were refused (`exceededCpu`, HTTP 503), cut off at about 10 ms;
-  - after the fixes, 2 of 255 failed in a 387-page crawl at 6 at a time.
+**Verdict.** Static pages remove every on-demand render, and with them the CPU, request and database risks that broke the free plan. What remains on the Worker is small and measured within limits. **Free hosting is supported by these measurements** for a small shop's traffic. The one residual risk is sustained heavy photo traffic against the 10 ms CPU limit.
 
-  The earlier "P50 1–2 ms" preview figures (3 Nov) were cache hits: workers.dev does cache.
-- **Workers Free, requests:** 100,000 a day. Static pages and assets don't count. A page view costs one request, and the incident's 56,000 filter-link renders a day would now be cached 301s, within the limit.
-- **Hyperdrive Free:** query volume is far below the free allowance, at 4–8 queries per uncached render.
-- **Images:** 156 photos × 4 widths is about 624 unique transformations, against a free allowance of 5,000 a month.
-- **Supabase Free:** egress is 5 GB a month, about 170 MB a day, which covers about 1,000–2,800 uncached renders a day. A full search-engine crawl costs about 10 MB. Database is 28 MB of 500 MB; Storage is 22 MB of 1 GB.
-  - The October incident (2.8 GB a day) came from uncached renders. With the edge cache, cache-key normalisation and robots rules, link-following crawlers now mostly hit the cache.
-  - Adversarial bots that vary real parameters (such as `?page=` on the city shop) can still force renders. After cutover, add the zone's free rate-limiting rule (see the runbook).
-- **Deployments:** built and deployed from this PC with wrangler; about 4–5 minutes and about 1.5 GB of memory per build. No paid service is used.
+### Publishing
 
-**Verdict.** Requests, database size, Storage, Images and deployments fit the free tiers, and Supabase egress fits ordinary traffic. **Workers Free CPU does not:** uncached on-demand pages exceed 10 ms by 4–20×, and Cloudflare refuses some of them in bursts. There are two remedies, both needing the owner's approval:
+A storefront change is a new build: the build reads the database once, then deploys. Nothing runs on this PC.
 
-| Option | Cost | Effect |
+1. **On save** (admin create/edit/status/delete, garland and occasion changes): the Worker calls GitHub `repository_dispatch` (`src/server/services/Publishing.ts`, event `publish-site` for staging, `publish-production` for production). It needs the Worker secret `FP_PUBLISH_GITHUB_TOKEN`; `FP_PUBLISH_REPOSITORY` is already in `wrangler.jsonc`. Without the token, the save says so, and step 2 still publishes.
+2. **Scheduled check** (`.github/workflows/staging-publish.yml`, every 15 minutes): compares the live database's content fingerprint (`GET /api/publish/state`) with the deployed build's (`/_publish/state.json`) and publishes only when they differ. It catches failed requests, failed builds and changes made outside the admin.
+3. **Publish** (`scripts/staging/publish.mjs`, the same script for CI and tests):
+   - build, then output checks, then deploy, then wait until the plain address serves the new build;
+   - if the build or its checks fail, nothing is deployed;
+   - one build at a time, and a newer request replaces a waiting one, so a burst of saves costs at most two builds;
+   - a change saved during a build leaves the fingerprints different, so the next check publishes it.
+
+What the admin sees: a save reports how it will be published, and the editor's website check reports Pending until the deployed file has the saved version, then Live. The bound shown is 25 minutes: one check interval plus a build.
+
+| Change | Reaches the site | Verified (real builds on staging) |
 |---|---|---|
-| **Workers Paid (recommended)** | US$5 a month | 30 s CPU, 10 M requests a month. No code change; live garland publishing stays as it is |
-| Prerender the storefront | free | Static pages never run the Worker or read the database. Garland and occasion edits then appear after a deployment (minutes) instead of a purge (seconds); the Website check and purge logic need rework |
+| Product added in the admin | Next build: a storefront entry from the record (`src/data/dashboardCatalogue.ts`), its uploaded photo through `/_image`, its category page and `sitemap.xml` | live 1 s after the build was served |
+| Edits to name, descriptions, stem count, photo | Next build: the dashboard values replace the catalogue copy, except deliberate rewrites, reviewed placeholders and photos the build can't serve. Category, collections and flowers stay with the catalogue entry | garland rename and photo swap after several saves and one build: visible 13 s after serving; the old photo gone from the page and sitemap |
+| Removal (archive or delete) | Next build: 404 "not on sale", gone from sitemaps, lists and saved baskets | product 404 at 1 s; garland 404 at 2 s |
+| A build that fails | Nothing deployed | previous release kept serving (old name visible) |
+| No change | No build | "up to date" in 3 s |
+| Prices | Never shown: every catalogue product is quote-only | — |
 
-### Publishing process (verified on staging)
+**Activation needs approval outside this work: push and repository settings.** Scheduled and dispatched workflows run only from the default branch.
+1. Push `staging/schema-2026-11-04` and put `.github/workflows/staging-publish.yml` on `main`. `cloudflare.yml` on `main` does not deploy production on push unless `CLOUDFLARE_AUTO_DEPLOY=true`, which is not set.
+2. Repository secret `STAGING_ENV_FILE` (the staging credentials file's four lines) and variable `STAGING_PUBLISH_REF=staging/schema-2026-11-04`. `CLOUDFLARE_API_TOKEN` already exists; it needs Workers Scripts edit, Account Settings read and Hyperdrive read.
+3. For publishing on save: a fine-grained GitHub token for this repository with Contents read and write, stored with `npx wrangler secret put FP_PUBLISH_GITHUB_TOKEN --name fresh-petals-staging`. Without it, the 15-minute check publishes.
 
-| Change | How it reaches the site | Verified |
-|---|---|---|
-| Garland: publish, edit, photo swap, archive (admin) | Live render. On production a save purges the zone cache by tag; on workers.dev the 120 s cache expires (102–113 s measured) | lifecycle runner |
-| Catalogue product: status, occasions (admin) | Next deployment (status); occasions live | lifecycle + publishing test |
-| Catalogue product: new product, photo, copy | An entry in `src/data/productCatalog.ts` (photo under `public/images/`), committed, then a deployment. The deploy's `[catalogue]` report lists what is live | publishing test: added → live in page, list and `sitemap.xml`; photo swapped → new `og:image`; archived → 404, gone from sitemap and list, saved baskets drop it |
-| Prices | Never shown: every catalogue product is quote-only ("Price on WhatsApp") | — |
-| Sitemap images | Only photos reviewed in `src/data/productPhotos.ts` are listed as `image:loc` | — |
-
-Deploy commands:
-- Staging: `node scripts/staging/deploy-worker.mjs --env=<staging env> --apply [--db-port=6543]`.
-- Production: see the runbook.
+Until then, publishing on staging is the same script run by hand: `node scripts/staging/publish.mjs --env=<staging env> [--db-port=6543]`. That is **not** automatic.
 
 ### Email (password-recovery email)
 
-- **Blocked externally.** Supabase's built-in email service sends only to the organisation's team members, about 2 an hour. Reliable recovery email needs a custom SMTP sender (for example Resend's free tier, or Cloudflare Email Sending once the zone is on Cloudflare) with SPF/DKIM records on `onlyfreshpetals.in`. That means a new provider account and DNS records, both owner actions.
-- **What was verified:** the Worker answers identically for known and unknown addresses (no enumeration), and Supabase refused the reserved test address, so nothing was delivered.
-- **Until SMTP exists,** the admin recovers through a service-role recovery link (`auth.admin.generateLink`), opened in a fresh browser profile, followed by TOTP. This is the path the synthetic Auth runs verify, without email.
+**Unresolved: delivery has never been established.** No recovery or invitation email from either project is known to have arrived:
+- On 4 Nov, emailed invitations were accepted by Supabase but did not usably arrive.
+- The 6 Nov probes were refused: `email_address_invalid` for a reserved test address, then `429 over_email_send_rate_limit`.
+
+That rate limit explains the later refusal only. It does **not** explain the earlier accepted messages failing to arrive, and the cause of those is unknown.
+- **What it would take:** a custom SMTP sender with SPF/DKIM on `onlyfreshpetals.in` (an owner account and DNS records), then one real delivery to an inbox the owner checks.
+- **Verified:** the Worker answers the same for every address.
+- **Until then:** the admin recovers with a service-role recovery link (`auth.admin.generateLink`) in a fresh browser profile, plus TOTP. That is the path the synthetic Auth runs verify.
+
+### Production: database choice, final synchronisation, rollback limits
+
+**Proposed database: keep the production Supabase project `hjhmetomcaskrrwkgrbp`**, the system of record, once its restriction lifts. Why:
+- It holds the current records, photos and the owner's admin and MFA, so no data has to move.
+- `ap-northeast-2` is nearer India than staging's `eu-west-1`.
+- With the storefront prebuilt, its egress is builds and photos (above), not page views. The October overrun came from page renders.
+
+**Final synchronisation:** none is needed if production stays the system of record. At cutover:
+1. Take a fresh read-only export (`prod-export.mjs`), encrypt it and copy it off this PC.
+2. Compare it with the 3 Nov export, to see what changed while the site was down.
+
+If production stays restricted after 8 Nov, the alternative is to promote a new project in its own organisation:
+1. Apply migrations `0000`–`0014`.
+2. Restore the fresh export with the staging-proven `restore-data.mjs` path.
+3. Recreate the admin identity.
+
+That is a data move, and it needs its own approval.
+
+**Rollback limits:**
+- A faulty release rolls back with `wrangler rollback` in about 14 s (drilled). It restores that version's code **and** static files.
+- There is **no working fallback host:** Vercel refuses deployments. Removing the Worker's domain returns the site to today's 402.
+- Data recovery is a restore into a new project, never over production.
+- A DNS change back (nameservers) takes hours.
+- Static pages only show what the last successful build read: while publishing is broken, the site stays up but stops changing.
 
 ## Cutover runbook (each step needs the owner's go-ahead; none has been done)
 
-Facts as of 6 Nov 2026:
-- The Cloudflare account holds only `fresh-petals-preview` and `fresh-petals-staging`, and no zones. Account and configuration IDs are in the owner's private cutover report, not in this public repository.
-- Production Hyperdrive `fresh-petals-db` points at the production project's session pooler (port 5432), verify-full, caching off, **origin connection limit 20**.
+Facts as of 7 Nov 2026:
+- The Cloudflare account holds only `fresh-petals-preview` and `fresh-petals-staging`, and no zones. Account and configuration IDs are in the owner's private cutover report.
+- Production Hyperdrive `fresh-petals-db` points at the production session pooler, verify-full, caching off, **origin connection limit 20 (must become 10)**.
 - DNS: GoDaddy nameservers; `@ A 216.198.79.1`; `www CNAME …vercel-dns-017.com`; a Google verification TXT record; no MX.
 
-**0. Decide** Workers Paid (or prerendering), see *Free hosting*.
+1. **Production Supabase:** after the 8 Nov reset, confirm a stored photo URL answers 200, not 402.
+2. **Backup:** run `node <audit>/work/prod-export.mjs <new dir>`, encrypt it and copy it off this PC. Then compare the export with the 3 Nov export.
+3. **Hyperdrive:** `npx wrangler hyperdrive update <fresh-petals-db id> --origin-connection-limit 10`.
+4. **Supabase Auth (production):**
+   - Site URL `https://onlyfreshpetals.in`.
+   - Redirect URLs include `https://onlyfreshpetals.in/admin/reset-password`.
+   - Signups off.
+5. **Code on GitHub:** the push and merge of this branch to `main` (approval). Repository variables `HYPERDRIVE_ID` and `PUBLIC_GA_MEASUREMENT_ID=G-V75FJQ06ZS`; secrets `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` and `DATABASE_URL` already exist.
+6. **First production deploy.** It routes no traffic: `workers_dev` is off and there are no routes. Either:
+   - **Actions:** *Production publish → Run workflow* after step 9, or
+   - **locally:** `HYPERDRIVE_ID=<id> DATABASE_URL=<production pooler URL> PUBLIC_GA_MEASUREMENT_ID=G-V75FJQ06ZS node scripts/cloudflare/deploy.mjs production --confirm-production`.
 
-**1. Wait for production Supabase.** After the 8 Nov reset, check that `https://hjhmetomcaskrrwkgrbp.supabase.co/storage/v1/object/public/media/<a stored path>` answers 200, not 402.
-
-**2. Final backup and data check.**
-- Run the read-only snapshot export: `node <audit>/work/prod-export.mjs <new dir outside the repo>` (one REPEATABLE READ READ ONLY transaction; it doesn't need pg_dump).
-- The 156 photos are on this PC, byte-exact in `public/images/garlands/` of the original checkout.
-- Encrypt the export as on 4 Nov and copy it off this PC.
-- Compare the export's table digests with `report/staging-restore-baseline.json`. Production is the system of record and the Worker will use it directly, so no data copy is needed. The comparison only shows whether anything changed since 3 Nov.
-
-**3. Production Hyperdrive limit:**
-
-```sh
-npx wrangler hyperdrive update <fresh-petals-db id> --origin-connection-limit 10   # id: npx wrangler hyperdrive list
-```
-
-**4. Supabase production Auth settings:**
-- Site URL `https://onlyfreshpetals.in`.
-- Redirect URLs include `https://onlyfreshpetals.in/admin/reset-password`.
-- Signups off.
-- Custom SMTP when available.
-
-**5. Deploy the production Worker.** This routes no traffic: `workers_dev` is off and there are no routes. Run from a clean checkout of the tested branch:
-
-```sh
-HYPERDRIVE_ID=<fresh-petals-db id> DATABASE_URL=<production transaction pooler URL> \
-PUBLIC_GA_MEASUREMENT_ID=G-V75FJQ06ZS node scripts/cloudflare/deploy.mjs production --confirm-production
-npx wrangler secret put SUPABASE_URL --name fresh-petals          # and SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY (production values)
-```
-
-**6. Zone (owner, DNS):**
-- Add `onlyfreshpetals.in` to Cloudflare (Free plan).
-- Import the exported GoDaddy zone, keeping the Google TXT record.
-- Switch GoDaddy's nameservers to the two Cloudflare nameservers, then wait for "Active". The site stays on Vercel's 402 meanwhile.
-
-**7. Attach:**
-- Workers → `fresh-petals` → Domains → add `onlyfreshpetals.in`.
-- Add a proxied `www` record with a Redirect Rule `www.onlyfreshpetals.in/*` → `https://onlyfreshpetals.in/${1}` (301).
-- Set the secrets `CF_ZONE_ID` and `CF_CACHE_PURGE_TOKEN` (Zone → Cache Purge only).
-- Add one rate-limiting rule (free plan) for requests with a query string to `/locations/*/shop`, `/categories/*` and `/occasions/*`.
-
-**8. Verify:**
-- `node scripts/staging/public-site.mjs --production`: every sitemap page indexable, with analytics, canonicals, redirects, WhatsApp and images.
-- Sign in as admin with TOTP; save one garland and confirm its "Website" check reports Live.
-- Send one real WhatsApp enquiry and confirm it reaches the admin inbox.
-- Watch Workers analytics for `exceededCpu` and 5xx.
-- Search Console: resubmit the three sitemaps.
+   Then the secrets: `npx wrangler secret put SUPABASE_URL --name fresh-petals`, and the same for `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` and, for publishing on save, `FP_PUBLISH_GITHUB_TOKEN`.
+7. **Zone (owner, DNS):**
+   - Add `onlyfreshpetals.in` to Cloudflare (Free).
+   - Import the GoDaddy zone, keeping the Google TXT record.
+   - Switch the nameservers and wait for "Active".
+8. **Attach:**
+   - Workers → `fresh-petals` → Domains → `onlyfreshpetals.in`.
+   - A proxied `www` record with a Redirect Rule to the apex (301).
+   - Optionally, one free rate-limiting rule on `/garland-enquiry` and `/api/*`.
+9. **Publishing:** set `PRODUCTION_PUBLISH_ENABLED=true` (and `PRODUCTION_PUBLISH_REF` if needed). From then on the production workflow publishes on save and every 15 minutes.
+10. **Verify:**
+    - `node scripts/staging/public-site.mjs --production`: indexable, analytics, canonicals, redirects, WhatsApp, photos.
+    - Admin sign-in with TOTP; one garland save, its website check moving from Pending to Live.
+    - One real WhatsApp enquiry reaching the inbox.
+    - Workers analytics: no `exceededCpu`.
+    - Search Console: resubmit the three sitemaps.
 
 ### Rollback
 
 | Failure | Action | Status |
 |---|---|---|
-| Faulty release | `npx wrangler rollback <previous version id> --name fresh-petals -y` (`npx wrangler versions list --name fresh-petals` lists them) | **Drilled on staging, 6 Nov:** live within about 14 s each way |
-| Worker or zone unusable | Remove the Worker's custom domain. The domain then serves nothing, which is today's state (402). No other host exists: Vercel refuses deployments, so it is **not** a fallback | — |
-| Data loss or corruption | Restore the step-2 export into a new Supabase project (the `restore-data.mjs` path, proven on staging on 4 Nov), then point a Hyperdrive config at it and redeploy. Never restore over production | Proven on staging |
-| Production Supabase restricted again | Same as data loss, using the staging-proven restore into a separate organisation. This needs a fresh export first | Proven on staging |
+| Faulty release | `npx wrangler versions list --name fresh-petals`, then `npx wrangler rollback <id> --name fresh-petals -y` | Drilled on staging: about 14 s each way |
+| Publishing broken | The site keeps serving the last build; fix and run *Production publish* by hand | Failed-build path tested on staging |
+| Worker or zone unusable | Remove the custom domain (back to today's 402). **No other host:** Vercel is not a fallback | — |
+| Data loss or corruption | Restore the step-2 export into a new Supabase project (`restore-data.mjs` path, proven on staging), point a Hyperdrive config at it, redeploy. Never restore over production | Proven on staging |
 
 **Rollback triggers:** `exceededCpu` or 5xx above 1% over 5 minutes; enquiries not stored; admin sign-in failing; sitemap pages missing; CSP blocking scripts.
+
+## Earlier records (superseded)
+
+The sections below are kept as history. Corrections:
+- workers.dev **does** cache: the Cache API returned HIT. So the 3 Nov "P50 1–2 ms" CPU figures were cache hits.
+- On-demand renders cost 35–75 ms (p50) and were refused in bursts on the Free plan.
+- The on-demand pages, edge cache and zone purge they describe were replaced by the prebuilt storefront on 6–7 Nov.
 
 Status (2026-11-03, superseded above): **tested locally in the Cloudflare runtime against the production baseline; not deployed; free hosting not demonstrated; not ready for cutover.** Production DNS, Vercel, Supabase and the live site are unchanged.
 
