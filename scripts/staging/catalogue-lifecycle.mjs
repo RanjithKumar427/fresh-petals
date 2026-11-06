@@ -233,11 +233,11 @@ try {
       await ctx.route("**/*", (route) => { const u = route.request().url(); return u.startsWith(`${WORKER}/`) || u.startsWith(`${STAGING_ORIGIN}/`) || u.startsWith("data:") ? route.continue() : route.abort(); });
       const p = await ctx.newPage();
       await p.goto(`${WORKER}/categories/garlands?fp_fresh=${tag()}`);
-      const total = await p.locator("[data-garland-filters]:visible").count();
+      const total = await p.locator("[data-garland-card]:visible").count();
       await p.click('[data-garland-filter="lotus"]');
       await sleep(500);
-      const shown = await p.$$eval("[data-garland-filters]", (els) => els.filter((e) => e.offsetParent !== null).map((e) => ({ filters: (e.getAttribute("data-garland-filters") ?? "").split(" "), mine: e.outerHTML.includes(location.pathname) || false, html: e.innerHTML.length })));
-      const mineVisible = await p.$$eval("[data-garland-filters]", (els, slug) => els.filter((e) => e.offsetParent !== null && (e.outerHTML.includes(`/products/${slug}"`) || (e.closest("a")?.getAttribute("href") ?? "").endsWith(slug))).length, gSlug);
+      const shown = await p.$$eval("[data-garland-card]", (els) => els.filter((e) => e.offsetParent !== null).map((e) => ({ filters: (e.getAttribute("data-garland-filters") ?? "").split(" "), mine: e.outerHTML.includes(location.pathname) || false, html: e.innerHTML.length })));
+      const mineVisible = await p.$$eval("[data-garland-card]", (els, slug) => els.filter((e) => e.offsetParent !== null && (e.outerHTML.includes(`/products/${slug}"`) || (e.closest("a")?.getAttribute("href") ?? "").endsWith(slug))).length, gSlug);
       check("filters", "browser: the lotus chip shows only lotus garlands, including this one", shown.length > 0 && shown.length < total && shown.every((x) => x.filters.includes("lotus")) && mineVisible === 1, `${shown.length} of ${total} visible`);
       await p.goto(`${WORKER}/categories/bouquets?colour=red&utm_source=t`);
       check("filters", "browser: an old ?colour= link lands on the fragment address and keeps other parameters", new URL(p.url()).hash.includes("colour=red") && new URL(p.url()).search.includes("utm_source=t"), new URL(p.url()).pathname);
