@@ -35,12 +35,37 @@ export function blockedOnPreview(path: string): boolean {
  * The staging Worker (wrangler.jsonc env.staging) has its own database, Auth
  * project and Storage, so admin and Auth routes work there. Public enquiry
  * submission stays refused: the restored enquiries must not change.
+ *
+ * One controlled exception, for tests only: while the Worker holds the secret
+ * FP_STAGING_INQUIRY_TEST_KEY (at least 32 characters), a request carrying the
+ * same value in STAGING_INQUIRY_TEST_HEADER may log an enquiry. Every other
+ * visitor is still refused. Deleting the secret restores the full refusal
+ * without a deployment.
  */
 export function isStagingDeployment(env: Record<string, string | undefined> = process.env): boolean {
   return env.FP_DEPLOY_ENV === "staging";
 }
 
-export const blockedOnStaging = (path: string) => path === "/api/inquiries";
+export const STAGING_INQUIRY_TEST_HEADER = "x-fp-staging-inquiry-test";
+
+function sameSecret(sent: string, expected: string): boolean {
+  if (sent.length !== expected.length) return false;
+  let difference = 0;
+  for (let i = 0; i < expected.length; i++) difference |= sent.charCodeAt(i) ^ expected.charCodeAt(i);
+  return difference === 0;
+}
+
+export function stagingInquiryTestAllowed(headers: Headers | undefined, env?: Record<string, string | undefined>): boolean {
+  const sent = headers?.get(STAGING_INQUIRY_TEST_HEADER);
+  if (!sent) return false;
+  const settings = env ?? process.env;
+  const key = settings.FP_STAGING_INQUIRY_TEST_KEY ?? "";
+  if (settings.FP_DEPLOY_ENV !== "staging" || key.length < 32) return false;
+  return sameSecret(sent, key);
+}
+
+export const blockedOnStaging = (path: string, headers?: Headers, env?: Record<string, string | undefined>) =>
+  path === "/api/inquiries" && !stagingInquiryTestAllowed(headers, env);
 
 const STAGING_SUPABASE_URL = "https://wyndmywdtacucojvudxg.supabase.co";
 const PRODUCTION_REF = "hjhmetomcaskrrwkgrbp";

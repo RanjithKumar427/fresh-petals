@@ -112,7 +112,7 @@ const handle = async (context: Parameters<MiddlewareHandler>[0], next: Parameter
     return refuse(403, "Not available on preview deployments: they share the production database and sign-in.");
   }
 
-  if (isStagingDeployment() && blockedOnStaging(path)) {
+  if (isStagingDeployment() && blockedOnStaging(path, request.headers)) {
     return refuse(403, "Not available on the staging deployment.");
   }
 

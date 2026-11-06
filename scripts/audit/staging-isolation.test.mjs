@@ -51,6 +51,23 @@ test('staging refuses the enquiry log but not admin; preview keeps refusing admi
   assert.equal(guard.blockedOnPreview('/admin/login'), true);
 });
 
+test('staging enquiry writes open only to a request carrying the configured test key', () => {
+  const key = 'k'.repeat(40);
+  const env = { FP_DEPLOY_ENV: 'staging', FP_STAGING_INQUIRY_TEST_KEY: key };
+  const sent = (value) => new Headers(value === undefined ? {} : { [guard.STAGING_INQUIRY_TEST_HEADER]: value });
+  assert.equal(guard.blockedOnStaging('/api/inquiries', undefined, env), true);
+  assert.equal(guard.blockedOnStaging('/api/inquiries', sent(key), env), false);
+  for (const value of [undefined, '', key.slice(1), key + 'x', 'j'.repeat(40)]) assert.equal(guard.blockedOnStaging('/api/inquiries', sent(value), env), true, String(value));
+  // No secret, a short secret, or a non-staging deployment: always refused, even with a matching header.
+  assert.equal(guard.blockedOnStaging('/api/inquiries', sent(key), { FP_DEPLOY_ENV: 'staging' }), true);
+  assert.equal(guard.blockedOnStaging('/api/inquiries', sent('short'), { FP_DEPLOY_ENV: 'staging', FP_STAGING_INQUIRY_TEST_KEY: 'short' }), true);
+  assert.equal(guard.blockedOnStaging('/api/inquiries', sent(key), { ...env, FP_DEPLOY_ENV: 'preview' }), true);
+  // The preview refusal is a separate check that ignores the key entirely.
+  assert.equal(guard.blockedOnPreview('/api/inquiries'), true);
+  // Other staging paths are unaffected.
+  assert.equal(guard.blockedOnStaging('/admin/login', sent(undefined), env), false);
+});
+
 test('only an explicit staging build changes the media host', () => {
   assert.equal(storedMediaOrigin({ FP_DEPLOY_ENV: 'staging' }), STAGING_MEDIA_ORIGIN);
   for (const env of [{}, { FP_DEPLOY_ENV: 'preview' }, { FP_DEPLOY_ENV: 'production' }]) assert.equal(storedMediaOrigin(env), 'https://hjhmetomcaskrrwkgrbp.supabase.co');
@@ -157,4 +174,19 @@ test('tracked changes, env files and untracked build inputs stop a deploy', () =
   assert.ok(repoFailures({ status: ' M src/middleware.ts', envFiles: [] }).failures.length);
   assert.ok(repoFailures({ status: '?? src/new.ts', envFiles: [] }).failures.length);
   assert.ok(repoFailures({ status: '', envFiles: ['.env.local'] }).failures.length);
+});
+
+test('staging test helpers: RFC 6238 code, cookie removal and attribute checks', async () => {
+  const lib = await import('../staging/test-lib.mjs');
+  // RFC 6238 appendix B, SHA-1, T = 59 s (step 1): 94287082, of which the last 6 digits.
+  assert.equal(lib.totpAt('GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ', 1), '287082');
+  const cookies = lib.parseSetCookie({ headers: { getSetCookie: () => ['sb-abc-auth-token.0=; Max-Age=0; Path=/', 'sb-abc-auth-token=v; Max-Age=34560000; Path=/; HttpOnly; Secure; SameSite=Lax'] } });
+  assert.equal(lib.removes(cookies[0]), true);
+  assert.equal(lib.removes(cookies[1]), false);
+  assert.equal(lib.sessionCookieAttributesOk(cookies[1]), true);
+  assert.equal(lib.describeCookie(cookies[1]).includes('v;'), false);
+  const jar = new Map([['sb-abc-auth-token.0', 'x']]);
+  lib.applyCookies(jar, cookies);
+  assert.deepEqual([...jar.keys()], ['sb-abc-auth-token']);
+  assert.equal(lib.scrub('see https://x.example/a?token=1 and ' + 'k'.repeat(40)), 'see [url] and [long]');
 });
