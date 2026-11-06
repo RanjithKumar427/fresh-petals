@@ -80,9 +80,27 @@ function clearSessionCookies(request: Request, cookies: AstroCookies) {
   }
 }
 
+/**
+ * Cookie names each session client wrote on this response. Supabase's sign-out
+ * removes only cookies the request arrived with, but a refresh, sign-in or
+ * password change earlier in the same request can write new ones (a larger
+ * session is split into new numbered chunks), so endSession removes those too.
+ */
+const writtenBy = new WeakMap<Supabase, Set<string>>();
+
+function sessionClient(request: Request, cookies: AstroCookies): Supabase {
+  const written = new Set<string>();
+  const supabase = createSupabaseServerClient(request, cookies, written);
+  writtenBy.set(supabase, written);
+  return supabase;
+}
+
 async function endSession(supabase: Supabase, request: Request, cookies: AstroCookies) {
   await supabase.auth.signOut({ scope: "local" }).catch(() => {});
   clearSessionCookies(request, cookies);
+  for (const name of writtenBy.get(supabase) ?? []) {
+    if (name.startsWith("sb-")) cookies.delete(name, { path: "/" });
+  }
 }
 
 /**
@@ -114,8 +132,7 @@ export const AuthService = {
    * Nothing is written for unapproved accounts.
    */
   async login(email: string, password: string, request: Request, cookies: AstroCookies): Promise<AuthResult> {
-    const written = new Set<string>();
-    const supabase = createSupabaseServerClient(request, cookies, written);
+    const supabase = sessionClient(request, cookies);
     const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
     if (isOutage(error)) return { ok: false, error: UNAVAILABLE_ERROR };
     if (error || !data.user) return { ok: false, error: GENERIC_LOGIN_ERROR };
@@ -123,7 +140,6 @@ export const AuthService = {
     const row = await AdminUserRepository.findById(data.user.id).catch(() => null);
     if (!isApprovedAdmin(row)) {
       await endSession(supabase, request, cookies);
-      for (const name of written) cookies.delete(name, { path: "/" });
       return { ok: false, error: GENERIC_LOGIN_ERROR };
     }
 
@@ -132,7 +148,7 @@ export const AuthService = {
   },
 
   async logout(request: Request, cookies: AstroCookies): Promise<void> {
-    const supabase = createSupabaseServerClient(request, cookies);
+    const supabase = sessionClient(request, cookies);
     await endSession(supabase, request, cookies);
   },
 
@@ -146,7 +162,7 @@ export const AuthService = {
     const hadSession = hasSessionCookie(request);
     if (!hadSession) return { state: "none", hadSession, unapproved: false };
 
-    const supabase = createSupabaseServerClient(request, cookies);
+    const supabase = sessionClient(request, cookies);
     const identity = await verifiedIdentity(supabase);
     if (!identity) {
       clearSessionCookies(request, cookies);
@@ -291,7 +307,7 @@ export const AuthService = {
    * the session afterwards: the admin signs in again (both factors).
    */
   async updatePassword(password: string, code: string | null, request: Request, cookies: AstroCookies): Promise<AuthResult> {
-    const supabase = createSupabaseServerClient(request, cookies);
+    const supabase = sessionClient(request, cookies);
     const identity = await verifiedIdentity(supabase).catch(() => undefined);
     if (identity === undefined) return { ok: false, error: UNAVAILABLE_ERROR };
     if (!identity) {

@@ -114,6 +114,38 @@ test('a refused sign-in leaves no session cookie; an approved one keeps it', asy
   assert.ok([...approved.jar.values()].filter(Boolean).length > 0);
 });
 
+// A password change on a recovery session: the real Supabase client rewrites the session after
+// updateUser (larger, so chunked into new cookie names) and then ends it in the same response.
+async function changePassword() {
+  const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64url');
+  const token = `${b64({ alg: 'HS256', typ: 'JWT' })}.${b64({ sub: 'user-1', aal: 'aal1', session_id: 's', iat: Math.floor(Date.now() / 1000), exp: Math.floor(Date.now() / 1000) + 3600 })}.c2lnbmF0dXJl`;
+  const user = { id: 'user-1', aud: 'authenticated', email: 'someone@example.com', factors: [] };
+  const session = { access_token: token, token_type: 'bearer', expires_in: 3600, expires_at: Math.floor(Date.now() / 1000) + 3600, refresh_token: 'refresh', user };
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = async (url, init = {}) => {
+    if (String(url).includes('/logout')) return new Response(null, { status: 204 });
+    const body = init.method === 'PUT' ? { ...user, user_metadata: { note: 'x'.repeat(5000) } } : user;
+    return new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } });
+  };
+  try {
+    const { AuthService } = sourceLoader({ mocks: { 'src/server/db/repositories/AdminUserRepository.ts': { AdminUserRepository: {}, isApprovedAdmin: (x) => !!x } }, globals: { process: { env: { SUPABASE_URL: 'https://stub.supabase.co', SUPABASE_ANON_KEY: 'anon' } } } })('src/server/services/AuthService.ts');
+    const jar = new Map();
+    const cookies = { set: (name, value) => jar.set(name, value), delete: (name) => jar.set(name, null) };
+    const request = { headers: new Headers({ cookie: `sb-stub-auth-token=base64-${b64(session)}` }) };
+    const result = await AuthService.updatePassword('a-new-password-for-this-test', null, request, cookies);
+    return { result, jar };
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+}
+
+test('a completed password change leaves no session cookie, including ones written during it', async () => {
+  const { result, jar } = await changePassword();
+  assert.equal(result.ok, true);
+  assert.ok([...jar.keys()].some((n) => /^sb-stub-auth-token\.\d+$/.test(n)), 'the change wrote chunked cookies, so this exercises the cleanup');
+  assert.deepEqual([...jar].filter(([n, v]) => n.startsWith('sb-') && v), [], 'every session cookie is deleted');
+});
+
 test('only the staging Worker configuration may deploy', () => {
   assert.deepEqual(workerConfigFailures(worker, 'stg', 'prod'), []);
   for (const change of [{ name: 'fresh-petals-preview' }, { name: 'fresh-petals' }, { workers_dev: false }, { routes: ['x'] }, { hyperdrive: [{ binding: 'HYPERDRIVE', id: 'prod' }] }, { hyperdrive: [] }, { observability: { enabled: true } }, { images: undefined }, { vars: { ...worker.vars, FP_DEPLOY_ENV: 'preview' } }, { vars: { ...worker.vars, SUPABASE_URL: 'https://hjhmetomcaskrrwkgrbp.supabase.co' } }])

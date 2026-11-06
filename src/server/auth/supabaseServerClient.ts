@@ -47,8 +47,8 @@ function requiredEnv(name: string): string {
  * a normal request — see scripts/link-admin-identity.mjs.
  *
  * `written` collects the name of every cookie set on this response. Supabase's
- * sign-out removes only cookies the request arrived with, so a caller ending a
- * session it started in this same request must delete these itself.
+ * sign-out removes only cookies the request arrived with, so AuthService's
+ * endSession also deletes these (see sessionClient there).
  */
 export function createSupabaseServerClient(request: Request, cookies: AstroCookies, written?: Set<string>) {
   return createServerClient(requiredEnv("SUPABASE_URL"), requiredEnv("SUPABASE_ANON_KEY"), {
