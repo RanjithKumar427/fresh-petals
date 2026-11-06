@@ -23,6 +23,12 @@ import type { APIRoute } from "astro";
 // 2026: about 56k such renders a day on /categories/bouquets alone. Each
 // filtered page already declares the unfiltered path as its canonical, so
 // nothing indexable is lost; the unfiltered pages stay crawlable.
+//
+// For the same reason the city shop's collection and page views
+// (/locations/<city>/shop?collection=…&page=…: 59 cities, noindex already)
+// and /garland-enquiry (a no-store redirect to WhatsApp behind every garland
+// "Enquire" link) are disallowed. Each is rendered or looked up on request and
+// none is a page to index; the plain /locations/<city>/shop stays crawlable.
 export const prerender = true;
 
 export const GET: APIRoute = ({ site }) => {
@@ -38,6 +44,8 @@ Disallow: /admin
 Disallow: /api
 Disallow: /categories/*?
 Disallow: /occasions/*?
+Disallow: /locations/*/shop?
+Disallow: /garland-enquiry
 
 Sitemap: ${sitemapUrl}
 Sitemap: ${garlandSitemapUrl}

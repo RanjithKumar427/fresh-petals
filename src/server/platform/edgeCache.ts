@@ -8,9 +8,10 @@
 //   - only GET/HEAD to non-admin, non-API paths, with no request cookies
 //     that could personalise the page, and only responses that opt in with
 //     `s-maxage` and carry no Set-Cookie;
-//   - the key is the full URL (path and query string), as on Vercel, so
-//     filters and pagination keep their own copies (only advertising/analytics
-//     parameters such as utm_source and gclid are left out of the key);
+//   - the key is the path plus the query parameters a public page reads
+//     (KEY_PARAMS below), so filters and pagination keep their own copies
+//     while parameters no page reads (utm_source, gclid, a crawler's ?ref=…)
+//     share one copy;
 //   - `Vercel-Cache-Tag` is translated to Cloudflare's `Cache-Tag`, so an
 //     admin save purges the same pages (refreshWebsite → zone purge by tag);
 //   - the lifetime is the response's own s-maxage, so a failed purge is
@@ -41,16 +42,25 @@ export function edgeCacheable(request: Request, path: string): boolean {
 }
 
 /**
- * Advertising/analytics parameters that no page reads. Each distinct value
- * would otherwise force a fresh render and database read, so they are left out
- * of the cache key only (the page itself still receives the full URL).
- * Filters, pagination and every other parameter stay part of the key.
+ * The only query parameters an on-demand public response reads on the server:
+ * filter groups and intent (src/utils/shopFilters.ts), the city shop's
+ * collection and page, the garland list's "unavailable" notice, the garland
+ * section's view and occasion, and the journey/enquiry context. Anything else
+ * (advertising tags such as utm_source or gclid, a crawler's invented
+ * ?ref=…, a cache-buster) cannot change the page, so it is left out of the
+ * cache key: on 6 Nov 2026 each distinct unknown parameter on staging forced a
+ * fresh render costing 60–150 KB of database results and 35–75 ms of CPU.
+ * The page itself still receives the full URL. Kept parameters are sorted, so
+ * their order doesn't make a new key either. Add a name here whenever a public
+ * on-demand page starts reading a new parameter.
  */
-const TRACKING_PARAMS = /^(utm_[a-z_]+|gclid|gbraid|wbraid|dclid|fbclid|msclkid|igshid|mc_cid|mc_eid|_ga|_gl|srsltid)$/i;
+const KEY_PARAMS = new Set(["occasion", "budget", "colour", "for", "collection", "page", "unavailable", "occ", "from", "city", "code", "qty", "opt"]);
 
 export function cacheKeyUrl(url: string): string {
   const parsed = new URL(url);
-  for (const name of [...parsed.searchParams.keys()]) if (TRACKING_PARAMS.test(name)) parsed.searchParams.delete(name);
+  const kept = [...parsed.searchParams].filter(([name]) => KEY_PARAMS.has(name));
+  kept.sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
+  parsed.search = new URLSearchParams(kept).toString();
   return parsed.toString();
 }
 
@@ -62,9 +72,9 @@ function cacheKey(request: Request): Request {
  * Redirects can echo the query (an old filter link keeps its utm_source in
  * Location, src/utils/shopFilters.ts), so a redirect is shared only between
  * requests whose URLs are identical: never stored for, or served to, a
- * request that carries tracking parameters.
+ * request that carries a parameter the key leaves out (or a different order).
  */
-const hasTrackingParams = (url: string) => cacheKeyUrl(url) !== new URL(url).toString();
+const hasUnkeyedParams = (url: string) => cacheKeyUrl(url) !== new URL(url).toString();
 const isRedirect = (status: number) => status >= 300 && status < 400;
 
 function defaultCache(): Cache | undefined {
@@ -77,7 +87,7 @@ export async function edgeCacheMatch(request: Request): Promise<Response | undef
   if (!cache) return undefined;
   const hit = await cache.match(cacheKey(request));
   if (!hit) return undefined;
-  if (isRedirect(hit.status) && hasTrackingParams(request.url)) return undefined;
+  if (isRedirect(hit.status) && hasUnkeyedParams(request.url)) return undefined;
   // The stored copy's own lifetime is enforced here too, whatever the runtime
   // does with Cache-Control, so a failed purge stays bounded by s-maxage.
   const storedAt = Number(hit.headers.get("x-fp-stored-at"));
@@ -107,7 +117,7 @@ export function edgeCacheStore(request: Request, response: Response, waitUntil?:
     ttl > 0 &&
     !response.headers.has("set-cookie") &&
     [200, 301, 308, 404, 410].includes(response.status) &&
-    !(isRedirect(response.status) && hasTrackingParams(request.url));
+    !(isRedirect(response.status) && hasUnkeyedParams(request.url));
   const out = new Response(response.body, response);
   out.headers.delete("vercel-cache-tag");
   const cache = defaultCache();

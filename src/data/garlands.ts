@@ -28,7 +28,7 @@ import drafts from "./garlandDrafts.json";
 import type { Product } from "./productCatalog";
 import { QUOTE_ONLY_PRICE_LABEL } from "../shared/quoteOnly";
 import { GARLAND_FILTER_LABELS, GARLAND_PREVIEW, formatGarlandPrice, isCartGarland, isListedGarland, type GarlandDesign, type GarlandOption } from "./garlandRules";
-import { loadGarlandRecords, type GarlandRecord } from "../server/services/GarlandCatalogue";
+import { garlandRecordExists, loadGarlandRecords, type GarlandRecord } from "../server/services/GarlandCatalogue";
 
 export * from "./garlandRules";
 
@@ -170,13 +170,25 @@ export async function loadGarlands({ fresh = true }: { fresh?: boolean } = {}): 
   return (await mergedDesigns(fresh)).filter(isVisible).map((design) => ({ ...toProduct(design), version: design.updatedAt ?? null }));
 }
 
+/**
+ * Cheap gate before loadGarlands() for a slug or code taken from a request:
+ * true when a bundled design or a stored record has it. Anything else cannot
+ * be a visible garland, so the full read is skipped.
+ */
+export async function garlandMayExist(match: { slug: string } | { code: string }): Promise<boolean> {
+  if (catalogueDesigns.some((design) => ("slug" in match ? design.slug === match.slug : design.code === match.code))) return true;
+  return garlandRecordExists(match);
+}
+
 /** One visible garland by its URL slug, or null when it doesn't exist or isn't public. */
 export async function findGarland(slug: string): Promise<(GarlandProduct & { version: string | null }) | null> {
+  if (!(await garlandMayExist({ slug }))) return null;
   return (await loadGarlands()).find((product) => product.slug === slug) ?? null;
 }
 
 /** One visible garland by its design code (fresh), or null. */
 export async function findGarlandByCode(code: string): Promise<(GarlandProduct & { version: string | null }) | null> {
+  if (!(await garlandMayExist({ code }))) return null;
   return (await loadGarlands()).find((product) => product.garland.code === code) ?? null;
 }
 

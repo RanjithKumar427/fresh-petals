@@ -8,7 +8,7 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import GarlandProductMain from "../../components/GarlandProductMain.astro";
 import GarlandCard from "../../components/GarlandCard.astro";
-import { isListedGarland, loadGarlands } from "../../data/garlands";
+import { garlandMayExist, isListedGarland, loadGarlands } from "../../data/garlands";
 import { TaxonomyService } from "../../server/services/TaxonomyService";
 import { garlandCacheHeaders } from "../../server/services/GarlandWebsite";
 import { GARLANDS_PATH, GARLAND_COLLECTIONS, GARLAND_GUIDE_PATH } from "../../data/garlandCollections";
@@ -19,7 +19,9 @@ export const prerender = false;
 for (const [name, value] of Object.entries(garlandCacheHeaders())) Astro.response.headers.set(name, value);
 
 const slug = Astro.params.garland ?? "";
-const garlands = /^[a-z0-9-]+$/.test(slug) ? await loadGarlands() : [];
+// Every garland is read only when the slug can be one (a crawler's invented
+// /products/<anything> costs one indexed lookup, not the whole garland list).
+const garlands = /^[a-z0-9-]+$/.test(slug) && (await garlandMayExist({ slug })) ? await loadGarlands() : [];
 const product = garlands.find((item) => item.slug === slug) ?? null;
 if (!product) Astro.response.status = 404;
 // A catalogue product that isn't published in this deployment (a draft or an

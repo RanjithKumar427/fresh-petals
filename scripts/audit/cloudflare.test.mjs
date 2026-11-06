@@ -77,6 +77,14 @@ test('edge cache: only anonymous public GET/HEAD responses that opt in with s-ma
   assert.equal(await edge.edgeCacheMatch(req('/occasions/birthday?budget=b')), undefined, 'query string is part of the key');
   assert.equal((await edge.edgeCacheMatch(req('/occasions/birthday?budget=a&utm_source=x&gclid=1'))).headers.get('x-fp-edge-cache'), 'HIT', 'tracking parameters are not part of the key');
   assert.equal(edge.cacheKeyUrl('https://x.in/p?page=2&utm_medium=a&fbclid=b'), 'https://x.in/p?page=2');
+  // Parameters no public page reads share one copy (a crawler's ?ref=…, a cache-buster), and order doesn't matter.
+  assert.equal(edge.cacheKeyUrl('https://x.in/p?ref_1a2b=1&x=9'), 'https://x.in/p');
+  assert.equal(edge.cacheKeyUrl('https://x.in/s?page=2&collection=roses&junk=1'), 'https://x.in/s?collection=roses&page=2');
+  assert.equal(edge.cacheKeyUrl('https://x.in/s?collection=roses&page=2'), edge.cacheKeyUrl('https://x.in/s?page=2&collection=roses'));
+  for (const name of ['occasion', 'budget', 'colour', 'for', 'collection', 'page', 'unavailable', 'occ', 'from', 'city', 'code', 'qty', 'opt']) {
+    assert.equal(new URL(edge.cacheKeyUrl(`https://x.in/p?${name}=v`)).searchParams.get(name), 'v', `${name} stays in the key`);
+  }
+  assert.equal((await edge.edgeCacheMatch(req('/occasions/birthday?budget=a&cachebuster=123'))).headers.get('x-fp-edge-cache'), 'HIT', 'an unread parameter is not part of the key');
 
   // A redirect echoing utm_source is never shared under the stripped key.
   const redirect = (loc) => new Response(null, { status: 301, headers: { location: loc, 'cache-control': 'public, max-age=0, s-maxage=120' } });
@@ -87,6 +95,7 @@ test('edge cache: only anonymous public GET/HEAD responses that opt in with s-ma
   await new Promise((r) => setTimeout(r, 0));
   assert.equal((await edge.edgeCacheMatch(req('/categories/bouquets?colour=red'))).status, 301);
   assert.equal(await edge.edgeCacheMatch(req('/categories/bouquets?colour=red&utm_source=y')), undefined);
+  assert.equal(await edge.edgeCacheMatch(req('/categories/bouquets?colour=red&ref=z')), undefined, 'nor to a request with any unread parameter');
 
   edge.edgeCacheStore(req('/a'), new Response('x', { headers: { 'cache-control': 'public, max-age=0, s-maxage=60', 'set-cookie': 'a=b' } }));
   edge.edgeCacheStore(req('/b'), new Response('x', { headers: { 'cache-control': 'private, no-store' } }));
@@ -156,4 +165,22 @@ test('deleting media waits for the Storage object removal (a Worker drops unawai
   const remove = source.slice(source.indexOf('async remove('), source.indexOf('async rename('));
   assert.match(remove, /await getStorageService\(\)\s*\.delete\(media\.path\)/);
   assert.doesNotMatch(remove, /^\s*(?!await)\S*getStorageService\(\)\.delete\(media\.path\)\.catch/m);
+});
+
+test('invented garland slugs and codes are refused without reading every garland', () => {
+  const route = readFileSync('src/pages/products/[...garland].astro', 'utf8');
+  assert.match(route, /await garlandMayExist\(\{ slug \}\)\) \? await loadGarlands\(\)/);
+  const data = readFileSync('src/data/garlands.ts', 'utf8');
+  for (const fn of ['findGarland(', 'findGarlandByCode(']) {
+    const body = data.slice(data.indexOf(`export async function ${fn}`), data.indexOf('}', data.indexOf(`export async function ${fn}`)) + 200);
+    assert.match(body, /if \(!\(await garlandMayExist\(\{ (slug|code) \}\)\)\) return null;/, fn);
+  }
+  const catalogue = readFileSync('src/server/services/GarlandCatalogue.ts', 'utf8');
+  assert.match(catalogue, /export async function garlandRecordExists[\s\S]*?\.limit\(1\)/);
+});
+
+test('robots.txt keeps crawlers off parameterised city shop views and the enquiry redirect', () => {
+  const robots = readFileSync('src/pages/robots.txt.ts', 'utf8');
+  for (const rule of ['Disallow: /locations/*/shop?', 'Disallow: /garland-enquiry', 'Disallow: /categories/*?', 'Disallow: /occasions/*?']) assert(robots.includes(rule), rule);
+  assert(!/Disallow: \/locations\/\*\/shop$/m.test(robots), 'the plain city shop stays crawlable');
 });

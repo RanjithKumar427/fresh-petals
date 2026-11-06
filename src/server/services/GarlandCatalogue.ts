@@ -147,6 +147,28 @@ async function load(): Promise<Map<string, GarlandRecord>> {
   return map;
 }
 
+/**
+ * Whether a garland record with this URL slug or design code exists: one
+ * indexed row, no details. Lets a request for an invented address (a
+ * crawler's /products/<anything>, an enquiry link with a made-up code) answer
+ * 404 without reading every garland (about 100 KB of results per request on
+ * staging, 6 Nov 2026).
+ */
+export async function garlandRecordExists(match: { slug: string } | { code: string }): Promise<boolean> {
+  try {
+    const rows = await getDb()
+      .select({ id: products.id })
+      .from(garlandDetails)
+      .innerJoin(products, eq(products.id, garlandDetails.productId))
+      .where("slug" in match ? eq(products.slug, match.slug) : eq(garlandDetails.designCode, match.code))
+      .limit(1);
+    return rows.length > 0;
+  } catch (error) {
+    if (isMissingGarlandTables(error)) return false;
+    throw error;
+  }
+}
+
 let cache: Promise<Map<string, GarlandRecord>> | null = null;
 
 /**
