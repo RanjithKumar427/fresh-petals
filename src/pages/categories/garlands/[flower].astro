@@ -1,33 +1,34 @@
 ---
 // Flower-specific garland collections: /categories/garlands/rose, /lotus and
-// /tuberose (src/data/garlandCollections.ts). Rendered on request from the
-// same live garland data, cache tag and admin purge as /categories/garlands,
-// so publishing or unpublishing a design changes the collection, its count
-// and its sitemap entry together. Only the matching designs are in the HTML.
+// /tuberose (src/data/garlandCollections.ts). Prebuilt from the same garland
+// data as /categories/garlands, so publishing or unpublishing a design changes
+// the collection, its count and its sitemap entry together with the next
+// build (src/server/services/Publishing.ts). Only the matching designs are in
+// the HTML.
 //
-// A collection with no public design answers 404 (noindex) and is left out
-// of the sitemap and of every collection link. Query variants canonicalise
+// A collection with no public design is not built (so it answers 404) and is
+// left out of the sitemap and of every collection link. Query variants canonicalise
 // to this path (BaseLayout).
 import BaseLayout from "../../../layouts/BaseLayout.astro";
 import GarlandCard from "../../../components/GarlandCard.astro";
 import GarlandCollectionLinks from "../../../components/GarlandCollectionLinks.astro";
 import LandingDetails from "../../../components/LandingDetails.astro";
 import { isListedGarland, loadGarlands } from "../../../data/garlands";
-import { GARLANDS_PATH, GARLAND_CONFIRM_POINTS, GARLAND_COVERAGE, GARLAND_GUIDE_PATH, GARLAND_PILOT_ANCHOR, garlandCollection, pilotGarlands, populatedCollections } from "../../../data/garlandCollections";
-import { garlandCacheHeaders } from "../../../server/services/GarlandWebsite";
+import { GARLANDS_PATH, GARLAND_CONFIRM_POINTS, GARLAND_COVERAGE, GARLAND_GUIDE_PATH, GARLAND_PILOT_ANCHOR, GARLAND_COLLECTIONS, garlandCollection, pilotGarlands, populatedCollections } from "../../../data/garlandCollections";
 
-export const prerender = false;
+export const prerender = true; // static file: served without running the Worker
 
-const collection = garlandCollection(Astro.params.flower ?? "");
-if (!collection) return Astro.rewrite("/404");
+export async function getStaticPaths() {
+  const all = await loadGarlands();
+  return GARLAND_COLLECTIONS.filter((entry) => all.some((product) => product.garland.filters.includes(entry.key))).map((entry) => ({ params: { flower: entry.path.split("/").pop() } }));
+}
 
-for (const [name, value] of Object.entries(garlandCacheHeaders())) Astro.response.headers.set(name, value);
+const collection = garlandCollection(Astro.params.flower ?? "")!;
 
 const all = await loadGarlands();
 const garlands = all.filter((product) => product.garland.filters.includes(collection.key));
 const drafts = garlands.some((product) => !isListedGarland(product.garland));
 const empty = garlands.length === 0;
-if (empty) Astro.response.status = 404;
 const noindex = empty || drafts;
 const others = populatedCollections(all).filter((entry) => entry.collection.key !== collection.key);
 // This collection's designs in the guide's six-design pilot, when public.

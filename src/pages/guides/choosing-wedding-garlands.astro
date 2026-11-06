@@ -12,18 +12,15 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { garlandPhotoSrcset, isListedGarland, loadGarlands, type GarlandProduct } from "../../data/garlands";
 import { GARLANDS_PATH, GARLAND_CONFIRM_POINTS, GARLAND_COVERAGE, GARLAND_GUIDE_PATH, GARLAND_PILOT_ANCHOR, garlandCollection, garlandEvidence, pilotGarlands, populatedCollections } from "../../data/garlandCollections";
-import { garlandCacheHeaders } from "../../server/services/GarlandWebsite";
 import { whatsappLink } from "../../config/storefront";
 import { garlandEnquiryHref } from "../../utils/garlandEnquiry";
 import { GARLAND_GUIDE, GUIDES, GUIDES_PATH } from "../../data/guides";
 import { organizationRef, publisherNode } from "../../data/businessProfile";
 
-export const prerender = false;
-for (const [name, value] of Object.entries(garlandCacheHeaders())) Astro.response.headers.set(name, value);
+export const prerender = true; // static file: served without running the Worker; published by a build (src/server/services/Publishing.ts)
 
 const garlands = (await loadGarlands()).filter((product) => isListedGarland(product.garland));
 const noindex = garlands.length === 0;
-if (noindex) Astro.response.status = 404;
 const byCode = new Map(garlands.map((product) => [product.garland.code, product]));
 const counts = new Map<string, number>(populatedCollections(garlands).map((entry) => [entry.collection.key, entry.count]));
 

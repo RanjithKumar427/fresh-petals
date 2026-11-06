@@ -1,11 +1,10 @@
 import type { APIRoute } from "astro";
 import { isListedGarland, loadGarlands } from "../data/garlands";
-import { garlandCacheHeaders } from "../server/services/GarlandWebsite";
 import { GARLANDS_PATH, GARLAND_GUIDE_PATH, populatedCollections } from "../data/garlandCollections";
 import { IMAGE_SITEMAP_NS, garlandImages, urlEntry } from "../data/imageSitemap";
 
-// The garland part of the sitemap, rendered on request so a garland published
-// or unpublished in the admin is added or removed without a deployment.
+// The garland part of the sitemap, prebuilt with the garland pages, so a garland
+// published or unpublished in the admin is added or removed by the next build.
 // Listed next to sitemap.xml in robots.txt. Only public designs (never a
 // local-preview draft) are included, with the pages that list them: the
 // garland listing, each flower collection that currently has a design, and
@@ -13,7 +12,7 @@ import { IMAGE_SITEMAP_NS, garlandImages, urlEntry } from "../data/imageSitemap"
 // for a listing the latest among the designs it shows. Each design's entry
 // also lists its main photograph and confirmed gallery (never related-view
 // candidates), so a photograph changed in the admin follows the same save.
-export const prerender = false;
+export const prerender = true; // static file, published by a build (src/server/services/Publishing.ts)
 
 export const GET: APIRoute = async ({ site, url }) => {
   const garlands = (await loadGarlands()).filter((product) => isListedGarland(product.garland));
@@ -37,6 +36,6 @@ ${entries}
 `;
 
   return new Response(body, {
-    headers: { "content-type": "application/xml; charset=utf-8", ...garlandCacheHeaders() },
+    headers: { "content-type": "application/xml; charset=utf-8" },
   });
 };

@@ -4,6 +4,7 @@ import { json } from "../../../../server/http/json";
 import { BODY_LIMITS, jsonBody } from "../../../../server/http/body";
 import { garlandWebsiteChange } from "../../../../server/services/GarlandWebsite";
 import { occasionWebsiteChange } from "../../../../server/services/OccasionWebsite";
+import { publishAfterChange } from "../../../../server/services/Publishing";
 
 export const prerender = false;
 
@@ -32,7 +33,9 @@ export const PATCH: APIRoute = async ({ params, request }) => {
   // Bouquets: when "Suitable occasions" changed, refresh the affected live
   // occasion pages (old and new memberships) and say so.
   const occasions = await occasionWebsiteChange(before, result.data);
-  return json({ ...result, ...(website ? { website } : {}), ...(occasions ? { occasions } : {}) }, 200);
+  // Everything else the storefront shows from this record is published by the next build.
+  const publication = await publishAfterChange(`product ${id} saved`, website, occasions);
+  return json({ ...result, ...(website ? { website } : {}), ...(occasions ? { occasions } : {}), ...(publication ? { publication } : {}) }, 200);
 };
 
 export const DELETE: APIRoute = async ({ params }) => {
@@ -40,5 +43,7 @@ export const DELETE: APIRoute = async ({ params }) => {
   if (!Number.isInteger(id)) return json({ ok: false, error: "Invalid id." }, 400);
 
   const result = await ProductService.remove(id);
-  return json(result, result.ok ? 200 : 400);
+  if (!result.ok) return json(result, 400);
+  const publication = await publishAfterChange(`product ${id} deleted`);
+  return json({ ...result, ...(publication ? { publication } : {}) }, 200);
 };

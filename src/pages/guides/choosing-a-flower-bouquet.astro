@@ -16,10 +16,8 @@ import { bouquetRange } from "../../data/catalogueRange";
 import { loadPublicCatalogue } from "../../server/services/PublicCatalogue";
 import { BOUQUET_GROUP_GUIDANCE, bouquetLine, bouquetPhotoAlt, bouquetPresentation, isVaseArrangement, presentationKind } from "../../data/collectionGuidance";
 import { loadOccasionMembership } from "../../server/services/OccasionMembership";
-import { OCCASION_INDEX_TAG, occasionCacheHeaders, occasionTag } from "../../server/services/GarlandWebsite";
 
-export const prerender = false;
-for (const [name, value] of Object.entries(occasionCacheHeaders([OCCASION_INDEX_TAG, occasionTag("birthday"), occasionTag("anniversary")]))) Astro.response.headers.set(name, value);
+export const prerender = true; // static file: served without running the Worker; published by a build (src/server/services/Publishing.ts)
 
 // The guide's samples are the featured bouquets (an editorial selection);
 // the occasion lists are the full assigned sets the occasion pages show.

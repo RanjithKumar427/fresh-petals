@@ -4,11 +4,10 @@
 // indexed; links back to the pages people usually want.
 import BaseLayout from "../layouts/BaseLayout.astro";
 
-// On demand, like the routes that rewrite to it (a prebuilt page can't be the
-// target of a rewrite); the CDN keeps a copy briefly.
-export const prerender = false;
-Astro.response.status = 404;
-Astro.response.headers.set("Cache-Control", "public, max-age=0, s-maxage=300");
+// Prebuilt. On Cloudflare the Worker answers every address that has no
+// static file with this file and status 404 (src/middleware.ts,
+// staticNotFound), without rendering or reading the database.
+export const prerender = true;
 ---
 
 <BaseLayout title="Page not found | Fresh Petals" description="This page isn't available." showCategoryCarousel={false} noindex={true}>

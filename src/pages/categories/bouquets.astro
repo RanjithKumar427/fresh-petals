@@ -14,17 +14,13 @@ import { bouquetFlowerGroups, bouquetRange } from "../../data/catalogueRange";
 import { loadOccasionMembership } from "../../server/services/OccasionMembership";
 import { loadAuthoritativePrices, withAuthoritativePrice } from "../../server/services/ProductPricing";
 import { loadPublicCatalogue } from "../../server/services/PublicCatalogue";
-import { OCCASION_INDEX_TAG, occasionCacheHeaders } from "../../server/services/GarlandWebsite";
-import { filterQueryRedirect, filterRedirectResponse } from "../../utils/shopFilters";
 
-export const prerender = false;
+export const prerender = true; // static file: served without running the Worker; published by a build (src/server/services/Publishing.ts)
 
-// An older ?occasion=…&colour=… link: send it to the same view at its
-// fragment address before any rendering (src/utils/shopFilters.ts).
-const filterRedirect = filterQueryRedirect(Astro.url);
-if (filterRedirect) return filterRedirectResponse(filterRedirect);
+// An older ?occasion=…&colour=… link gets this same static file; the filter
+// script shows that selection and moves it to the fragment address
+// (src/components/occasion/ShopFilters.astro).
 
-for (const [name, value] of Object.entries(occasionCacheHeaders([OCCASION_INDEX_TAG]))) Astro.response.headers.set(name, value);
 
 const [priceMap, publicCatalogue] = await Promise.all([loadAuthoritativePrices(), loadPublicCatalogue()]);
 const bouquets = bouquetRange(publicCatalogue).map((product) => withAuthoritativePrice(product, priceMap));

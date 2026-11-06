@@ -9,6 +9,7 @@
 // code ahead of the migration can't break a build.
 import { asc, eq, inArray } from "drizzle-orm";
 import { getDb } from "../db/postgres/client";
+import { buildMemo } from "../platform/buildMemo";
 import {
   garlandDetails,
   media,
@@ -177,7 +178,7 @@ let cache: Promise<Map<string, GarlandRecord>> | null = null;
  * serves an outdated copy. `fresh: false` reuses one read per process.
  */
 export function loadGarlandRecords({ fresh = true }: { fresh?: boolean } = {}): Promise<Map<string, GarlandRecord>> {
-  if (fresh) return load();
+  if (fresh) return buildMemo("garland-records", load);
   if (!cache) cache = load();
   return cache;
 }

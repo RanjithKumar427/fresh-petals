@@ -1,3 +1,5 @@
+import { withDashboardRecords } from "./dashboardCatalogue";
+
 export type PriceType = "fixed" | "from" | "market" | "quote";
 
 export type Product = {
@@ -2456,4 +2458,6 @@ const baseCatalog: Product[] = [
 // Garlands are not in this static catalogue: they are managed in the admin
 // dashboard and rendered live on request (src/data/garlands.ts), so admin
 // changes reach the website without a deployment.
-export const productCatalog: Product[] = baseCatalog;
+// The admin's records laid over these entries, and products added in the admin
+// (src/data/dashboardCatalogue.ts; read by each Cloudflare build).
+export const productCatalog: Product[] = withDashboardRecords(baseCatalog);

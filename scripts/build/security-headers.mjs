@@ -187,9 +187,16 @@ export function applyCloudflareHeaders(staticDir) {
   // The preview and staging Workers are built separately and must never be indexed.
   const preview = process.env.FP_DEPLOY_ENV === 'preview' || process.env.FP_DEPLOY_ENV === 'staging' ? { 'x-robots-tag': 'noindex, nofollow' } : {};
   const lines = Object.entries({ ...SECURITY_HEADERS, ...CLOUDFLARE_EXTRA_HEADERS, ...preview }).map(([name, value]) => `  ${name}: ${value}`);
+  // HTML fragments fetched by prebuilt pages (src/pages/fragments/) are never pages to index.
+  const fragments = `/fragments/*\n  x-robots-tag: noindex\n`;
   if (!existing.includes('# fresh-petals security headers')) {
-    writeFileSync(headersFile, `# fresh-petals security headers\n/*\n${lines.join('\n')}\n\n${existing}`);
+    writeFileSync(headersFile, `# fresh-petals security headers\n/*\n${lines.join('\n')}\n\n${fragments}\n${existing}`);
   }
+  // Deeper /studio paths: the adapter writes /studio and /studio/ from astro.config's
+  // redirects; the splat makes /studio/<anything> a static 301 too, without running the Worker.
+  const redirectsFile = path.join(staticDir, '_redirects');
+  const redirects = existsSync(redirectsFile) ? readFileSync(redirectsFile, 'utf8') : '';
+  if (!redirects.includes('/studio/*')) writeFileSync(redirectsFile, `${redirects.replace(/\n*$/, '\n')}/studio/*    /categories/bouquets    301\n`);
   const problems = [];
   let pages = 0;
   const walk = (dir) => {
@@ -197,8 +204,10 @@ export function applyCloudflareHeaders(staticDir) {
       const full = path.join(dir, name);
       if (statSync(full).isDirectory()) walk(full);
       else if (name.endsWith('.html')) {
-        pages += 1;
         const rel = '/' + path.relative(staticDir, full).split(path.sep).join('/');
+        // A fragment is HTML inserted into a page that already carries the policy; it has no <head>.
+        if (rel.startsWith('/fragments/')) continue;
+        pages += 1;
         const html = withoutMetaFrameAncestors(policyFirst(withReviewedHashes(readFileSync(full, 'utf8'))));
         writeFileSync(full, html);
         const policy = metaPolicy(html);

@@ -8,9 +8,13 @@
 // The preview build never carries analytics or search-verification tags and
 // marks every static file noindex; the production build must carry neither
 // marker. Vercel builds are unaffected (they never set DEPLOY_TARGET).
-import { spawnSync } from 'node:child_process';
-import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
+import pg from 'pg';
+import { supabasePoolSsl } from '../../src/server/db/postgres/ssl.mjs';
+import { FINGERPRINT_SQL } from '../../src/server/services/publishFingerprint.mjs';
+import { DASHBOARD_CATALOGUE_SQL, writeDashboardCatalogue } from '../build/dashboard-catalogue.mjs';
 
 const target = process.argv[2];
 if (!['preview', 'staging', 'production'].includes(target)) {
@@ -34,6 +38,23 @@ if (!env.DATABASE_URL) {
   console.error('DATABASE_URL is required: the build reads the published catalogue.');
   process.exit(1);
 }
+
+// The content fingerprint is read before the build reads the catalogue, so a
+// change saved while this build runs leaves the deployed fingerprint behind
+// the live one and the next publishing check builds again
+// (src/server/services/Publishing.ts).
+// The admin's catalogue records are written for src/data/dashboardCatalogue.ts
+// in the same connection (products added or edited in the admin).
+const fingerprint = await (async () => {
+  const client = new pg.Client({ connectionString: env.DATABASE_URL, ssl: /@(localhost|127\.0\.0\.1)[:/]/.test(env.DATABASE_URL) ? false : supabasePoolSsl, statement_timeout: 30000 });
+  await client.connect();
+  try {
+    const value = (await client.query(FINGERPRINT_SQL)).rows[0].fingerprint;
+    const records = writeDashboardCatalogue((await client.query(DASHBOARD_CATALOGUE_SQL)).rows);
+    console.log(`Dashboard catalogue: ${records} product records written for the build.`);
+    return value;
+  } finally { await client.end().catch(() => {}); }
+})();
 
 const result = spawnSync(process.execPath, ['node_modules/astro/bin/astro.mjs', 'build'], { env, stdio: 'inherit' });
 if (result.status !== 0) process.exit(result.status ?? 1);
@@ -72,6 +93,12 @@ const walk = (dir) => {
   }
 };
 walk('dist/client');
+// The storefront is prebuilt: these must be static files, served without running the Worker.
+for (const file of ['index.html', 'categories/bouquets/index.html', 'categories/garlands/index.html', 'occasions/index.html', 'sitemap.xml', 'sitemap-garlands.xml', 'sitemap-occasions.xml', 'robots.txt', '404.html', 'fragments/garlands/index.html']) {
+  if (!existsSync(path.join('dist/client', file))) problems.push(`missing static file ${file}`);
+}
+const cityPages = existsSync('dist/client/locations') ? readdirSync('dist/client/locations').filter((name) => existsSync(path.join('dist/client/locations', name, 'shop', 'index.html'))).length : 0;
+if (cityPages < 50) problems.push(`only ${cityPages} prebuilt city shop pages`);
 // A static import of a module the Worker lacks fails every route that loads the chunk.
 const chunks = path.join('dist', 'server', 'chunks');
 if (existsSync(chunks)) {
@@ -82,8 +109,15 @@ if (existsSync(chunks)) {
 const hyperdrive = (worker.hyperdrive ?? [])[0]?.id;
 if (target !== 'staging' && (!hyperdrive || hyperdrive.startsWith('REPLACE_'))) console.warn('Note: wrangler.jsonc still has the placeholder Hyperdrive id; deploy.mjs will refuse until it is set.');
 if (existsSync('dist/client/images/garlands')) console.warn('Note: dist/client/images/garlands exists; the garland photo safety net ran during the build.');
+// Publishing tests (scripts/staging/publish.mjs --simulate-build-failure): fail exactly where a real problem would.
+if (process.env.FP_SIMULATE_BUILD_FAILURE === '1') problems.push('simulated build failure (publishing test)');
 if (problems.length) {
   console.error(`Cloudflare ${target} build output check FAILED:\n  ${problems.join('\n  ')}`);
   process.exit(1);
 }
-console.log(`Cloudflare ${target} build OK: ${pages} static pages; noindex=${noindex}; FP_DEPLOY_ENV=${vars.FP_DEPLOY_ENV ?? '(unset)'}.`);
+// What this build was made from, for the publishing check (/_publish/state.json).
+let revision = '';
+try { revision = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(); } catch { /* not a checkout */ }
+mkdirSync('dist/client/_publish', { recursive: true });
+writeFileSync('dist/client/_publish/state.json', JSON.stringify({ fingerprint, revision, builtAt: new Date().toISOString() }));
+console.log(`Cloudflare ${target} build OK: ${pages} static pages; noindex=${noindex}; FP_DEPLOY_ENV=${vars.FP_DEPLOY_ENV ?? '(unset)'}; content fingerprint ${fingerprint.slice(0, 12)}.`);

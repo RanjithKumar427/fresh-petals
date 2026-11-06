@@ -1,13 +1,13 @@
 // How a change to a bouquet's "Suitable occasions" reaches the live website.
 //
 // Every occasion page, the /occasions index, the homepage, the bouquet list
-// and the occasion sitemap are read from the admin's assignments on request
-// and CDN-cached (src/server/services/GarlandWebsite.ts occasion tags). After
-// a save that adds or removes occasions, the pages of every occasion added or
-// removed (old and new memberships) — and the index tag those listings carry —
-// are purged. The editor then checks the affected live pages until each one
-// lists (or no longer lists) the product, so "updated" means the website
-// really shows it, not merely that a purge was sent.
+// and the occasion sitemap are built from the admin's assignments. On
+// Cloudflare they are prebuilt, so a save that adds or removes occasions
+// requests a new build (src/server/services/Publishing.ts); on Vercel the
+// affected cached pages are purged by tag. The editor then checks the
+// affected live pages until each one lists (or no longer lists) the product,
+// so "updated" means the website really shows it, not merely that a build or
+// purge was requested.
 //
 // Which pages can list a product follows the deployed public catalogue
 // (src/server/services/PublicCatalogue.ts): any public bouquet on the gift
@@ -16,7 +16,7 @@
 // product the deployment doesn't publish is on no page until the next
 // deployment, whatever its assignments; the prebuilt header's occasion menu
 // also changes only with a deployment.
-import { OCCASION_MAX_STALE_SECONDS, occasionTagsFor, refreshWebsite, type RefreshResult } from "./GarlandWebsite";
+import { occasionTagsFor, refreshWebsite, websiteDelaySeconds, type RefreshResult } from "./GarlandWebsite";
 import { occasionSlugsForIds } from "./OccasionMembership";
 import { BOUQUET_ONLY_ROUTES, LIVE_OCCASION_ROUTES, occasionProductEligible } from "../../data/occasionJourneys";
 import { isBouquet } from "../../data/catalogueRange";
@@ -62,7 +62,7 @@ export async function occasionWebsiteChange(before: ProductLike | null, after: P
     routes: product ? affectedRoutes(changed, isBouquet(product)) : [],
     listed,
     refresh: listed ? await refreshWebsite(occasionTagsFor(changed)) : null,
-    maxDelaySeconds: OCCASION_MAX_STALE_SECONDS,
+    maxDelaySeconds: websiteDelaySeconds(),
   };
 }
 

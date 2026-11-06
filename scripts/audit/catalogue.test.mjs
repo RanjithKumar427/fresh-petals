@@ -167,7 +167,7 @@ test('directory: counts are the real eligible sets; get-well offers its products
   assert.equal(none.Condolence.href, '/occasions/sympathy');
 });
 
-test('menu and homepage counts use eligibility and assignments; the prebuilt header is a deployment snapshot, the occasion pages are live', () => {
+test('menu and homepage counts use eligibility and assignments; the prebuilt header is a deployment snapshot, the occasion pages are prebuilt from the build assignments', () => {
   const membership = empty();
   membership.set('snow-white-saga', ['housewarming']);
   membership.set('cotton-candy', ['mom-to-be']);
@@ -179,17 +179,17 @@ test('menu and homepage counts use eligibility and assignments; the prebuilt hea
   assert(/loadMenuMembership\(\)/.test(header) && /menuOccasions\(menuMembership, publicCatalogue\)/.test(header) && /changes with the\s*\n?\s*\/\/ next deployment/.test(header));
   const service = readFileSync('src/server/services/PublicCatalogue.ts', 'utf8');
   assert(/publishedOccasionMap\(\)/.test(service));
-  // Occasion pages and lists read assignments on request.
+  // Occasion pages and lists are static files built from the assignments; a save publishes a new build.
   for (const file of ['src/pages/occasions/[slug].astro', 'src/pages/occasions/index.astro', 'src/pages/categories/bouquets.astro', 'src/pages/index.astro', 'src/pages/sitemap-occasions.xml.ts']) {
     const source = readFileSync(file, 'utf8');
-    assert(/prerender = false/.test(source) && /loadOccasionMembership\(/.test(source) && /loadPublicCatalogue\(\)/.test(source), file);
+    assert(/prerender = true/.test(source) && !/prerender = false/.test(source) && /loadOccasionMembership\(/.test(source) && /loadPublicCatalogue\(\)/.test(source), file);
   }
 });
 
 test('admin follow-through: affected routes and refresh tags for non-featured bouquets, additions and removals; no implied occasion', async () => {
   const purged = [];
   const website = sourceLoader({ mocks: {
-    'src/server/services/GarlandWebsite.ts': { OCCASION_MAX_STALE_SECONDS: 180, occasionTagsFor: load('src/server/services/GarlandWebsite.ts').occasionTagsFor, refreshWebsite: async (tags) => (purged.push(tags), { ok: true, tags }) },
+    'src/server/services/GarlandWebsite.ts': { websiteDelaySeconds: () => 180, occasionTagsFor: load('src/server/services/GarlandWebsite.ts').occasionTagsFor, refreshWebsite: async (tags) => (purged.push(tags), { ok: true, tags }) },
     'src/server/services/OccasionMembership.ts': { occasionSlugsForIds: async (ids) => ids.map((id) => ({ 1: 'birthday', 2: 'housewarming', 3: 'pooja', 4: 'thank-you' })[id]).sort() },
     'src/server/services/PublicCatalogue.ts': { loadPublicCatalogue: async () => catalogue },
   } })('src/server/services/OccasionWebsite.ts');
@@ -380,12 +380,15 @@ test('archived and draft records are excluded from routes, lists, recommendation
   assert(/const relatedProducts = \(await loadPublicCatalogue\(\)\)/.test(readFileSync('src/pages/products/[slug].astro', 'utf8')));
   // Sitemap category entries follow the public lists (empty → left out).
   assert(/hasPublicProducts\(entry\.props\.products\)/.test(readFileSync('src/pages/sitemap.xml.ts', 'utf8')));
-  // An unbuilt catalogue slug falls through to the on-request route: 404, noindex, no basket, enquiry or redirect.
-  const fallthrough = readFileSync('src/pages/products/[...garland].astro', 'utf8');
-  assert(/if \(!product\) Astro\.response\.status = 404;/.test(fallthrough) && /const noindex = !product/.test(fallthrough) && /catalogueRecord/.test(fallthrough) && /This product isn't on sale at the moment/.test(fallthrough));
+  // An unbuilt catalogue slug has no file: the Worker answers with the prebuilt "not on sale" page and 404,
+  // noindex, no basket, enquiry or redirect (src/server/platform/staticFallback.ts).
+  const fallthrough = readFileSync('src/pages/unavailable/[kind].astro', 'utf8');
+  assert(/noindex=\{true\}/.test(fallthrough) && /catalogueRecord/.test(fallthrough) && /This product isn't on sale at the moment/.test(fallthrough) && /prerender = true/.test(fallthrough));
   assert(!/Astro\.redirect/.test(fallthrough));
   const unavailable = fallthrough.slice(fallthrough.indexOf('data-garland-unavailable'));
   assert(!/data-cart|wa\.me|whatsappLink|garland-enquiry/.test(unavailable.slice(0, unavailable.indexOf('</section>'))));
+  const fallback = readFileSync('src/server/platform/staticFallback.ts', 'utf8');
+  assert(/"\/unavailable\/catalogue" : "\/unavailable\/garland"/.test(fallback) && /status: 404/.test(fallback));
   // Pooja copy names jasmine products only while they are public.
   assert(/publicSlugs\.has\("jasmine-malli"\) && publicSlugs\.has\("jasmine-gajra"\)/.test(readFileSync('src/components/category/CategoryPage.astro', 'utf8')));
 });
@@ -673,9 +676,9 @@ test('occasion directory: every other indexable occasion is linked once, by the 
   assert(!journeys.moreOccasionLinks(needs, membership, catalogue, garlands).some((o) => o.href === '/occasions/just-because'));
   // Wiring: full-catalogue membership, the garland cache tag, the shared rule in the sitemap.
   const index = readFileSync('src/pages/occasions/index.astro', 'utf8');
-  assert(/loadOccasionMembership\(publicCatalogue\.map/.test(index) && /occasionCacheHeaders\(\[OCCASION_INDEX_TAG, GARLAND_CACHE_TAG\]\)/.test(index) && /data-more-occasions/.test(index) && /<a href=\{occasion\.href\}>/.test(index));
+  assert(/loadOccasionMembership\(publicCatalogue\.map/.test(index) && /prerender = true/.test(index) && /data-more-occasions/.test(index) && /<a href=\{occasion\.href\}>/.test(index));
   const sitemap = readFileSync('src/pages/sitemap-occasions.xml.ts', 'utf8');
-  assert(/occasionIndexable\(occasion, membership, publicCatalogue, garlands\)/.test(sitemap) && /GARLAND_CACHE_TAG/.test(sitemap));
+  assert(/occasionIndexable\(occasion, membership, publicCatalogue, garlands\)/.test(sitemap) && /prerender = true/.test(sitemap));
   assert(/const noindex = NOINDEX_OCCASION_SLUGS\.has\(occasion\.slug\) \|\| \(products\.length === 0 && !ceremonyLanding\)/.test(readFileSync('src/components/occasion/OccasionPage.astro', 'utf8')));
 });
 
@@ -701,4 +704,29 @@ test('metadata and claims: subscriptions name no archived plan; housewarming and
   const category = readFileSync('src/pages/categories/[slug].astro', 'utf8');
   assert(/"bestselling-bouquets": "Selected Bouquets"/.test(category) && !/most requested/.test(category) && /not a sales ranking/.test(category));
   assert(catalogue.filter((p) => p.collectionTags.includes('bestselling-bouquets')).length > 0);
+});
+
+test('dashboard records: added products get a storefront entry; edits replace the entry copy except deliberate copy, placeholders and unservable photos', () => {
+  const dash = sourceLoader({ globals: { __FP_DEPLOY_TARGET__: 'cloudflare', process: { env: {} } } })('src/data/dashboardCatalogue.ts');
+  const base = [
+    { id: 'a', slug: 'blue-mountain-grace', name: 'Old name', category: 'Bouquets', image: '/images/a.webp', priceLabel: 'From ₹1', priceType: 'from', description: 'old short', longDescription: 'old long', isAvailable: true, requiresConfirmation: true, whatsIncluded: ['x'], careNotes: ['y'], collectionTags: ['bouquets'] },
+    { id: 'b', slug: 'pet-friendly-flowerbox', name: 'Pet box', category: 'Flowerbox', image: '/images/product-placeholder.svg', priceLabel: 'p', priceType: 'from', description: 'rewritten', longDescription: 'rewritten long', isAvailable: true, requiresConfirmation: true, whatsIncluded: [], careNotes: [] },
+  ];
+  const record = (over) => ({ id: 1, slug: 'blue-mountain-grace', name: 'New name', shortDescription: 'new short', description: 'new long', priceType: 'from', stemCount: '20', requiresConfirmation: true, category: 'Lilies', categorySlug: 'lilies', image: { url: 'https://wyndmywdtacucojvudxg.supabase.co/storage/v1/object/public/media/a.jpg', alt: 'A', width: 900, height: 900, usable: true }, whatsIncluded: ['w'], careNotes: ['c'], flowerTypes: ['Roses'], occasions: ['birthday'], ...over });
+  const merged = JSON.parse(JSON.stringify(dash.withDashboardRecords(base, [
+    record({}),
+    record({ id: 2, slug: 'pet-friendly-flowerbox', name: 'Pet box', shortDescription: 'pet safe!', description: 'pet safe long', image: { url: 'https://x/storage/b.jpg', usable: true, width: 1200 } }),
+    record({ id: 3, slug: 'new-admin-bouquet', name: ' Added in admin ', image: { url: '/images/missing.jpg', usable: false } }),
+    record({ id: 4, slug: 'Bad Slug', name: 'x' }),
+  ])));
+  assert.equal(merged.length, 3, 'the invalid slug is not published');
+  const [edited, deliberate, added] = merged;
+  assert.deepEqual([edited.name, edited.description, edited.longDescription, edited.stemCount], ['New name', 'new short', 'new long', '20']);
+  assert.match(edited.image, /^\/_image\?href=.+&w=720&q=75&f=webp$/, 'a stored upload goes through the resizer at an allowed width');
+  assert.deepEqual([edited.category, edited.collectionTags, edited.whatsIncluded], ['Bouquets', ['bouquets'], ['x']], 'category, collections and included items stay with the entry');
+  assert.deepEqual([deliberate.description, deliberate.longDescription, deliberate.image], ['rewritten', 'rewritten long', '/images/product-placeholder.svg'], 'deliberate copy and a reviewed placeholder stay');
+  assert.deepEqual([added.id, added.slug, added.name, added.category, added.collectionTags, added.image, added.priceLabel, added.occasionTags], ['dashboard-3', 'new-admin-bouquet', 'Added in admin', 'Lilies', ['lilies'], '/images/product-placeholder.svg', 'Price on WhatsApp', ['birthday']]);
+  assert.equal(dash.withDashboardRecords(base, []), base, 'no records: the catalogue is unchanged');
+  // Outside Vite (no generated file) the catalogue is the plain one.
+  assert.equal(load('src/data/productCatalog.ts').productCatalog.length, readFileSync('src/data/productCatalog.ts', 'utf8').match(/^\s+slug: "/gm).length);
 });

@@ -1,0 +1,78 @@
+# Automatic publishing for the staging storefront (src/server/services/Publishing.ts).
+#
+# The storefront is prebuilt, so admin changes reach it with a new build:
+#   - repository_dispatch "publish-site": sent by the staging Worker on an admin save
+#     (needs the Worker secret FP_PUBLISH_GITHUB_TOKEN and var FP_PUBLISH_REPOSITORY);
+#   - schedule: every 15 minutes, compares the live database's fingerprint
+#     (GET /api/publish/state) with the deployed build's (/_publish/state.json) and
+#     publishes only when they differ. Catches failed requests and failed builds.
+#   - workflow_dispatch: by hand.
+# One build at a time; a newer request replaces a waiting one, so bursts cost at most two.
+# A failed build or output check deploys nothing: the previous release keeps serving.
+#
+# Repository secrets: STAGING_ENV_FILE (the staging credentials file's contents: DATABASE_URL,
+# SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY) and CLOUDFLARE_API_TOKEN
+# (Workers Scripts edit, Hyperdrive read, Account Settings read). Scheduled and dispatched runs
+# use this file from the default branch; set STAGING_PUBLISH_REF to the branch to build.
+name: Staging publish
+
+on:
+  repository_dispatch:
+    types: [publish-site]
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: Build even if nothing changed
+        type: boolean
+        default: false
+
+concurrency:
+  group: staging-publish
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  WORKER: https://fresh-petals-staging.branjith-kumar24-01.workers.dev
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    outputs:
+      changed: ${{ steps.compare.outputs.changed }}
+    steps:
+      - id: compare
+        run: |
+          live=$(curl -fsS --max-time 30 "$WORKER/api/publish/state" | jq -r .fingerprint)
+          deployed=$(curl -fsS --max-time 30 "$WORKER/_publish/state.json?t=$(date +%s)" | jq -r .fingerprint || echo none)
+          echo "live ${live:0:12} deployed ${deployed:0:12}"
+          if [ -n "$live" ] && [ "$live" != "null" ] && [ "$live" = "$deployed" ]; then echo "changed=false" >> "$GITHUB_OUTPUT"; else echo "changed=true" >> "$GITHUB_OUTPUT"; fi
+
+  publish:
+    needs: check
+    if: needs.check.outputs.changed == 'true' || github.event_name == 'repository_dispatch' || inputs.force
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ vars.STAGING_PUBLISH_REF || github.ref }}
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: npm }
+      - run: npm ci
+      - name: Credentials file (outside the checkout)
+        env:
+          STAGING_ENV_FILE: ${{ secrets.STAGING_ENV_FILE }}
+        run: |
+          umask 077
+          printf '%s\n' "$STAGING_ENV_FILE" > "$RUNNER_TEMP/staging.env"
+      - name: Publish
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: node scripts/staging/publish.mjs --env="$RUNNER_TEMP/staging.env" --ci-token --force --out="$RUNNER_TEMP/publish.json"
+      - if: always()
+        run: rm -f "$RUNNER_TEMP/staging.env"

@@ -43,3 +43,6 @@ scripts/_tmp-*
 # photo-publication permission is confirmed (see docs/garlands.md).
 /public/images/garlands/
 .wrangler/
+
+# written by each Cloudflare build (scripts/build/dashboard-catalogue.mjs)
+src/data/generated/

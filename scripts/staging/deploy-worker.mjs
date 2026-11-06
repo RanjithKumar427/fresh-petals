@@ -3,7 +3,11 @@
 // the actual Hyperdrive origin and the database's identity before anything is
 // deployed. Read-only unless --apply is given. Prints names and IDs, never secrets.
 //
-//   node scripts/staging/deploy-worker.mjs --env=<file> [--apply] [--secrets] [--skip-build] [--db-id-override=<n>] [--db-port=6543]
+//   node scripts/staging/deploy-worker.mjs --env=<file> [--apply] [--secrets] [--skip-build] [--db-id-override=<n>] [--db-port=6543] [--ci-token] [--simulate-build-failure]
+//
+// --ci-token: in CI (no wrangler login) use CLOUDFLARE_API_TOKEN from the environment. The
+// account, Hyperdrive and target checks below are the same. --simulate-build-failure makes the
+// build's output check fail (publishing tests: nothing is deployed).
 //
 // --db-id-override deploys a deliberately wrong database identity, to prove the
 // Worker refuses it. Deploy again without it afterwards.
@@ -25,7 +29,8 @@ const WRANGLER = [path.join(root, "node_modules/wrangler/bin/wrangler.js")];
 
 if (!args.env) stop("usage", ["--env=<file> is required"]);
 const inheritedCloudflare = process.env.CLOUDFLARE_ACCOUNT_ID || process.env.CLOUDFLARE_API_TOKEN;
-if (inheritedCloudflare) stop("inherited Cloudflare settings are present; unset them so the signed-in account is checked");
+if (args["ci-token"]) { if (!process.env.CLOUDFLARE_API_TOKEN) stop("--ci-token needs CLOUDFLARE_API_TOKEN"); }
+else if (inheritedCloudflare) stop("inherited Cloudflare settings are present; unset them so the signed-in account is checked");
 clearInheritedSettings();
 const file = loadEnvFile(args.env);
 const targets = targetFailures(file);
@@ -42,10 +47,12 @@ repo.untracked.forEach((f) => console.log(`INFO  untracked, not part of the Work
 // Wrangler's own sign-in, so no token is stored or passed around by this script.
 const wranglerEnv = () => ({ ...process.env, WRANGLER_SEND_METRICS: "false" });
 const wrangler = (argv, opts = {}) => spawnSync(process.execPath, [...WRANGLER, ...argv], { encoding: "utf8", env: { ...wranglerEnv(), ...opts.env }, input: opts.input, cwd: root });
-const auth = wrangler(["auth", "token", "--json"]);
-let token;
-try { token = JSON.parse(auth.stdout).token; } catch { /* reported below */ }
-if (auth.status !== 0 || !token) stop("Wrangler is not signed in", ["run: npx wrangler login"]);
+let token = args["ci-token"] ? process.env.CLOUDFLARE_API_TOKEN : undefined;
+if (!token) {
+  const auth = wrangler(["auth", "token", "--json"]);
+  try { token = JSON.parse(auth.stdout).token; } catch { /* reported below */ }
+  if (auth.status !== 0 || !token) stop("Wrangler is not signed in", ["run: npx wrangler login"]);
+}
 const api = async (route, init = {}) => {
   const res = await fetch(`https://api.cloudflare.com/client/v4${route}`, { ...init, redirect: "error", headers: { authorization: `Bearer ${token}`, "content-type": "application/json", ...init.headers } });
   const body = await res.json().catch(() => ({}));
@@ -117,7 +124,7 @@ pass("read the staging database's system identifier over verified TLS");
 
 if (!args.skipBuild && !args["skip-build"]) {
   const { SystemRoot, PATH, Path, TEMP, TMP, USERPROFILE, APPDATA, LOCALAPPDATA, HOMEDRIVE, HOMEPATH, ComSpec } = process.env;
-  const buildEnv = { SystemRoot, PATH: PATH ?? Path, TEMP, TMP, USERPROFILE, APPDATA, LOCALAPPDATA, HOMEDRIVE, HOMEPATH, ComSpec, DATABASE_URL: localDbUrl, NODE_ENV: "production" };
+  const buildEnv = { SystemRoot, PATH: PATH ?? Path, TEMP, TMP, USERPROFILE, APPDATA, LOCALAPPDATA, HOMEDRIVE, HOMEPATH, ComSpec, DATABASE_URL: localDbUrl, NODE_ENV: "production", ...(args["simulate-build-failure"] ? { FP_SIMULATE_BUILD_FAILURE: "1" } : {}) };
   const build = spawnSync(process.execPath, ["scripts/cloudflare/build.mjs", "staging"], { encoding: "utf8", env: buildEnv, cwd: root });
   const out = `${build.stdout}${build.stderr}`.split(localDbUrl).join("[redacted]").split(file.values.DATABASE_URL).join("[redacted]");
   console.log(out.split("\n").filter((l) => /build OK|FAILED|error|Note:|references|analytics|\[catalogue\]/i.test(l)).slice(-40).join("\n"));

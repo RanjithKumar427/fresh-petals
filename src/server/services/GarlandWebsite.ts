@@ -13,14 +13,15 @@
 //      token or configuration inside a Vercel Function.
 //   2. SITE_CACHE_PURGE_URL (optional): POST {"tags":[...]} to another CDN's
 //      purge hook. Also used by the local test harness.
-//   3. On Cloudflare (DEPLOY_TARGET=cloudflare): Cloudflare's zone purge-by-tag
-//      API, using the CF_ZONE_ID and CF_CACHE_PURGE_TOKEN secrets (a token
-//      with only the Zone > Cache Purge permission). The Worker stores these
-//      pages with the same tags (src/server/platform/edgeCache.ts). The
-//      *.workers.dev preview has no shared cache, so nothing is purged there.
+//   3. On Cloudflare (DEPLOY_TARGET=cloudflare) the storefront is prebuilt
+//      (static files served without running the Worker), so there is nothing
+//      to purge: a save asks for a new build instead
+//      (src/server/services/Publishing.ts), and the admin is told the
+//      publishing delay (websiteDelaySeconds).
 //   4. None of these (local development): there is no shared cache to purge.
 import { dangerouslyDeleteByTag } from "@vercel/functions";
 import { ON_CLOUDFLARE } from "../platform/target";
+import { PUBLISH_MAX_DELAY_SECONDS, requestPublication } from "./Publishing";
 import { garlandSampleRequired } from "../../data/garlandRules";
 
 export const GARLAND_CACHE_TAG = "garlands";
@@ -28,6 +29,12 @@ const S_MAXAGE = 120;
 const STALE_WHILE_REVALIDATE = 60;
 /** Upper bound on how long a visitor can see an outdated garland page if a purge fails. */
 export const GARLAND_MAX_STALE_SECONDS = S_MAXAGE + STALE_WHILE_REVALIDATE;
+/**
+ * How long the admin is told a change can take to show. On Cloudflare the
+ * storefront is prebuilt, so it is the publishing bound
+ * (src/server/services/Publishing.ts); on Vercel, the cache lifetime.
+ */
+export const websiteDelaySeconds = (): number => (ON_CLOUDFLARE ? PUBLISH_MAX_DELAY_SECONDS : GARLAND_MAX_STALE_SECONDS);
 
 /** Response headers for every on-demand garland page, section and the sitemap. */
 export function garlandCacheHeaders(): Record<string, string> {
@@ -78,7 +85,7 @@ export function occasionTagsFor(changed: string[]): string[] {
 
 export type RefreshResult = {
   ok: boolean;
-  method: "vercel" | "purge-url" | "cloudflare" | "none";
+  method: "vercel" | "purge-url" | "cloudflare" | "publish" | "none";
   at: string;
   error?: string;
   /** Plain-language explanation for the admin. */
@@ -116,26 +123,10 @@ export async function refreshWebsite(tags: string[]): Promise<RefreshResult> {
       return { ok: true, method: "purge-url", at, message: "Website cache cleared — the next visitor gets the saved version." };
     }
     if (ON_CLOUDFLARE) {
-      const zone = process.env.CF_ZONE_ID;
-      const token = process.env.CF_CACHE_PURGE_TOKEN;
-      if (zone && token) {
-        // Cloudflare accepts at most 100 tags per purge request.
-        for (let i = 0; i < tags.length; i += 100) {
-          const response = await fetch(`https://api.cloudflare.com/client/v4/zones/${encodeURIComponent(zone)}/purge_cache`, {
-            method: "POST",
-            headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
-            body: JSON.stringify({ tags: tags.slice(i, i + 100) }),
-            signal: AbortSignal.timeout(8000),
-          });
-          const result = (await response.json().catch(() => null)) as { success?: boolean } | null;
-          if (!response.ok || result?.success !== true) throw new Error(`Cloudflare purge returned ${response.status}`);
-        }
-        return { ok: true, method: "cloudflare", at, message: "Website cache cleared — the next visitor gets the saved version." };
-      }
-      if (process.env.FP_DEPLOY_ENV !== "preview" && process.env.FP_DEPLOY_ENV !== "staging") {
-        // A shared cache exists on the live domain: never report success without a purge.
-        throw new Error("the Cloudflare cache purge isn't configured (CF_ZONE_ID, CF_CACHE_PURGE_TOKEN)");
-      }
+      // The storefront is prebuilt: there is no cached page to purge, only a new
+      // build to publish (src/server/services/Publishing.ts).
+      const publication = await requestPublication(`website refresh: ${tags.slice(0, 3).join(",")}`);
+      return { ok: publication.ok, method: "publish", at, ...(publication.error ? { error: publication.error } : {}), message: publication.message };
     }
     if (process.env.VERCEL) {
       // On Vercel but the purge API isn't reachable from this request: never report success.
@@ -146,10 +137,10 @@ export async function refreshWebsite(tags: string[]): Promise<RefreshResult> {
     const reason = error instanceof Error ? error.message : String(error);
     return {
       ok: false,
-      method: vercelPurgeAvailable() ? "vercel" : process.env.SITE_CACHE_PURGE_URL ? "purge-url" : ON_CLOUDFLARE ? "cloudflare" : "none",
+      method: vercelPurgeAvailable() ? "vercel" : process.env.SITE_CACHE_PURGE_URL ? "purge-url" : ON_CLOUDFLARE ? "publish" : "none",
       at,
       error: reason,
-      message: `The website refresh failed (${reason}). The change is saved and appears on its own within ${Math.ceil(GARLAND_MAX_STALE_SECONDS / 60)} minutes, or retry now.`,
+      message: `The website refresh failed (${reason}). The change is saved and appears on its own within ${Math.ceil(websiteDelaySeconds() / 60)} minutes, or retry now.`,
     };
   }
 }
@@ -195,7 +186,7 @@ export async function garlandWebsiteChange(before: GarlandLike | null, after: Ga
     path: `/products/${after.slug}`,
     version: after.updatedAt,
     refresh: listed || wasListed ? await refreshGarlandPages() : null,
-    maxDelaySeconds: GARLAND_MAX_STALE_SECONDS,
+    maxDelaySeconds: websiteDelaySeconds(),
   };
 }
 
@@ -219,7 +210,7 @@ export async function checkGarlandOnWebsite(product: GarlandLike, origin: string
   const checkedAt = new Date().toISOString();
   const shouldShow = preview ? product.status !== "archived" : isPublicGarlandRecord(product);
   const expected = shouldShow ? "listed" : "hidden";
-  const minutes = Math.ceil(GARLAND_MAX_STALE_SECONDS / 60);
+  const minutes = Math.ceil(websiteDelaySeconds() / 60);
   if (!/^[a-z0-9-]+$/.test(product.slug)) {
     return { state: "error", expected, path, checkedAt, seen: null, message: "This address can't be checked." };
   }

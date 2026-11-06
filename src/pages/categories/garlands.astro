@@ -12,13 +12,11 @@ import { loadPublicCatalogue } from "../../server/services/PublicCatalogue";
 import { productPhotoAlt } from "../../data/productPhotos";
 import { isListedGarland, loadGarlands } from "../../data/garlands";
 import { loadAuthoritativePrices, withAuthoritativePrice } from "../../server/services/ProductPricing";
-import { garlandCacheHeaders } from "../../server/services/GarlandWebsite";
 import LandingDetails from "../../components/LandingDetails.astro";
 import { GARLANDS_LANDING, populatedCollections } from "../../data/garlandCollections";
 
-export const prerender = false;
+export const prerender = true; // static file: served without running the Worker; published by a build (src/server/services/Publishing.ts)
 
-for (const [name, value] of Object.entries(garlandCacheHeaders())) Astro.response.headers.set(name, value);
 
 const [garlands, priceMap, publicCatalogue] = await Promise.all([loadGarlands(), loadAuthoritativePrices(), loadPublicCatalogue()]);
 // The other garland orders in the public catalogue (e.g. event garlands),
@@ -31,10 +29,8 @@ const drafts = garlands.some((product) => !isListedGarland(product.garland));
 const noindex = total === 0 || drafts;
 
 // Arrived from an enquiry link for a design that is no longer available.
-const unavailable = (Astro.url.searchParams.get("unavailable") ?? "").toUpperCase();
-const unavailableCode = /^FP-G\d{3,}$/.test(unavailable) ? unavailable : null;
-// A redirect notice is per-visitor; keep it out of the shared cache.
-if (unavailableCode) Astro.response.headers.set("Cache-Control", "no-store");
+// /garland-enquiry sends an unknown or unavailable design code back here as
+// ?unavailable=FP-G…; the page is static, so the notice is filled in the browser.
 
 const name = "Garlands";
 // With designs listed this is the wedding garland / poola mala search landing
@@ -99,11 +95,17 @@ const breadcrumbJsonLd = {
           </div>
         </div>
 
-        {unavailableCode && (
-          <p role="status" class="mb-8 rounded-2xl border border-line bg-linen px-5 py-4 text-sm leading-6 text-ink" data-garland-unavailable-notice>
-            Design {unavailableCode} isn't available at the moment. Choose another design below, or ask us for a custom order.
-          </p>
-        )}
+        <p role="status" class="mb-8 rounded-2xl border border-line bg-linen px-5 py-4 text-sm leading-6 text-ink" data-garland-unavailable-notice hidden>
+          Design <span data-garland-unavailable-code></span> isn't available at the moment. Choose another design below, or ask us for a custom order.
+        </p>
+        <script>
+          const code = (new URLSearchParams(location.search).get("unavailable") ?? "").toUpperCase();
+          const notice = document.querySelector<HTMLElement>("[data-garland-unavailable-notice]");
+          if (notice && /^FP-G\d{3,}$/.test(code)) {
+            notice.querySelector("[data-garland-unavailable-code]")!.textContent = code;
+            notice.hidden = false;
+          }
+        </script>
 
         {garlands.length > 0 && <GarlandListing garlands={garlands} hasMore={otherProducts.length > 0} />}
 

@@ -29,24 +29,64 @@ test('preview guard: the Cloudflare preview Worker is treated like a Vercel prev
   assert.equal(guard.isPreviewDeployment({}), false);
 });
 
-test('purge on Cloudflare: zone purge by tag, never claims success it cannot confirm', async () => {
+test('Cloudflare: a website refresh requests a new build (the storefront is prebuilt), never claims success it cannot confirm', async () => {
   const calls = [];
-  const fetch = async (url, init) => { calls.push({ url, init }); return { ok: true, status: 200, json: async () => ({ success: true }) }; };
-  const env = { CF_ZONE_ID: 'zone123', CF_CACHE_PURGE_TOKEN: 'token' };
+  const fetch = async (url, init) => { calls.push({ url, init }); return { status: 204 }; };
+  const env = { FP_PUBLISH_REPOSITORY: 'owner/repo', FP_PUBLISH_GITHUB_TOKEN: 'token' };
   const website = cf(env, { fetch })('src/server/services/GarlandWebsite.ts');
   const ok = await website.refreshWebsite(['occasion-index', 'occasion:birthday']);
-  assert.equal(ok.ok, true); assert.equal(ok.method, 'cloudflare');
-  assert.equal(calls[0].url, 'https://api.cloudflare.com/client/v4/zones/zone123/purge_cache');
+  assert.equal(ok.ok, true); assert.equal(ok.method, 'publish');
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].url, 'https://api.github.com/repos/owner/repo/dispatches');
   assert.equal(calls[0].init.headers.authorization, 'Bearer token');
-  assert.deepEqual(JSON.parse(calls[0].init.body), { tags: ['occasion-index', 'occasion:birthday'] });
+  assert.equal(JSON.parse(calls[0].init.body).event_type, 'publish-site');
+  assert.equal(website.websiteDelaySeconds(), 25 * 60, 'the admin is told the publishing bound');
 
-  const refused = cf(env, { fetch: async () => ({ ok: true, status: 200, json: async () => ({ success: false }) }) })('src/server/services/GarlandWebsite.ts');
-  assert.equal((await refused.refreshWebsite(['garlands'])).ok, false);
+  const refused = cf(env, { fetch: async () => ({ status: 401 }) })('src/server/services/GarlandWebsite.ts');
+  const no = await refused.refreshWebsite(['garlands']);
+  assert.equal(no.ok, false); assert.match(no.error, /401/); assert.match(no.message, /scheduled publishing check/);
   const unconfigured = cf({}, { fetch })('src/server/services/GarlandWebsite.ts');
   const result = await unconfigured.refreshWebsite(['garlands']);
-  assert.equal(result.ok, false); assert.match(result.error, /isn't configured/);
-  const preview = cf({ FP_DEPLOY_ENV: 'preview' }, { fetch })('src/server/services/GarlandWebsite.ts');
-  assert.equal((await preview.refreshWebsite(['garlands'])).method, 'none');
+  assert.equal(result.ok, false); assert.equal(result.method, 'publish'); assert.match(result.message, /isn't connected here/);
+  assert.equal(calls.length, 1, 'nothing is sent without the dispatch settings');
+});
+
+test('publishing: one dispatch per write unless a website change already sent it; off Cloudflare nothing', async () => {
+  const calls = [];
+  const fetch = async (url) => { calls.push(url); return { status: 204 }; };
+  const publishing = cf({ FP_PUBLISH_REPOSITORY: 'owner/repo', FP_PUBLISH_GITHUB_TOKEN: 't' }, { fetch })('src/server/services/Publishing.ts');
+  assert.equal((await publishing.publishAfterChange('saved')).ok, true);
+  assert.equal(await publishing.publishAfterChange('saved', { refresh: { method: 'publish' } }), null);
+  assert.equal(calls.length, 1);
+  const vercel = sourceLoader({ globals: { process: { env: {} }, fetch } })('src/server/services/Publishing.ts');
+  assert.equal(await vercel.publishAfterChange('saved'), null);
+  const fingerprint = await import('../../src/server/services/publishFingerprint.mjs');
+  for (const table of ['products', 'product_images', 'media', 'product_occasions', 'garland_details']) assert(fingerprint.PUBLISHED_TABLES.includes(table), table);
+  for (const table of ['inquiries', 'admin_users']) assert(!fingerprint.PUBLISHED_TABLES.includes(table), table);
+  assert.match(fingerprint.FINGERPRINT_SQL, /^select md5\(concat_ws/);
+});
+
+test('static storefront: the Worker answers addresses without a file statically, cities by their one address', async () => {
+  const fallback = sourceLoader({ globals: { Request, Response } })('src/server/platform/staticFallback.ts');
+  for (const path of ['/', '/categories/garlands', '/products/x', '/locations/bangalore', '/zz', '/studio/a']) assert.equal(fallback.servedStatically('GET', path), true, path);
+  for (const path of ['/admin', '/admin/login', '/api/inquiries', '/api/publish/state', '/_image', '/garland-enquiry', '/media/a.jpg']) assert.equal(fallback.servedStatically('GET', path), false, path);
+  assert.equal(fallback.servedStatically('POST', '/'), false, 'unsafe methods go through the usual checks');
+  assert.equal(fallback.cityRedirect('/locations/bangalore'), '/locations/bengaluru');
+  assert.equal(fallback.cityRedirect('/locations/Bengaluru/shop'), '/locations/bengaluru/shop');
+  assert.equal(fallback.cityRedirect('/locations/bengaluru'), null);
+  assert.equal(fallback.cityRedirect('/locations/atlantis'), null);
+  assert.equal(fallback.notFoundPage('/products/blue-mountain-grace'), '/unavailable/catalogue');
+  assert.equal(fallback.notFoundPage('/products/zz-invented'), '/unavailable/garland');
+  assert.equal(fallback.notFoundPage('/zz'), '/404');
+  const assets = { fetch: async (request) => new Response(`page ${new URL(request.url).pathname}`, { headers: { 'content-type': 'text/html' } }) };
+  const miss = await fallback.staticFallback(new URL('https://x.in/zz?a=1'), 'GET', assets, { 'x-frame-options': 'DENY' });
+  assert.equal(miss.status, 404); assert.equal(await miss.text(), 'page /404'); assert.equal(miss.headers.get('x-frame-options'), 'DENY');
+  const moved = await fallback.staticFallback(new URL('https://x.in/locations/bangalore?utm_source=a'), 'GET', assets, {});
+  assert.equal(moved.status, 301); assert.equal(moved.headers.get('location'), '/locations/bengaluru?utm_source=a');
+  const product = await fallback.staticFallback(new URL('https://x.in/products/blue-mountain-grace'), 'GET', assets, {});
+  assert.equal(product.status, 404); assert.equal(await product.text(), 'page /unavailable/catalogue');
+  const middleware = readFileSync('src/middleware.ts', 'utf8');
+  assert(middleware.indexOf('servedStatically(') < middleware.indexOf('const scope = await workerScope()'), 'answered before any database scope');
 });
 
 test('edge cache: only anonymous public GET/HEAD responses that opt in with s-maxage', async () => {
@@ -178,8 +218,10 @@ test('deleting media waits for the Storage object removal (a Worker drops unawai
 });
 
 test('invented garland slugs and codes are refused without reading every garland', () => {
+  // Garland pages are static files; an invented /products/<slug> never reaches a route that reads the database.
   const route = readFileSync('src/pages/products/[...garland].astro', 'utf8');
-  assert.match(route, /await garlandMayExist\(\{ slug \}\)\) \? await loadGarlands\(\)/);
+  assert.match(route, /export const prerender = true;/);
+  assert.match(route, /export async function getStaticPaths\(\)/);
   const data = readFileSync('src/data/garlands.ts', 'utf8');
   for (const fn of ['findGarland(', 'findGarlandByCode(']) {
     const body = data.slice(data.indexOf(`export async function ${fn}`), data.indexOf('}', data.indexOf(`export async function ${fn}`)) + 200);

@@ -3,6 +3,7 @@ import { ProductService } from "../../../../../server/services/ProductService";
 import { json } from "../../../../../server/http/json";
 import { BODY_LIMITS, jsonBody } from "../../../../../server/http/body";
 import { garlandWebsiteChange } from "../../../../../server/services/GarlandWebsite";
+import { publishAfterChange } from "../../../../../server/services/Publishing";
 
 export const prerender = false;
 
@@ -23,5 +24,6 @@ export const POST: APIRoute = async ({ params, request }) => {
   if (!result.ok) return json(result, 400);
   // Publishing or unpublishing a garland refreshes the live website.
   const website = await garlandWebsiteChange(before, result.data);
-  return json(website ? { ...result, website } : result, 200);
+  const publication = await publishAfterChange(`product ${id} status ${body.status}`, website);
+  return json({ ...result, ...(website ? { website } : {}), ...(publication ? { publication } : {}) }, 200);
 };

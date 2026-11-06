@@ -36,6 +36,12 @@ const clearHref = shopFilterUrl(Astro.url.pathname, { occasion: [], budget: [], 
   const labels: Record<string, Record<string, string>> = { occasion: OCCASION_FILTER_LABELS, budget: BUDGET_LABELS, colour: COLOUR_LABELS };
   for (const root of document.querySelectorAll<HTMLElement>("[data-shop]")) {
     let state = withoutUnpricedBudget(parseShopFilters(shopFilterParams(location)), [...root.querySelectorAll<HTMLElement>("[data-shop-item]")].map((item) => ({ budget: (item.dataset.budget || null) as "under-1500" | "1500-plus" | null })));
+    // The page is a static file, so an older ?colour=… link arrives here unredirected: show the
+    // same selection and move it to the fragment address, as the server's 301 used to (campaign
+    // parameters stay in the query).
+    if (new URLSearchParams(location.hash.slice(1)).size === 0 && withoutFilterQuery(location.search) !== location.search) {
+      history.replaceState(history.state, "", shopFilterUrl(location.pathname + withoutFilterQuery(location.search), state));
+    }
     const intents = [...root.querySelectorAll<HTMLAnchorElement>("[data-intent-choice]")];
     const chips = [...root.querySelectorAll<HTMLAnchorElement>("[data-filter-value]")];
     const sections = [...root.querySelectorAll<HTMLElement>("[data-intent-section]")];

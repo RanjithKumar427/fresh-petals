@@ -13,7 +13,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 import LandingDetails from "../../components/LandingDetails.astro";
 import DestinationCity from "../../components/DestinationCity.astro";
 import { HUB_PHOTO_NOTE, catalogueRoot, cityHub, type HubSource } from "../../data/cityHubs";
-import { CITY_PARAM, LOCATIONS_PATH, findCity, hasHub, serviceCityCount } from "../../data/serviceCities";
+import { CITY_PARAM, LOCATIONS_PATH, SERVICE_CITIES, findCity, hasHub, serviceCityCount } from "../../data/serviceCities";
 import { featuredGroups } from "../../data/launchCatalogue";
 import { loadPublicCatalogue } from "../../server/services/PublicCatalogue";
 import type { Product } from "../../data/productCatalog";
@@ -30,29 +30,24 @@ import { photoDimensions, photoVariants } from "../../data/photoManifest";
 import { cityEnquiryHref, cityProductEnquiryHref } from "../../utils/cityEnquiry";
 import { BOUQUET_GUIDE, GARLAND_GUIDE, POOJA_GUIDE, SENDING_GUIDE, type Guide } from "../../data/guides";
 import { loadCityCatalogue } from "../../server/services/CityCatalogue";
-import { GARLAND_CACHE_TAG, OCCASION_INDEX_TAG, occasionCacheHeaders, occasionTag } from "../../server/services/GarlandWebsite";
 
-export const prerender = false;
+// Prebuilt: every serviceable city has a root page, its authored hub where one
+// is published, otherwise the catalogue root (src/data/cityHubs.ts). Anything
+// else has no file and answers 404; another spelling ("Mumbai", "bangalore")
+// is sent to the one address by the Worker's fallback (src/middleware.ts).
+export const prerender = true;
 
-// Any other spelling of a published hub ("Mumbai", "bangalore") goes to its one address.
-const requested = Astro.params.city ?? "";
-const city = findCity(requested);
-// Every serviceable city has a root page: its authored hub where one is
-// published, otherwise the catalogue root (src/data/cityHubs.ts). Anything
-// else answers 404; another spelling redirects to the one address.
-if (!city || !city.serviceable) return Astro.rewrite("/404");
-if (city.slug !== requested) return Astro.redirect(`${LOCATIONS_PATH}/${city.slug}`, 301);
+export function getStaticPaths() {
+  return SERVICE_CITIES.filter((entry) => entry.serviceable).map((entry) => ({ params: { city: entry.slug } }));
+}
+
+const city = findCity(Astro.params.city ?? "")!;
 const hub = (hasHub(city) ? cityHub(city.slug) : null) ?? catalogueRoot(city, serviceCityCount());
 const authored = hasHub(city);
 
-// Fresh for the same reasons as the pages these products come from: garland
-// publication and occasion assignments change without a deployment.
-const occasionRoutes = [...new Set(hub.sections.flatMap((section) => section.sources).flatMap((source) => (source.kind === "occasion" ? [source.route] : [])))];
-for (const [name, value] of Object.entries(occasionCacheHeaders([GARLAND_CACHE_TAG, OCCASION_INDEX_TAG, ...occasionRoutes.map(occasionTag)]))) Astro.response.headers.set(name, value);
-
 const needsGarlands = hub.sections.some((section) => section.sources.some((source) => source.kind === "garlands"));
 const publicCatalogue = await loadPublicCatalogue();
-// One fresh read of the public garlands serves both this page's sections and
+// One read of the public garlands serves both this page's sections and
 // the full catalogue below (loadCityCatalogue), instead of two identical reads.
 const listedGarlands = loadGarlands().then((list) => list.filter((product) => isListedGarland(product.garland)));
 // Awaited below (directly or by loadCityCatalogue); marked handled so a failed read

@@ -29,15 +29,13 @@ import { loadGarlands, isListedGarland } from "../data/garlands";
 import { organizationNode, websiteNode } from "../data/businessProfile";
 import { loadOccasionMembership } from "../server/services/OccasionMembership";
 import { loadAuthoritativePrices } from "../server/services/ProductPricing";
-import { OCCASION_INDEX_TAG, occasionCacheHeaders } from "../server/services/GarlandWebsite";
 import frauncesUrl from "@fontsource-variable/fraunces/files/fraunces-latin-wght-normal.woff2?url";
 
 // Rendered on request and CDN-cached with the occasion index tag, so the
 // occasion carousel and the hero's shortcuts follow the admin's occasion
 // assignments from the first byte (no script needed); saving a changed
 // assignment purges the copy (src/server/services/OccasionWebsite.ts).
-export const prerender = false;
-for (const [name, value] of Object.entries(occasionCacheHeaders([OCCASION_INDEX_TAG]))) Astro.response.headers.set(name, value);
+export const prerender = true; // static file: served without running the Worker; published by a build (src/server/services/Publishing.ts)
 
 // This deployment's public catalogue: the carousel cards count every
 // assigned public bouquet (occasionJourneys.carouselOccasions); the bouquet

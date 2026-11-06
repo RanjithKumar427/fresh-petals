@@ -9,7 +9,6 @@
 // other indexable occasion page (the occasion sitemap's rule) is linked once.
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { loadOccasionMembership } from "../../server/services/OccasionMembership";
-import { GARLAND_CACHE_TAG, OCCASION_INDEX_TAG, occasionCacheHeaders } from "../../server/services/GarlandWebsite";
 import { needDestinations, journeyEnquiryText, moreOccasionLinks, SERVICE_AREA_LINE } from "../../data/occasionJourneys";
 import { garlandsPromoted } from "../../data/launchCatalogue";
 import { bouquetRange } from "../../data/catalogueRange";
@@ -19,10 +18,9 @@ import { budgetBand } from "../../data/occasionJourneys";
 import { whatsappLink } from "../../config/storefront";
 import { loadAuthoritativePrices, withAuthoritativePrice } from "../../server/services/ProductPricing";
 
-export const prerender = false;
+export const prerender = true; // static file: served without running the Worker; published by a build (src/server/services/Publishing.ts)
 
 // Garlands decide whether a ceremony occasion is listed, so a garland change purges this page too.
-for (const [name, value] of Object.entries(occasionCacheHeaders([OCCASION_INDEX_TAG, GARLAND_CACHE_TAG]))) Astro.response.headers.set(name, value);
 
 // Counts are of the full eligible sets (every public bouquet as assigned in the
 // admin), the same lists the linked pages show.

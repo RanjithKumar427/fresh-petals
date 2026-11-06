@@ -1,0 +1,36 @@
+---
+// What /products/<slug> shows when there is no page for it, as before the
+// storefront was prebuilt: a catalogue product that isn't published in this
+// build, or any other slug (a garland design that isn't on sale). 404,
+// noindex, no basket, no enquiry and no redirect to a substitute product.
+// On Cloudflare the Worker serves these files with status 404
+// (src/server/platform/staticFallback.ts); they are never linked or listed.
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+export const prerender = true;
+
+export function getStaticPaths() {
+  return [{ params: { kind: "catalogue" } }, { params: { kind: "garland" } }];
+}
+
+const catalogueRecord = Astro.params.kind === "catalogue";
+---
+
+<BaseLayout title="Not available | Fresh Petals" description="This product isn't available." showCategoryCarousel={false} noindex={true}>
+  <main>
+    <section class="px-5 py-20 text-center md:px-8" data-garland-unavailable data-product-unavailable={catalogueRecord ? "catalogue" : "garland"}>
+      <h1 class="fp-h1">This page isn't available</h1>
+      <p class="mx-auto mt-4 max-w-xl text-sm leading-7 text-moss">
+        {catalogueRecord
+          ? "This product isn't on sale at the moment. Browse the flowers we're making now, or ask us for a custom order."
+          : "This garland design isn't on sale at the moment. Browse the garlands we're making now, or ask us for a custom order."}
+      </p>
+      <p class="mt-7 flex flex-wrap justify-center gap-3">
+        {catalogueRecord
+          ? <a href="/categories/all-flowers" class="inline-flex min-h-[44px] items-center rounded-full bg-berry px-6 text-sm font-semibold text-white">See all flowers</a>
+          : <a href="/categories/garlands" class="inline-flex min-h-[44px] items-center rounded-full bg-berry px-6 text-sm font-semibold text-white">See garlands</a>}
+        <a href="/custom-orders" class="inline-flex min-h-[44px] items-center rounded-full border border-ink px-6 text-sm font-semibold text-ink">Custom orders</a>
+      </p>
+    </section>
+  </main>
+</BaseLayout>

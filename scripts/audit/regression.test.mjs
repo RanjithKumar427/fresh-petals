@@ -345,7 +345,8 @@ test('garland collections: live membership, counts and links; an empty collectio
   // Coverage is the registry's count, with no neighbourhood restriction left behind.
   assert(new RegExp(`${load('src/data/serviceCities.ts').serviceCityCount()} cities across India`).test(collections.GARLAND_COVERAGE) && !/Chamarajpet|Basavanagudi/.test(copy));
   const page = readFileSync('src/pages/categories/garlands/[flower].astro', 'utf8');
-  assert(/garlandCacheHeaders\(\)/.test(page) && /if \(empty\) Astro\.response\.status = 404/.test(page) && /noindex = empty \|\| drafts/.test(page));
+  // Prebuilt: only collections with a design get a file (an empty one answers 404 from the Worker's static fallback).
+  assert(/prerender = true/.test(page) && /GARLAND_COLLECTIONS\.filter\(\(entry\) => all\.some/.test(page) && /noindex = empty \|\| drafts/.test(page));
   const sitemap = readFileSync('src/pages/sitemap-garlands.xml.ts', 'utf8');
   assert(/populatedCollections\(garlands\)/.test(sitemap) && /isListedGarland/.test(sitemap));
 });
@@ -518,7 +519,8 @@ test('city hubs: one authored page per published hub, distinct copy, real source
   for (const href of copy.match(/"href":"[^"]+"/g) ?? []) assert(/^"href":"\/(categories|occasions|guides|custom-orders|locations)(\/|"|#)/.test(href), href);
   for (const slug of copy.match(/\/locations\/[a-z-]+/g) ?? []) assert(registry.hubPath(registry.findCity(slug.split('/').pop())), slug);
   const page = readFileSync('src/pages/locations/[city].astro', 'utf8');
-  assert(/prerender = false/.test(page) && /if \(!city \|\| !city\.serviceable\) return Astro\.rewrite\("\/404"\)/.test(page) && /catalogueRoot\(city, serviceCityCount\(\)\)/.test(page) && /GARLAND_CACHE_TAG, OCCASION_INDEX_TAG/.test(page) && /isListedGarland/.test(page) && /giftProducts\(source\.route, membership, publicCatalogue\)/.test(page));
+  // Prebuilt for every serviceable city; any other city has no file (404), another spelling gets a 301 from the Worker's fallback.
+  assert(/prerender = true/.test(page) && /SERVICE_CITIES\.filter\(\(entry\) => entry\.serviceable\)/.test(page) && /catalogueRoot\(city, serviceCityCount\(\)\)/.test(page) && /isListedGarland/.test(page) && /giftProducts\(source\.route, membership, publicCatalogue\)/.test(page));
   // Garland comparisons describe the photograph and name a browsing group; they never present the group as the flowers used.
   assert(/design\.image\.alt/.test(page) && /Browse under:/.test(page) && !/Main flower/.test(page));
   // One H1, visible breadcrumbs, self-canonical (no canonical override), no rating or LocalBusiness markup.
@@ -670,9 +672,9 @@ test('guides: four published guides, one registry; real products only; no price 
   const shell = readFileSync('src/components/GuideShell.astro', 'utf8');
   const card = readFileSync('src/components/GuideProductCard.astro', 'utf8');
   // Products come from the catalogue and public services, never typed as markup.
-  assert(/featuredGroups\("bouquets", publicCatalogue\)/.test(pages['choosing-a-flower-bouquet']) && /loadOccasionMembership/.test(pages['choosing-a-flower-bouquet']) && /OCCASION_INDEX_TAG/.test(pages['choosing-a-flower-bouquet']));
+  assert(/featuredGroups\("bouquets", publicCatalogue\)/.test(pages['choosing-a-flower-bouquet']) && /loadOccasionMembership/.test(pages['choosing-a-flower-bouquet']) && /prerender = true/.test(pages['choosing-a-flower-bouquet']));
   assert(/loadAuthoritativePrices/.test(pages['jasmine-pooja-flowers-and-gajra']) && /publishedHubs|hasHub/.test(pages['sending-flowers-to-another-city']));
-  assert(/isListedGarland/.test(pages['choosing-wedding-garlands']) && /garlandCacheHeaders/.test(pages['choosing-wedding-garlands']));
+  assert(/isListedGarland/.test(pages['choosing-wedding-garlands']) && /prerender = true/.test(pages['choosing-wedding-garlands']));
   // Quote-only examples never render an amount; the card decides by product identity.
   assert(/\{quoteOnly \? "Request a quote" : "Order on WhatsApp"\}/.test(card) && /Price shown: \$\{product\.priceLabel\}/.test(card));
   assert(/quoteOnly \? QUOTE_ONLY_PRICE_LABEL : product\.priceLabel/.test(card) && /loading="lazy"/.test(card) && /width=\{size\?\.width\}/.test(card));
@@ -772,7 +774,7 @@ test('product titles and facts: flower and form from the record; model names kep
 // City catalogue: every city, the whole public catalogue
 // ---------------------------------------------------------------------------
 
-test('city catalogue: one shared source with no sample limits or per-city restriction; a noindex shop view per city; SSR pagination; city kept in links and drafts', () => {
+test('city catalogue: one shared source with no sample limits or per-city restriction; a noindex shop view per city; prebuilt, paged in the browser; city kept in links and drafts', () => {
   const service = readFileSync('src/server/services/CityCatalogue.ts', 'utf8');
   // Sources are the shop's own: category pages, the featured bouquets (labelled), listed garlands; nothing is sliced or limited.
   assert(/getCategoryStaticPaths\(\)/.test(service) && /featuredBouquets\(publicCatalogue\)/.test(service) && /label: "Featured bouquets"/.test(service) && /isListedGarland/.test(service) && /loadAuthoritativePrices/.test(service));
@@ -780,9 +782,11 @@ test('city catalogue: one shared source with no sample limits or per-city restri
   assert(/quoteOnly \? QUOTE_ONLY_PRICE_LABEL : product\.priceLabel/.test(service) && /price: QUOTE_ONLY_PRICE_LABEL,\s+quoteOnly: true,\s+category: "Garlands"/.test(service));
   assert(/seen\.has\(item\.key\)/.test(service) && /collection\.items\.length > 0/.test(service));
   const shop = readFileSync('src/pages/locations/[city]/shop.astro', 'utf8');
-  assert(/prerender = false/.test(shop) && /if \(!city \|\| !city\.serviceable\) return Astro\.rewrite\("\/404"\)/.test(shop) && /Astro\.redirect\(base, 301\)/.test(shop));
-  assert(/noindex=\{true\} canonical=\{base\}/.test(shop) && /GARLAND_CACHE_TAG, OCCASION_INDEX_TAG/.test(shop) && /data-city-context=\{city\.slug\}/.test(shop));
-  assert(/rel="prev"/.test(shop) && /rel="next"/.test(shop) && /aria-current=\{number === page \? "page" : undefined\}/.test(shop) && /loading=\{index < 4 \? "eager" : "lazy"\}/.test(shop));
+  // One static file per serviceable city with every product; ?collection= and ?page= are applied in the browser.
+  assert(/prerender = true/.test(shop) && /SERVICE_CITIES\.filter\(\(entry\) => entry\.serviceable\)/.test(shop) && /\{all\.map\(\(item, index\) =>/.test(shop));
+  assert(/noindex=\{true\} canonical=\{base\}/.test(shop) && /data-city-context=\{city\.slug\}/.test(shop));
+  assert(/rel: "prev"/.test(shop) && /rel: "next"/.test(shop) && /setAttribute\("aria-current", "page"\)/.test(shop) && /loading=\{index < 4 \? "eager" : "lazy"\}/.test(shop));
+  assert(/Math\.min\(pages, Math\.max\(1, Math\.floor\(Number\(params\.get\("page"\)\)\) \|\| 1\)\)/.test(shop) && /Object\.hasOwn\(data\.views, id\)/.test(shop), 'an out-of-range page shows the last one; an unknown collection shows everything');
   assert(/garlandEnquiryHref\(\{ code: item\.code, quantity: 1, city: city\.slug \}\)/.test(shop) && /cityProductEnquiryHref/.test(shop) && /withCity\(item\.path\)/.test(shop));
   assert.equal(shop.match(/<h1/g).length, 1);
   assert(!/₹|same[- ]day delivery in|branch|store in/i.test(shop.replace('We do not promise same-day or timed delivery', '')));
@@ -964,10 +968,9 @@ test('image discovery: only photographs reviewed as the product reach the sitema
   for (const [, close, name, self] of xml.replace(/^<\?xml[^>]*>/, '').matchAll(/<(\/?)([\w:]+)[^>]*?(\/?)>/g)) { if (self) continue; if (close) assert.equal(stack.pop(), name); else stack.push(name); }
   assert.equal(stack.length, 0);
   assert(!/&(?!amp;|lt;|gt;|quot;|apos;)/.test(xml));
-  // The response carries the same cache headers (and tag) as the garland pages. This checks the headers only;
-  // the purge itself (GarlandWebsite.refreshGarlandPages on an admin save) and the CDN are not exercised here.
-  const website = sourceLoader({ globals: { process } })('src/server/services/GarlandWebsite.ts');
-  assert.deepEqual(Object.fromEntries(Object.keys(website.garlandCacheHeaders()).map((key) => [key.toLowerCase(), headers.get(key)])), Object.fromEntries(Object.entries(website.garlandCacheHeaders()).map(([key, value]) => [key.toLowerCase(), value])));
+  // The sitemap is a static file built with the garland pages, so it carries no cache tag: a new build replaces it.
+  assert.equal(headers.get('content-type'), 'application/xml; charset=utf-8');
+  assert.equal(headers.get('vercel-cache-tag'), null);
   // Changed fixture records (a new main photograph, then an unpublished design) are reflected when the route renders again.
   set(record(withViews, { updatedAt: '2026-10-16T09:00:00.000Z', images: [{ url: store('new'), altText: 'New', width: 600, height: 1200, isPrimary: true }] }), record(a));
   ({ xml } = await sitemapFor());

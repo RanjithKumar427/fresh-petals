@@ -16,7 +16,8 @@ import {
   stagingConfigProblems,
 } from "./server/http/requestGuard";
 import { ON_CLOUDFLARE, STAGING_BUILD, inWorkersRuntime } from "./server/platform/target";
-import { requestScope, workerScope } from "./server/platform/requestScope";
+import { cloudflareEnv, requestScope, workerScope } from "./server/platform/requestScope";
+import { servedStatically, staticFallback } from "./server/platform/staticFallback";
 import { edgeCacheMatch, edgeCacheStore, edgeCacheable } from "./server/platform/edgeCache";
 import { STORED_PHOTO_WIDTHS } from "./data/garlandRules";
 
@@ -217,6 +218,13 @@ export const onRequest = defineMiddleware(async (context, next) => {
   if (!inWorkersRuntime()) return handle(context, next);
   if (context.url.pathname === "/_image" && !imageRequestAllowed(context.url)) {
     return withHeaders(new Response("Not found", { status: 404, headers: { "cache-control": "public, max-age=300" } }), SECURITY_HEADERS);
+  }
+  // A public GET/HEAD that reaches the Worker has no prebuilt file (static
+  // assets are served before the Worker): a city spelled another way, or a 404.
+  // Answered statically, before any database scope (src/server/platform/staticFallback.ts).
+  if (servedStatically(context.request.method, normalisePath(context.url.pathname))) {
+    const env = await cloudflareEnv();
+    return staticFallback(context.url, context.request.method, env.ASSETS as Parameters<typeof staticFallback>[2], { ...SECURITY_HEADERS, ...PLATFORM_HEADERS, ...previewHeaders(), ...revisionHeader() });
   }
   // Cloudflare Workers: a per-request database scope, and the shared cache
   // that Vercel's CDN provided for public on-demand pages.

@@ -2,6 +2,7 @@ import { OccasionRepository } from "../db/repositories/OccasionRepository";
 import { MoodRepository } from "../db/repositories/MoodRepository";
 import { FlowerTypeRepository } from "../db/repositories/FlowerTypeRepository";
 import type { Tag } from "../db/repositories/TagRepository";
+import { buildMemo } from "../platform/buildMemo";
 
 /**
  * Read-only access to the three independent taxonomies (see [[refined
@@ -11,7 +12,7 @@ import type { Tag } from "../db/repositories/TagRepository";
  */
 export const TaxonomyService = {
   async listOccasions(): Promise<Tag[]> {
-    return OccasionRepository.list();
+    return buildMemo("occasions", () => OccasionRepository.list());
   },
   async listMoods(): Promise<Tag[]> {
     return MoodRepository.list();
