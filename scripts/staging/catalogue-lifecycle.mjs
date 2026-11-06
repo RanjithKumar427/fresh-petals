@@ -5,8 +5,9 @@
 //
 // With FP_STAGING_INQUIRY_TEST_KEY in this process's environment (the same value as the Worker
 // secret of that name), it also tests enquiry persistence; without it that section is NOT RUN.
-// --deploy runs scripts/staging/deploy-worker.mjs --apply mid-run, so the catalogue snapshot (which
-// decides what catalogue products are public) is taken while the synthetic product is published.
+// The storefront is prebuilt: with --deploy the runner publishes through scripts/staging/publish.mjs
+// (the script the GitHub workflow runs) after the admin changes, three builds in all plus a
+// simulated failed build and a no-change check, and verifies the public pages after each.
 //
 // Everything it creates carries the fp-staging-test- prefix and is removed in `finally`:
 //   one synthetic approved admin and its test-only factor; one dashboard-created catalogue product;
@@ -24,7 +25,7 @@ import {
 
 const sharp = createRequire(import.meta.url)("sharp");
 const args = parseArgs();
-const run = startRun({ envFile: args.env, deadlineMinutes: 40 });
+const run = startRun({ envFile: args.env, deadlineMinutes: 75 });
 const { log, check, due, guarded, q, service, w, sdkFor } = run;
 const REQUIRED = args.require || "dc20dc91d3c529a5238ec0f234d60c37e85fa7ca"; // the controlled enquiry gate
 const INQUIRY_KEY = process.env.FP_STAGING_INQUIRY_TEST_KEY ?? "";
@@ -55,25 +56,7 @@ async function upload(label, buffer, mime = "image/png", name = `${SYNTHETIC_PRE
   if (j.ok && j.data?.id) { made.media.push({ id: j.data.id, path: j.data.path }); uploadedPaths.push(j.data.path); }
   return { r, j };
 }
-const publicGet = (path) => w("GET", path, {}); // no cookies: what a visitor sees
-// A new query string is its own edge-cache key, so this is what the Worker renders right now.
-// A request carrying any Supabase session cookie is never served from, or stored in, the
-// shared edge cache (src/server/platform/edgeCache.ts), and public pages don't read it: so
-// this is what the Worker renders right now. (A new query string no longer is: the cache key
-// keeps only the parameters a page reads.)
-const BYPASS = new Map([["sb-fp-cache-bypass-auth-token", "1"]]);
-const fresh = (path) => w("GET", path, { jar: BYPASS, store: false });
-// workers.dev has no zone to purge, so the cached public URL changes only when its s-maxage (120 s) runs out.
-const CACHE_BOUND_MS = 150000;
-async function eventually(path, test) {
-  const start = Date.now();
-  for (;;) {
-    const r = await publicGet(path);
-    if (test(r)) return { ok: true, seconds: Math.round((Date.now() - start) / 1000), cache: r.headers.get("x-fp-edge-cache") ?? "" };
-    if (Date.now() - start > CACHE_BOUND_MS) return { ok: false, seconds: Math.round((Date.now() - start) / 1000), cache: r.headers.get("x-fp-edge-cache") ?? "" };
-    await sleep(10000);
-  }
-}
+const publicGet = (path) => w("GET", path, {}); // no cookies: what a visitor sees (static files)
 const cardFor = (html, slug) => { const i = html.indexOf(`href="/products/${slug}"`); if (i < 0) return null; const open = html.lastIndexOf('data-garland-filters="', i); return open < 0 ? null : html.slice(open + 22, html.indexOf('"', open + 22)); };
 
 try {
@@ -137,23 +120,26 @@ try {
   const listed = body(await w("GET", `/api/admin/products?search=${encodeURIComponent(run_)}`, { jar: s, store: false })).data ?? [];
   check("product", "publish accepted; the admin list shows it published", publish.status === 200 && listed.some((p) => p.id === productId && p.status === "published"), `${publish.status}; ${listed.length} listed`);
 
-  // ------------------------------------------------------------------ catalogue publishing: the deployment snapshot
-  const beforeDeploy = await publicGet(`/products/${slug}`);
-  check("publishing", "before a deployment the new product has no public page", beforeDeploy.status === 404, String(beforeDeploy.status));
-  if (args.deploy) {
-    log("deploying staging so the catalogue snapshot includes the published synthetic product");
-    const d = spawnSync(process.execPath, ["scripts/staging/deploy-worker.mjs", `--env=${args.env}`, "--apply", ...(args["db-port"] ? [`--db-port=${args["db-port"]}`] : [])], { cwd: ROOT, encoding: "utf8", env: { ...process.env, FP_STAGING_INQUIRY_TEST_KEY: "" } });
+  // ------------------------------------------------------------------ publishing: the storefront is prebuilt; a build publishes
+  // The admin's save asks for a build (Publishing.ts). Here the same publish script the GitHub
+  // workflow runs is started by this runner, so the build, its checks, the deploy and the result
+  // are the real ones; only the trigger is local.
+  const publishBuild = (label, extra = []) => {
+    const t = Date.now();
+    const d = spawnSync(process.execPath, ["scripts/staging/publish.mjs", `--env=${args.env}`, ...(args["db-port"] ? [`--db-port=${args["db-port"]}`] : []), ...extra], { cwd: ROOT, encoding: "utf8", env: { ...process.env, FP_STAGING_INQUIRY_TEST_KEY: "" }, maxBuffer: 64 * 1024 * 1024 });
     const out = `${d.stdout}${d.stderr}`;
-    const report = out.split("\n").filter((l) => l.includes("[catalogue]"));
-    const mentions = report.filter((l) => l.includes(slug));
-    check("publishing", "deployment succeeded", d.status === 0 && /PASS +deployed/.test(out), `exit ${d.status}`);
-    check("publishing", "the build's catalogue report names the dashboard-only product as published but NOT live", mentions.some((l) => /NOT live/.test(l)), mentions.map((l) => scrub(l.replace(/^.*\[catalogue\]\s*/, "")).slice(0, 160)).join(" | ") || `no report line names it (${report.length} report lines)`);
-    for (let i = 0; i < 24; i++) { if ((await servedRevision(guarded, REQUIRED)).ok) break; await sleep(5000); }
-    const page = await publicGet(`/products/${slug}`);
-    const sitemap = await publicGet("/sitemap.xml");
-    const search = await publicGet("/search");
-    check("publishing", "after the deployment: still no public page, not in sitemap.xml or search", page.status === 404 && sitemap.status === 200 && !sitemap.text.includes(slug) && !search.text.includes(slug), `page ${page.status}; sitemap ${sitemap.status}`);
-  } else check("publishing", "deployment snapshot (run with --deploy)", null);
+    const result = (out.match(/RESULT (.*)/) ?? [])[1] ?? "";
+    const seconds = Math.round((Date.now() - t) / 1000);
+    log(`publish (${label}): exit ${d.status}; ${result}; ${seconds} s`);
+    publications.push({ label, status: d.status, result, seconds });
+    return { status: d.status, out, result, seconds };
+  };
+  const publications = [];
+  const fileOf = (m) => m.j.data.path.split("/").pop();
+  const pub = body(publish).publication;
+  check("publishing", "the save reports how the change will be published (scheduled check when dispatch isn't connected)", !!pub && ["github", "scheduled"].includes(pub.method) && /website/.test(pub.message), pub ? `${pub.method}: ${scrub(pub.message)}` : "absent");
+  const beforeDeploy = await publicGet(`/products/${slug}`);
+  check("publishing", "before the next build the new product has no page", beforeDeploy.status === 404, String(beforeDeploy.status));
 
   // Archived catalogue records in the restored data are excluded from every public list (read only).
   const archived = (await q(`select p.slug from products p left join garland_details g on g.product_id=p.id where g.product_id is null and p.status='archived' order by 1`)).map((r) => r.slug);
@@ -166,19 +152,7 @@ try {
   for (const p of publishedSample) samplePages.push((await publicGet(`/products/${p}`)).status);
   check("publishing", "restored published catalogue products: 200 and listed in sitemap.xml", samplePages.every((x) => x === 200) && publishedSample.every((p) => sitemapNow.includes(`${CANONICAL}/products/${p}<`)), samplePages.join(","));
 
-  // Removal through the admin.
-  const unpublish = await w("POST", `/api/admin/products/${productId}/status`, { jar: s, headers: JSON_HEADERS, body: JSON.stringify({ status: "archived" }), store: false });
-  const del = await w("DELETE", `/api/admin/products/${productId}`, { jar: s, headers: { origin: WORKER }, store: false });
-  const left = (await q(`select (select count(*)::int from products where id=$1) p, (select count(*)::int from product_images where product_id=$1) i`, [productId]))[0];
-  check("product", "archive then delete through the admin: product and its image links removed", unpublish.status === 200 && del.status === 200 && left.p === 0 && left.i === 0, `${unpublish.status} ${del.status}`);
-  if (left.p === 0) made.products = made.products.filter((id) => id !== productId);
-  const removeB = await w("DELETE", `/api/admin/media/${B.j.data.id}`, { jar: s, headers: { origin: WORKER }, store: false });
-  await sleep(2000);
-  const bObject = await storageObject(B.j.data.path);
-  check("media", "its image, now unused, is deleted with its Storage object", removeB.status === 200 && bObject === 0, `${removeB.status}; objects left ${bObject}`);
-  if (removeB.status === 200 && bObject === 0) made.media = made.media.filter((m) => m.id !== B.j.data.id);
-
-  // ------------------------------------------------------------------ garland: live publishing, edits, image replacement, filters, sitemap
+  // A garland made public through the admin, published in the same build as the product.
   const gSlug = `${SYNTHETIC_PREFIX}garland-${run_}`;
   const gName = `${SYNTHETIC_PREFIX}Garland ${run_}`;
   const code = `FP-G9${String(Number.parseInt(run_, 16) % 100000).padStart(5, "0")}`;
@@ -186,9 +160,6 @@ try {
   made.garlandProductId = gid;
   await q(`insert into garland_details (product_id, design_code, selling_mode, photo_permission) values ($1, $2, 'enquiry', 'unconfirmed')`, [gid, code]);
   const gUrl = `/products/${gSlug}`;
-  const draftPage = await publicGet(gUrl);
-  const smDraft = await publicGet("/sitemap-garlands.xml");
-  check("garland", "draft garland: no public page and not in sitemap-garlands.xml", draftPage.status === 404 && smDraft.status === 200 && !smDraft.text.includes(gSlug), `${draftPage.status}`);
   const g = body(await w("GET", `/api/admin/products/${gid}`, { jar: s, store: false })).data;
   const C = await upload("c", imgC);
   const gFields = (images, overrides = {}) => ({ name: gName, slug: gSlug, shortDescription: g.shortDescription, description: g.description, images, priceType: "quote", sellingPrice: null, compareAtPrice: null, costPrice: null, deliveryChargeOverride: null, categoryId: 22, occasionIds: g.occasionIds, moodIds: g.moodIds, flowerTypeIds: g.flowerTypeIds, whatsIncluded: g.whatsIncluded, careInstructions: g.careInstructions, status: "draft", featured: false, bestseller: false, newArrival: false, requiresWhatsappConfirmation: true, garland: { sellingMode: "enquiry", photoPermission: "granted", filters: ["lotus"] }, ...overrides });
@@ -196,74 +167,110 @@ try {
   check("garland", "garland edit through the admin: photo, permission and the lotus filter saved", gEdit.status === 200 && (await q(`select count(*)::int n from product_garland_filters where product_id=$1`, [gid]))[0].n === 1, `${gEdit.status} ${scrub(body(gEdit).error ?? "")}`);
   const gPublish = await w("POST", `/api/admin/products/${gid}/status`, { jar: s, headers: JSON_HEADERS, body: JSON.stringify({ status: "published" }), store: false });
   const gw = body(gPublish).website;
-  check("garland", "publish accepted and the website refresh reported", gPublish.status === 200 && !!gw, `${gPublish.status}; website ${gw ? JSON.stringify({ ok: gw.ok ?? gw.refreshed ?? null }) : "absent"}`);
-  const fileOf = (m) => m.j.data.path.split("/").pop();
-  const liveNow = await fresh(gUrl);
-  check("garland", "published garland renders at once (fresh render) with its name and photo, noindex on staging", liveNow.status === 200 && liveNow.text.includes(gName) && liveNow.text.includes(fileOf(C)) && /noindex/.test(liveNow.headers.get("x-robots-tag") ?? ""), `${liveNow.status}`);
-  const smNow = await fresh("/sitemap-garlands.xml");
-  check("garland", "sitemap-garlands.xml (fresh render) lists the page with its photo", smNow.text.includes(`${CANONICAL}${gUrl}<`) && smNow.text.includes(fileOf(C)), `${smNow.status}`);
-  const listing = await fresh("/categories/garlands");
-  const card = cardFor(listing.text, gSlug);
-  check("filters", "garland listing (fresh render) shows the card tagged with its lotus filter", listing.status === 200 && card !== null && card.split(" ").includes("lotus"), `${listing.status}; filters "${card ?? "?"}"`);
-  const livePublic = await eventually(gUrl, (r) => r.status === 200 && r.text.includes(gName));
-  const smPublic = await eventually("/sitemap-garlands.xml", (r) => r.text.includes(`${CANONICAL}${gUrl}<`));
-  check("garland", "the cached public page and sitemap (cached while it was a draft) update within s-maxage", livePublic.ok && smPublic.ok, `page after ${livePublic.seconds} s (${livePublic.cache}); sitemap after ${smPublic.seconds} s (${smPublic.cache})`);
-  const check_ = await w("GET", `/api/admin/products/${gid}/website`, { jar: s, store: false });
-  check("garland", "admin 'check on website' finds the live page", check_.status === 200 && body(check_).ok, `${check_.status}`);
+  check("garland", "publish accepted; the admin is told it appears with the next build, within the publishing bound", gPublish.status === 200 && gw?.listed === true && gw.refresh?.method === "publish" && gw.maxDelaySeconds === 1500, `${gPublish.status}; ${gw ? `${gw.refresh?.method} ${gw.maxDelaySeconds} s: ${scrub(gw.refresh?.message ?? "")}` : "absent"}`);
+  const notYet = await publicGet(gUrl);
+  const pending = body(await w("GET", `/api/admin/products/${gid}/website`, { jar: s, store: false }));
+  check("garland", "before the build: no page yet, and the admin's website check says pending, not live", notYet.status === 404 && pending.data?.state === "pending", `${notYet.status}; ${pending.data?.state}`);
 
-  // Edit and image replacement show at once.
-  const newName = `${gName} edited`;
-  const rename = await w("PATCH", `/api/admin/products/${gid}`, { jar: s, headers: JSON_HEADERS, body: JSON.stringify(gFields([{ mediaId: C.j.data.id, sortOrder: 0, isPrimary: true, altText: null }], { name: newName, status: "published" })), store: false });
-  const renamed = await fresh(gUrl);
-  check("garland", "edited name renders at once (fresh render)", rename.status === 200 && renamed.text.includes(newName), `${rename.status} ${renamed.status}`);
-  const D = await upload("d", imgD);
-  const swap = await w("PATCH", `/api/admin/products/${gid}`, { jar: s, headers: JSON_HEADERS, body: JSON.stringify(gFields([{ mediaId: D.j.data.id, sortOrder: 0, isPrimary: true, altText: null }], { name: newName, status: "published" })), store: false });
-  const swapped = await fresh(gUrl);
-  const sm2 = await fresh("/sitemap-garlands.xml");
-  check("garland", "replaced photo (fresh render): page and sitemap show the new image and not the old one", swap.status === 200 && swapped.text.includes(fileOf(D)) && !swapped.text.includes(fileOf(C)) && sm2.text.includes(fileOf(D)) && !sm2.text.includes(fileOf(C)), `${swap.status}`);
-  const swapPublic = await eventually(gUrl, (r) => r.status === 200 && r.text.includes(newName) && r.text.includes(fileOf(D)) && !r.text.includes(fileOf(C)));
-  check("garland", "the cached public page shows the edited name and new photo within s-maxage", swapPublic.ok, `after ${swapPublic.seconds} s (${swapPublic.cache})`);
+  if (args.deploy) {
+    // Build 1: the additions.
+    const b1 = publishBuild("additions: catalogue product and garland");
+    check("publishing", "build 1 published (build, output checks, deploy, served)", b1.status === 0 && /^published/.test(b1.result), `${b1.result}; ${b1.seconds} s`);
+    const report = b1.out.split("\n").filter((l) => l.includes("[catalogue]") && l.includes(slug));
+    check("publishing", "the build no longer reports the admin-added product as NOT live", !report.some((l) => /NOT live/.test(l)), report.map((l) => scrub(l)).join(" | ").slice(0, 160));
+    const page = await publicGet(`/products/${slug}`);
+    const [{ cslug }] = await q(`select c.slug cslug from categories c where c.id=3`);
+    const category = await publicGet(`/categories/${cslug}`);
+    const sitemap = await publicGet("/sitemap.xml");
+    check("publishing", "admin addition: the product page is live (static file) with its name and its uploaded photo through the resizer", page.status === 200 && page.text.includes(name) && page.text.includes(`/_image?href=`) && page.text.includes(fileOf(B)) && !page.headers.has("x-fp-source-revision"), `${page.status}`);
+    check("publishing", "admin addition: listed on its category page and in sitemap.xml", category.text.includes(`/products/${slug}`) && sitemap.text.includes(`${CANONICAL}/products/${slug}<`), `/categories/${cslug} ${category.status}`);
+    const live = await publicGet(gUrl);
+    check("garland", "published garland is live (static file) with its name and photo, noindex on staging", live.status === 200 && live.text.includes(gName) && live.text.includes(fileOf(C)) && /noindex/.test(live.headers.get("x-robots-tag") ?? "") && !live.headers.has("x-fp-source-revision"), `${live.status}`);
+    const sm = await publicGet("/sitemap-garlands.xml");
+    check("garland", "sitemap-garlands.xml lists the page with its photo", sm.text.includes(`${CANONICAL}${gUrl}<`) && sm.text.includes(fileOf(C)), `${sm.status}`);
+    const listing = await publicGet("/categories/garlands");
+    const card = cardFor(listing.text, gSlug);
+    check("filters", "the garland listing shows the card tagged with its lotus filter", listing.status === 200 && card !== null && card.split(" ").includes("lotus"), `filters "${card ?? "?"}"`);
+    const checked = body(await w("GET", `/api/admin/products/${gid}/website`, { jar: s, store: false }));
+    check("garland", "the admin's website check now finds the live page with the saved version", checked.data?.state === "live", `${checked.data?.state}`);
+
+    // Filters in a real browser (optional).
+    if (args.playwright) {
+      const { chromium } = await import(pathToFileURL(args.playwright).href);
+      const browser = await chromium.launch({ headless: true });
+      try {
+        const ctx = await browser.newContext();
+        await ctx.route("**/*", (route) => { const u = route.request().url(); return u.startsWith(`${WORKER}/`) || u.startsWith(`${STAGING_ORIGIN}/`) || u.startsWith("data:") ? route.continue() : route.abort(); });
+        const p = await ctx.newPage();
+        await p.goto(`${WORKER}/categories/garlands`);
+        const total = await p.locator("[data-garland-card]:visible").count();
+        await p.click('[data-garland-filter="lotus"]');
+        await sleep(500);
+        const shown = await p.$$eval("[data-garland-card]", (els) => els.filter((e) => e.offsetParent !== null).map((e) => ({ filters: (e.getAttribute("data-garland-filters") ?? "").split(" ") })));
+        const mineVisible = await p.$$eval("[data-garland-card]", (els, slug) => els.filter((e) => e.offsetParent !== null && (e.outerHTML.includes(`/products/${slug}"`) || (e.closest("a")?.getAttribute("href") ?? "").endsWith(slug))).length, gSlug);
+        check("filters", "browser: the lotus chip shows only lotus garlands, including this one", shown.length > 0 && shown.length < total && shown.every((x) => x.filters.includes("lotus")) && mineVisible === 1, `${shown.length} of ${total} visible`);
+        await p.goto(`${WORKER}/categories/bouquets?colour=red&utm_source=t`);
+        await sleep(300);
+        check("filters", "browser: an old ?colour= link lands on the fragment address and keeps other parameters", new URL(p.url()).hash.includes("colour=red") && new URL(p.url()).search.includes("utm_source=t"), new URL(p.url()).pathname);
+      } finally { await browser.close().catch(() => {}); }
+    }
+
+    // A failed build leaves the previous release serving.
+    const newName = `${gName} edited`;
+    const rename = await w("PATCH", `/api/admin/products/${gid}`, { jar: s, headers: JSON_HEADERS, body: JSON.stringify(gFields([{ mediaId: C.j.data.id, sortOrder: 0, isPrimary: true, altText: null }], { name: newName, status: "published" })), store: false });
+    check("garland", "rename saved through the admin", rename.status === 200, String(rename.status));
+    const failedBuild = publishBuild("simulated failed build", ["--simulate-build-failure"]);
+    const still = await publicGet(gUrl);
+    check("publishing", "a failed build deploys nothing: the previous release keeps serving (old name, page up)", failedBuild.status === 1 && /previous release still serving/.test(failedBuild.result) && still.status === 200 && still.text.includes(gName) && !still.text.includes(newName), `${failedBuild.result}`);
+
+    // Repeated changes before one build: photo swap, product archive and delete.
+    const D = await upload("d", imgD);
+    const swap = await w("PATCH", `/api/admin/products/${gid}`, { jar: s, headers: JSON_HEADERS, body: JSON.stringify(gFields([{ mediaId: D.j.data.id, sortOrder: 0, isPrimary: true, altText: null }], { name: newName, status: "published" })), store: false });
+    const unpublish = await w("POST", `/api/admin/products/${productId}/status`, { jar: s, headers: JSON_HEADERS, body: JSON.stringify({ status: "archived" }), store: false });
+    const del = await w("DELETE", `/api/admin/products/${productId}`, { jar: s, headers: { origin: WORKER }, store: false });
+    const left = (await q(`select (select count(*)::int from products where id=$1) p, (select count(*)::int from product_images where product_id=$1) i`, [productId]))[0];
+    check("product", "archive then delete through the admin: product and its image links removed", swap.status === 200 && unpublish.status === 200 && del.status === 200 && left.p === 0 && left.i === 0, `${swap.status} ${unpublish.status} ${del.status}`);
+    if (left.p === 0) made.products = made.products.filter((id) => id !== productId);
+    const b2 = publishBuild("edits and removals (several saves, one build)");
+    check("publishing", "build 2 published", b2.status === 0 && /^published/.test(b2.result), `${b2.result}; ${b2.seconds} s`);
+    const swapped = await publicGet(gUrl);
+    const sm2 = await publicGet("/sitemap-garlands.xml");
+    check("garland", "after one build: the latest name and the new photo, not the old one, on the page and in the sitemap", swapped.text.includes(newName) && swapped.text.includes(fileOf(D)) && !swapped.text.includes(fileOf(C)) && sm2.text.includes(fileOf(D)) && !sm2.text.includes(fileOf(C)), `${swapped.status}`);
+    const removed = await publicGet(`/products/${slug}`);
+    const sitemap2 = await publicGet("/sitemap.xml");
+    const category2 = await publicGet(`/categories/${cslug}`);
+    check("publishing", "admin removal: the product page answers 404 (not on sale), gone from sitemap.xml and its category page", removed.status === 404 && /isn(?:'|&#39;)t on sale/.test(removed.text) && !sitemap2.text.includes(slug) && !category2.text.includes(`/products/${slug}`), `${removed.status}`);
+    const again = publishBuild("nothing changed");
+    check("publishing", "with nothing changed the publish check builds nothing", again.status === 0 && /up to date/.test(again.result), again.result);
+
+    // Garland removal.
+    const gArchive = await w("POST", `/api/admin/products/${gid}/status`, { jar: s, headers: JSON_HEADERS, body: JSON.stringify({ status: "archived" }), store: false });
+    const b3 = publishBuild("garland removal");
+    const gone = await publicGet(gUrl);
+    const sm3 = await publicGet("/sitemap-garlands.xml");
+    const listing3 = await publicGet("/categories/garlands");
+    check("garland", "archived and published: page 404, gone from sitemap-garlands.xml and the listing", gArchive.status === 200 && b3.status === 0 && gone.status === 404 && !sm3.text.includes(gSlug) && !listing3.text.includes(gSlug), `${gArchive.status} ${b3.result} ${gone.status}`);
+  } else check("publishing", "builds (run with --deploy)", null);
+
   const removeC = await w("DELETE", `/api/admin/media/${C.j.data.id}`, { jar: s, headers: { origin: WORKER }, store: false });
   await sleep(2000);
   const cObject = await storageObject(C.j.data.path);
   if (removeC.status === 200 && cObject === 0) made.media = made.media.filter((m) => m.id !== C.j.data.id);
   check("media", "the replaced garland photo is deleted with its Storage object", removeC.status === 200 && cObject === 0, `${removeC.status}; objects left ${cObject}`);
-
-  // Filters in a real browser (optional).
-  if (args.playwright) {
-    const { chromium } = await import(pathToFileURL(args.playwright).href);
-    const browser = await chromium.launch({ headless: true });
-    try {
-      const ctx = await browser.newContext();
-      await ctx.route("**/*", (route) => { const u = route.request().url(); return u.startsWith(`${WORKER}/`) || u.startsWith(`${STAGING_ORIGIN}/`) || u.startsWith("data:") ? route.continue() : route.abort(); });
-      await ctx.addCookies([{ name: "sb-fp-cache-bypass-auth-token", value: "1", url: WORKER }]);
-      const p = await ctx.newPage();
-      await p.goto(`${WORKER}/categories/garlands`);
-      const total = await p.locator("[data-garland-card]:visible").count();
-      await p.click('[data-garland-filter="lotus"]');
-      await sleep(500);
-      const shown = await p.$$eval("[data-garland-card]", (els) => els.filter((e) => e.offsetParent !== null).map((e) => ({ filters: (e.getAttribute("data-garland-filters") ?? "").split(" "), mine: e.outerHTML.includes(location.pathname) || false, html: e.innerHTML.length })));
-      const mineVisible = await p.$$eval("[data-garland-card]", (els, slug) => els.filter((e) => e.offsetParent !== null && (e.outerHTML.includes(`/products/${slug}"`) || (e.closest("a")?.getAttribute("href") ?? "").endsWith(slug))).length, gSlug);
-      check("filters", "browser: the lotus chip shows only lotus garlands, including this one", shown.length > 0 && shown.length < total && shown.every((x) => x.filters.includes("lotus")) && mineVisible === 1, `${shown.length} of ${total} visible`);
-      await p.goto(`${WORKER}/categories/bouquets?colour=red&utm_source=t`);
-      check("filters", "browser: an old ?colour= link lands on the fragment address and keeps other parameters", new URL(p.url()).hash.includes("colour=red") && new URL(p.url()).search.includes("utm_source=t"), new URL(p.url()).pathname);
-    } finally { await browser.close().catch(() => {}); }
-  } else {
-    const old = await publicGet("/categories/bouquets?colour=red&utm_source=t");
-    check("filters", "an old ?colour= filter link redirects to the fragment address", old.status === 301 && /#colour=red/.test(old.location) && /utm_source=t/.test(old.location), `${old.status}`);
+  if (made.products.includes(productId)) {
+    // Without --deploy the product is still there: remove it the same way.
+    await w("POST", `/api/admin/products/${productId}/status`, { jar: s, headers: JSON_HEADERS, body: JSON.stringify({ status: "archived" }), store: false });
+    const delNow = await w("DELETE", `/api/admin/products/${productId}`, { jar: s, headers: { origin: WORKER }, store: false });
+    if (delNow.status === 200) made.products = made.products.filter((id) => id !== productId);
   }
-
-  // Unpublish and removal.
-  const gArchive = await w("POST", `/api/admin/products/${gid}/status`, { jar: s, headers: JSON_HEADERS, body: JSON.stringify({ status: "archived" }), store: false });
-  const gone = await fresh(gUrl);
-  const sm3 = await fresh("/sitemap-garlands.xml");
-  const listing2 = await fresh("/categories/garlands");
-  check("garland", "archived (fresh render): page 404, gone from sitemap-garlands.xml and the listing", gArchive.status === 200 && gone.status === 404 && !sm3.text.includes(gSlug) && !listing2.text.includes(gSlug), `${gArchive.status} ${gone.status}`);
-  const gonePublic = await eventually(gUrl, (r) => r.status === 404);
-  const smGone = await eventually("/sitemap-garlands.xml", (r) => !r.text.includes(gSlug));
-  check("garland", "the cached public page and sitemap drop it within s-maxage", gonePublic.ok && smGone.ok, `page after ${gonePublic.seconds} s; sitemap after ${smGone.seconds} s`);
+  const removeB = await w("DELETE", `/api/admin/media/${B.j.data.id}`, { jar: s, headers: { origin: WORKER }, store: false });
+  await sleep(2000);
+  const bObject = await storageObject(B.j.data.path);
+  check("media", "the product's image, now unused, is deleted with its Storage object", removeB.status === 200 && bObject === 0, `${removeB.status}; objects left ${bObject}`);
+  if (removeB.status === 200 && bObject === 0) made.media = made.media.filter((m) => m.id !== B.j.data.id);
   const gDelete = await w("DELETE", `/api/admin/products/${gid}`, { jar: s, headers: { origin: WORKER }, store: false });
   check("garland", "the admin refuses to delete a garland (permanent design code)", gDelete.status === 400 && (await q(`select count(*)::int n from products where id=$1`, [gid]))[0].n === 1, String(gDelete.status));
+  run.publications = publications;
 
   // ------------------------------------------------------------------ enquiry persistence, under the controlled gate
   const marker = `${SYNTHETIC_PREFIX}enquiry-${run_}`;
@@ -307,6 +314,6 @@ try {
   check("cleanup", "no synthetic product, garland, image, Storage object or enquiry left", Object.values(leftovers).every((n) => n === 0), JSON.stringify(leftovers));
   await ids.cleanup();
   compareSnapshots(check, before, await snapshot(q), { sequencesMayAdvance: true });
-  const fails = run.finish({ out: args.out, extra: { revision: rev.served } });
+  const fails = run.finish({ out: args.out, extra: { revision: rev.served, publications: run.publications ?? [] } });
   process.exit(process.exitCode ?? (fails ? 1 : 0));
 }

@@ -119,7 +119,8 @@ export function startRun({ envFile, minFreeMb = 1000, deadlineMinutes = 15 }) {
 
 /** The served revision, and whether it is a local commit that contains `required`. */
 export async function servedRevision(guarded, required) {
-  const served = (await guarded(`${WORKER}/`)).headers.get("x-fp-source-revision") ?? "";
+  // The Worker's own routes carry the revision header (pages are static files now).
+  const served = (await guarded(`${WORKER}/admin/login`)).headers.get("x-fp-source-revision") ?? "";
   if (!/^[0-9a-f]{40}$/.test(served)) return { served, ok: false };
   try { execFileSync("git", ["-C", ROOT, "merge-base", "--is-ancestor", required, served], { stdio: "ignore" }); return { served, ok: true }; }
   catch { return { served, ok: false }; }
