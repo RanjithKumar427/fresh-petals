@@ -87,6 +87,12 @@ test('static storefront: the Worker answers addresses without a file statically,
   assert.equal(product.status, 404); assert.equal(await product.text(), 'page /unavailable/catalogue');
   const middleware = readFileSync('src/middleware.ts', 'utf8');
   assert(middleware.indexOf('servedStatically(') < middleware.indexOf('const scope = await workerScope()'), 'answered before any database scope');
+  // Astro skips the middleware for an address no route matches, so a catch-all on-demand route makes it run.
+  assert.match(readFileSync('src/pages/[...fallback].ts', 'utf8'), /export const prerender = false;[\s\S]*status: 404/);
+  // Prebuilt garland pages ask the Worker's /_image for resized copies, never the Storage originals.
+  const rules = cf({})('src/data/garlandRules.ts');
+  const photo = { path: 'https://wyndmywdtacucojvudxg.supabase.co/storage/v1/object/public/media/products/a.jpg', width: 1200, height: 1600, alt: 'x' };
+  assert.deepEqual(rules.garlandPhotoSrcset(photo, 480).split(', '), ['/_image?href=https%3A%2F%2Fwyndmywdtacucojvudxg.supabase.co%2Fstorage%2Fv1%2Fobject%2Fpublic%2Fmedia%2Fproducts%2Fa.jpg&w=240&q=75&f=webp 240w', '/_image?href=https%3A%2F%2Fwyndmywdtacucojvudxg.supabase.co%2Fstorage%2Fv1%2Fobject%2Fpublic%2Fmedia%2Fproducts%2Fa.jpg&w=480&q=75&f=webp 480w']);
 });
 
 test('edge cache: only anonymous public GET/HEAD responses that opt in with s-maxage', async () => {

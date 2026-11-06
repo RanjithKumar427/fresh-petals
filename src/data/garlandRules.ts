@@ -1,7 +1,7 @@
 // Garland record types and the publication / selling rules, kept apart from
 // the draft data (src/data/garlandDrafts.json) so server code such as
 // ProductPricing.ts can apply the rules without bundling any draft records.
-import { ON_CLOUDFLARE, inWorkersRuntime } from "../server/platform/target";
+import { ON_CLOUDFLARE } from "../server/platform/target";
 
 /** Unpublished drafts are shown only in a local preview (`astro dev`, or PUBLIC_FP_PREVIEW_DRAFTS=1). */
 export const GARLAND_PREVIEW: boolean = import.meta.env.DEV || import.meta.env.PUBLIC_FP_PREVIEW_DRAFTS === "1";
@@ -126,10 +126,13 @@ export const STORED_PHOTO_WIDTHS = [240, 480, 720, 1080];
 
 /**
  * Stored uploads are resized by the host's image optimiser: Vercel's, or on a
- * Cloudflare Worker the Images binding behind Astro's /_image endpoint. Neither
- * exists in local development or while prerendering.
+ * Cloudflare Worker the Images binding behind Astro's /_image endpoint. A
+ * Cloudflare build always has it, including the pages it prebuilds (they are
+ * served next to the Worker's /_image); without this the static garland pages
+ * pointed every visitor at the full-size originals in Storage. Local
+ * development has neither.
  */
-const optimiserAvailable = () => (ON_CLOUDFLARE ? inWorkersRuntime() : typeof process !== "undefined" && process.env?.VERCEL === "1");
+const optimiserAvailable = () => (ON_CLOUDFLARE ? true : typeof process !== "undefined" && process.env?.VERCEL === "1");
 
 /** A stored photograph at one of STORED_PHOTO_WIDTHS (WebP where the browser accepts it), cached by the CDN. */
 export const storedPhotoUrl = (url: string, width: number) =>

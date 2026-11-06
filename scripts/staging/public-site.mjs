@@ -28,10 +28,12 @@ const get = async (path, init = {}) => {
   const text = /text|xml|json|javascript/.test(type) ? await r.text() : (await r.arrayBuffer(), "");
   return { status: r.status, headers: r.headers, text, type, location: r.headers.get("location") ?? "" };
 };
+const stateText = (await get(`/_publish/state.json`)).text;
 const decode = (s) => s.replaceAll("&amp;", "&").replaceAll("&#39;", "'").replaceAll("&quot;", '"');
 const attr = (html, re) => decode(re.exec(html)?.[1] ?? "");
 
-const rev = (await get("/")).headers.get("x-fp-source-revision") ?? "";
+// Pages are static files now; the deployed build records its revision in /_publish/state.json.
+const rev = (() => { try { return JSON.parse(stateText).revision ?? ""; } catch { return ""; } })();
 console.log(`served revision ${rev || "(none)"}`);
 if (args.require && !rev.startsWith(String(args.require).slice(0, 7))) { console.log(`STOP: served revision is not ${args.require}`); process.exit(2); }
 
@@ -79,6 +81,7 @@ for (let i = 0; i < urls.length; i += 6) {
   }));
 }
 check("seo", "every sitemap page answers 200", !failures.status.length, failures.status.slice(0, 5).join("; ") || `${urls.length} pages (${staticPages} static files, ${workerPages} rendered by the Worker)`);
+check("static", "every sitemap page is a static file (no Worker run: no revision or edge-cache header)", workerPages === 0 && staticPages === urls.length - failures.status.length, `${staticPages} static, ${workerPages} via the Worker`);
 check("seo", "every sitemap page's canonical is its own production URL", !failures.canonical.length, failures.canonical.slice(0, 5).join("; "));
 // failures.noindex lists pages WITHOUT noindex; failures.analytics lists pages WITH the tag.
 const okPages = urls.length - failures.status.length;
@@ -100,15 +103,18 @@ const redirect = async (name, path, status, to) => {
 await redirect("/studio → bouquets (301)", "/studio", 301, "/categories/bouquets");
 await redirect("/studio/<anything> → bouquets (301)", "/studio/old/page", 301, "/categories/bouquets");
 await redirect("trailing slash → canonical form", "/faqs/", 307, /\/faqs$/);
-await redirect("old filter link → fragment (301), campaign tag kept", "/categories/bouquets?colour=red&utm_source=x", 301, "/categories/bouquets?utm_source=x#colour=red");
-await redirect("old lavender filter reads as purple", "/categories/bouquets?colour=lavender", 301, "/categories/bouquets#colour=purple");
-await redirect("occasion filter link → fragment (301)", "/occasions/birthday?budget=under-1500", 301, "/occasions/birthday#budget=under-1500");
-await redirect("filter link with only unknown values → the plain page (301)", "/occasions/birthday?budget=under-1000", 301, "/occasions/birthday");
+// Old filter links and invented query strings get the same static file (no Worker run); the filter
+// script moves a selection to the fragment address (checked in a browser by catalogue-lifecycle.mjs).
+for (const path of ["/categories/bouquets?colour=red&utm_source=x", "/occasions/birthday?budget=under-1500", "/categories/garlands?x=zz", "/locations/hyderabad/shop?page=999&collection=nope", "/?ref_zz=1"]) {
+  const r = await get(path);
+  const canonical = attr(r.text, /<link rel="canonical" href="([^"]+)"/);
+  check("static", `${path}: the page's own static file, canonical to its path, no Worker run`, r.status === 200 && !r.headers.has("x-fp-source-revision") && canonical === `${CANONICAL}${new URL(path, WORKER).pathname}`, `${r.status} ${canonical}`);
+}
 await redirect("city alias → canonical city (301)", "/locations/bangalore", 301, "/locations/bengaluru");
 await redirect("city shop alias → canonical (301)", "/locations/bangalore/shop", 301, "/locations/bengaluru/shop");
-for (const path of ["/no-such-page-check", "/products/zz-no-such-product", "/locations/atlantis", "/occasions/no-such-occasion"]) {
+for (const [path, copy] of [["/no-such-page-check", "This page isn't available"], ["/products/zz-no-such-product", "This garland design isn't on sale"], ["/products/jasmine-malli", "This product isn't on sale"], ["/locations/atlantis", "This page isn't available"], ["/occasions/no-such-occasion", "This page isn't available"], ["/categories/garlands/no-such-flower", "This page isn't available"]]) {
   const r = await get(path);
-  check("404", `${path} answers 404, noindex`, r.status === 404 && (/noindex/.test(r.headers.get("x-robots-tag") ?? "") || /noindex/.test(r.text)), `${r.status}`);
+  check("404", `${path} answers 404, noindex, with the right page`, r.status === 404 && (/noindex/.test(r.headers.get("x-robots-tag") ?? "") || /noindex/.test(r.text)) && r.text.includes(copy), `${r.status}`);
 }
 
 // --- WhatsApp ---
@@ -135,7 +141,7 @@ if (sample.garland) {
   const missing = await get("/garland-enquiry?code=FP-G99999");
   check("whatsapp", "garland enquiry for an unknown code: back to the garland list with a notice, never WhatsApp", missing.status === 303 && missing.location === "/categories/garlands?unavailable=FP-G99999", `${missing.status} ${missing.location}`);
   const notice = await get("/categories/garlands?unavailable=FP-G99999");
-  check("whatsapp", "the garland list explains the unavailable design", notice.status === 200 && notice.text.includes("FP-G99999"), `${notice.status}`);
+  check("whatsapp", "the garland list carries the unavailable-design notice, filled in the browser from ?unavailable=", notice.status === 200 && /data-garland-unavailable-notice hidden/.test(notice.text) && /data-garland-unavailable-code/.test(notice.text), `${notice.status}`);
 } else check("whatsapp", "a public garland page was found", false);
 if (sample.city) {
   const links = waLinks(sample.city.html);
