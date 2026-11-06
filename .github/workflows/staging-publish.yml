@@ -73,6 +73,7 @@ jobs:
       - name: Publish
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: node scripts/staging/publish.mjs --env="$RUNNER_TEMP/staging.env" --ci-token --force --out="$RUNNER_TEMP/publish.json"
+        # publish.mjs compares again and builds nothing when the deployed build is current.
+        run: node scripts/staging/publish.mjs --env="$RUNNER_TEMP/staging.env" --ci-token ${{ inputs.force && '--force' || '' }} --out="$RUNNER_TEMP/publish.json"
       - if: always()
         run: rm -f "$RUNNER_TEMP/staging.env"

@@ -70,7 +70,10 @@
         "SITE_URL": "https://onlyfreshpetals.in",
         "FP_DEPLOY_ENV": "staging",
         "FP_AUTH_ORIGIN": "https://fresh-petals-staging.branjith-kumar24-01.workers.dev",
-        "SITE_CHECK_ORIGIN": "https://fresh-petals-staging.branjith-kumar24-01.workers.dev"
+        "SITE_CHECK_ORIGIN": "https://fresh-petals-staging.branjith-kumar24-01.workers.dev",
+        // Publishing on save (src/server/services/Publishing.ts): active once the Worker
+        // secret FP_PUBLISH_GITHUB_TOKEN exists; until then the scheduled check publishes.
+        "FP_PUBLISH_REPOSITORY": "RanjithKumar427/fresh-petals"
       }
     }
   }
