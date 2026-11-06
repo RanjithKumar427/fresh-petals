@@ -114,7 +114,7 @@ await redirect("city alias → canonical city (301)", "/locations/bangalore", 30
 await redirect("city shop alias → canonical (301)", "/locations/bangalore/shop", 301, "/locations/bengaluru/shop");
 for (const [path, copy] of [["/no-such-page-check", "This page isn't available"], ["/products/zz-no-such-product", "This garland design isn't on sale"], ["/products/jasmine-malli", "This product isn't on sale"], ["/locations/atlantis", "This page isn't available"], ["/occasions/no-such-occasion", "This page isn't available"], ["/categories/garlands/no-such-flower", "This page isn't available"]]) {
   const r = await get(path);
-  check("404", `${path} answers 404, noindex, with the right page`, r.status === 404 && (/noindex/.test(r.headers.get("x-robots-tag") ?? "") || /noindex/.test(r.text)) && r.text.includes(copy), `${r.status}`);
+  check("404", `${path} answers 404, noindex, with the right page`, r.status === 404 && (/noindex/.test(r.headers.get("x-robots-tag") ?? "") || /noindex/.test(r.text)) && decode(r.text).includes(copy), `${r.status}`);
 }
 
 // --- WhatsApp ---
