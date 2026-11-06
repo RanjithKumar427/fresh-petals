@@ -110,6 +110,12 @@ export async function sanitizeWithImagesBinding(
   const unreadable: ImageCheck = { ok: false, error: "This image couldn't be read. It may be damaged; save it again and retry." };
   const mismatch: ImageCheck = { ok: false, error: "The file's contents don't match its type. Save it again as a JPEG, PNG, WebP or GIF and retry." };
   const tooLarge: ImageCheck = { ok: false, error: "This image is too large in pixels. Resize it (for example to 3000 pixels on the long side) and retry." };
+  // The customer sees one generic message; the Worker log says which step failed and why (never image data).
+  const failed = (step: string, error?: unknown): ImageCheck => {
+    const reason = error instanceof Error ? `${error.name}: ${error.message}` : error === undefined ? "" : String(error);
+    console.warn(`[media] Images binding: ${step} failed for ${format}${reason ? ` (${reason.slice(0, 200)})` : ""}`);
+    return unreadable;
+  };
 
   let frames = 1;
   let canvas: { width: number | null; height: number | null } = { width: null, height: null };
@@ -129,13 +135,13 @@ export async function sanitizeWithImagesBinding(
   let info: ImagesInfo;
   try {
     info = await images.info(streamOf(buffer));
-  } catch {
-    return unreadable;
+  } catch (error) {
+    return failed("info", error);
   }
   if (info.format !== MIME[format]) return mismatch;
   const width = info.width ?? 0;
   const height = info.height ?? 0;
-  if (!width || !height) return unreadable;
+  if (!width || !height) return failed("size", `${width}x${height}`);
   if (width * height * frames > limits.maxPixels) return tooLarge;
 
   let output: Uint8Array;
@@ -145,17 +151,17 @@ export async function sanitizeWithImagesBinding(
       .transform(format === "jpeg" ? { metadata: "none" } : {})
       .output({ format: MIME[format], quality: 90, anim: true });
     output = new Uint8Array(await result.response().arrayBuffer());
-  } catch {
-    return unreadable;
+  } catch (error) {
+    return failed("transform", error);
   }
-  if (helpers.sniff(output) !== format) return unreadable;
+  if (helpers.sniff(output) !== format) return failed("output format", helpers.sniff(output) ?? "unknown");
   if (output.byteLength > limits.maxOutputBytes) return { ok: false, error: "This image is too large after processing. Resize it and retry." };
 
   let outInfo: ImagesInfo = {};
   try {
     outInfo = await images.info(streamOf(output));
-  } catch {
-    return unreadable;
+  } catch (error) {
+    return failed("output info", error);
   }
   return {
     ok: true,

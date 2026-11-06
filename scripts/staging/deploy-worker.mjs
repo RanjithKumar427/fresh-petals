@@ -112,7 +112,7 @@ if (!args.skipBuild && !args["skip-build"]) {
   const buildEnv = { SystemRoot, PATH: PATH ?? Path, TEMP, TMP, USERPROFILE, APPDATA, LOCALAPPDATA, HOMEDRIVE, HOMEPATH, ComSpec, DATABASE_URL: file.values.DATABASE_URL, NODE_ENV: "production" };
   const build = spawnSync(process.execPath, ["scripts/cloudflare/build.mjs", "staging"], { encoding: "utf8", env: buildEnv, cwd: root });
   const out = `${build.stdout}${build.stderr}`.split(file.values.DATABASE_URL).join("[redacted]");
-  console.log(out.split("\n").filter((l) => /build OK|FAILED|error|Note:|references|analytics/i.test(l)).slice(-25).join("\n"));
+  console.log(out.split("\n").filter((l) => /build OK|FAILED|error|Note:|references|analytics|\[catalogue\]/i.test(l)).slice(-40).join("\n"));
   if (build.status !== 0) stop("build failed", [`exit ${build.status}`]);
   pass("staging build and its output checks passed");
 }
