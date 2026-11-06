@@ -105,6 +105,14 @@ test('the password page claims success only with the cookie set after an accepte
   assert.match(endpoint, /cookies\.set\(PASSWORD_CHANGED_COOKIE, "1", \{[^}]*httpOnly: true/);
 });
 
+test('the password page always clears link tokens from the address bar, not only when it bridges them', () => {
+  const page = readFileSync('src/pages/admin/reset-password.astro', 'utf8');
+  const script = page.slice(page.indexOf('<script>'));
+  const clear = script.search(/if \(params\.has\("access_token"\) \|\| params\.has\("refresh_token"\)\) \{\s*history\.replaceState\(history\.state, "", window\.location\.pathname \+ window\.location\.search\);/);
+  assert.ok(clear > 0, 'unconditional replaceState present');
+  assert.ok(clear < script.indexOf('if (fallback &&'), 'clearing happens before, and outside, the bridge branch');
+});
+
 // The real Supabase cookie client with only the network and the admin table replaced.
 async function signIn(row) {
   const session = { access_token: 'a.b.c', token_type: 'bearer', expires_in: 3600, expires_at: Math.floor(Date.now() / 1000) + 3600, refresh_token: 'refresh', user: { id: 'user-1', aud: 'authenticated', email: 'someone@example.com' } };
