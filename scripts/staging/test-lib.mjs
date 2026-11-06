@@ -221,7 +221,7 @@ export function syntheticIdentities({ q, service, check, log }) {
     const password = random();
     const created = await service.auth.admin.createUser({ email, password, email_confirm: true });
     if (created.error) throw new Error(`createUser refused, status ${created.error.status}`);
-    const entry = { id: created.data.user.id, email, password, factorIds: [], profile: false };
+    const entry = { id: created.data.user.id, email, password, factorIds: [], profile: false, factorId: null, secret: null };
     made.push(entry);
     if (approved) { await q(`insert into public.admin_users (id, email, role) values ($1, $2, 'admin')`, [entry.id, email]); entry.profile = true; }
     return entry;
