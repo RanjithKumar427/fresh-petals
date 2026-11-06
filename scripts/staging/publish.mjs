@@ -44,8 +44,10 @@ const liveFingerprint = async () => {
   await client.connect();
   try { return (await client.query(FINGERPRINT_SQL)).rows[0].fingerprint; } finally { await client.end().catch(() => {}); }
 };
-const deployedState = async () => {
-  const r = await fetch(`${WORKER}/_publish/state.json?t=${Date.now()}`, { signal: AbortSignal.timeout(20000) });
+// `bust` adds a query string; without it this is the address visitors' requests use, so it shows
+// when the new build is actually served to them (static files can lag a deploy briefly).
+const deployedState = async ({ bust = true } = {}) => {
+  const r = await fetch(`${WORKER}/_publish/state.json${bust ? `?t=${Date.now()}` : ""}`, { signal: AbortSignal.timeout(20000) });
   return r.ok ? r.json() : { fingerprint: null, status: r.status };
 };
 
@@ -69,11 +71,13 @@ if (deploy.status !== 0) {
 }
 const built = JSON.parse(readFileSync(path.join(root, "dist/client/_publish/state.json"), "utf8"));
 result.built = built;
-for (;;) {
-  const now = await deployedState().catch(() => ({}));
-  if (now.fingerprint === built.fingerprint && now.builtAt === built.builtAt) { result.seconds.live = secs(); break; }
-  if (secs() - result.seconds.buildAndDeploy > 180) finish("deployed, but the new build was not served within 180 s", 1);
-  await new Promise((r) => setTimeout(r, 5000));
+for (const [key, bust] of [["live", true], ["visitors", false]]) {
+  for (;;) {
+    const now = await deployedState({ bust }).catch(() => ({}));
+    if (now.fingerprint === built.fingerprint && now.builtAt === built.builtAt) { result.seconds[key] = secs(); break; }
+    if (secs() - result.seconds.buildAndDeploy > 300) finish(`deployed, but the new build was not served ${bust ? "" : "at the plain address "}within 300 s`, 1);
+    await new Promise((r) => setTimeout(r, 3000));
+  }
 }
-log(`live: the Worker serves build ${built.fingerprint.slice(0, 12)} from ${built.builtAt}`);
+log(`live: the Worker serves build ${built.fingerprint.slice(0, 12)} from ${built.builtAt} (new address at ${result.seconds.live} s; the plain address visitors use at ${result.seconds.visitors} s)`);
 finish(built.fingerprint === live ? "published" : "published (the database changed again during the build; the next check publishes again)", 0);

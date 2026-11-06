@@ -57,6 +57,17 @@ async function upload(label, buffer, mime = "image/png", name = `${SYNTHETIC_PRE
   return { r, j };
 }
 const publicGet = (path) => w("GET", path, {}); // no cookies: what a visitor sees (static files)
+// After a deploy the plain addresses can serve the previous build for a short while: wait (at most
+// 5 minutes) for the expected state and report how long it took.
+async function afterBuild(path, test) {
+  const start = Date.now();
+  for (;;) {
+    const r = await publicGet(path);
+    if (test(r)) return { r, seconds: Math.round((Date.now() - start) / 1000) };
+    if (Date.now() - start > 300000) return { r, seconds: null };
+    await sleep(5000);
+  }
+}
 const cardFor = (html, slug) => { const i = html.indexOf(`href="/products/${slug}"`); if (i < 0) return null; const open = html.lastIndexOf('data-garland-filters="', i); return open < 0 ? null : html.slice(open + 22, html.indexOf('"', open + 22)); };
 
 try {
@@ -178,13 +189,13 @@ try {
     check("publishing", "build 1 published (build, output checks, deploy, served)", b1.status === 0 && /^published/.test(b1.result), `${b1.result}; ${b1.seconds} s`);
     const report = b1.out.split("\n").filter((l) => l.includes("[catalogue]") && l.includes(slug));
     check("publishing", "the build no longer reports the admin-added product as NOT live", !report.some((l) => /NOT live/.test(l)), report.map((l) => scrub(l)).join(" | ").slice(0, 160));
-    const page = await publicGet(`/products/${slug}`);
+    const { r: page, seconds: lag1 } = await afterBuild(`/products/${slug}`, (r) => r.status === 200);
     const [{ cslug }] = await q(`select c.slug cslug from categories c where c.id=3`);
     const category = await publicGet(`/categories/${cslug}`);
     const sitemap = await publicGet("/sitemap.xml");
-    check("publishing", "admin addition: the product page is live (static file) with its name and its uploaded photo through the resizer", page.status === 200 && page.text.includes(name) && page.text.includes(`/_image?href=`) && page.text.includes(fileOf(B)) && !page.headers.has("x-fp-source-revision"), `${page.status}`);
+    check("publishing", "admin addition: the product page is live (static file) with its name and its uploaded photo through the resizer", page.status === 200 && page.text.includes(name) && page.text.includes(`/_image?href=`) && page.text.includes(fileOf(B)) && !page.headers.has("x-fp-source-revision"), `${page.status}; visible ${lag1 ?? "not within 300"} s after the build was served`);
     check("publishing", "admin addition: listed on its category page and in sitemap.xml", category.text.includes(`/products/${slug}`) && sitemap.text.includes(`${CANONICAL}/products/${slug}<`), `/categories/${cslug} ${category.status}`);
-    const live = await publicGet(gUrl);
+    const { r: live } = await afterBuild(gUrl, (r) => r.status === 200);
     check("garland", "published garland is live (static file) with its name and photo, noindex on staging", live.status === 200 && live.text.includes(gName) && live.text.includes(fileOf(C)) && /noindex/.test(live.headers.get("x-robots-tag") ?? "") && !live.headers.has("x-fp-source-revision"), `${live.status}`);
     const sm = await publicGet("/sitemap-garlands.xml");
     check("garland", "sitemap-garlands.xml lists the page with its photo", sm.text.includes(`${CANONICAL}${gUrl}<`) && sm.text.includes(fileOf(C)), `${sm.status}`);
@@ -192,7 +203,7 @@ try {
     const card = cardFor(listing.text, gSlug);
     check("filters", "the garland listing shows the card tagged with its lotus filter", listing.status === 200 && card !== null && card.split(" ").includes("lotus"), `filters "${card ?? "?"}"`);
     const checked = body(await w("GET", `/api/admin/products/${gid}/website`, { jar: s, store: false }));
-    check("garland", "the admin's website check now finds the live page with the saved version", checked.data?.state === "live", `${checked.data?.state}`);
+    check("garland", "the admin's website check now finds the live page with the saved version", checked.data?.state === "live", `${checked.data?.state}; seen ${JSON.stringify(checked.data?.seen ?? null)}`);
 
     // Filters in a real browser (optional).
     if (args.playwright) {
@@ -233,23 +244,23 @@ try {
     if (left.p === 0) made.products = made.products.filter((id) => id !== productId);
     const b2 = publishBuild("edits and removals (several saves, one build)");
     check("publishing", "build 2 published", b2.status === 0 && /^published/.test(b2.result), `${b2.result}; ${b2.seconds} s`);
-    const swapped = await publicGet(gUrl);
+    const { r: swapped, seconds: lag2 } = await afterBuild(gUrl, (r) => r.text.includes(newName) && r.text.includes(fileOf(D)));
     const sm2 = await publicGet("/sitemap-garlands.xml");
-    check("garland", "after one build: the latest name and the new photo, not the old one, on the page and in the sitemap", swapped.text.includes(newName) && swapped.text.includes(fileOf(D)) && !swapped.text.includes(fileOf(C)) && sm2.text.includes(fileOf(D)) && !sm2.text.includes(fileOf(C)), `${swapped.status}`);
-    const removed = await publicGet(`/products/${slug}`);
+    check("garland", "after one build: the latest name and the new photo, not the old one, on the page and in the sitemap", swapped.text.includes(newName) && swapped.text.includes(fileOf(D)) && !swapped.text.includes(fileOf(C)) && sm2.text.includes(fileOf(D)) && !sm2.text.includes(fileOf(C)), `${swapped.status}; visible ${lag2 ?? "not within 300"} s after the build was served`);
+    const { r: removed, seconds: lag3 } = await afterBuild(`/products/${slug}`, (r) => r.status === 404);
     const sitemap2 = await publicGet("/sitemap.xml");
     const category2 = await publicGet(`/categories/${cslug}`);
-    check("publishing", "admin removal: the product page answers 404 (not on sale), gone from sitemap.xml and its category page", removed.status === 404 && /isn(?:'|&#39;)t on sale/.test(removed.text) && !sitemap2.text.includes(slug) && !category2.text.includes(`/products/${slug}`), `${removed.status}`);
+    check("publishing", "admin removal: the product page answers 404 (not on sale), gone from sitemap.xml and its category page", removed.status === 404 && /isn(?:'|&#39;)t on sale/.test(removed.text) && !sitemap2.text.includes(slug) && !category2.text.includes(`/products/${slug}`), `${removed.status}; ${lag3 ?? "not within 300"} s`);
     const again = publishBuild("nothing changed");
     check("publishing", "with nothing changed the publish check builds nothing", again.status === 0 && /up to date/.test(again.result), again.result);
 
     // Garland removal.
     const gArchive = await w("POST", `/api/admin/products/${gid}/status`, { jar: s, headers: JSON_HEADERS, body: JSON.stringify({ status: "archived" }), store: false });
     const b3 = publishBuild("garland removal");
-    const gone = await publicGet(gUrl);
+    const { r: gone, seconds: lag4 } = await afterBuild(gUrl, (r) => r.status === 404);
     const sm3 = await publicGet("/sitemap-garlands.xml");
     const listing3 = await publicGet("/categories/garlands");
-    check("garland", "archived and published: page 404, gone from sitemap-garlands.xml and the listing", gArchive.status === 200 && b3.status === 0 && gone.status === 404 && !sm3.text.includes(gSlug) && !listing3.text.includes(gSlug), `${gArchive.status} ${b3.result} ${gone.status}`);
+    check("garland", "archived and published: page 404, gone from sitemap-garlands.xml and the listing", gArchive.status === 200 && b3.status === 0 && gone.status === 404 && !sm3.text.includes(gSlug) && !listing3.text.includes(gSlug), `${gArchive.status} ${b3.result} ${gone.status}; ${lag4 ?? "not within 300"} s`);
   } else check("publishing", "builds (run with --deploy)", null);
 
   const removeC = await w("DELETE", `/api/admin/media/${C.j.data.id}`, { jar: s, headers: { origin: WORKER }, store: false });

@@ -84,13 +84,13 @@ export type OccasionPageCheck = {
  * use and reports whether it lists the product as its assignments and the
  * deployed public catalogue say it should.
  */
-export async function checkOccasionPages(product: { slug: string }, assigned: string[], routes: string[], origin: string, catalogue?: Product[]): Promise<OccasionPageCheck[]> {
+export async function checkOccasionPages(product: { slug: string }, assigned: string[], routes: string[], origin: string, catalogue?: Product[], fetcher: (input: URL, init?: RequestInit) => Promise<Response> = fetch): Promise<OccasionPageCheck[]> {
   const publicCatalogue = catalogue ?? (await loadPublicCatalogue());
   return Promise.all(
     routes.map(async (route): Promise<OccasionPageCheck> => {
       const expected = occasionProductEligible(product.slug, route, assigned, publicCatalogue) ? "listed" : "absent";
       try {
-        const response = await fetch(new URL(`/occasions/${route}`, origin), {
+        const response = await fetcher(new URL(`/occasions/${route}`, origin), {
           redirect: "manual",
           headers: { accept: "text/html", "user-agent": "FreshPetals-admin-website-check" },
           signal: AbortSignal.timeout(8000),

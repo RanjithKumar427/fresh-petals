@@ -3,6 +3,7 @@ import { ProductService } from "../../../../../server/services/ProductService";
 import { json } from "../../../../../server/http/json";
 import { checkOccasionPages } from "../../../../../server/services/OccasionWebsite";
 import { occasionSlugsForIds } from "../../../../../server/services/OccasionMembership";
+import { siteFetcher } from "../../../../../server/platform/siteFetch";
 import { LIVE_OCCASION_ROUTES } from "../../../../../data/occasionJourneys";
 
 export const prerender = false;
@@ -25,6 +26,6 @@ export const GET: APIRoute = async ({ params, url }) => {
   const routes = requested.length ? requested : [...LIVE_OCCASION_ROUTES];
   const assigned = await occasionSlugsForIds(product.occasionIds);
   const origin = process.env.SITE_CHECK_ORIGIN || url.origin;
-  const pages = await checkOccasionPages(product, assigned, routes, origin);
+  const pages = await checkOccasionPages(product, assigned, routes, origin, undefined, await siteFetcher());
   return json({ ok: true, data: { checkedAt: new Date().toISOString(), pages, allOk: pages.every((page) => page.ok) } });
 };

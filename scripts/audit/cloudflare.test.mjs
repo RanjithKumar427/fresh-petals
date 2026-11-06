@@ -87,6 +87,9 @@ test('static storefront: the Worker answers addresses without a file statically,
   assert.equal(product.status, 404); assert.equal(await product.text(), 'page /unavailable/catalogue');
   const middleware = readFileSync('src/middleware.ts', 'utf8');
   assert(middleware.indexOf('servedStatically(') < middleware.indexOf('const scope = await workerScope()'), 'answered before any database scope');
+  // The admin's website checks read the deployed files (a Worker's fetch of its own address runs the Worker, not the assets).
+  for (const file of ['src/pages/api/admin/products/[id]/website.ts', 'src/pages/api/admin/products/[id]/occasion-pages.ts']) assert.match(readFileSync(file, 'utf8'), /await siteFetcher\(\)/, file);
+  assert.match(readFileSync('src/server/platform/siteFetch.ts', 'utf8'), /assets\.fetch\(new Request\(input, init\)\)/);
   // Astro skips the middleware for an address no route matches, so a catch-all on-demand route makes it run.
   assert.match(readFileSync('src/pages/[...fallback].ts', 'utf8'), /export const prerender = false;[\s\S]*status: 404/);
   // Prebuilt garland pages ask the Worker's /_image for resized copies, never the Storage originals.

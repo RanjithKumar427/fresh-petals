@@ -205,7 +205,7 @@ export type WebsiteCheck = {
  * this garland's saved version (or, once unpublished, no longer shows it).
  * `preview` is true where drafts are shown (local development).
  */
-export async function checkGarlandOnWebsite(product: GarlandLike, origin: string, preview: boolean): Promise<WebsiteCheck> {
+export async function checkGarlandOnWebsite(product: GarlandLike, origin: string, preview: boolean, fetcher: (input: URL, init?: RequestInit) => Promise<Response> = fetch): Promise<WebsiteCheck> {
   const path = `/products/${product.slug}`;
   const checkedAt = new Date().toISOString();
   const shouldShow = preview ? product.status !== "archived" : isPublicGarlandRecord(product);
@@ -215,7 +215,7 @@ export async function checkGarlandOnWebsite(product: GarlandLike, origin: string
     return { state: "error", expected, path, checkedAt, seen: null, message: "This address can't be checked." };
   }
   try {
-    const response = await fetch(new URL(path, origin), {
+    const response = await fetcher(new URL(path, origin), {
       redirect: "manual",
       headers: { accept: "text/html", "user-agent": "FreshPetals-admin-website-check" },
       signal: AbortSignal.timeout(8000),

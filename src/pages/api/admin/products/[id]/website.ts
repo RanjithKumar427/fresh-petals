@@ -3,6 +3,7 @@ import { ProductService } from "../../../../../server/services/ProductService";
 import { json } from "../../../../../server/http/json";
 import { checkGarlandOnWebsite } from "../../../../../server/services/GarlandWebsite";
 import { GARLAND_PREVIEW } from "../../../../../data/garlandRules";
+import { siteFetcher } from "../../../../../server/platform/siteFetch";
 
 export const prerender = false;
 
@@ -21,6 +22,6 @@ export const GET: APIRoute = async ({ params, url }) => {
   if (!product.garland) return json({ ok: false, error: "Only garlands are checked on the live website." }, 400);
 
   const origin = process.env.SITE_CHECK_ORIGIN || url.origin;
-  const data = await checkGarlandOnWebsite(product, origin, GARLAND_PREVIEW);
+  const data = await checkGarlandOnWebsite(product, origin, GARLAND_PREVIEW, await siteFetcher());
   return json({ ok: true, data });
 };
