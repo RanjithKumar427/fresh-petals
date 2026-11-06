@@ -4,11 +4,15 @@
 // redirect, image delivery, robots.txt and security headers.
 //
 //   node scripts/staging/public-site.mjs [--out=<results.json>] [--require=<commit>]
+//   node scripts/staging/public-site.mjs --production     (after cutover: https://onlyfreshpetals.in,
+//        expects indexable pages and the analytics tag instead of noindex and no analytics)
 import { writeFileSync } from "node:fs";
-import { AUTH_ORIGIN as WORKER } from "./deploy-lib.mjs";
+import { AUTH_ORIGIN } from "./deploy-lib.mjs";
 import { parseArgs } from "./test-lib.mjs";
 
 const args = parseArgs();
+const PRODUCTION = !!args.production;
+const WORKER = PRODUCTION ? "https://onlyfreshpetals.in" : AUTH_ORIGIN;
 const CANONICAL = "https://onlyfreshpetals.in";
 const WHATSAPP = "https://wa.me/919652012274";
 const results = [];
@@ -76,8 +80,15 @@ for (let i = 0; i < urls.length; i += 6) {
 }
 check("seo", "every sitemap page answers 200", !failures.status.length, failures.status.slice(0, 5).join("; ") || `${urls.length} pages (${staticPages} static files, ${workerPages} rendered by the Worker)`);
 check("seo", "every sitemap page's canonical is its own production URL", !failures.canonical.length, failures.canonical.slice(0, 5).join("; "));
-check("staging", "every sitemap page is noindex on staging (header or meta)", !failures.noindex.length, failures.noindex.slice(0, 5).join("; "));
-check("staging", "no analytics ID or tag script on any page", !failures.analytics.length, failures.analytics.slice(0, 5).join("; "));
+// failures.noindex lists pages WITHOUT noindex; failures.analytics lists pages WITH the tag.
+const okPages = urls.length - failures.status.length;
+if (PRODUCTION) {
+  check("production", "every sitemap page is indexable (no noindex header or meta)", failures.noindex.length === okPages, `${okPages - failures.noindex.length} noindexed`);
+  check("production", "every sitemap page carries the analytics tag", failures.analytics.length === okPages, `${okPages - failures.analytics.length} without it`);
+} else {
+  check("staging", "every sitemap page is noindex on staging (header or meta)", !failures.noindex.length, failures.noindex.slice(0, 5).join("; "));
+  check("staging", "no analytics ID or tag script on any page", !failures.analytics.length, failures.analytics.slice(0, 5).join("; "));
+}
 check("seo", "every page has a title and a meta description", !failures.title.length && !failures.description.length, [...failures.title, ...failures.description].slice(0, 5).join("; "));
 check("seo", "every JSON-LD block parses", !failures.jsonld.length, failures.jsonld.slice(0, 5).join("; "));
 
