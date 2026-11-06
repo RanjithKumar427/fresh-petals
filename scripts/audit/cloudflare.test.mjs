@@ -76,14 +76,24 @@ test('edge cache: only anonymous public GET/HEAD responses that opt in with s-ma
   old.headers.set('x-fp-stored-at', String(Date.now()));
   assert.equal(await edge.edgeCacheMatch(req('/occasions/birthday?budget=b')), undefined, 'query string is part of the key');
   assert.equal((await edge.edgeCacheMatch(req('/occasions/birthday?budget=a&utm_source=x&gclid=1'))).headers.get('x-fp-edge-cache'), 'HIT', 'tracking parameters are not part of the key');
-  assert.equal(edge.cacheKeyUrl('https://x.in/p?page=2&utm_medium=a&fbclid=b'), 'https://x.in/p?page=2');
-  // Parameters no public page reads share one copy (a crawler's ?ref=…, a cache-buster), and order doesn't matter.
-  assert.equal(edge.cacheKeyUrl('https://x.in/p?ref_1a2b=1&x=9'), 'https://x.in/p');
-  assert.equal(edge.cacheKeyUrl('https://x.in/s?page=2&collection=roses&junk=1'), 'https://x.in/s?collection=roses&page=2');
-  assert.equal(edge.cacheKeyUrl('https://x.in/s?collection=roses&page=2'), edge.cacheKeyUrl('https://x.in/s?page=2&collection=roses'));
-  for (const name of ['occasion', 'budget', 'colour', 'for', 'collection', 'page', 'unavailable', 'occ', 'from', 'city', 'code', 'qty', 'opt']) {
-    assert.equal(new URL(edge.cacheKeyUrl(`https://x.in/p?${name}=v`)).searchParams.get(name), 'v', `${name} stays in the key`);
-  }
+  const shop = 'https://x.in/locations/chennai/shop';
+  assert.equal(edge.cacheKeyUrl(`${shop}?page=2&utm_medium=a&fbclid=b`), `${shop}?page=2`);
+  // Parameters a page doesn't read share its copy (a crawler's ?ref=…, a cache-buster), and order doesn't matter.
+  assert.equal(edge.cacheKeyUrl('https://x.in/?ref_1a2b=1&x=9'), 'https://x.in/');
+  assert.equal(edge.cacheKeyUrl('https://x.in/?page=7&collection=x&colour=red'), 'https://x.in/', 'names are kept only where a page reads them');
+  assert.equal(edge.cacheKeyUrl('https://x.in/locations/chennai?page=7'), 'https://x.in/locations/chennai');
+  assert.equal(edge.cacheKeyUrl(`${shop}?page=2&collection=roses&junk=1`), `${shop}?collection=roses&page=2`);
+  assert.equal(edge.cacheKeyUrl(`${shop}?collection=roses&page=2`), edge.cacheKeyUrl(`${shop}?page=2&collection=roses`));
+  const kept = (path, name) => new URL(edge.cacheKeyUrl(`https://x.in${path}?${name}=v`)).searchParams.get(name) === 'v';
+  for (const [path, names] of [
+    ['/locations/chennai/shop', ['collection', 'page']],
+    ['/categories/garlands', ['unavailable', 'occasion', 'budget', 'colour', 'for']],
+    ['/fragments/garlands', ['for', 'occasion']],
+    ['/categories/bouquets', ['occasion', 'budget', 'colour', 'for']],
+    ['/occasions/birthday', ['occasion', 'budget', 'colour', 'for']],
+    ['/garland-enquiry', ['code', 'qty', 'opt', 'occ', 'for', 'city']],
+  ]) for (const name of names) assert(kept(path, name), `${path} keeps ${name}`);
+  assert(!kept('/categories/bouquets', 'page') && !kept('/products/fp-g001', 'occ') && !kept('/', 'for'));
   assert.equal((await edge.edgeCacheMatch(req('/occasions/birthday?budget=a&cachebuster=123'))).headers.get('x-fp-edge-cache'), 'HIT', 'an unread parameter is not part of the key');
 
   // A redirect echoing utm_source is never shared under the stripped key.

@@ -63,6 +63,8 @@ const phases = [
   { name: "garland flower ?unknown", path: () => `/categories/garlands/lotus?x=${tag()}` },
   { name: "occasion ?unknown", path: () => `/occasions/wedding?x=${tag()}` },
   { name: "city ?unknown", path: () => `${city}?x=${tag()}` },
+  { name: "home ?page=<invented>", path: () => `/?page=${tag()}` },
+  { name: "city shop ?page=<invented>", path: () => `${city}/shop?page=${tag()}` },
   { name: "product random slug", path: () => `/products/zz-${tag()}` },
   { name: "random 404 path", path: () => `/zz-${tag()}` },
   { name: "bouquets old filter link", path: () => `/categories/bouquets?colour=${tag()}` },

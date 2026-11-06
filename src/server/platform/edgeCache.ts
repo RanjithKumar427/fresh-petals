@@ -51,14 +51,26 @@ export function edgeCacheable(request: Request, path: string): boolean {
  * cache key: on 6 Nov 2026 each distinct unknown parameter on staging forced a
  * fresh render costing 60–150 KB of database results and 35–75 ms of CPU.
  * The page itself still receives the full URL. Kept parameters are sorted, so
- * their order doesn't make a new key either. Add a name here whenever a public
- * on-demand page starts reading a new parameter.
+ * their order doesn't make a new key either. Each name is kept only on the
+ * paths that read it, so an invented ?page=… on the homepage shares the
+ * homepage's copy. Add a rule here whenever a public on-demand page starts
+ * reading a new parameter.
  */
-const KEY_PARAMS = new Set(["occasion", "budget", "colour", "for", "collection", "page", "unavailable", "occ", "from", "city", "code", "qty", "opt"]);
+const FILTER_PARAMS = ["occasion", "budget", "colour", "for"]; // src/utils/shopFilters.ts (filtered views and their 301s)
+const KEY_PARAMS: [RegExp, string[]][] = [
+  [/^\/locations\/[^/]+\/shop\/?$/, ["collection", "page"]],
+  [/^\/categories\/garlands\/?$/, ["unavailable", ...FILTER_PARAMS]],
+  [/^\/fragments\/garlands\/?$/, ["for", "occasion"]],
+  [/^\/(categories|occasions)\//, FILTER_PARAMS],
+  [/^\/garland-enquiry\/?$/, ["code", "qty", "opt", "occ", "for", "city"]], // no-store today; kept exact if that changes
+];
+
+const keyParamsFor = (path: string): Set<string> => new Set(KEY_PARAMS.filter(([pattern]) => pattern.test(path)).flatMap(([, names]) => names));
 
 export function cacheKeyUrl(url: string): string {
   const parsed = new URL(url);
-  const kept = [...parsed.searchParams].filter(([name]) => KEY_PARAMS.has(name));
+  const keep = keyParamsFor(parsed.pathname);
+  const kept = [...parsed.searchParams].filter(([name]) => keep.has(name));
   kept.sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
   parsed.search = new URLSearchParams(kept).toString();
   return parsed.toString();
