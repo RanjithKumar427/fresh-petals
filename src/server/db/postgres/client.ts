@@ -43,6 +43,16 @@ function workerDb(): NodePgDatabase<typeof schema> {
   pool.on("error", (error) => {
     console.error(`[db] idle connection closed (${error.message}); it was removed from the pool`);
   });
+  // Drizzle reports a failed query as "Failed query: <sql>" and keeps the
+  // driver's reason only as `cause`, which the page error log drops. Log the
+  // reason itself (code and message, never the SQL or its parameters).
+  const query = pool.query.bind(pool) as (...args: unknown[]) => Promise<unknown>;
+  (pool as unknown as { query: (...args: unknown[]) => Promise<unknown> }).query = (...args: unknown[]) =>
+    typeof args.at(-1) === "function" ? query(...args) : query(...args).catch((error: unknown) => {
+      const e = error as { code?: string; message?: string };
+      console.error(`[db] query failed: ${e?.code ?? "no code"} ${String(e?.message ?? error).slice(0, 200)}`);
+      throw error;
+    });
   const db = drizzle(pool, { schema });
   scope.db = db;
   return db;
