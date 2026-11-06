@@ -3,7 +3,7 @@
 // the actual Hyperdrive origin and the database's identity before anything is
 // deployed. Read-only unless --apply is given. Prints names and IDs, never secrets.
 //
-//   node scripts/staging/deploy-worker.mjs --env=<file> [--apply] [--secrets] [--skip-build] [--db-id-override=<n>]
+//   node scripts/staging/deploy-worker.mjs --env=<file> [--apply] [--secrets] [--skip-build] [--db-id-override=<n>] [--db-port=6543]
 //
 // --db-id-override deploys a deliberately wrong database identity, to prove the
 // Worker refuses it. Deploy again without it afterwards.
@@ -98,8 +98,15 @@ if (hyperdrive) {
   pass(`${HYPERDRIVE_NAME}: id ${live.id}; origin user is the staging project; session pooler; verify-full; caching off; not ${PRODUCTION_HYPERDRIVE_NAME}`);
 }
 
+// This PC's own connections (identity read, build-time catalogue read). --db-port=6543
+// uses the same validated pooler host in transaction mode; Hyperdrive's origin above
+// stays the session pooler. Both reads are single autocommit statements.
+const dbPort = args["db-port"];
+if (dbPort !== undefined && !["5432", "6543"].includes(String(dbPort))) stop("usage", ["--db-port must be 5432 or 6543"]);
+const localDbUrl = (() => { const u = new URL(file.values.DATABASE_URL); if (dbPort) u.port = String(dbPort); return u.toString(); })();
+
 // The database's identity, read directly through the staging credential.
-const client = new pg.Client({ connectionString: file.values.DATABASE_URL, ssl: supabasePoolSsl, connectionTimeoutMillis: 10000, statement_timeout: 10000 });
+const client = new pg.Client({ connectionString: localDbUrl, ssl: supabasePoolSsl, connectionTimeoutMillis: 10000, statement_timeout: 10000 });
 client.on("error", () => {});
 await client.connect();
 if (client.connection.stream.authorized !== true) stop("TLS", ["the server certificate was not verified"]);
@@ -109,9 +116,9 @@ pass("read the staging database's system identifier over verified TLS");
 
 if (!args.skipBuild && !args["skip-build"]) {
   const { SystemRoot, PATH, Path, TEMP, TMP, USERPROFILE, APPDATA, LOCALAPPDATA, HOMEDRIVE, HOMEPATH, ComSpec } = process.env;
-  const buildEnv = { SystemRoot, PATH: PATH ?? Path, TEMP, TMP, USERPROFILE, APPDATA, LOCALAPPDATA, HOMEDRIVE, HOMEPATH, ComSpec, DATABASE_URL: file.values.DATABASE_URL, NODE_ENV: "production" };
+  const buildEnv = { SystemRoot, PATH: PATH ?? Path, TEMP, TMP, USERPROFILE, APPDATA, LOCALAPPDATA, HOMEDRIVE, HOMEPATH, ComSpec, DATABASE_URL: localDbUrl, NODE_ENV: "production" };
   const build = spawnSync(process.execPath, ["scripts/cloudflare/build.mjs", "staging"], { encoding: "utf8", env: buildEnv, cwd: root });
-  const out = `${build.stdout}${build.stderr}`.split(file.values.DATABASE_URL).join("[redacted]");
+  const out = `${build.stdout}${build.stderr}`.split(localDbUrl).join("[redacted]").split(file.values.DATABASE_URL).join("[redacted]");
   console.log(out.split("\n").filter((l) => /build OK|FAILED|error|Note:|references|analytics|\[catalogue\]/i.test(l)).slice(-40).join("\n"));
   if (build.status !== 0) stop("build failed", [`exit ${build.status}`]);
   pass("staging build and its output checks passed");
