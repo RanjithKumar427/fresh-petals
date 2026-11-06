@@ -7,11 +7,13 @@
 //
 // Analytics token: CLOUDFLARE_API_TOKEN, or wrangler's own login. It is never printed.
 //
-// Each phase sends n requests to distinct URLs of one shape (what a crawler that
-// invents query strings or slugs does), so every one is an edge-cache miss
-// unless the cache key ignores what changed. "repeat" sends one URL n times
-// (what a visitor or a polite crawler revisiting a page does). "sitemap" fetches
-// every URL in the sitemaps once (a full search-engine crawl).
+// Each phase sends requests of one shape. The storefront is prebuilt, so a page
+// (with any query string) is a static file and should cost no Worker request
+// and no database read; an address with no file costs one Worker request
+// answered statically; stored photos cost one Worker request each (/_image) and
+// one Storage read per photo per data centre. "incident replay" sends the
+// October 2026 crawl pattern (distinct filter-chip URLs) 8 at a time; "sitemap"
+// fetches every sitemap URL once (a full search-engine crawl).
 import { readFileSync, writeFileSync } from "node:fs";
 import { randomBytes } from "node:crypto";
 import { AUTH_ORIGIN as WORKER, WORKER_NAME, HYPERDRIVE_NAME } from "./deploy-lib.mjs";
@@ -57,18 +59,27 @@ async function sitemapUrls() {
 }
 
 const city = (await sitemapUrls()).find((p) => /^\/locations\/[a-z-]+$/.test(p)) ?? "/locations/chennai";
+// Stored garland photos as a visitor's browser asks for them (the 480 px candidate of each card).
+const photos = [...new Set([...(await (await fetch(`${WORKER}/categories/garlands`)).text()).matchAll(/\/_image\?href=[^"\s,]+w=480[^"\s,]*/g)].map((m) => m[0].replaceAll("&amp;", "&")))];
 const phases = [
+  // Bot-invented variations of real pages: each is the page's own static file (no Worker run).
   { name: "home ?unknown", path: () => `/?ref_${tag()}=1` },
   { name: "garland list ?unknown", path: () => `/categories/garlands?x=${tag()}` },
-  { name: "garland flower ?unknown", path: () => `/categories/garlands/lotus?x=${tag()}` },
   { name: "occasion ?unknown", path: () => `/occasions/wedding?x=${tag()}` },
   { name: "city ?unknown", path: () => `${city}?x=${tag()}` },
-  { name: "home ?page=<invented>", path: () => `/?page=${tag()}` },
-  { name: "city shop ?page=<invented>", path: () => `${city}/shop?page=${tag()}` },
-  { name: "product random slug", path: () => `/products/zz-${tag()}` },
-  { name: "random 404 path", path: () => `/zz-${tag()}` },
+  { name: "city shop ?page=<invented>", path: () => `${city}/shop?page=${tag()}&collection=${tag()}` },
   { name: "bouquets old filter link", path: () => `/categories/bouquets?colour=${tag()}` },
-  { name: "garland list repeat", path: () => "/categories/garlands" },
+  // Addresses with no file: answered by the Worker's static fallback (no database).
+  { name: "product invented slug", path: () => `/products/zz-${tag()}` },
+  { name: "random 404 path", path: () => `/zz-${tag()}` },
+  { name: "city other spelling", path: () => `/locations/Bangalore?x=${tag()}` },
+  // Photos through the Worker's resizer: first request per data centre fetches the original once.
+  { name: "garland photos, distinct", urls: photos.slice(0, N) },
+  { name: "garland photos, repeat", urls: photos.slice(0, N) },
+  // The scheduled publishing check's live side.
+  { name: "publish state check", urls: Array.from({ length: 5 }, () => "/api/publish/state") },
+  // The October incident replayed: a burst of distinct filter-chip URLs, 8 at a time.
+  { name: "incident replay (filter URLs)", urls: Array.from({ length: 8 * N }, () => `/categories/bouquets?occasion=${tag()}&colour=${tag()}&budget=${tag()}`), concurrency: 8 },
   { name: "sitemap crawl", urls: await sitemapUrls() },
 ];
 
@@ -79,8 +90,9 @@ for (const phase of phases) {
   const statuses = {};
   const cache = {};
   let bytes = 0;
-  for (let i = 0; i < urls.length; i += 4) {
-    const batch = await Promise.all(urls.slice(i, i + 4).map(get));
+  const step = phase.concurrency ?? 4;
+  for (let i = 0; i < urls.length; i += step) {
+    const batch = await Promise.all(urls.slice(i, i + step).map(get));
     for (const r of batch) { statuses[r.status] = (statuses[r.status] ?? 0) + 1; cache[r.cache || "-"] = (cache[r.cache || "-"] ?? 0) + 1; bytes += r.bytes; }
   }
   const end = new Date();
