@@ -146,10 +146,12 @@ export async function sanitizeWithImagesBinding(
 
   let output: Uint8Array;
   try {
+    // Animation is kept only where the format has it: the binding refuses anim for JPEG and PNG
+    // (IMAGES_TRANSFORM_ERROR 9401), which refused every JPEG and PNG upload on the Worker.
     const result = await images
       .input(streamOf(buffer))
       .transform(format === "jpeg" ? { metadata: "none" } : {})
-      .output({ format: MIME[format], quality: 90, anim: true });
+      .output({ format: MIME[format], quality: 90, ...(format === "gif" || format === "webp" ? { anim: true } : {}) });
     output = new Uint8Array(await result.response().arrayBuffer());
   } catch (error) {
     return failed("transform", error);

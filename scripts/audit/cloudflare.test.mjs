@@ -122,3 +122,30 @@ test('static pages: reviewed inline hashes join the meta policy, which moves bef
   const framed = withoutMetaFrameAncestors(`<meta http-equiv="content-security-policy" content="default-src 'self';frame-ancestors 'none';object-src 'none'">`);
   assert.equal(metaPolicy(framed), "default-src 'self';object-src 'none'");
 });
+
+test('Images-binding uploads: JPEG and PNG are re-encoded without asking for animation', async () => {
+  // A stand-in binding with the real one's rule: animated output only for GIF or WebP (IMAGES_TRANSFORM_ERROR 9401).
+  const calls = [];
+  const IMAGES = {
+    info: async (stream) => { const b = Buffer.from(await new Response(stream).arrayBuffer()); const m = await sharp(b).metadata(); return { format: `image/${m.format}`, width: m.width, height: m.pageHeight ?? m.height, fileSize: b.length }; },
+    input: (stream) => ({
+      transform() { return this; },
+      output: async (opts) => {
+        calls.push(opts);
+        if (opts.anim && !/gif|webp/.test(opts.format)) throw new Error('IMAGES_TRANSFORM_ERROR 9401: Could not resize the image: Animated output is only supported for GIF or WebP');
+        const b = Buffer.from(await new Response(stream).arrayBuffer());
+        return { response: () => new Response(b), contentType: () => opts.format };
+      },
+    }),
+  };
+  const { sanitizeWithImagesBinding } = sourceLoader({ mocks: { 'src/server/platform/requestScope.ts': { cloudflareEnv: async () => ({ IMAGES }) } }, globals: { Response, ReadableStream, Buffer } })('src/server/media/imageSafetyCloudflare.ts');
+  const { sniffImageFormat, safeImageFilename } = sourceLoader({ mocks: { 'src/server/platform/target.ts': { ON_CLOUDFLARE: false } } })('src/server/media/imageSafety.ts');
+  const base = sharp({ create: { width: 40, height: 30, channels: 3, background: '#c03' } });
+  for (const format of ['jpeg', 'png', 'webp']) {
+    const buffer = await base.clone()[format]().toBuffer();
+    const result = await sanitizeWithImagesBinding({ buffer, format, filename: `x.${format}` }, { maxPixels: 1e8, maxFrames: 100, maxOutputBytes: 1e7 }, { sniff: sniffImageFormat, filename: safeImageFilename });
+    assert.equal(result.ok, true, `${format}: ${result.error ?? ''}`);
+    assert.equal(result.image.width, 40);
+  }
+  assert.deepEqual(calls.map((c) => c.anim === true), [false, false, true]);
+});
