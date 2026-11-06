@@ -245,3 +245,21 @@ test('robots.txt keeps crawlers off parameterised city shop views and the enquir
   for (const rule of ['Disallow: /locations/*/shop?', 'Disallow: /garland-enquiry', 'Disallow: /categories/*?', 'Disallow: /occasions/*?']) assert(robots.includes(rule), rule);
   assert(!/Disallow: \/locations\/\*\/shop$/m.test(robots), 'the plain city shop stays crawlable');
 });
+
+test('publishing workflows: staging and production listen to their own events; production stays off until cutover', async () => {
+  const { parse } = await import('yaml');
+  const flow = (name) => parse(readFileSync(`.github/workflows/${name}`, 'utf8'));
+  const staging = flow('staging-publish.yml');
+  const production = flow('production-publish.yml');
+  const legacy = flow('cloudflare.yml');
+  assert.deepEqual(staging.on.repository_dispatch.types, ['publish-site']);
+  assert.deepEqual(production.on.repository_dispatch.types, ['publish-production']);
+  assert.deepEqual(legacy.on.repository_dispatch.types, ['rebuild-site']);
+  for (const job of Object.values(production.jobs)) assert.match(job.if, /vars\.PRODUCTION_PUBLISH_ENABLED == 'true'/);
+  for (const f of [staging, production]) assert.equal(f.concurrency['cancel-in-progress'], false);
+  const vars = readFileSync('wrangler.jsonc', 'utf8');
+  assert.match(vars, /"FP_PUBLISH_EVENT": "publish-production"/, 'the production Worker sends the production event');
+  const stagingVars = vars.slice(vars.indexOf('"staging": {'));
+  assert(!/FP_PUBLISH_EVENT/.test(stagingVars), 'staging uses the default publish-site event');
+  assert.match(readFileSync('src/server/services/Publishing.ts', 'utf8'), /process\.env\.FP_PUBLISH_EVENT \|\| "publish-site"/);
+});

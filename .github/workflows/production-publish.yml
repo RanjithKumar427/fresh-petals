@@ -1,0 +1,84 @@
+# Automatic publishing for the production storefront, the same design as staging-publish.yml.
+# Inactive until cutover: every job requires the repository variable
+# PRODUCTION_PUBLISH_ENABLED=true (set it only after onlyfreshpetals.in serves the Worker).
+#
+#   - repository_dispatch "publish-production": sent by the production Worker on an admin save
+#     (Worker secret FP_PUBLISH_GITHUB_TOKEN; vars in wrangler.jsonc);
+#   - schedule: every 15 minutes, compares GET /api/publish/state with /_publish/state.json on
+#     onlyfreshpetals.in and publishes only when they differ;
+#   - workflow_dispatch: by hand.
+# deploy.mjs builds, runs the output checks and deploys only if they pass, so a failed build
+# leaves the previous release serving.
+#
+# Repository secrets: CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID, DATABASE_URL (production,
+# read-only role suffices). Variables: HYPERDRIVE_ID, PUBLIC_GA_MEASUREMENT_ID,
+# PRODUCTION_PUBLISH_ENABLED, and PRODUCTION_PUBLISH_REF if the code is not on the default branch.
+name: Production publish
+
+on:
+  repository_dispatch:
+    types: [publish-production]
+  schedule:
+    - cron: "7,22,37,52 * * * *"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: Build even if nothing changed
+        type: boolean
+        default: false
+
+concurrency:
+  group: production-publish
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  SITE: https://onlyfreshpetals.in
+
+jobs:
+  check:
+    if: vars.PRODUCTION_PUBLISH_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    outputs:
+      changed: ${{ steps.compare.outputs.changed }}
+    steps:
+      - id: compare
+        run: |
+          live=$(curl -fsS --max-time 30 "$SITE/api/publish/state" | jq -r .fingerprint)
+          deployed=$(curl -fsS --max-time 30 "$SITE/_publish/state.json" | jq -r .fingerprint || echo none)
+          echo "live ${live:0:12} deployed ${deployed:0:12}"
+          if [ -n "$live" ] && [ "$live" != "null" ] && [ "$live" = "$deployed" ]; then echo "changed=false" >> "$GITHUB_OUTPUT"; else echo "changed=true" >> "$GITHUB_OUTPUT"; fi
+
+  publish:
+    needs: check
+    if: vars.PRODUCTION_PUBLISH_ENABLED == 'true' && (needs.check.outputs.changed == 'true' || inputs.force)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: cloudflare-production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ vars.PRODUCTION_PUBLISH_REF || github.ref }}
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: npm }
+      - run: npm ci
+      - name: Build, check and deploy (nothing is deployed if the build or its checks fail)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          HYPERDRIVE_ID: ${{ vars.HYPERDRIVE_ID }}
+          PUBLIC_GA_MEASUREMENT_ID: ${{ vars.PUBLIC_GA_MEASUREMENT_ID }}
+        run: node scripts/cloudflare/deploy.mjs production --confirm-production
+      - name: Served
+        run: |
+          for i in $(seq 1 60); do
+            served=$(curl -fsS "$SITE/_publish/state.json" | jq -r .builtAt || true)
+            built=$(jq -r .builtAt dist/client/_publish/state.json)
+            [ "$served" = "$built" ] && { echo "live: build from $built"; exit 0; }
+            sleep 5
+          done
+          echo "deployed, but the new build was not served within 300 s"; exit 1

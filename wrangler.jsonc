@@ -30,10 +30,13 @@
   "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "REPLACE_WITH_HYPERDRIVE_ID" }],
 
   // Public, non-secret settings. Secrets (SUPABASE_URL, SUPABASE_ANON_KEY,
-  // SUPABASE_SERVICE_ROLE_KEY, CF_ZONE_ID, CF_CACHE_PURGE_TOKEN) are set with
-  // `wrangler secret put`, never here.
+  // SUPABASE_SERVICE_ROLE_KEY, FP_PUBLISH_GITHUB_TOKEN) are set with
+  // `wrangler secret put`, never here. Publishing on save sends its own event
+  // (.github/workflows/production-publish.yml), never the staging one.
   "vars": {
-    "SITE_URL": "https://onlyfreshpetals.in"
+    "SITE_URL": "https://onlyfreshpetals.in",
+    "FP_PUBLISH_REPOSITORY": "RanjithKumar427/fresh-petals",
+    "FP_PUBLISH_EVENT": "publish-production"
   },
 
   "env": {
