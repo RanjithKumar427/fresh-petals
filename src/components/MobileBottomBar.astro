@@ -145,7 +145,7 @@ const navItems = [
     let previousMobileCartCount = 0;
 
     function updateMobileCartCount() {
-      const badge = document.querySelector("[data-mobile-cart-count-badge]");
+      const badge = document.querySelector<HTMLElement>("[data-mobile-cart-count-badge]");
       if (!badge) return;
 
       const count = getCartCount();

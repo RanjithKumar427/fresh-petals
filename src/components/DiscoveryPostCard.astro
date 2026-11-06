@@ -154,8 +154,8 @@ const {
 const isGridItem =
   gridRowSpanMobile != null && gridRowSpanTablet != null && gridRowSpanDesktop != null;
 
-const tags = (occasionTags ?? [])
-  .filter((tag) => OCCASION_LABELS[tag])
+const tags: string[] = (occasionTags ?? [])
+  .filter((tag: string) => OCCASION_LABELS[tag])
   .slice(0, 2);
 
 const dimensions = (imageDimensions as Record<string, { width: number; height: number }>)[image];

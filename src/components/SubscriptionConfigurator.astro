@@ -348,23 +348,31 @@ const addOns = [
 </section>
 
 <script>
-  import { addToCart } from "../utils/cart";
+  import { addToCart, type CartSubscription } from "../utils/cart";
 
-  const subscriptionSection = document.querySelector("[data-subscription-configurator]");
+  // The radio values rendered above; anything else falls back to the default, as an empty choice already did.
+  const FREQUENCIES: readonly NonNullable<CartSubscription["frequency"]>[] = ["daily", "weekly", "biweekly", "monthly"];
+  const DURATIONS: readonly NonNullable<CartSubscription["duration"]>[] = ["1-month", "3-months", "6-months"];
+  const oneOf = <T extends string>(value: string, allowed: readonly T[], fallback: T): T =>
+    (allowed as readonly string[]).includes(value) ? (value as T) : fallback;
 
-  function getInputValue(selector) {
-    const input = subscriptionSection?.querySelector(selector);
+  type FieldElement = HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+
+  const subscriptionSection = document.querySelector<HTMLElement>("[data-subscription-configurator]");
+
+  function getInputValue(selector: string) {
+    const input = subscriptionSection?.querySelector<FieldElement>(selector);
     return input?.value?.trim() || "";
   }
 
-  function getCheckedValue(selector) {
-    const selected = subscriptionSection?.querySelector(`${selector}:checked`);
+  function getCheckedValue(selector: string) {
+    const selected = subscriptionSection?.querySelector<HTMLInputElement>(`${selector}:checked`);
     return selected?.value || "";
   }
 
   function getPreferredDays() {
     const selectedDays = Array.from(
-      subscriptionSection?.querySelectorAll("[data-subscription-day]:checked") || []
+      subscriptionSection?.querySelectorAll<HTMLInputElement>("[data-subscription-day]:checked") || []
     );
 
     return selectedDays.map((input) => input.value);
@@ -372,7 +380,7 @@ const addOns = [
 
   function getSelectedAddOns() {
     const selectedAddOns = Array.from(
-      subscriptionSection?.querySelectorAll("[data-subscription-addon]:checked") || []
+      subscriptionSection?.querySelectorAll<HTMLInputElement>("[data-subscription-addon]:checked") || []
     );
 
     return selectedAddOns.map((input) => ({
@@ -390,11 +398,9 @@ const addOns = [
     const quantity =
       Number.isFinite(quantityValue) && quantityValue > 0 ? quantityValue : 1;
 
-    const frequency =
-      getCheckedValue("[data-subscription-frequency]") || "weekly";
+    const frequency = oneOf(getCheckedValue("[data-subscription-frequency]"), FREQUENCIES, "weekly");
 
-    const duration =
-      getCheckedValue("[data-subscription-duration]") || "1-month";
+    const duration = oneOf(getCheckedValue("[data-subscription-duration]"), DURATIONS, "1-month");
 
     const preferredDays = getPreferredDays();
     const startDate = getInputValue("[data-subscription-start-date]");
