@@ -61,7 +61,7 @@ async function ensureHyperdrive() {
     if (!ca) throw new Error('CA certificate upload did not appear in the certificate list.');
     say('Uploaded the Supabase CA certificate (name fresh-petals-supabase-ca).');
   }
-  run(W[0], [W[1], 'hyperdrive', 'create', 'fresh-petals-db', `--connection-string=${origin}`, '--caching-disabled', '--sslmode', 'verify-full', '--ca-certificate-id', ca.id], { label: 'wrangler hyperdrive create' });
+  run(W[0], [W[1], 'hyperdrive', 'create', 'fresh-petals-db', `--connection-string=${origin}`, '--caching-disabled', '--origin-connection-limit', '10', '--sslmode', 'verify-full', '--ca-certificate-id', ca.id], { label: 'wrangler hyperdrive create' });
   const created = ((await api(`/accounts/${account}/hyperdrive/configs`)).result ?? []).find((c) => c.name === 'fresh-petals-db');
   if (!created) throw new Error('Hyperdrive config was not found after creation.');
   say('Hyperdrive: created "fresh-petals-db" (caching disabled, sslmode verify-full).');

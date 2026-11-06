@@ -14,7 +14,7 @@ import path from "node:path";
 import pg from "pg";
 import { supabasePoolSsl } from "../../src/server/db/postgres/ssl.mjs";
 import { PRODUCTION_REF, STAGING_ORIGIN, STAGING_REF, clearInheritedSettings, loadEnvFile, targetFailures } from "./guard.mjs";
-import { originFailures, repoFailures, secretNamesToInstall, workerConfigFailures, EXPECTED_SUBDOMAIN, HYPERDRIVE_NAME, PRODUCTION_HYPERDRIVE_NAME, WORKER_NAME, AUTH_ORIGIN } from "./deploy-lib.mjs";
+import { originFailures, repoFailures, secretNamesToInstall, workerConfigFailures, EXPECTED_SUBDOMAIN, HYPERDRIVE_NAME, PRODUCTION_HYPERDRIVE_NAME, WORKER_NAME, AUTH_ORIGIN, MAX_ORIGIN_CONNECTIONS } from "./deploy-lib.mjs";
 
 const args = Object.fromEntries(process.argv.slice(2).map((a) => { const [k, ...v] = a.replace(/^--/, "").split("="); return [k, v.join("=") || true]; }));
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
@@ -83,6 +83,7 @@ if (!hyperdrive) {
       body: JSON.stringify({
         name: HYPERDRIVE_NAME,
         origin: { scheme: "postgres", ...expectedOrigin, password: decodeURIComponent(url.password) },
+        origin_connection_limit: MAX_ORIGIN_CONNECTIONS,
         caching: { disabled: true },
         mtls: { ca_certificate_id: ca.id, sslmode: "verify-full" },
       }),

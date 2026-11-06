@@ -6,7 +6,9 @@ export const HYPERDRIVE_NAME = "fresh-petals-staging-db";
 export const PRODUCTION_HYPERDRIVE_NAME = "fresh-petals-db";
 export const EXPECTED_SUBDOMAIN = "branjith-kumar24-01";
 export const AUTH_ORIGIN = `https://${WORKER_NAME}.${EXPECTED_SUBDOMAIN}.workers.dev`;
-export const secretNamesToInstall = ["SUPABASE_URL", "SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY"];
+/** Below Supavisor's session-mode pool_size (15), leaving room for builds, scripts and the dashboard. */
+export const MAX_ORIGIN_CONNECTIONS = 10;
+export const secretNamesToInstall =["SUPABASE_URL", "SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY"];
 
 /** Tracked changes or .env files stop a deploy. Untracked files outside the build inputs are only reported. */
 export function repoFailures({ status, envFiles }) {
@@ -35,6 +37,10 @@ export function originFailures(config, expected, productionId) {
   if (o.database !== expected.database) failures.push("origin database differs");
   if (config.caching?.disabled !== true) failures.push("query caching is not disabled");
   if (config.mtls?.sslmode !== "verify-full" || !config.mtls?.ca_certificate_id) failures.push("TLS is not verify-full against a pinned CA");
+  // Supavisor's session mode refuses clients beyond its pool_size (15 on this plan:
+  // "EMAXCONNSESSION max clients reached", seen as 500s under a crawl on 6 Nov 2026).
+  // Hyperdrive's default (20) exceeds it; at or below the limit Hyperdrive queues instead.
+  if (!(Number(config.origin_connection_limit) > 0 && Number(config.origin_connection_limit) <= MAX_ORIGIN_CONNECTIONS)) failures.push(`origin connection limit is not 1–${MAX_ORIGIN_CONNECTIONS} (the session pooler allows 15 clients)`);
   return failures;
 }
 

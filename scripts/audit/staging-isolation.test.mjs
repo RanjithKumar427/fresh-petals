@@ -82,7 +82,7 @@ test('post-sign-in paths are judged after resolving them', () => {
 });
 
 const expected = { host: 'aws-1-eu-west-1.pooler.supabase.com', port: 5432, database: 'postgres', user: 'postgres.wyndmywdtacucojvudxg' };
-const config = { id: 'stg', name: HYPERDRIVE_NAME, origin: expected, caching: { disabled: true }, mtls: { sslmode: 'verify-full', ca_certificate_id: 'c' } };
+const config = { id: 'stg', name: HYPERDRIVE_NAME, origin: expected, origin_connection_limit: 10, caching: { disabled: true }, mtls: { sslmode: 'verify-full', ca_certificate_id: 'c' } };
 
 test('Hyperdrive is judged by its actual origin, not its name', () => {
   assert.deepEqual(originFailures(config, expected, 'prod'), []);
@@ -92,6 +92,9 @@ test('Hyperdrive is judged by its actual origin, not its name', () => {
   assert.ok(originFailures({ ...config, origin: { ...expected, port: 6543 } }, expected, 'prod').length);
   assert.ok(originFailures({ ...config, caching: {} }, expected, 'prod').length);
   assert.ok(originFailures({ ...config, mtls: { sslmode: 'require' } }, expected, 'prod').length);
+  // Above the session pooler's 15 clients, a crawl gets EMAXCONNSESSION 500s; Hyperdrive's default is 20.
+  assert.ok(originFailures({ ...config, origin_connection_limit: 20 }, expected, 'prod').length);
+  assert.ok(originFailures({ ...config, origin_connection_limit: undefined }, expected, 'prod').length);
 });
 
 const worker = { name: 'fresh-petals-staging', workers_dev: true, preview_urls: false, observability: { enabled: false }, images: { binding: 'IMAGES' }, hyperdrive: [{ binding: 'HYPERDRIVE', id: 'stg' }], vars: { FP_DEPLOY_ENV: 'staging', SITE_URL: 'https://onlyfreshpetals.in', FP_AUTH_ORIGIN: AUTH_ORIGIN, FP_STAGING_DB_ID: '1' } };
