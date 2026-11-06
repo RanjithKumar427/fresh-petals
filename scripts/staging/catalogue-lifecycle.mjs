@@ -57,7 +57,12 @@ async function upload(label, buffer, mime = "image/png", name = `${SYNTHETIC_PRE
 }
 const publicGet = (path) => w("GET", path, {}); // no cookies: what a visitor sees
 // A new query string is its own edge-cache key, so this is what the Worker renders right now.
-const fresh = (path) => publicGet(`${path}${path.includes("?") ? "&" : "?"}fp_fresh=${tag()}`);
+// A request carrying any Supabase session cookie is never served from, or stored in, the
+// shared edge cache (src/server/platform/edgeCache.ts), and public pages don't read it: so
+// this is what the Worker renders right now. (A new query string no longer is: the cache key
+// keeps only the parameters a page reads.)
+const BYPASS = new Map([["sb-fp-cache-bypass-auth-token", "1"]]);
+const fresh = (path) => w("GET", path, { jar: BYPASS, store: false });
 // workers.dev has no zone to purge, so the cached public URL changes only when its s-maxage (120 s) runs out.
 const CACHE_BOUND_MS = 150000;
 async function eventually(path, test) {
@@ -137,7 +142,7 @@ try {
   check("publishing", "before a deployment the new product has no public page", beforeDeploy.status === 404, String(beforeDeploy.status));
   if (args.deploy) {
     log("deploying staging so the catalogue snapshot includes the published synthetic product");
-    const d = spawnSync(process.execPath, ["scripts/staging/deploy-worker.mjs", `--env=${args.env}`, "--apply"], { cwd: ROOT, encoding: "utf8", env: { ...process.env, FP_STAGING_INQUIRY_TEST_KEY: "" } });
+    const d = spawnSync(process.execPath, ["scripts/staging/deploy-worker.mjs", `--env=${args.env}`, "--apply", ...(args["db-port"] ? [`--db-port=${args["db-port"]}`] : [])], { cwd: ROOT, encoding: "utf8", env: { ...process.env, FP_STAGING_INQUIRY_TEST_KEY: "" } });
     const out = `${d.stdout}${d.stderr}`;
     const report = out.split("\n").filter((l) => l.includes("[catalogue]"));
     const mentions = report.filter((l) => l.includes(slug));
@@ -231,8 +236,9 @@ try {
     try {
       const ctx = await browser.newContext();
       await ctx.route("**/*", (route) => { const u = route.request().url(); return u.startsWith(`${WORKER}/`) || u.startsWith(`${STAGING_ORIGIN}/`) || u.startsWith("data:") ? route.continue() : route.abort(); });
+      await ctx.addCookies([{ name: "sb-fp-cache-bypass-auth-token", value: "1", url: WORKER }]);
       const p = await ctx.newPage();
-      await p.goto(`${WORKER}/categories/garlands?fp_fresh=${tag()}`);
+      await p.goto(`${WORKER}/categories/garlands`);
       const total = await p.locator("[data-garland-card]:visible").count();
       await p.click('[data-garland-filter="lotus"]');
       await sleep(500);
