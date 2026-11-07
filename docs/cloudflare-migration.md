@@ -1,10 +1,56 @@
 # Vercel → Cloudflare Workers migration
 
-## Status (2026-11-07)
+## Launch (2026-11-07): `https://onlyfreshpetals.in` is served by the Worker `fresh-petals`
 
-**Staging runs reliably on the free plans, with the storefront prebuilt as static files.** Every workflow verified on staging passes. Automatic publishing is built and tested end to end except its GitHub trigger, which needs a push (see *Publishing*). Production, DNS, the live domain and Vercel are unchanged:
-- `onlyfreshpetals.in` answers **402** (Vercel `DEPLOYMENT_DISABLED`).
-- The production Supabase project answered **402 `exceed_egress_quota`** on 6 Nov; its cycle resets on 8 Nov 2026.
+**The storefront is live on Cloudflare.** Its pages and photos are static files built from the production database (`hjhmetomcaskrrwkgrbp`), and enquiries are stored in that database. **Admin sign-in is blocked** until Supabase lifts the production project's restriction: Auth, Storage and the REST gateway all answer **402** (egress quota; the cycle resets 8 Nov 2026). The direct database connection, which builds and Hyperdrive use, is unaffected.
+
+**Live setup**
+- **Zone:** `onlyfreshpetals.in` on Cloudflare Free, active since 07:09 UTC. Nameservers were switched at GoDaddy, the registrar; the domain expires 15 May 2027 and auto-renew is **off**.
+- **DNS:**
+  - the apex is the Worker's custom domain;
+  - `www` is a proxied CNAME, redirected 301 to the apex (path and query kept);
+  - `_domainconnect` is DNS only;
+  - both TXT records were kept;
+  - there is no MX record (no mail was configured before);
+  - DNSSEC is off, as it was at GoDaddy.
+- **TLS:**
+  - the Universal certificate covers the apex and `*.onlyfreshpetals.in`;
+  - SSL mode is Full;
+  - Always Use HTTPS is on;
+  - HSTS `max-age=63072000` comes from `_headers`.
+- **Production Hyperdrive** `fresh-petals-db`: session pooler, verify-full, origin connection limit **10**.
+- **Worker secrets:** `SUPABASE_URL`, `SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY` (production).
+- **Publishing:**
+  - `production-publish.yml` is enabled (`PRODUCTION_PUBLISH_ENABLED=true`, builds `main`);
+  - the first CI publish (workflow_dispatch, 7 Nov 07:30 UTC) built from the production database and deployed `6b37dea` in 70 s, with nothing running on this PC.
+- **Backup before launch:** read-only export of 7 Nov, identical to the 3 Nov export in all 25 tables (owner's private backup folder).
+
+**Verified live (7 Nov)**
+- `public-site.mjs --production`: **42/42** on `514db6a`. It checks every sitemap page as a static file, indexable, with the analytics tag and canonicals; redirects; WhatsApp links; garland enquiry; photos as static WebP with immutable caching; robots; headers.
+- Synthetic enquiry `fp-live-check-enquiry-*` posted to `/api/inquiries`:
+  - stored once with status `new`;
+  - a cross-site post was refused;
+  - the enquiry was removed afterwards;
+  - the 7 real enquiries were unchanged by digest.
+- Sign-in on the live site now says "temporarily unavailable" while Supabase Auth answers 402 (`6b37dea`). Before that fix it said "Invalid email or password".
+- **Not verified live: admin sign-in with TOTP, and publishing on save.** Both need Supabase Auth.
+
+**Rollback:** `npx wrangler rollback <version> --name fresh-petals`. The version before `6b37dea` is `514db6a`, the first production deploy (versions list). There is no other host: Vercel is disabled, and removing the custom domain takes the site offline.
+
+**Still open**
+- After the 8 Nov reset:
+  - admin sign-in with TOTP on the live site;
+  - the Auth URL configuration (site URL, reset redirect);
+  - one save moving from Pending to Live.
+- **Scheduled publishing has not fired yet:** no `schedule` run of either publish workflow appeared in the 2 h 17 min after the workflows reached `main` (05:52 to 08:09 UTC). Manual and CI-dispatched runs work. GitHub does not guarantee cron timing and is often late for newly added schedules. Check the Actions tab for `schedule` runs; until they appear, publish with *Run workflow*.
+- **Publishing on save:** needs the Worker secret `FP_PUBLISH_GITHUB_TOKEN`, a fine-grained token the owner creates. Until then the 15-minute scheduled check publishes.
+- **Recovery email:** still unresolved (see *Email*). With the zone on Cloudflare, an SMTP sender's SPF and DKIM records can now be added.
+- **Domain auto-renew** at GoDaddy is off.
+- **Search Console:** resubmit the sitemaps.
+
+## Staging status (2026-11-07)
+
+**Staging runs reliably on the free plans, with the storefront prebuilt as static files.** Every workflow verified on staging passes.
 
 Staging setup:
 - Worker `fresh-petals-staging`: `https://fresh-petals-staging.branjith-kumar24-01.workers.dev`. It is noindex, carries no analytics, and refuses visitors' enquiry writes.
@@ -18,7 +64,7 @@ Staging setup:
 | Every storefront page (home, categories, bouquets, garland list and collections, garland pages, product pages, occasions, 59 city pages and 59 city shops, guides, search, sitemaps, robots.txt, the search fragment) with **any** query string | **Static files.** Workers static assets serve them without running the Worker | none |
 | `/studio/*` | static `_redirects` (301) | none |
 | An address with no file: a city's other spelling (301), `/products/<slug>` (404 "not on sale"), anything else (404) | Worker, answered statically before any database scope (`src/server/platform/staticFallback.ts`) | none |
-| Stored photos `/_image` (four widths, WebP) | Worker + Images binding. Cloudflare caches the result; the original is read from Storage once per photo, width and data centre | none |
+| Stored photos `/photos/<sha256>-<width>.webp` (since `ac53dd9`) | **Static files**, resized at build time (`scripts/build/stored-photos.mjs`) and kept between CI builds by `actions/cache`. `/_image` remains only for previews | none |
 | `/garland-enquiry`, `/api/*` (enquiries, delivery check, `/api/publish/state`), `/admin/*` | Worker | yes |
 
 Query-string behaviour moved to the browser:
@@ -170,7 +216,7 @@ That is a data move, and it needs its own approval.
 - A DNS change back (nameservers) takes hours.
 - Static pages only show what the last successful build read: while publishing is broken, the site stays up but stops changing.
 
-## Cutover runbook (each step needs the owner's go-ahead; none has been done)
+## Cutover runbook (carried out 7 Nov 2026 except steps 1, 4 and the admin parts of 10, which wait on Supabase Auth; see *Launch*)
 
 Facts as of 7 Nov 2026:
 - The Cloudflare account holds only `fresh-petals-preview` and `fresh-petals-staging`, and no zones. Account and configuration IDs are in the owner's private cutover report.
