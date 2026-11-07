@@ -35,6 +35,36 @@
 - Sign-in on the live site now says "temporarily unavailable" while Supabase Auth answers 402 (`6b37dea`). Before that fix it said "Invalid email or password".
 - **Not verified live: admin sign-in with TOTP, and publishing on save.** Both need Supabase Auth.
 
+**Live resource use, 7 Nov 07:00–10:50 UTC** (Cloudflare GraphQL analytics; GA4 as supporting evidence only)
+- **Zone:** about 23,500 requests. 17,500 were static cache hits; 1,260 were cache misses served from static files.
+- **Worker `fresh-petals`:** 3,259 invocations, 0 errors, 0 CPU refusals, CPU p50 0.7 ms, p99 13 ms.
+  - About 2,990 were 404s for files that don't exist, and **2,874 of those came from one client** (`TLM-Audit-Scanner/2.0`, one address, 4,506 requests within 07:00–08:00).
+  - Its paths were credential and config probes (`/.env`, `/.git/logs/...`, `s3.key`, `phpinfo.php`, `stripe.config.js`), none of which this site has ever served. That, not the user agent or country, is the evidence of abuse.
+  - The `l9scan` (leakix) clients showed the same pattern at a smaller scale.
+  - These 404s are answered before any database work (`staticFallback.ts`).
+- **Production Hyperdrive:** 107 queries, 2.1 MB of results. That is enquiries, the publishing check and the live checks; builds read the database directly.
+- **Heavy product-page traffic:** 600–940 requests per bouquet product, mostly from Meta's network (`2a03:2880::/32`). These were static cache hits that cost neither the Worker nor the database.
+  - GA4 realtime at about 11:00 showed 16 users and 16 views in 30 minutes, so most of those hits are automated fetches, not people.
+  - They are harmless; nothing was blocked.
+- **The 23 `504`s on `/garland-enquiry` were not visitor errors.** All are `requestSource: edgeWorkerCacheAPI`: the middleware's Cache API lookup missing, one per real enquiry redirect. Visitors got their 302.
+- **Not available:** Supabase's own usage figures, which need a management token. Production `pg_stat_statements` is cumulative since 25 Sep, so it mostly shows the October on-demand rendering incident.
+
+**Protections active (Free plan)**
+- **Custom WAF rule** "Block secret-file and config probes (paths this site never serves)", action Block, evaluated before the Worker. It matches:
+  - paths starting with `/.` except `/.well-known/`;
+  - `/.env` and `/.git` anywhere in the path;
+  - a literal `*`;
+  - extensions `php env yml yaml ini key pem log sql bak old conf cfg asp aspx jsp cgi sh swp save orig dist`.
+
+  Cloudflare-verified bots are exempt (`not cf.client.bot`).
+  - **Tested before deploying:** it matched 74% of the window's scanner 404s. Among the 1,306 built files and 387 sitemap URLs it matched only `/.assetsignore`, which static assets never serve.
+  - **Checked live:** probes get 403. Pages, photos, sitemaps, robots, `/_publish/state.json`, `/api/publish/state` (with any query string), `/.well-known/`, `/garland-enquiry` and 404s for other missing pages behave as before.
+- **Not enabled, deliberately:**
+  - **Bot Fight Mode:** on the Free plan it can't be skipped by any rule, so it would challenge GitHub Actions' check of `/api/publish/state` and could affect link-preview fetchers.
+  - **Country or ASN blocks:** these are not evidence of abuse.
+  - **A rate-limiting rule (1 on Free):** it counts every request, including static photos, and the scanner's rate (about 12 requests per 10 s) is close to a real page load. No abuse of the enquiry endpoints was seen.
+  - **Analytics:** left enabled.
+
 **Rollback:** `npx wrangler rollback <version> --name fresh-petals`. The version before `6b37dea` is `514db6a`, the first production deploy (versions list). There is no other host: Vercel is disabled, and removing the custom domain takes the site offline.
 
 **Still open**
@@ -42,14 +72,24 @@
   - admin sign-in with TOTP on the live site;
   - the Auth URL configuration (site URL, reset redirect);
   - one save moving from Pending to Live.
-- **Scheduled publishing has not fired:** GitHub has started no `schedule` run of either publish workflow.
-  - **Window:** four hours after the workflows reached `main`, 05:52 to 09:55 UTC on 7 Nov.
-  - **Retried:** the staging cron was moved off the quarter-hour and pushed again in `e6d5123`, to re-register it. Still nothing in the next 49 minutes, with a staging change waiting.
-  - **Ruled out:** repository Actions are enabled, the repository is not a fork, and both workflows are active.
-  - **What works:** manual and CI-dispatched runs.
-  - **Until schedules start:** publish with *Production publish → Run workflow*.
-  - **A trigger that doesn't depend on GitHub's cron:** a Cloudflare Cron Trigger on the Worker that compares fingerprints and sends `repository_dispatch`. It needs the same fine-grained token as publishing on save.
-- **Publishing on save:** needs the Worker secret `FP_PUBLISH_GITHUB_TOKEN`, a fine-grained token the owner creates. Until then the 15-minute scheduled check publishes.
+- **Automatic publishing is not working. Both of its triggers are unavailable:**
+  1. **GitHub does not start scheduled workflows in this repository.**
+     - **Publish workflows:** zero `schedule` runs in 5.5 hours (05:52 to 11:26 UTC on 7 Nov).
+     - **Probe:** a trivial `*/5` workflow (`03880ec`, removed afterwards) also had zero runs in 45 minutes, so the cause is not specific to the publish workflows.
+     - **Ruled out:**
+       - Actions are enabled and allow all actions;
+       - the repository is public, not a fork and not archived;
+       - every workflow is `active`, and the Actions page shows no disabled or inactivity notice;
+       - the workflow commits are attributed to the owner's account;
+       - githubstatus.com showed no open Actions incident.
+     - **Not the cause:** schedule timing. It isn't a delay, so cron timings were not changed further.
+     - **What works:** `workflow_dispatch` runs (staging 67 s build, production 70 s).
+     - **Next step:** the owner asks GitHub Support why `schedule` events never run for `RanjithKumar427/fresh-petals`.
+  2. **Publishing on save** needs the Worker secret `FP_PUBLISH_GITHUB_TOKEN`: a fine-grained token for this repository with Contents read and write, which only the owner can create. It is absent on both Workers. With it, every admin save sends `repository_dispatch`, which doesn't depend on GitHub's scheduler.
+
+  **Until one of these is fixed:** an admin save reaches the website only when someone runs *Production publish → Run workflow*. The editor says no build was requested and shows Pending until then.
+
+  **Not demonstrated:** a staging change reaching the site automatically. Fixture `fp-staging-test-autopublish-demo` was added 10:59:44 and nothing published it by 11:27. It was then removed, and the staging fingerprint matches the deployed build again.
 - **Recovery email:** still unresolved (see *Email*). With the zone on Cloudflare, an SMTP sender's SPF and DKIM records can now be added.
 - **Domain auto-renew** at GoDaddy is off.
 - **Search Console:** resubmit the sitemaps.
@@ -129,7 +169,7 @@ Local: `astro check` 0 errors, 0 warnings; `node --test` 166/166 tracked; the st
 | October incident replayed: 200 distinct filter-chip URLs, 8 at a time | 25% refused (`exceededCpu`, HTTP 503) in a smaller burst | **0 Worker requests, 0 queries** |
 | Full sitemap crawl (213 URLs) | 58 renders, 9.5 MB of results, some 503s | **0 Worker requests, 0 queries** |
 | Address with no file, city spelling | full render | Worker, p50 2.5 ms, no database |
-| Stored photos, cold: 60 at 12 at a time / 137 at 24 at a time | — | 0 refusals; p50 11 / 8.8 ms, p99 61 / 47 ms |
+| *Historical (until `ac53dd9`):* stored photos through `/_image`, cold: 60 at 12 at a time / 137 at 24 at a time | — | 0 refusals; p50 11 / 8.8 ms, p99 61 / 47 ms. Photos are now static files; this row no longer applies |
 | Publishing check `/api/publish/state` | — | p50 7.3 ms, about 0.1 KB of results |
 | Everything on staging 16:45–19:00 UTC (two lifecycle runs, Auth, admin uploads, photo bursts, traffic tests) | — | 1,313 Worker requests: **0 CPU refusals, 0 errors**; p50 9.2, p90 37, p99 128 ms (sign-in and uploads); 1,862 Hyperdrive queries, 2.1 MB |
 | One build: database bytes received | — | **356 KB** (4 connections) |
@@ -137,24 +177,23 @@ Local: `astro check` 0 errors, 0 warnings; `node --test` 166/166 tracked; the st
 | A failed build | — | stopped after 81–93 s; nothing deployed, previous release served |
 | Delay after deploy before visitors' plain addresses show the new build | — | 1–13 s |
 
-**Estimates** (not measured; for a small shop's traffic):
-- **Worker requests.** Only photos, missing addresses, enquiries and the admin run the Worker. A first visit to a garland list loads about 8–24 photos; repeat visits use the browser's year-long cache. 1,000 page views a day is under about 25,000 requests, against 100,000 a day free. The October bot peak (about 56,000 filter-URL renders a day) now costs 0.
-- **CPU.** Page renders no longer happen. Photo requests average about 9–11 ms with occasional peaks. Cloudflare tolerated every burst tried, but sustained heavy photo traffic could still hit the 10 ms limit; that is the remaining risk on the Free plan.
-  - The fix, if it ever shows up, is resizing the photos at build time into static files. It isn't done: it needs a photo cache between builds.
+**Estimates** (not measured; for a small shop's traffic). The photo items below were written when photos went through `/_image`. Since `ac53dd9` photos are static files resized at build time, so those items are **historical**; see *Live resource use* in the Launch section for measured figures.
+- **Worker requests.** Only missing addresses, enquiries, the publishing check and the admin run the Worker. Photos no longer do. 1,000 page views a day is far under 100,000 requests a day free. The October bot peak (about 56,000 filter-URL renders a day) now costs 0.
+- **CPU.** Page renders and photo resizing no longer happen on request. *Historical:* photo requests averaged about 9–11 ms, which was the residual 10 ms risk; that risk is gone.
 - **Supabase egress (5 GB a month, about 170 MB a day):**
-  - Builds: 0.36 MB each, so 20 builds a day is about 7 MB.
+  - Builds: 0.36 MB each, so 20 builds a day is about 7 MB. A build downloads only photos it hasn't cached (`actions/cache`).
   - Scheduled checks: about 0.1 MB a day.
   - Enquiries and the admin: small.
-  - Photo originals for the resizer: at most about 88 MB per data centre to fill every width once (156 photos × 4 widths × about 140 KB), repeated only when Cloudflare evicts its cached copies.
-  - Visitors' page views read nothing. Comfortably inside the free quota unless photo caches churn across many data centres.
-- **Images.** 156 photos × 4 widths is about 624 unique transformations, against 5,000 a month free; each new photo adds 4.
+  - *Historical:* photo originals for the `/_image` resizer (up to about 88 MB per data centre). Visitors no longer read Storage at all.
+  - Visitors' page views read nothing.
+- *Historical:* **Images.** 156 photos × 4 widths was about 624 transformations a month against 5,000 free. Build-time resizing uses no Images quota.
 - **Static assets.** 919 files and 97 MB, within 20,000 files and 25 MiB per file. Static requests are free and unlimited.
 - **GitHub Actions** (public repository, standard runners at no charge):
   - The scheduled check runs 96 times a day, about 15 s each.
   - A publish is about 3–5 minutes.
   - GitHub suspends scheduled workflows in a public repository after 60 days without repository activity; re-enable it in the Actions tab if that happens.
 
-**Verdict.** Static pages remove every on-demand render, and with them the CPU, request and database risks that broke the free plan. What remains on the Worker is small and measured within limits. **Free hosting is supported by these measurements** for a small shop's traffic. The one residual risk is sustained heavy photo traffic against the 10 ms CPU limit.
+**Verdict.** Static pages remove every on-demand render, and with them the CPU, request and database risks that broke the free plan. What remains on the Worker is small and measured within limits. **Free hosting is supported by these measurements** for a small shop's traffic. The former residual risk (photo resizing against the 10 ms CPU limit) was removed by build-time photos.
 
 ### Publishing
 
@@ -168,11 +207,22 @@ A storefront change is a new build: the build reads the database once, then depl
    - one build at a time, and a newer request replaces a waiting one, so a burst of saves costs at most two builds;
    - a change saved during a build leaves the fingerprints different, so the next check publishes it.
 
-What the admin sees: a save reports how it will be published, and the editor's website check reports Pending until the deployed file has the saved version, then Live. The bound shown is 25 minutes: one check interval plus a build.
+What the admin sees (since `88ae20d`):
+- A successful dispatch says **"Publishing requested"**. Without the token, or when GitHub refuses, the save says no build was requested.
+- The editor's website check says **Live** only when the deployed page carries this save's version (`data-garland-version` equal to the record's `updatedAt`). It says **Pending** while the deployed page shows an earlier version, including a build that started before a later edit.
+- **No deadline is promised.** The editor keeps checking for 30 minutes, then shows Pending with a retry.
+
+`GET /api/publish/state` (since `88ae20d`):
+- **Caching:** a successful fingerprint is reused for 30 s per isolate.
+- **Deduplication:** concurrent requests share one read. This is not a rate limit.
+- **Query strings:** they are not part of the key, so they can't bypass the cache.
+- **Failures:** a failed or malformed read is never cached and returns 503, never an expired fingerprint.
+- **Builds:** they read the database directly.
+- **Measured on staging:** 30 requests (sequential, varied query strings, concurrent) made 3 fingerprint queries instead of 30 (`pg_stat_statements`). A change showed in the endpoint within 2 s.
 
 | Change | Reaches the site | Verified (real builds on staging) |
 |---|---|---|
-| Product added in the admin | Next build: a storefront entry from the record (`src/data/dashboardCatalogue.ts`), its uploaded photo through `/_image`, its category page and `sitemap.xml` | live 1 s after the build was served |
+| Product added in the admin | Next build: a storefront entry from the record (`src/data/dashboardCatalogue.ts`), its uploaded photo (static `/photos/` copies since `ac53dd9`; `/_image` before), its category page and `sitemap.xml` | live 1 s after the build was served |
 | Edits to name, descriptions, stem count, photo | Next build: the dashboard values replace the catalogue copy, except deliberate rewrites, reviewed placeholders and photos the build can't serve. Category, collections and flowers stay with the catalogue entry | garland rename and photo swap after several saves and one build: visible 13 s after serving; the old photo gone from the page and sitemap |
 | Removal (archive or delete) | Next build: 404 "not on sale", gone from sitemaps, lists and saved baskets | product 404 at 1 s; garland 404 at 2 s |
 | A build that fails | Nothing deployed | previous release kept serving (old name visible) |
