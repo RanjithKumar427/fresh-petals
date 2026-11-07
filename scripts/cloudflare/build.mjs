@@ -95,11 +95,15 @@ const walk = (dir) => {
       if (target === 'staging' && /hjhmetomcaskrrwkgrbp/.test(html)) problems.push(`${full}: references the production project`);
       if (/<link rel="canonical" href="https:\/\/(?!onlyfreshpetals\.in)/.test(html)) problems.push(`${full}: canonical outside onlyfreshpetals.in`);
       // Every stored photo must be a static copy: /_image would read Storage per visitor (and fails while Storage is unavailable).
-      if (target !== 'preview' && /\/_image\?href=/.test(html)) problems.push(`${full}: a stored photo without a static copy (/_image)`);
+      if (target !== 'preview' && /\/_image\?href=|\/storage\/v1\/object\//.test(html)) problems.push(`${full}: a stored photo without a static copy (/_image or a Storage URL)`);
     }
   }
 };
 walk('dist/client');
+for (const sitemap of ['sitemap.xml', 'sitemap-garlands.xml']) {
+  const file = path.join('dist/client', sitemap);
+  if (target !== 'preview' && existsSync(file) && /\/storage\/v1\/object\//.test(readFileSync(file, 'utf8'))) problems.push(`${sitemap}: lists a Storage URL instead of a static photo`);
+}
 // Only the stored-photo files that built pages reference become public.
 const photos = copyReferencedPhotos('dist/client');
 if (photos.missing.length) problems.push(`${photos.missing.length} referenced photo file(s) missing from the cache: ${photos.missing.slice(0, 3).join(', ')}`);
