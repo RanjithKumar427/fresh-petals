@@ -20,7 +20,7 @@ on:
   repository_dispatch:
     types: [publish-site]
   schedule:
-    - cron: "*/15 * * * *"
+    - cron: "3,18,33,48 * * * *"
   workflow_dispatch:
     inputs:
       force:
