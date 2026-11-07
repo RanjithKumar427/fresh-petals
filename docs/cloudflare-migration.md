@@ -42,7 +42,13 @@
   - admin sign-in with TOTP on the live site;
   - the Auth URL configuration (site URL, reset redirect);
   - one save moving from Pending to Live.
-- **Scheduled publishing has not fired yet:** no `schedule` run of either publish workflow appeared in the 2 h 17 min after the workflows reached `main` (05:52 to 08:09 UTC). Manual and CI-dispatched runs work. GitHub does not guarantee cron timing and is often late for newly added schedules. Check the Actions tab for `schedule` runs; until they appear, publish with *Run workflow*.
+- **Scheduled publishing has not fired:** GitHub has started no `schedule` run of either publish workflow.
+  - **Window:** four hours after the workflows reached `main`, 05:52 to 09:55 UTC on 7 Nov.
+  - **Retried:** the staging cron was moved off the quarter-hour and pushed again in `e6d5123`, to re-register it. Still nothing in the next 49 minutes, with a staging change waiting.
+  - **Ruled out:** repository Actions are enabled, the repository is not a fork, and both workflows are active.
+  - **What works:** manual and CI-dispatched runs.
+  - **Until schedules start:** publish with *Production publish → Run workflow*.
+  - **A trigger that doesn't depend on GitHub's cron:** a Cloudflare Cron Trigger on the Worker that compares fingerprints and sends `repository_dispatch`. It needs the same fine-grained token as publishing on save.
 - **Publishing on save:** needs the Worker secret `FP_PUBLISH_GITHUB_TOKEN`, a fine-grained token the owner creates. Until then the 15-minute scheduled check publishes.
 - **Recovery email:** still unresolved (see *Email*). With the zone on Cloudflare, an SMTP sender's SPF and DKIM records can now be added.
 - **Domain auto-renew** at GoDaddy is off.
