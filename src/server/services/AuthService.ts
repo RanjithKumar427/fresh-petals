@@ -44,7 +44,8 @@ export class AuthUnavailableError extends Error {
 function isOutage(error: unknown): boolean {
   if (!error || typeof error !== "object") return false;
   const { name, status } = error as { name?: string; status?: number };
-  return name === "AuthRetryableFetchError" || (typeof status === "number" && (status === 0 || status === 429 || status >= 500));
+  // 402: Supabase restricts a project over its usage quota; the credentials may be fine.
+  return name === "AuthRetryableFetchError" || (typeof status === "number" && (status === 0 || status === 402 || status === 429 || status >= 500));
 }
 
 /**

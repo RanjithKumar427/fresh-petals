@@ -151,14 +151,13 @@ if (sample.city) {
 }
 
 // --- Images ---
-const garlandImage = sample.garland ? attr(sample.garland.html, /(\/_image\?href=[^"\s,]+)/) : "";
+const garlandImage = sample.garland ? attr(sample.garland.html, /(\/photos\/[^"\s,]+\.webp)/) : "";
 if (garlandImage) {
   const r = await get(garlandImage);
-  check("images", "stored garland photo is delivered resized as WebP", r.status === 200 && /image\/webp/.test(r.type), `${r.status} ${r.type}`);
-  const odd = garlandImage.replace(/([?&])w=\d+/, "$1w=333");
-  const refused = await get(odd);
-  check("images", "a width outside the four allowed is refused", refused.status >= 400, `${refused.status}`);
-} else check("images", "a stored garland photo was found on a garland page", false);
+  check("images", "stored garland photo is delivered as a static WebP file", r.status === 200 && /image\/webp/.test(r.type), `${r.status} ${r.type}`);
+  check("images", "static photos are cached as immutable", /immutable/.test(r.headers.get("cache-control") ?? ""), r.headers.get("cache-control") ?? "none");
+} else check("images", "a stored garland photo (/photos/*.webp) was found on a garland page", false);
+check("images", "garland pages no longer point at Storage or the resize endpoint", !sample.garland || !/\/_image\?href=|\/storage\/v1\/object\//.test(sample.garland.html));
 const other = await get("/_image?href=https%3A%2F%2Fexample.com%2Fa.jpg&w=480&q=75&f=webp");
 check("images", "the image endpoint refuses other hosts", other.status === 404, `${other.status}`);
 const staticImages = [...images].filter((u) => u.startsWith(`${CANONICAL}/`) && !u.includes("/_image")).slice(0, 25);
