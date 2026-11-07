@@ -188,7 +188,8 @@ export function applyCloudflareHeaders(staticDir) {
   const preview = process.env.FP_DEPLOY_ENV === 'preview' || process.env.FP_DEPLOY_ENV === 'staging' ? { 'x-robots-tag': 'noindex, nofollow' } : {};
   const lines = Object.entries({ ...SECURITY_HEADERS, ...CLOUDFLARE_EXTRA_HEADERS, ...preview }).map(([name, value]) => `  ${name}: ${value}`);
   // HTML fragments fetched by prebuilt pages (src/pages/fragments/) are never pages to index.
-  const fragments = `/fragments/*\n  x-robots-tag: noindex\n`;
+  // Stored-photo copies are named by content hash (scripts/build/stored-photos.mjs): never stale.
+  const fragments = `/fragments/*\n  x-robots-tag: noindex\n\n/photos/*\n  Cache-Control: public, max-age=31536000, immutable\n`;
   if (!existing.includes('# fresh-petals security headers')) {
     writeFileSync(headersFile, `# fresh-petals security headers\n/*\n${lines.join('\n')}\n\n${fragments}\n${existing}`);
   }

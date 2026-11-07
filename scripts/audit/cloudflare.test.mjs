@@ -263,3 +263,31 @@ test('publishing workflows: staging and production listen to their own events; p
   assert(!/FP_PUBLISH_EVENT/.test(stagingVars), 'staging uses the default publish-site event');
   assert.match(readFileSync('src/server/services/Publishing.ts', 'utf8'), /process\.env\.FP_PUBLISH_EVENT \|\| "publish-site"/);
 });
+
+test('stored photos: static copies replace /_image, only referenced files are published, bytes checked against the checksum', async () => {
+  const photos = sourceLoader()('src/data/storedPhotos.ts');
+  const entries = { 'https://x/a.jpg': { path: '/photos/h-1080.webp', original: '/photos/h.jpg', variants: { 240: '/photos/h-240.webp', 480: '/photos/h-480.webp', 1080: '/photos/h-1080.webp' } } };
+  assert.deepEqual(JSON.parse(JSON.stringify(photos.staticPhoto('https://x/a.jpg', 1200, 1600, entries))), { path: '/photos/h-1080.webp', width: 1080, height: 1440, variants: { 240: '/photos/h-240.webp', 480: '/photos/h-480.webp' } });
+  assert.equal(photos.staticPhoto('https://x/missing.jpg', 10, 10, entries), null);
+  const { mkdtempSync, mkdirSync, writeFileSync, existsSync } = await import('node:fs');
+  const { tmpdir } = await import('node:os');
+  const path = (await import('node:path')).default;
+  const root = mkdtempSync(path.join(tmpdir(), 'fp-photos-'));
+  const build = await import('../build/stored-photos.mjs');
+  const sharp = (await import('sharp')).default;
+  const bytes = await sharp({ create: { width: 600, height: 400, channels: 3, background: '#a33' } }).jpeg().toBuffer();
+  const sum = (await import('node:crypto')).createHash('sha256').update(bytes).digest('hex');
+  const rows = [{ url: 'https://store/a.jpg', checksum: sum, mime_type: 'image/jpeg', width: 600 }, { url: 'https://store/b.jpg', checksum: 'f'.repeat(64), mime_type: 'image/jpeg', width: 600 }];
+  const fetcher = async (url) => (url.endsWith('a.jpg') ? new Response(bytes) : new Response(Buffer.from('tampered')));
+  const counts = await build.prepareStoredPhotos(rows, { root, sourceDirs: [], fetcher, log: () => {} });
+  assert.deepEqual(counts, { cached: 0, local: 0, downloaded: 1, unavailable: 1 }, 'a download that does not match its checksum is refused');
+  const manifest = JSON.parse((await import('node:fs')).readFileSync(path.join(root, build.PHOTO_MANIFEST_FILE), 'utf8'));
+  assert.deepEqual(Object.keys(manifest), ['https://store/a.jpg']);
+  assert.deepEqual(Object.keys(manifest['https://store/a.jpg'].variants), ['240', '480'], 'never wider than the original');
+  const out = path.join(root, 'dist');
+  mkdirSync(out, { recursive: true });
+  writeFileSync(path.join(out, 'page.html'), `<img src="/photos/${sum}-480.webp">`);
+  const copied = build.copyReferencedPhotos(out, root);
+  assert.equal(copied.copied, 1);
+  assert(existsSync(path.join(out, 'photos', `${sum}-480.webp`)) && !existsSync(path.join(out, 'photos', `${sum}-240.webp`)), 'an unreferenced photo file is not published');
+});

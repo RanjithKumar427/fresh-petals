@@ -15,6 +15,7 @@ import pg from 'pg';
 import { supabasePoolSsl } from '../../src/server/db/postgres/ssl.mjs';
 import { FINGERPRINT_SQL } from '../../src/server/services/publishFingerprint.mjs';
 import { DASHBOARD_CATALOGUE_SQL, writeDashboardCatalogue } from '../build/dashboard-catalogue.mjs';
+import { STORED_PHOTOS_SQL, copyReferencedPhotos, prepareStoredPhotos } from '../build/stored-photos.mjs';
 
 const target = process.argv[2];
 if (!['preview', 'staging', 'production'].includes(target)) {
@@ -52,6 +53,8 @@ const fingerprint = await (async () => {
     const value = (await client.query(FINGERPRINT_SQL)).rows[0].fingerprint;
     const records = writeDashboardCatalogue((await client.query(DASHBOARD_CATALOGUE_SQL)).rows);
     console.log(`Dashboard catalogue: ${records} product records written for the build.`);
+    // Stored photos as static files (scripts/build/stored-photos.mjs).
+    await prepareStoredPhotos((await client.query(STORED_PHOTOS_SQL)).rows);
     return value;
   } finally { await client.end().catch(() => {}); }
 })();
@@ -89,10 +92,16 @@ const walk = (dir) => {
       if (target !== 'production' && /googletagmanager\.com\/gtag|var measurementId = "G-/.test(html)) problems.push(`${full}: analytics tag in a ${target} build`);
       if (target === 'staging' && /hjhmetomcaskrrwkgrbp/.test(html)) problems.push(`${full}: references the production project`);
       if (/<link rel="canonical" href="https:\/\/(?!onlyfreshpetals\.in)/.test(html)) problems.push(`${full}: canonical outside onlyfreshpetals.in`);
+      // Every stored photo must be a static copy: /_image would read Storage per visitor (and fails while Storage is unavailable).
+      if (target !== 'preview' && /\/_image\?href=/.test(html)) problems.push(`${full}: a stored photo without a static copy (/_image)`);
     }
   }
 };
 walk('dist/client');
+// Only the stored-photo files that built pages reference become public.
+const photos = copyReferencedPhotos('dist/client');
+if (photos.missing.length) problems.push(`${photos.missing.length} referenced photo file(s) missing from the cache: ${photos.missing.slice(0, 3).join(', ')}`);
+console.log(`Stored photos: ${photos.copied} referenced file(s) copied to /photos.`);
 // The storefront is prebuilt: these must be static files, served without running the Worker.
 for (const file of ['index.html', 'categories/bouquets/index.html', 'categories/garlands/index.html', 'occasions/index.html', 'sitemap.xml', 'sitemap-garlands.xml', 'sitemap-occasions.xml', 'robots.txt', '404.html', 'fragments/garlands/index.html']) {
   if (!existsSync(path.join('dist/client', file))) problems.push(`missing static file ${file}`);

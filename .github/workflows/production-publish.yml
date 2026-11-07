@@ -65,6 +65,12 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 24, cache: npm }
       - run: npm ci
+      # Stored-photo copies by content hash (scripts/build/stored-photos.mjs): a build downloads only new uploads.
+      - uses: actions/cache@v4
+        with:
+          path: node_modules/.cache/fresh-petals-photos
+          key: stored-photos-${{ github.run_id }}
+          restore-keys: stored-photos-
       - name: Build, check and deploy (nothing is deployed if the build or its checks fail)
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

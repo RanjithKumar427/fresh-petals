@@ -21,6 +21,7 @@ import type { PriceType, Product } from "./productCatalog";
 import { DELIBERATE_CATALOGUE_COPY, PLACEHOLDER_IMAGE } from "./catalogueRange";
 import { STORED_PHOTO_WIDTHS, storedPhotoUrl } from "./garlandRules";
 import { QUOTE_ONLY_PRICE_LABEL } from "../shared/quoteOnly";
+import { staticPhoto } from "./storedPhotos";
 
 export type DashboardRecord = {
   id: number;
@@ -57,6 +58,9 @@ const text = (value: string | null | undefined) => (value ?? "").replace(/\s+/g,
 export function recordPhoto(image: DashboardRecord["image"]): string | null {
   if (!image?.usable) return null;
   if (!/^https:\/\//.test(image.url)) return image.url;
+  // A static copy made by the build (src/data/storedPhotos.ts), else the resizer.
+  const copy = staticPhoto(image.url, image.width, image.height);
+  if (copy) return copy.path;
   // A stored upload goes through the site's resizer at the largest allowed width it has.
   const width = [...STORED_PHOTO_WIDTHS].reverse().find((w) => !image.width || w <= image.width) ?? STORED_PHOTO_WIDTHS[0];
   return storedPhotoUrl(image.url, width);

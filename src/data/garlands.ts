@@ -29,6 +29,7 @@ import type { Product } from "./productCatalog";
 import { QUOTE_ONLY_PRICE_LABEL } from "../shared/quoteOnly";
 import { GARLAND_FILTER_LABELS, GARLAND_PREVIEW, formatGarlandPrice, isCartGarland, isListedGarland, type GarlandDesign, type GarlandOption } from "./garlandRules";
 import { garlandRecordExists, loadGarlandRecords, type GarlandRecord } from "../server/services/GarlandCatalogue";
+import { staticPhoto } from "./storedPhotos";
 
 export * from "./garlandRules";
 
@@ -56,12 +57,13 @@ function fromRecord(base: GarlandDesign | undefined, record: GarlandRecord): Gar
   const primary = record.images.find((image) => image.isPrimary) ?? record.images[0];
   const others = record.images.filter((image) => image !== primary);
   const priced = record.priceType === "fixed" && typeof record.sellingPrice === "number" && record.sellingPrice > 0;
-  const photo = (image: (typeof record.images)[number]) => ({
-    path: image.url,
-    width: image.width ?? 800,
-    height: image.height ?? 1000,
-    alt: image.altText || record.name,
-  });
+  // A stored upload is shown from its static copy when the build made one (src/data/storedPhotos.ts).
+  const photo = (image: (typeof record.images)[number]) => {
+    const copy = staticPhoto(image.url, image.width, image.height);
+    return copy
+      ? { path: copy.path, width: copy.width, height: copy.height, alt: image.altText || record.name, variants: copy.variants }
+      : { path: image.url, width: image.width ?? 800, height: image.height ?? 1000, alt: image.altText || record.name };
+  };
   return {
     code: record.designCode,
     slug: record.slug,
