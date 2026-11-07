@@ -64,7 +64,9 @@ export async function prepareStoredPhotos(rows, { root = process.cwd(), sourceDi
       counts.downloaded += 1;
     }
     const variants = {};
-    for (const width of PHOTO_WIDTHS.filter((w) => !row.width || w <= row.width)) {
+    // A photo narrower than every site width (tall garland strips, 150–234 px) gets one copy at its own width.
+    const fitting = PHOTO_WIDTHS.filter((w) => !row.width || w <= row.width);
+    for (const width of fitting.length ? fitting : [row.width]) {
       const file = path.join(cache, `${row.checksum}-${width}.webp`);
       if (!existsSync(file)) await sharp(original).rotate().resize({ width, withoutEnlargement: true }).webp({ quality: 75 }).toFile(file);
       variants[width] = `/photos/${row.checksum}-${width}.webp`;
