@@ -54,7 +54,10 @@ jobs:
 
   publish:
     needs: check
-    if: vars.PRODUCTION_PUBLISH_ENABLED == 'true' && (needs.check.outputs.changed == 'true' || inputs.force)
+    # A save's dispatch always publishes: GET /api/publish/state may still serve the fingerprint
+    # from before the save for up to 30 s (fingerprintCache), so the check alone could miss it.
+    # deploy.mjs builds from the database directly.
+    if: vars.PRODUCTION_PUBLISH_ENABLED == 'true' && (needs.check.outputs.changed == 'true' || github.event_name == 'repository_dispatch' || inputs.force)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: cloudflare-production
