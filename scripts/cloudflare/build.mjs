@@ -65,7 +65,9 @@ if (result.status !== 0) process.exit(result.status ?? 1);
 // Output checks.
 const problems = [];
 const headers = readFileSync('dist/client/_headers', 'utf8');
-const noindex = /x-robots-tag:\s*noindex/i.test(headers);
+// The site-wide rule (/*) decides indexing; /fragments/* is noindex on every target.
+const siteRule = (/(?:^|\n)\/\*\n((?:[ \t]+.*\n?)*)/.exec(headers) ?? [])[1] ?? '';
+const noindex = /x-robots-tag:\s*noindex/i.test(siteRule);
 if (target !== 'production' && !noindex) problems.push(`${target} _headers has no X-Robots-Tag: noindex`);
 if (target === 'production' && noindex) problems.push('production _headers carries X-Robots-Tag: noindex');
 if (!/strict-transport-security/i.test(headers)) problems.push('_headers has no HSTS');
