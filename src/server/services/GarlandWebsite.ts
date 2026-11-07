@@ -21,7 +21,7 @@
 //   4. None of these (local development): there is no shared cache to purge.
 import { dangerouslyDeleteByTag } from "@vercel/functions";
 import { ON_CLOUDFLARE } from "../platform/target";
-import { PUBLISH_MAX_DELAY_SECONDS, requestPublication } from "./Publishing";
+import { requestPublication } from "./Publishing";
 import { garlandSampleRequired } from "../../data/garlandRules";
 
 export const GARLAND_CACHE_TAG = "garlands";
@@ -30,11 +30,16 @@ const STALE_WHILE_REVALIDATE = 60;
 /** Upper bound on how long a visitor can see an outdated garland page if a purge fails. */
 export const GARLAND_MAX_STALE_SECONDS = S_MAXAGE + STALE_WHILE_REVALIDATE;
 /**
- * How long the admin is told a change can take to show. On Cloudflare the
- * storefront is prebuilt, so it is the publishing bound
- * (src/server/services/Publishing.ts); on Vercel, the cache lifetime.
+ * The longest a change can take to show, when one is guaranteed: on Vercel the
+ * cache lifetime. On Cloudflare a change needs a new build, which has no
+ * guaranteed deadline (src/server/services/Publishing.ts), so null.
  */
-export const websiteDelaySeconds = (): number => (ON_CLOUDFLARE ? PUBLISH_MAX_DELAY_SECONDS : GARLAND_MAX_STALE_SECONDS);
+export const websiteDelaySeconds = (): number | null => (ON_CLOUDFLARE ? null : GARLAND_MAX_STALE_SECONDS);
+/** Saying when a pending change will show: a bound only where one exists. */
+const whenItShows = (what: string): string => {
+  const seconds = websiteDelaySeconds();
+  return seconds === null ? `${what} when a build that includes this save is deployed` : `${what} within ${Math.ceil(seconds / 60)} minutes`;
+};
 
 /** Response headers for every on-demand garland page, section and the sitemap. */
 export function garlandCacheHeaders(): Record<string, string> {
@@ -140,7 +145,7 @@ export async function refreshWebsite(tags: string[]): Promise<RefreshResult> {
       method: vercelPurgeAvailable() ? "vercel" : process.env.SITE_CACHE_PURGE_URL ? "purge-url" : ON_CLOUDFLARE ? "publish" : "none",
       at,
       error: reason,
-      message: `The website refresh failed (${reason}). The change is saved and appears on its own within ${Math.ceil(websiteDelaySeconds() / 60)} minutes, or retry now.`,
+      message: `The website refresh failed (${reason}). The change is saved and ${whenItShows("appears")}, or retry now.`,
     };
   }
 }
@@ -167,7 +172,8 @@ export type WebsiteChange = {
   version: string;
   /** Null when the save couldn't change the website (not public before or after). */
   refresh: RefreshResult | null;
-  maxDelaySeconds: number;
+  /** Guaranteed upper bound, or null where none exists (Cloudflare: a new build is needed). */
+  maxDelaySeconds: number | null;
 };
 
 /**
@@ -210,7 +216,6 @@ export async function checkGarlandOnWebsite(product: GarlandLike, origin: string
   const checkedAt = new Date().toISOString();
   const shouldShow = preview ? product.status !== "archived" : isPublicGarlandRecord(product);
   const expected = shouldShow ? "listed" : "hidden";
-  const minutes = Math.ceil(websiteDelaySeconds() / 60);
   if (!/^[a-z0-9-]+$/.test(product.slug)) {
     return { state: "error", expected, path, checkedAt, seen: null, message: "This address can't be checked." };
   }
@@ -239,8 +244,8 @@ export async function checkGarlandOnWebsite(product: GarlandLike, origin: string
         seen,
         message:
           response.status === 200
-            ? `The website is still showing the previous version. It updates within ${minutes} minutes, or use “Refresh website”.`
-            : `The website doesn't show this garland yet (HTTP ${response.status}). It appears within ${minutes} minutes, or use “Refresh website”.`,
+            ? `The website still shows an earlier version, not this save. It ${whenItShows("updates")}, or use “Refresh website”.`
+            : `The website doesn't show this garland yet (HTTP ${response.status}). It ${whenItShows("appears")}, or use “Refresh website”.`,
       };
     }
     if (response.status === 404) {
@@ -252,7 +257,7 @@ export async function checkGarlandOnWebsite(product: GarlandLike, origin: string
       path,
       checkedAt,
       seen,
-      message: `A cached copy of the page is still visible (enquiries are already closed). It disappears within ${minutes} minutes, or use “Refresh website”.`,
+      message: `The page is still on the website from an earlier version (enquiries are already closed). It ${whenItShows("disappears")}, or use “Refresh website”.`,
     };
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error);

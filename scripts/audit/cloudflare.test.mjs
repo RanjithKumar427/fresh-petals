@@ -40,15 +40,62 @@ test('Cloudflare: a website refresh requests a new build (the storefront is preb
   assert.equal(calls[0].url, 'https://api.github.com/repos/owner/repo/dispatches');
   assert.equal(calls[0].init.headers.authorization, 'Bearer token');
   assert.equal(JSON.parse(calls[0].init.body).event_type, 'publish-site');
-  assert.equal(website.websiteDelaySeconds(), 25 * 60, 'the admin is told the publishing bound');
+  assert.equal(website.websiteDelaySeconds(), null, 'no publication deadline is promised on Cloudflare');
+  assert.match(ok.message, /^Publishing requested\./); assert.doesNotMatch(ok.message, /\d+ minutes|published/i);
 
   const refused = cf(env, { fetch: async () => ({ status: 401 }) })('src/server/services/GarlandWebsite.ts');
   const no = await refused.refreshWebsite(['garlands']);
-  assert.equal(no.ok, false); assert.match(no.error, /401/); assert.match(no.message, /scheduled publishing check/);
+  assert.equal(no.ok, false); assert.match(no.error, /401/); assert.match(no.message, /request failed/); assert.doesNotMatch(no.message, /\d+ minutes/);
   const unconfigured = cf({}, { fetch })('src/server/services/GarlandWebsite.ts');
   const result = await unconfigured.refreshWebsite(['garlands']);
   assert.equal(result.ok, false); assert.equal(result.method, 'publish'); assert.match(result.message, /isn't connected here/);
   assert.equal(calls.length, 1, 'nothing is sent without the dispatch settings');
+});
+
+test('Cloudflare: the garland website check says live only for the saved version, pending (no deadline) for an earlier build', async () => {
+  const website = cf({}, {})('src/server/services/GarlandWebsite.ts');
+  const product = { slug: 'g', status: 'published', updatedAt: 'v2', images: [1], garland: { photoPermission: 'granted', sampleVerified: true, sellingMode: 'enquiry' } };
+  const page = (version) => async () => ({ status: 200, text: async () => `<section data-garland-version="${version}">` });
+  const live = await website.checkGarlandOnWebsite(product, 'https://x.test', false, page('v2'));
+  assert.equal(live.state, 'live');
+  // Another edit (v2) saved while a build of v1 ran: the deployed v1 page is not "published" for v2.
+  const earlier = await website.checkGarlandOnWebsite(product, 'https://x.test', false, page('v1'));
+  assert.equal(earlier.state, 'pending'); assert.match(earlier.message, /earlier version/); assert.doesNotMatch(earlier.message, /\d+ minutes/);
+  const missing = await website.checkGarlandOnWebsite(product, 'https://x.test', false, async () => ({ status: 404, text: async () => '' }));
+  assert.equal(missing.state, 'pending'); assert.match(missing.message, /when a build that includes this save is deployed/);
+});
+
+test('publish state: successful fingerprints cached 30 s per isolate, reads shared, failures never cached or served stale', async () => {
+  const { fingerprintCache, PUBLISH_STATE_TTL_MS } = cf({}, {})('src/server/services/Publishing.ts');
+  assert.equal(PUBLISH_STATE_TTL_MS, 30_000);
+  const A = 'a'.repeat(32), B = 'b'.repeat(32);
+  let clock = 1_000, reads = 0, next = A, release;
+  const read = () => { reads++; return next === 'wait' ? new Promise((r) => (release = r)) : next instanceof Error ? Promise.reject(next) : Promise.resolve(next); };
+  const get = fingerprintCache(read, { now: () => clock });
+  assert.equal(await get(), A); assert.equal(await get(), A); assert.equal(reads, 1, 'second request within 30 s reuses the read');
+  clock += 29_999; assert.equal(await get(), A); assert.equal(reads, 1);
+  clock += 1; next = B; assert.equal(await get(), B); assert.equal(reads, 2, 'expired after 30 s: a fresh read');
+  // Concurrent requests share one read in flight.
+  clock += 30_000; next = 'wait';
+  const all = Promise.all([get(), get(), get()]);
+  release(A); assert.deepEqual(await all, [A, A, A]); assert.equal(reads, 3);
+  // A failed refresh is not cached and never returns the expired value.
+  clock += 30_000; next = new Error('db down');
+  await assert.rejects(get(), /db down/); await assert.rejects(get(), /db down/); assert.equal(reads, 5);
+  // A malformed fingerprint is a failure, not a success.
+  next = 'not-a-fingerprint'; await assert.rejects(get(), /invalid fingerprint/);
+  next = 'B'.repeat(32); await assert.rejects(get(), /invalid fingerprint/);
+  next = A; assert.equal(await get(), A);
+  // A waiting request gives up on a stuck shared read; the next one after it settles reads again.
+  clock += 30_000; next = 'wait';
+  const slow = fingerprintCache(read, { now: () => clock, waitMs: 20 });
+  const first = slow(); await assert.rejects(slow(), /timed out/); release(B); assert.equal(await first, B);
+  // The endpoint uses the cache, keeps its contract and never reads the request (so query strings can't bypass it).
+  const route = readFileSync('src/pages/api/publish/state.ts', 'utf8');
+  assert.match(route, /GET: APIRoute = async \(\) =>/); assert.match(route, /publishedStateFingerprint\(\)/);
+  assert.match(route, /JSON\.stringify\(\{ fingerprint \}\)/); assert.match(route, /"cache-control": "no-store", "x-robots-tag": "noindex"/); assert.match(route, /status: 503/);
+  // Builds read the database directly, never the cached endpoint.
+  assert.match(readFileSync('scripts/cloudflare/build.mjs', 'utf8'), /client\.query\(FINGERPRINT_SQL\)/);
 });
 
 test('publishing: one dispatch per write unless a website change already sent it; off Cloudflare nothing', async () => {

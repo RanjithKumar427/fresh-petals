@@ -34,7 +34,8 @@ export type OccasionChange = {
   listed: boolean;
   /** Null when nothing on the website depends on the change. */
   refresh: RefreshResult | null;
-  maxDelaySeconds: number;
+  /** Guaranteed upper bound, or null where none exists (Cloudflare: a new build is needed). */
+  maxDelaySeconds: number | null;
 };
 
 /**

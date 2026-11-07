@@ -116,7 +116,7 @@ export default function PublishingSection({ draft, blockers, onSaveDraft, onPubl
       </div>
       <p className="mt-2 text-[11px] text-[#9B948F]">
         {draft.garland
-          ? "Garland changes reach the website by themselves — the Website bar at the top says when the saved version is live. Unpublishing closes its WhatsApp enquiry link at once and removes the page as soon as the website refreshes."
+          ? "Garland changes reach the website with the next published build — the Website bar at the top says when the website shows the saved version. Unpublishing closes its WhatsApp enquiry link at once and removes the page when the website next updates."
           : "Preview opens the live storefront page — new products appear there once the storefront is rebuilt."}
       </p>
     </section>

@@ -8,7 +8,8 @@ export type WebsiteChange = {
   path: string;
   version: string;
   refresh: { ok: boolean; method: string; at: string; error?: string; message: string } | null;
-  maxDelaySeconds: number;
+  /** A guaranteed bound, or null where none exists (Cloudflare: a new build is needed). */
+  maxDelaySeconds: number | null;
 };
 
 type WebsiteCheck = {
@@ -20,6 +21,13 @@ type WebsiteCheck = {
 };
 
 const POLL_MS = 5_000;
+/**
+ * How long the editor keeps checking by itself when no bound is guaranteed.
+ * Not a promise: the website changes when a build with the save is deployed,
+ * and the check reports "live" only when it sees that version.
+ */
+const CHECK_WINDOW_SECONDS = 30 * 60;
+const checkWindow = (change: WebsiteChange | null) => ((change?.maxDelaySeconds ?? CHECK_WINDOW_SECONDS) + 30) * 1000;
 
 interface Props {
   productId: number;
@@ -85,7 +93,7 @@ export default function WebsiteStatus({ productId, change }: Props) {
   useEffect(() => {
     if (!change) return;
     setRefreshError(change.refresh && !change.refresh.ok ? change.refresh.message : null);
-    if (change.refresh) poll(Date.now() + (change.maxDelaySeconds + 30) * 1000);
+    if (change.refresh) poll(Date.now() + checkWindow(change));
     else setCheck(null);
   }, [change, poll]);
 
@@ -101,18 +109,18 @@ export default function WebsiteStatus({ productId, change }: Props) {
     } finally {
       setRetrying(false);
     }
-    poll(Date.now() + ((change?.maxDelaySeconds ?? 180) + 30) * 1000);
+    poll(Date.now() + checkWindow(change));
   };
 
   const waiting = deadline !== null;
-  const minutes = Math.ceil((change?.maxDelaySeconds ?? 180) / 60);
+  const bound = change?.maxDelaySeconds ?? null;
+  // What the website is seen to show comes first: a failed request followed by
+  // a publish that included the save is still "live".
+  const seenDone = check?.state === "live" || check?.state === "hidden";
 
   let tone: "ok" | "info" | "warn" | "error" = "info";
   let text: string;
-  if (refreshError) {
-    tone = "error";
-    text = refreshError;
-  } else if (change && !change.refresh) {
+  if (change && !change.refresh) {
     text = `Not on the website — ${change.reason ?? "not public"}. Saved changes appear there once it's published.`;
   } else if (check?.state === "live") {
     tone = "ok";
@@ -120,8 +128,14 @@ export default function WebsiteStatus({ productId, change }: Props) {
   } else if (check?.state === "hidden") {
     tone = change ? "ok" : "info";
     text = check.message;
+  } else if (refreshError) {
+    tone = "error";
+    text = refreshError;
   } else if (waiting) {
-    text = `Updating the website… usually a few seconds, at most ${minutes} minutes.`;
+    text =
+      bound === null
+        ? "Publishing requested — the website doesn't show this save yet. It changes when a build that includes it is deployed; checking every few seconds."
+        : `Updating the website… usually a few seconds, at most ${Math.ceil(bound / 60)} minutes.`;
   } else if (check?.state === "pending") {
     tone = "warn";
     text = check.message;
@@ -138,14 +152,14 @@ export default function WebsiteStatus({ productId, change }: Props) {
     warn: "border-[#F1DFB8] bg-[#FFF7E8] text-[#7A5210]",
     error: "border-[#F2C9D4] bg-[#FBEAEE] text-[#7C243E]",
   }[tone];
-  const showRetry = refreshError !== null || (!waiting && (check?.state === "pending" || check?.state === "error"));
+  const showRetry = !seenDone && (refreshError !== null || (!waiting && (check?.state === "pending" || check?.state === "error")));
 
   return (
     <div
       className={`flex flex-wrap items-center gap-x-3 gap-y-1 border-b px-4 py-2 text-[12px] md:px-6 ${colours}`}
       role="status"
       aria-live="polite"
-      data-website-status={refreshError ? "refresh-failed" : (check?.state ?? (change && !change.refresh ? "not-public" : waiting ? "updating" : "unknown"))}
+      data-website-status={change && !change.refresh ? "not-public" : seenDone ? check!.state : refreshError ? "refresh-failed" : (check?.state ?? (waiting ? "updating" : "unknown"))}
     >
       <span className="font-bold uppercase tracking-[0.1em]">Website</span>
       <span>{text}</span>

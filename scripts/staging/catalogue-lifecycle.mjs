@@ -178,7 +178,7 @@ try {
   check("garland", "garland edit through the admin: photo, permission and the lotus filter saved", gEdit.status === 200 && (await q(`select count(*)::int n from product_garland_filters where product_id=$1`, [gid]))[0].n === 1, `${gEdit.status} ${scrub(body(gEdit).error ?? "")}`);
   const gPublish = await w("POST", `/api/admin/products/${gid}/status`, { jar: s, headers: JSON_HEADERS, body: JSON.stringify({ status: "published" }), store: false });
   const gw = body(gPublish).website;
-  check("garland", "publish accepted; the admin is told it appears with the next build, within the publishing bound", gPublish.status === 200 && gw?.listed === true && gw.refresh?.method === "publish" && gw.maxDelaySeconds === 1500, `${gPublish.status}; ${gw ? `${gw.refresh?.method} ${gw.maxDelaySeconds} s: ${scrub(gw.refresh?.message ?? "")}` : "absent"}`);
+  check("garland", "publish accepted; the admin is told publishing was requested, with no promised deadline", gPublish.status === 200 && gw?.listed === true && gw.refresh?.method === "publish" && gw.maxDelaySeconds === null, `${gPublish.status}; ${gw ? `${gw.refresh?.method} ${gw.maxDelaySeconds} s: ${scrub(gw.refresh?.message ?? "")}` : "absent"}`);
   const notYet = await publicGet(gUrl);
   const pending = body(await w("GET", `/api/admin/products/${gid}/website`, { jar: s, store: false }));
   check("garland", "before the build: no page yet, and the admin's website check says pending, not live", notYet.status === 404 && pending.data?.state === "pending", `${notYet.status}; ${pending.data?.state}`);
