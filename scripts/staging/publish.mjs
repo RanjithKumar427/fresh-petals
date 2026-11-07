@@ -64,10 +64,11 @@ const output = `${deploy.stdout}${deploy.stderr}`;
 console.log(output.split("\n").filter((l) => /^(PASS|STOP|FAIL|INFO)|\[catalogue\]|build OK|FAILED|version/.test(l)).slice(-30).join("\n"));
 result.seconds.buildAndDeploy = secs();
 if (deploy.status !== 0) {
-  const after = await deployedState().catch(() => ({}));
+  const after = await deployedState().catch(() => null);
   result.deployedAfter = after;
+  if (!after) finish("failed; the served build could not be read afterwards (check /_publish/state.json)", 1);
   log(`build or deploy failed (exit ${deploy.status}); the Worker still serves ${String(after.fingerprint ?? "?").slice(0, 12)} (revision ${String(after.revision ?? "").slice(0, 7)})`);
-  finish(after.fingerprint === deployed.fingerprint ? "failed; previous release still serving" : "failed; served build changed (investigate)", 1);
+  finish(after.fingerprint === deployed.fingerprint && after.builtAt === deployed.builtAt ? "failed; previous release still serving" : "failed; served build changed (investigate)", 1);
 }
 const built = JSON.parse(readFileSync(path.join(root, "dist/client/_publish/state.json"), "utf8"));
 result.built = built;
