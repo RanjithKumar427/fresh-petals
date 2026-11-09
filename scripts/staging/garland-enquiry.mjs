@@ -171,9 +171,13 @@ if (args.functional) {
       check("fresh", "archived through the admin: the same link is refused at once, no rebuild", arch.status === 200 && gone.status === 303 && gone.location === refusedFor && revisionOk(gone) && gone.cache === "no-store", `${arch.status} → ${gone.status} ${gone.location} ${functional.refusedAfterSeconds}s after the save`);
       const back = await w("POST", `/api/admin/products/${gid}/status`, { jar: s, headers: JSON_HEADERS, body: JSON.stringify({ status: "published" }), store: false });
       const again = await enquiry(`?code=${code}`);
-      const hide = await w("PATCH", `/api/admin/products/${gid}`, { jar: s, headers: JSON_HEADERS, body: JSON.stringify(fields({ status: "published", garland: { soldUnit: "pair", sellingMode: "enquiry", photoPermission: "refused", filters: ["rose"] } })), store: false });
-      const refusedPhoto = await enquiry(`?code=${code}`);
-      check("fresh", "republished → redirects; photo permission withdrawn in the editor → refused at once", back.status === 200 && again.status === 302 && hide.status === 200 && refusedPhoto.status === 303 && revisionOk(refusedPhoto), `${again.status} → ${refusedPhoto.status}`);
+      // The editor refuses withdrawing photo permission while published (ProductService: "Unpublish
+      // first"), so the design stays public; moving it back to draft hides it.
+      const withdraw = await w("PATCH", `/api/admin/products/${gid}`, { jar: s, headers: JSON_HEADERS, body: JSON.stringify(fields({ status: "published", garland: { soldUnit: "pair", sellingMode: "enquiry", photoPermission: "refused", filters: ["rose"] } })), store: false });
+      const kept = await enquiry(`?code=${code}`);
+      const toDraft = await w("POST", `/api/admin/products/${gid}/status`, { jar: s, headers: JSON_HEADERS, body: JSON.stringify({ status: "draft" }), store: false });
+      const drafted = await enquiry(`?code=${code}`);
+      check("fresh", "republished → redirects; refused permission edit leaves it public; moved to draft → refused at once", back.status === 200 && again.status === 302 && withdraw.status === 400 && kept.status === 302 && toDraft.status === 200 && drafted.status === 303 && drafted.location === refusedFor && revisionOk(drafted), `${again.status}; withdraw ${withdraw.status} → ${kept.status}; draft ${toDraft.status} → ${drafted.status}`);
       // A stored record always wins: a bundled code with a published record redirects with the admin's title.
       const bundled = await enquiry(`?code=${CODE}`);
       const [rec] = await q(`select p.name from garland_details gd join products p on p.id=gd.product_id where gd.design_code=$1`, [CODE]);
