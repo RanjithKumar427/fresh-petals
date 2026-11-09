@@ -26,7 +26,24 @@ const sharp = createRequire(import.meta.url)("sharp");
 const args = parseArgs();
 const WATCH_MS = Number(args.minutes ?? 25) * 60000;
 const run = startRun({ envFile: args.env, minFreeMb: 300, deadlineMinutes: 2 * Number(args.minutes ?? 25) + 15 });
-const { log, check, due, guarded, q, service, w, sdkFor } = run;
+const { log, check, due, guarded, service, sdkFor } = run;
+// This PC's DNS has dropped for a minute or more during watches (7 and 9 Nov), killing the run before
+// its cleanup. Retried here: database connections that failed to open (nothing was sent) and website
+// reads. Writes through the admin are never repeated.
+const CONNECT_FAILURE = /ENOTFOUND|EAI_AGAIN|ECONNREFUSED|ENETUNREACH|EHOSTUNREACH/;
+const NETWORK_FAILURE = /fetch failed|ENOTFOUND|EAI_AGAIN|ECONNRESET|ECONNREFUSED|ETIMEDOUT|ENETUNREACH|EHOSTUNREACH|socket hang up|aborted|timeout/i;
+const failureText = (e) => `${e?.message ?? e} ${e?.code ?? ""} ${e?.cause?.code ?? ""} ${e?.cause?.message ?? ""}`;
+async function retrying(fn, isTransient, label) {
+  for (let attempt = 1; ; attempt++) {
+    try { return await fn(); } catch (error) {
+      if (attempt >= 12 || !isTransient(failureText(error))) throw error;
+      log(`network unavailable (${label}); retry ${attempt} in 15 s`);
+      await sleep(15000);
+    }
+  }
+}
+const q = (sql, params) => retrying(() => run.q(sql, params), (t) => CONNECT_FAILURE.test(t), "database");
+const w = (method, route, opts) => (method === "GET" ? retrying(() => run.w(method, route, opts), (t) => NETWORK_FAILURE.test(t), "website") : run.w(method, route, opts));
 const REPO = "RanjithKumar427/fresh-petals";
 const CANONICAL = "https://onlyfreshpetals.in";
 const body = (r) => { try { return JSON.parse(r.text); } catch { return {}; } };
@@ -59,7 +76,9 @@ async function watch(label, since, done, runsFrom = since) {
   const served0 = (await servedState())?.builtAt ?? null;
   let servedChangedAt = null, firstDone = null, runs = [];
   while (Date.now() - since < WATCH_MS) {
-    const [state, checkRes] = await Promise.all([servedState(), w("GET", `/api/admin/products/${made.garlandProductId}/website`, { jar: s, store: false })]);
+    let state, checkRes;
+    try { [state, checkRes] = await Promise.all([servedState(), w("GET", `/api/admin/products/${made.garlandProductId}/website`, { jar: s, store: false })]); }
+    catch (error) { log(`[${label}] sample missed: ${failureText(error).slice(0, 80)}`); await sleep(10000); continue; }
     const website = body(checkRes).data ?? null;
     if (!servedChangedAt && state?.builtAt && state.builtAt !== served0) servedChangedAt = Date.now();
     runs = runsSince("staging-publish.yml", runsFrom) ?? runs;
