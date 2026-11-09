@@ -170,6 +170,71 @@ export async function garlandRecordExists(match: { slug: string } | { code: stri
   }
 }
 
+/**
+ * What a WhatsApp enquiry (src/pages/garland-enquiry.ts) needs about one
+ * stored garland: its identity, the facts that decide whether it is public,
+ * its sold unit and its option labels. No prices or extra charges, no copy,
+ * no filters or occasions.
+ */
+export type GarlandEnquiryRecord = Pick<
+  GarlandRecord,
+  "productId" | "designCode" | "slug" | "name" | "status" | "soldUnit" | "sellingMode" | "readyForSale" | "photoPermission" | "sampleVerified"
+> & {
+  options: { optionName: string; valueLabel: string }[];
+  /** At least one stored photo is attached (what fromRecord's hasStoredPhoto means). */
+  hasPhoto: boolean;
+};
+
+/**
+ * One garland record by design code, read fresh for an enquiry: one indexed
+ * row, then that product's options and whether it has a photo. Replaces
+ * reading every garland (five catalogue-wide queries, about 100 KB of results)
+ * per enquiry. Null when no record has this code; database errors propagate,
+ * so a failed read never becomes a WhatsApp redirect.
+ */
+export async function loadGarlandEnquiryRecord(code: string): Promise<GarlandEnquiryRecord | null> {
+  const db = getDb();
+  let rows;
+  try {
+    rows = await db
+      .select({
+        productId: products.id,
+        designCode: garlandDetails.designCode,
+        slug: products.slug,
+        name: products.name,
+        status: products.status,
+        soldUnit: garlandDetails.soldUnit,
+        sellingMode: garlandDetails.sellingMode,
+        readyForSale: garlandDetails.readyForSale,
+        photoPermission: garlandDetails.photoPermission,
+        sampleVerified: garlandDetails.sampleVerified,
+      })
+      .from(garlandDetails)
+      .innerJoin(products, eq(products.id, garlandDetails.productId))
+      .where(eq(garlandDetails.designCode, code))
+      .limit(1);
+  } catch (error) {
+    if (isMissingGarlandTables(error)) return null;
+    throw error;
+  }
+  const row = rows[0];
+  if (!row) return null;
+  const [options, photos] = await Promise.all([
+    db
+      .select({ optionName: productOptions.optionName, valueLabel: productOptions.valueLabel })
+      .from(productOptions)
+      .where(eq(productOptions.productId, row.productId))
+      .orderBy(asc(productOptions.sortOrder), asc(productOptions.id)),
+    db
+      .select({ id: productImages.id })
+      .from(productImages)
+      .innerJoin(media, eq(media.id, productImages.mediaId))
+      .where(eq(productImages.productId, row.productId))
+      .limit(1),
+  ]);
+  return { ...row, options, hasPhoto: photos.length > 0 };
+}
+
 let cache: Promise<Map<string, GarlandRecord>> | null = null;
 
 /**

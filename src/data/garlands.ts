@@ -27,8 +27,8 @@
 import drafts from "./garlandDrafts.json";
 import type { Product } from "./productCatalog";
 import { QUOTE_ONLY_PRICE_LABEL } from "../shared/quoteOnly";
-import { GARLAND_FILTER_LABELS, GARLAND_PREVIEW, formatGarlandPrice, isCartGarland, isListedGarland, type GarlandDesign, type GarlandOption } from "./garlandRules";
-import { garlandRecordExists, loadGarlandRecords, type GarlandRecord } from "../server/services/GarlandCatalogue";
+import { GARLAND_FILTER_LABELS, GARLAND_PREVIEW, formatGarlandPrice, isCartGarland, isListedGarland, type GarlandDesign, type GarlandOption, type GarlandVisibility } from "./garlandRules";
+import { garlandRecordExists, loadGarlandEnquiryRecord, loadGarlandRecords, type GarlandRecord } from "../server/services/GarlandCatalogue";
 import { staticPhoto } from "./storedPhotos";
 
 export * from "./garlandRules";
@@ -42,11 +42,11 @@ export const GARLAND_FILTERS = GARLAND_FILTER_LABELS;
 /** Garland designs are recommended for these existing occasion routes unless the admin chooses others. */
 export const GARLAND_OCCASIONS = ["wedding", "engagement"] as const;
 
-function groupOptions(record: GarlandRecord): GarlandOption[] {
+function groupOptions(record: { options: { optionName: string; valueLabel: string; extraCharge?: number | null }[] }): GarlandOption[] {
   const groups = new Map<string, GarlandOption>();
   for (const option of record.options) {
     const group = groups.get(option.optionName) ?? { label: option.optionName, values: [] };
-    group.values!.push({ label: option.valueLabel, extraCharge: option.extraCharge });
+    group.values!.push({ label: option.valueLabel, extraCharge: option.extraCharge ?? null });
     groups.set(option.optionName, group);
   }
   return [...groups.values()];
@@ -110,16 +110,14 @@ const catalogueDesigns = drafts.designs as GarlandDesign[];
  * the admin.
  */
 function withoutAmounts<T extends GarlandDesign>(design: T): T {
-  return {
-    ...design,
-    price: null,
-    priceConfirmed: false,
-    options: design.options.map((option) => ({
-      ...option,
-      values: option.values?.map((value) => (typeof value === "string" ? value : { ...value, extraCharge: null })),
-    })),
-  };
+  return { ...design, price: null, priceConfirmed: false, options: optionsWithoutAmounts(design.options) };
 }
+
+const optionsWithoutAmounts = (options: GarlandOption[]): GarlandOption[] =>
+  options.map((option) => ({
+    ...option,
+    values: option.values?.map((value) => (typeof value === "string" ? value : { ...value, extraCharge: null })),
+  }));
 
 async function mergedDesigns(fresh: boolean): Promise<(GarlandDesign & { updatedAt?: string })[]> {
   return (await storedDesigns(fresh)).map(withoutAmounts);
@@ -140,7 +138,7 @@ async function storedDesigns(fresh: boolean): Promise<(GarlandDesign & { updated
 }
 
 /** Shown in this environment: public garlands, plus every non-archived draft in a preview. */
-const isVisible = (design: GarlandDesign) => !design.archived && (GARLAND_PREVIEW || isListedGarland(design));
+const isVisible = (design: GarlandVisibility) => !design.archived && (GARLAND_PREVIEW || isListedGarland(design));
 
 function toProduct(design: GarlandDesign): GarlandProduct {
   const price = formatGarlandPrice(design);
@@ -188,10 +186,36 @@ export async function findGarland(slug: string): Promise<(GarlandProduct & { ver
   return (await loadGarlands()).find((product) => product.slug === slug) ?? null;
 }
 
-/** One visible garland by its design code (fresh), or null. */
-export async function findGarlandByCode(code: string): Promise<(GarlandProduct & { version: string | null }) | null> {
-  if (!(await garlandMayExist({ code }))) return null;
-  return (await loadGarlands()).find((product) => product.garland.code === code) ?? null;
+/** What a WhatsApp enquiry needs about one visible garland: no amounts, copy or photos. */
+export type GarlandEnquiryDesign = Pick<GarlandDesign, "code" | "slug" | "title" | "soldUnit" | "options">;
+
+/**
+ * One visible garland by its design code, read fresh for /garland-enquiry,
+ * with the same rules as loadGarlands(): a stored record always wins over the
+ * bundled catalogue (so a hidden record never falls back to a bundled copy),
+ * the bundled design is used only when no record has the code, and only a
+ * design visible in this environment is returned. Reads that one design only.
+ */
+export async function findGarlandForEnquiry(code: string): Promise<GarlandEnquiryDesign | null> {
+  const record = await loadGarlandEnquiryRecord(code);
+  const base = catalogueDesigns.find((design) => design.code === code);
+  const design: (GarlandEnquiryDesign & GarlandVisibility) | undefined = record
+    ? {
+        code: record.designCode,
+        slug: record.slug,
+        title: record.name,
+        soldUnit: record.soldUnit,
+        options: groupOptions(record),
+        published: record.status === "published",
+        archived: record.status === "archived",
+        photoPermission: record.photoPermission,
+        sampleVerified: record.sampleVerified,
+        sellingMode: record.sellingMode,
+        hasStoredPhoto: record.hasPhoto,
+      }
+    : base;
+  if (!design || !isVisible(design)) return null;
+  return { code: design.code, slug: design.slug, title: design.title, soldUnit: design.soldUnit, options: optionsWithoutAmounts(design.options) };
 }
 
 export const isGarlandProduct = (product: Product): product is GarlandProduct =>

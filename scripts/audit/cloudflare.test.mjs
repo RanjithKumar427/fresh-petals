@@ -279,12 +279,131 @@ test('invented garland slugs and codes are refused without reading every garland
   assert.match(route, /export const prerender = true;/);
   assert.match(route, /export async function getStaticPaths\(\)/);
   const data = readFileSync('src/data/garlands.ts', 'utf8');
-  for (const fn of ['findGarland(', 'findGarlandByCode(']) {
-    const body = data.slice(data.indexOf(`export async function ${fn}`), data.indexOf('}', data.indexOf(`export async function ${fn}`)) + 200);
-    assert.match(body, /if \(!\(await garlandMayExist\(\{ (slug|code) \}\)\)\) return null;/, fn);
-  }
+  const body = data.slice(data.indexOf('export async function findGarland('), data.indexOf('}', data.indexOf('export async function findGarland(')) + 200);
+  assert.match(body, /if \(!\(await garlandMayExist\(\{ slug \}\)\)\) return null;/);
   const catalogue = readFileSync('src/server/services/GarlandCatalogue.ts', 'utf8');
   assert.match(catalogue, /export async function garlandRecordExists[\s\S]*?\.limit\(1\)/);
+  // The enquiry reads one design: its row by code (limit 1), then that product's options and one photo row.
+  const one = catalogue.slice(catalogue.indexOf('export async function loadGarlandEnquiryRecord'), catalogue.indexOf('let cache'));
+  assert.match(one, /\.where\(eq\(garlandDetails\.designCode, code\)\)\s*\.limit\(1\)/);
+  assert.equal((one.match(/eq\(product(Options|Images)\.productId, row\.productId\)/g) ?? []).length, 2);
+  assert.doesNotMatch(one, /inArray|sellingPrice|extraCharge|description|garlandFilters|productOccasions/);
+  assert.doesNotMatch(readFileSync('src/pages/garland-enquiry.ts', 'utf8'), /loadGarlands|findGarlandByCode/);
+});
+
+// Garland enquiry (src/pages/garland-enquiry.ts): one design per request, with exactly the answers the
+// full catalogue read gave. Records and the bundled catalogue are controlled here; no database.
+const enquiryFixture = () => {
+  const drafts = JSON.parse(readFileSync('src/data/garlandDrafts.json', 'utf8')).designs;
+  // Bundled designs are all unpublished drafts today; two are made visible here so the fallback and
+  // the database-over-catalogue precedence are actually exercised.
+  const shown = (design) => ({ ...design, published: true, photoPermission: 'granted', sampleVerified: true, hasStoredPhoto: true, options: [{ label: 'Finish', values: ['Plain', { label: 'Gold bands', extraCharge: 400 }] }] });
+  const [a, b, c, d, e, f, g] = drafts;
+  const bundle = { designs: [shown(a), shown(b), c, d, e, f, g, ...drafts.slice(7)] };
+  const img = { url: 'https://x.supabase.co/storage/v1/object/public/media/products/m.jpg', altText: null, width: 600, height: 1200, isPrimary: true };
+  const record = (design, over = {}) => ({ productId: 7, designCode: design.code, slug: `${design.slug}-db`, name: `${design.title} (admin)`, shortDescription: 'secret copy', description: null, status: 'published', updatedAt: '2026-11-01T00:00:00.000Z', priceType: 'fixed', sellingPrice: 4500, soldUnit: 'pair', length: null, flowerRecipe: null, thickness: null, finish: null, leadTime: null, substitutionPolicy: null, sellingMode: 'enquiry', readyForSale: false, photoPermission: 'granted', sampleVerified: false, filters: [], occasions: [], options: [{ optionName: 'Finish', valueLabel: 'Pearl tassels', extraCharge: 300 }, { optionName: 'Finish', valueLabel: 'Plain', extraCharge: null }, { optionName: 'Length', valueLabel: '5 ft', extraCharge: null }], images: [img], ...over });
+  const records = new Map([
+    // b: a stored record that is hidden must never fall back to the visible bundled b.
+    [b.code, record(b, { status: 'draft' })],
+    [c.code, record(c)],
+    [d.code, record(d, { status: 'archived' })],
+    [e.code, record(e, { photoPermission: 'unconfirmed' })],
+    [f.code, record(f, { images: [] })],
+    [g.code, record(g, { sellingMode: 'cart', sampleVerified: false })],
+    ['FP-G900', record({ code: 'FP-G900', slug: 'db-only', title: 'Database only' }, { soldUnit: null })],
+  ]);
+  const calls = { full: 0, one: [] };
+  const enquiryRecord = (r) => ({ productId: r.productId, designCode: r.designCode, slug: r.slug, name: r.name, status: r.status, soldUnit: r.soldUnit, sellingMode: r.sellingMode, readyForSale: r.readyForSale, photoPermission: r.photoPermission, sampleVerified: r.sampleVerified, options: r.options.map(({ optionName, valueLabel }) => ({ optionName, valueLabel })), hasPhoto: r.images.length > 0 });
+  const catalogue = {
+    loadGarlandRecords: async () => { calls.full++; return records; },
+    loadGarlandEnquiryRecord: async (code) => { calls.one.push(code); const r = records.get(code); return r ? enquiryRecord(r) : null; },
+    garlandRecordExists: async () => true,
+  };
+  const load = sourceLoader({ globals: { Response, Headers, process: { env: {} } }, mocks: { 'src/data/garlandDrafts.json': bundle, 'src/server/services/GarlandCatalogue.ts': catalogue } });
+  return { a, b, c, d, e, f, g, records, calls, catalogue, load };
+};
+
+test('garland enquiry lookup reads one design and matches the full catalogue read exactly', async () => {
+  const { a, b, c, d, e, f, g, calls, load } = enquiryFixture();
+  const garlands = load('src/data/garlands.ts');
+  const json = (x) => JSON.parse(JSON.stringify(x));
+  for (const code of [a.code, b.code, c.code, d.code, e.code, f.code, g.code, 'FP-G900', 'FP-G999']) {
+    const full = (await garlands.loadGarlands()).find((product) => product.garland.code === code) ?? null;
+    const before = { full: calls.full, one: calls.one.length };
+    const one = await garlands.findGarlandForEnquiry(code);
+    assert.equal(calls.full, before.full, `${code}: the enquiry lookup never reads every garland`);
+    assert.deepEqual(calls.one.slice(before.one), [code], `${code}: exactly one single-design read`);
+    const expected = full && { code: full.garland.code, slug: full.garland.slug, title: full.garland.title, soldUnit: full.garland.soldUnit, options: full.garland.options };
+    assert.deepEqual(json(one), json(expected), code);
+  }
+  // The cases the comparison covers, stated outright.
+  assert.equal((await garlands.findGarlandForEnquiry(a.code))?.slug, a.slug, 'no record: the bundled design is the fallback');
+  assert.equal(await garlands.findGarlandForEnquiry(b.code), null, 'a hidden record is never resurrected by its visible bundled copy');
+  assert.equal((await garlands.findGarlandForEnquiry(c.code))?.title, `${c.title} (admin)`, 'the record wins over the bundled copy');
+  for (const hidden of [d, e, f]) assert.equal(await garlands.findGarlandForEnquiry(hidden.code), null, hidden.code);
+  assert.equal(await garlands.findGarlandForEnquiry(g.code), null, 'cart mode still needs a verified sample');
+  assert.equal((await garlands.findGarlandForEnquiry('FP-G900'))?.slug, 'db-only-db', 'records missing from the bundle are found');
+  const shown = await garlands.findGarlandForEnquiry(c.code);
+  assert.doesNotMatch(JSON.stringify(shown), /4500|300|secret|extraCharge":[1-9]/, 'no amounts or copy');
+  assert.deepEqual(json(shown.options), [{ label: 'Finish', values: [{ label: 'Pearl tassels', extraCharge: null }, { label: 'Plain', extraCharge: null }] }, { label: 'Length', values: [{ label: '5 ft', extraCharge: null }] }]);
+});
+
+test('garland enquiry route: redirects, refusals, headers and database failures unchanged', async () => {
+  const { a, b, c, calls, catalogue, load } = enquiryFixture();
+  const route = load('src/pages/garland-enquiry.ts');
+  const site = new URL('https://onlyfreshpetals.in');
+  const redirect = (location, status) => new Response(null, { status, headers: { location } });
+  const get = (query) => route.GET({ url: new URL(`https://onlyfreshpetals.in/garland-enquiry${query}`), site, redirect });
+  const text = (r) => decodeURIComponent(new URL(r.headers.get('location')).searchParams.get('text'));
+  const noStore = (r) => r.headers.get('cache-control') === 'no-store' && r.headers.get('x-robots-tag') === 'noindex';
+
+  const ok = await get(`?code=${c.code.toLowerCase()}%20&qty=900&opt=Finish::Pearl%20tassels&opt=Finish::Pearl%20tassels&opt=Finish::Diamonds&opt=Length::5%20ft&occ=wedding&for=gift&city=mumbai&utm_source=x`);
+  assert.equal(ok.status, 302);
+  assert(ok.headers.get('location').startsWith('https://wa.me/919652012274?text='));
+  assert(noStore(ok));
+  const message = text(ok);
+  assert.match(message, new RegExp(`Design: ${c.code} — ${c.title} \\(admin\\)`));
+  assert.match(message, new RegExp(`Link: https://onlyfreshpetals.in/products/${c.slug}-db\\n`));
+  assert.match(message, /Quantity: 500 pairs/, 'quantity capped at 500, sold unit named');
+  assert.match(message, /Options: Finish: Pearl tassels; Length: 5 ft\n/, 'only existing choices, once each');
+  assert.match(message, /Recipient city: Mumbai/);
+  assert.match(message, /Occasion: Wedding/);
+  assert.match(message, /For: /);
+  assert.doesNotMatch(message, /₹|4500|300|Diamonds/);
+  assert.match(text(await get(`?code=${c.code}&qty=-3`)), /Quantity: 1 pair\n/);
+  assert.match(text(await get(`?code=${c.code}&qty=abc&city=atlantis&occ=nope&for=other`)), /Quantity: 1 pair\n(?![\s\S]*(Recipient city|Occasion:|For:))/);
+  assert.match(text(await get(`?code=${a.code}`)), /Single garland or pair/, 'bundled fallback, unit unknown');
+
+  const refused = async (query, location) => {
+    const r = await get(query);
+    assert.equal(r.status, 303, query);
+    assert.equal(r.headers.get('location'), location, query);
+    assert(noStore(r), query);
+  };
+  const reads = calls.one.length;
+  await refused('', '/categories/garlands');
+  await refused('?code=abc', '/categories/garlands?unavailable=ABC');
+  await refused('?code=FP-G1', '/categories/garlands?unavailable=FP-G1');
+  assert.equal(calls.one.length, reads, 'a malformed code reads nothing');
+  await refused('?code=FP-G999', '/categories/garlands?unavailable=FP-G999');
+  await refused(`?code=${b.code}`, `/categories/garlands?unavailable=${b.code}`);
+  assert.equal(calls.full, 0, 'the route never reads every garland');
+
+  catalogue.loadGarlandEnquiryRecord = async () => { throw new Error('connection refused'); };
+  await assert.rejects(get(`?code=${c.code}`), /connection refused/, 'a database failure is an error, never a WhatsApp redirect');
+});
+
+test('the shared cache never looks up or stores /garland-enquiry; other pages unchanged', () => {
+  const edge = sourceLoader({ globals: { Request, Response, Headers } })('src/server/platform/edgeCache.ts');
+  const req = (p) => new Request(`https://onlyfreshpetals.in${p}`);
+  const guard = sourceLoader()('src/server/http/requestGuard.ts');
+  for (const p of ['/garland-enquiry?code=FP-G001', '/Garland-Enquiry/?code=FP-G001', '//garland-enquiry']) {
+    const path = guard.normalisePath(new URL(`https://onlyfreshpetals.in${p}`).pathname);
+    assert.equal(edge.edgeCacheable(req(p), path), false, p);
+  }
+  for (const p of ['/garland-enquiry-guide', '/categories/garlands', '/occasions/wedding']) assert.equal(edge.edgeCacheable(req(p), p), true, p);
+  const middleware = readFileSync('src/middleware.ts', 'utf8');
+  assert.match(middleware, /const cacheable = edgeCacheable\(context\.request, path\);\s*if \(cacheable\) \{\s*const hit = await edgeCacheMatch/);
 });
 
 test('robots.txt keeps crawlers off parameterised city shop views and the enquiry redirect', () => {

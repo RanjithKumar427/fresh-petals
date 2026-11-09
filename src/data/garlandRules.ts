@@ -69,6 +69,9 @@ export type GarlandDesign = {
   archived?: boolean;
 };
 
+/** The facts that decide whether a design is shown (isListedGarland, and the preview rule in garlands.ts). */
+export type GarlandVisibility = Pick<GarlandDesign, "published" | "photoPermission" | "sampleVerified" | "sellingMode" | "hasStoredPhoto" | "archived">;
+
 /** Normalised option values: plain strings become { label, extraCharge: null }. */
 export function optionValues(option: GarlandOption): GarlandOptionValue[] {
   return (option.values ?? []).map((value) => (typeof value === "string" ? { label: value, extraCharge: null } : value));
@@ -84,7 +87,7 @@ export function optionValues(option: GarlandOption): GarlandOptionValue[] {
 export const garlandSampleRequired = (sellingMode: string | null | undefined) => sellingMode !== "enquiry";
 
 /** Public: published, photo permission granted and — unless it is a WhatsApp enquiry design — the sample verified. */
-export const isPublicGarland = (design: GarlandDesign) =>
+export const isPublicGarland = (design: Pick<GarlandDesign, "published" | "photoPermission" | "sampleVerified" | "sellingMode">) =>
   design.published === true && design.photoPermission === "granted" && (design.sampleVerified === true || !garlandSampleRequired(design.sellingMode));
 
 /** A price the owner has set and confirmed (shown to customers). */
@@ -156,6 +159,6 @@ export function garlandPhotoSrcset(photo: GarlandPhoto, maxWidth = Infinity): st
 }
 
 /** Public on the live site: approved (isPublicGarland), not archived, and photographed in the site's image storage. */
-export function isListedGarland(design: GarlandDesign): boolean {
+export function isListedGarland(design: GarlandVisibility): boolean {
   return !design.archived && isPublicGarland(design) && design.hasStoredPhoto === true;
 }

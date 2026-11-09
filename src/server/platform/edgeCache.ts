@@ -25,6 +25,10 @@
 // renders fresh.
 
 const SKIP_PREFIXES = ["/admin", "/api/", "/_image", "/media/"];
+// Routes that are never cached (no-store), so a shared-cache lookup could only
+// miss: /garland-enquiry checks the database on every request. Compared with
+// the normalised path (lower case, no trailing slash; requestGuard.normalisePath).
+const SKIP_PATHS = new Set(["/garland-enquiry"]);
 
 function sMaxAge(cacheControl: string | null): number | null {
   if (!cacheControl || /(^|,)\s*(private|no-store)\b/i.test(cacheControl)) return null;
@@ -35,6 +39,7 @@ function sMaxAge(cacheControl: string | null): number | null {
 export function edgeCacheable(request: Request, path: string): boolean {
   if (request.method !== "GET" && request.method !== "HEAD") return false;
   if (SKIP_PREFIXES.some((prefix) => path === prefix.replace(/\/$/, "") || path.startsWith(prefix))) return false;
+  if (SKIP_PATHS.has(path)) return false;
   // A visitor with an admin session must never be served or seed a shared copy.
   const cookie = request.headers.get("cookie") ?? "";
   if (/(^|;\s*)sb-[^=]*-auth-token/.test(cookie)) return false;
@@ -62,7 +67,7 @@ const KEY_PARAMS: [RegExp, string[]][] = [
   [/^\/categories\/garlands\/?$/, ["unavailable", ...FILTER_PARAMS]],
   [/^\/fragments\/garlands\/?$/, ["for", "occasion"]],
   [/^\/(categories|occasions)\//, FILTER_PARAMS],
-  [/^\/garland-enquiry\/?$/, ["code", "qty", "opt", "occ", "for", "city"]], // no-store today; kept exact if that changes
+  [/^\/garland-enquiry\/?$/, ["code", "qty", "opt", "occ", "for", "city"]], // never looked up or stored (SKIP_PATHS); kept exact should that change
 ];
 
 const keyParamsFor = (path: string): Set<string> => new Set(KEY_PARAMS.filter(([pattern]) => pattern.test(path)).flatMap(([, names]) => names));

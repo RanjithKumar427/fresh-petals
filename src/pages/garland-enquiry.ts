@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro";
-import { findGarlandByCode } from "../data/garlands";
+import { findGarlandForEnquiry } from "../data/garlands";
 import { optionValues } from "../data/garlandRules";
 import { whatsappLink } from "../config/storefront";
 import { garlandEnquiryText } from "../utils/garlandEnquiry";
@@ -18,15 +18,15 @@ const NO_STORE = { "cache-control": "no-store", "x-robots-tag": "noindex" };
 
 export const GET: APIRoute = async ({ url, site, redirect }) => {
   const code = (url.searchParams.get("code") ?? "").trim().toUpperCase();
-  const garland = /^FP-G\d{3,}$/.test(code) ? await findGarlandByCode(code) : null;
+  // Reads only the requested design (src/data/garlands.ts findGarlandForEnquiry).
+  const design = /^FP-G\d{3,}$/.test(code) ? await findGarlandForEnquiry(code) : null;
 
-  if (!garland) {
+  if (!design) {
     const back = new URL("/categories/garlands", url);
     if (code) back.searchParams.set("unavailable", code);
     return new Response(null, { status: 303, headers: { ...NO_STORE, location: back.pathname + back.search } });
   }
 
-  const design = garland.garland;
   const quantity = Math.min(500, Math.max(1, Math.floor(Number(url.searchParams.get("qty"))) || 1));
   const known = new Map<string, { option: string; value: ReturnType<typeof optionValues>[number] }>(
     design.options.flatMap((option) => optionValues(option).map((value) => [`${option.label}::${value.label}`, { option: option.label, value }] as const))
@@ -37,7 +37,7 @@ export const GET: APIRoute = async ({ url, site, redirect }) => {
     .filter((entry): entry is NonNullable<typeof entry> => !!entry)
     .map(({ option, value }) => `${option}: ${value.label}`);
 
-  const pageUrl = new URL(`/products/${garland.slug}`, site ?? url).toString();
+  const pageUrl = new URL(`/products/${design.slug}`, site ?? url).toString();
   // Occasion and intent from the page the shopper came from — only known
   // values are used; anything else is ignored.
   const journey = OCCASION_JOURNEYS[url.searchParams.get("occ") ?? ""];
