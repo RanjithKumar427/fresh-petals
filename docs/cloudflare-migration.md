@@ -46,7 +46,7 @@
 - **Heavy product-page traffic:** 600–940 requests per bouquet product, mostly from Meta's network (`2a03:2880::/32`). These were static cache hits that cost neither the Worker nor the database.
   - GA4 realtime at about 11:00 showed 16 users and 16 views in 30 minutes, so most of those hits are automated fetches, not people.
   - They are harmless; nothing was blocked.
-- **The 23 `504`s on `/garland-enquiry` were not visitor errors.** All are `requestSource: edgeWorkerCacheAPI`: the middleware's Cache API lookup missing, one per real enquiry redirect. Visitors got their 302.
+- **The 23 `504`s on `/garland-enquiry` were not visitor errors.** All are `requestSource: edgeWorkerCacheAPI`: the middleware's Cache API lookup missing, one per real enquiry redirect. Visitors got their 302. Since `1b87303` (9 Nov) that lookup no longer happens (see *Garland enquiry* below).
 - **Not available:** Supabase's own usage figures, which need a management token. Production `pg_stat_statements` is cumulative since 25 Sep, so it mostly shows the October on-demand rendering incident.
 
 **Protections active (Free plan)**
@@ -94,6 +94,49 @@
 - **Defect found and fixed (`0aff6a8`):** admin uploads stored no `media.checksum`, so the build had no static copy for them.
   - The page kept `/_image`, and the output check refused every build. All staging runs failed from 7 Nov 15:44 for this reason, and production would have failed after its first admin upload.
   - Uploads now record the SHA-256 of the stored bytes, and the build hashes any older row that has none.
+**Garland enquiry: one design per request (9 Nov 2026, `1b87303`, live as `ae5b507`)**
+- **Why:** on 8 Nov (00:00–24:00 IST) about 280 of the production Worker's 395 runs were `/garland-enquiry`. They came from 08:00 UTC on, from one `Chrome/151` user agent spread over many countries, although `robots.txt` disallows the path. Each enquiry read every garland, and production Hyperdrive went from about 10 to 90–170 queries an hour.
+- **Change:**
+  - `findGarlandForEnquiry` with `loadGarlandEnquiryRecord` reads the design's row by code (limit 1), then that product's option labels and whether it has a photo. It applies the same rules as `loadGarlands()`:
+    - a stored record always wins, so a hidden record never falls back to its bundled copy;
+    - the bundled design is used only when no record exists;
+    - the visibility test is the same.
+  - No prices, extra charges or copy are read.
+  - The middleware no longer looks this no-store route up in the Cache API.
+- **Measured on staging** (`scripts/staging/garland-enquiry.mjs`):
+  - Method: 20 sequential enquiries for `FP-G001` against the deployed Worker. Statement counts are `pg_stat_statements` deltas for statements on the garland tables, with an equal-length quiet control window just before (0 statements in all three runs). Bytes are Hyperdrive result bytes for the same windows (Cloudflare analytics).
+
+  | Per enquiry | Before (`ca182b9`) | After (`1b87303`) |
+  |---|---|---|
+  | SQL statements | 5 (all catalogue-wide) | 3 (one design) |
+  | Rows returned | 816 (156 designs, 192 filter, 312 occasion, 156 image rows) | 2 (the design, one photo row; `FP-G001` has no options) |
+  | Hyperdrive result bytes | about 88 KB (1,756,085 B in the window) | about 0.5 KB (9,869 B and 9,209 B in two runs) |
+  | Worker CPU p50 in the window | 36.5 ms | 7.4 ms and 7.7 ms |
+  | Worker wall time p50 | 684 ms | 379 ms and 374 ms |
+
+  The analytics windows recorded 15–16 of the 20 Worker requests plus a few background requests, so the byte and CPU figures are approximate. The statement and row counts are exact.
+- **Behaviour on staging (23/23):**
+  - Refused while a draft and while approved but still a draft.
+  - Redirects 7.3 s after the publish save and is refused 5.6 s after the archive save, both on the tested revision, so no rebuild was needed. Republishing redirects again, and moving it back to draft refuses at once. The editor still refuses withdrawing photo permission while the garland is published.
+  - The message:
+    - only existing option choices, once each;
+    - quantity between 1 and 500 with the sold unit;
+    - no amount or extra charge;
+    - only a known city, occasion or purpose.
+  - Status codes, Location, `no-store`, noindex and HEAD match the earlier revision (parity probes); there is no `x-fp-edge-cache` header.
+  - Fixture, photo and synthetic admin were removed; every pre-existing table, Storage object and Auth user matched its digest.
+  - The hidden-record precedence is proven in unit tests (`cloudflare.test.mjs`). Every bundled design is an unpublished draft, so on staging and production a bundled copy can never be shown anyway.
+- **Production:** run 42670843216 (workflow_dispatch, force) built `main` at `ae5b507`, the tested source plus a test-only change. Worker version `1d1f87f0`; the previous version is `51e54241` (rollback target). The fingerprint was unchanged. Read-only checks: a valid code redirects with the right design, link and city; lower-case code, malformed, empty and unknown codes behave as before; HEAD 302; `no-store`, noindex and the security headers are present.
+- **Reading Worker CPU figures:**
+  - `workersInvocationsAdaptive` quantiles are in **microseconds**. The 8 Nov figure, `cpuTimeP50` 57,988 µs, is one quantile over all 395 runs (all `success`, one version `d1df68ea`, sample interval 1.05), not an average of hourly values. Mean CPU was 53.9 ms. Wall time p50 was 762 ms, so most of each run was spent waiting on the network and the database, not on CPU.
+  - The two versions' medians reflect route mix, not code speed. `d1df68ea` was active until 9 Nov 08:01 UTC; `51e54241` (`ca182b9`) after it. Over 8 Nov 16:45 → 9 Nov 16:45 UTC:
+    - `d1df68ea`: p50 67.8 ms over 426 runs, of which 374 were enquiries;
+    - `51e54241`: p50 8.3 ms over 139 runs, of which 36 were enquiries.
+  - No run ended in `exceededCpu`; the outcomes were `success` and 2 `clientDisconnected`.
+  - **Unresolved:** the dashboard's "774 µs" and "11.18 ms" were not checked against their panels. 774 µs matches the 7 Nov window, which was dominated by cheap 404s (p50 0.7 ms above).
+  - **Plan headroom unverified:** the account's Workers plan couldn't be read with this token (subscriptions API 403). The runs well over 10 ms CPU completed. That shows no failures at this volume, not headroom under the Free plan's 10 ms CPU limit.
+  - Hyperdrive result bytes are what Hyperdrive returned to the Worker. They are not Supabase's metered egress, which also counts builds, Storage and protocol overhead.
+
 - **Scheduled checks** began running on 7 Nov from 12:52 UTC, though GitHub starts them only about every 2 hours, not every 15 minutes. They are a fallback; publishing doesn't depend on them.
 - **Recovery email:** still unresolved (see *Email*). With the zone on Cloudflare, an SMTP sender's SPF and DKIM records can now be added.
 - **Domain auto-renew** at GoDaddy is off.
