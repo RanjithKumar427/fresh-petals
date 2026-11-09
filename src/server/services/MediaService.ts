@@ -9,6 +9,12 @@ import { getStorageService } from "../storage";
 import { sanitizeImage } from "../media/imageSafety";
 import { ok, fail, type ServiceResult } from "./result";
 
+/** SHA-256 (hex) with Web Crypto, available in Workers and Node alike. */
+async function sha256Hex(buffer: Uint8Array): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", new Uint8Array(buffer)); // a copy backed by a plain ArrayBuffer
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 export const MediaService = {
   async list(filter?: { folder?: MediaFolder; search?: string; unused?: boolean }): Promise<MediaListItem[]> {
     return MediaRepository.list(filter);
@@ -126,6 +132,9 @@ export const MediaService = {
         height: image.height,
         altText: input.altText ?? null,
         source: "upload",
+        // The build makes static photo copies only for rows whose checksum
+        // matches the stored bytes (scripts/build/stored-photos.mjs).
+        checksum: await sha256Hex(image.buffer),
       });
       return ok(media);
     } catch (error) {

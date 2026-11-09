@@ -127,7 +127,9 @@ if (!args.skipBuild && !args["skip-build"]) {
   const buildEnv = { SystemRoot, PATH: PATH ?? Path, TEMP, TMP, USERPROFILE, APPDATA, LOCALAPPDATA, HOMEDRIVE, HOMEPATH, ComSpec, DATABASE_URL: localDbUrl, NODE_ENV: "production", ...(args["simulate-build-failure"] ? { FP_SIMULATE_BUILD_FAILURE: "1" } : {}) };
   const build = spawnSync(process.execPath, ["scripts/cloudflare/build.mjs", "staging"], { encoding: "utf8", env: buildEnv, cwd: root });
   const out = `${build.stdout}${build.stderr}`.split(localDbUrl).join("[redacted]").split(file.values.DATABASE_URL).join("[redacted]");
-  console.log(out.split("\n").filter((l) => /build OK|FAILED|error|Note:|references|analytics|\[catalogue\]/i.test(l)).slice(-40).join("\n"));
+  // The output check lists its problems as indented lines after "FAILED:"; keep them with it.
+  let inFailure = false;
+  console.log(out.split("\n").filter((l) => { if (/FAILED:/.test(l)) inFailure = true; else if (inFailure && !/^\s+\S/.test(l)) inFailure = false; return inFailure || /build OK|FAILED|error|Note:|references|analytics|Stored photos|\[catalogue\]/i.test(l); }).slice(-60).join("\n"));
   if (build.status !== 0) stop("build failed", [`exit ${build.status}`]);
   pass("staging build and its output checks passed");
 }

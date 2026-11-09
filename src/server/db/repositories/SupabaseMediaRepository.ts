@@ -170,6 +170,7 @@ export const SupabaseMediaRepository = {
     height?: number | null;
     altText?: string | null;
     source?: "upload" | "seed";
+    checksum?: string | null;
   }): Promise<Media> {
     return withRepositoryCall("SupabaseMediaRepository.create", async () => {
       const [row] = await getDb()
@@ -185,6 +186,7 @@ export const SupabaseMediaRepository = {
           height: input.height ?? null,
           altText: input.altText ?? null,
           source: input.source ?? "upload",
+          checksum: input.checksum ?? null,
           createdAt: new Date(),
         })
         .returning();

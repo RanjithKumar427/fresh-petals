@@ -337,4 +337,29 @@ test('stored photos: static copies replace /_image, only referenced files are pu
   const copied = build.copyReferencedPhotos(out, root);
   assert.equal(copied.copied, 1);
   assert(existsSync(path.join(out, 'photos', `${sum}-480.webp`)) && !existsSync(path.join(out, 'photos', `${sum}-240.webp`)), 'an unreferenced photo file is not published');
+
+  // An admin upload without a recorded checksum still gets a static copy, keyed by its real bytes
+  // (otherwise its page keeps /_image and the build's output check refuses every build).
+  const upload = await sharp({ create: { width: 500, height: 500, channels: 3, background: '#3a3' } }).png().toBuffer();
+  const uploadSum = (await import('node:crypto')).createHash('sha256').update(upload).digest('hex');
+  const root2 = mkdtempSync(path.join(tmpdir(), 'fp-photos-'));
+  const noSum = await build.prepareStoredPhotos([{ url: 'https://store/u.png', checksum: null, mime_type: 'image/png', width: 500 }, { url: 'https://store/gone.png', checksum: null, mime_type: 'image/png', width: 500 }], { root: root2, sourceDirs: [], fetcher: async (url) => (url.endsWith('u.png') ? new Response(upload) : new Response('', { status: 404 })), log: () => {} });
+  assert.deepEqual(noSum, { cached: 0, local: 0, downloaded: 1, unavailable: 1 });
+  const manifest2 = JSON.parse((await import('node:fs')).readFileSync(path.join(root2, build.PHOTO_MANIFEST_FILE), 'utf8'));
+  assert.deepEqual(Object.keys(manifest2), ['https://store/u.png']);
+  assert.equal(manifest2['https://store/u.png'].original, `/photos/${uploadSum}.png`);
+  assert.match(build.STORED_PHOTOS_SQL, /case when checksum/); assert.doesNotMatch(build.STORED_PHOTOS_SQL, /where[^;]*and checksum ~/);
+});
+
+test('media upload records the SHA-256 of the stored bytes (the build keys static photo copies by it)', async () => {
+  const stored = Buffer.from('sanitised image bytes');
+  let created = null;
+  const media = sourceLoader({ mocks: {
+    'src/server/db/repositories/MediaRepository.ts': { MediaRepository: { create: async (input) => (created = input, { id: 1, ...input }) } },
+    'src/server/storage': { getStorageService: () => ({ put: async () => ({ path: 'products/x.png', url: 'https://s/x.png', sizeBytes: stored.length }), delete: async () => {} }) },
+    'src/server/media/imageSafety.ts': { sanitizeImage: async () => ({ ok: true, image: { buffer: stored, filename: 'x.png', mimeType: 'image/png', width: 10, height: 10 } }) },
+  }, globals: { crypto: globalThis.crypto } })('src/server/services/MediaService.ts').MediaService;
+  const result = await media.upload({ buffer: Buffer.from('raw upload'), filename: 'x.png', mimeType: 'image/png', folder: 'products' });
+  assert.equal(result.ok, true);
+  assert.equal(created.checksum, (await import('node:crypto')).createHash('sha256').update(stored).digest('hex'));
 });

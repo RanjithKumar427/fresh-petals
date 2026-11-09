@@ -22,7 +22,8 @@ export function sourceLoader({ root = process.cwd(), dev = false, mocks = {}, gl
       .replaceAll('import.meta.glob', '((() => { throw new Error("import.meta.glob outside Vite"); }))');
     const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true } }).outputText;
     const require = (specifier) => specifier.startsWith('.') ? load(path.resolve(path.dirname(file), specifier)) : bare.has(specifier) ? bare.get(specifier) : createRequire(file)(specifier);
-    vm.runInNewContext(code, { exports, require, console, URL, URLSearchParams, AbortSignal, Event, Date, setTimeout, clearTimeout, ...globals }, { filename: file });
+    // crypto: Web Crypto, present in Workers and Node (e.g. MediaService's upload checksum).
+    vm.runInNewContext(code, { exports, require, console, URL, URLSearchParams, AbortSignal, Event, Date, setTimeout, clearTimeout, crypto: globalThis.crypto, ...globals }, { filename: file });
     return exports;
   }
   return load;

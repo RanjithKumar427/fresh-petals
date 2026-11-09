@@ -65,6 +65,8 @@ export interface MediaRepositoryContract {
     height?: number | null;
     altText?: string | null;
     source?: "upload" | "seed";
+    /** SHA-256 (hex) of the stored bytes; the build's static photo copies are keyed and verified by it. */
+    checksum?: string | null;
   }): Promise<Media>;
   rename(id: number, filename: string): Promise<Media | null>;
   updateAltText(id: number, altText: string | null): Promise<Media | null>;

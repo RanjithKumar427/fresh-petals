@@ -5,7 +5,9 @@
 // Pages then reference /photos/<sha256>-<width>.webp: static files served without
 // running the Worker and without reading Storage per visitor (no /_image request,
 // no Images transformation, no Storage egress per view). Each photo's bytes are
-// checked against media.checksum (SHA-256), so a copy is never silently wrong.
+// checked against media.checksum (SHA-256), so a copy is never silently wrong. A row
+// without a checksum (uploads before MediaService recorded one) is downloaded each
+// build and keyed by the SHA-256 of the bytes Storage serves.
 //
 // Where the bytes come from, in order:
 //   1. the cache (node_modules/.cache/fresh-petals-photos, kept between builds, and
@@ -27,7 +29,9 @@ export const PHOTO_CACHE_DIR = 'node_modules/.cache/fresh-petals-photos';
 export const PHOTO_WIDTHS = [240, 480, 720, 1080]; // = STORED_PHOTO_WIDTHS in src/data/garlandRules.ts
 const EXT = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp', 'image/gif': '.gif' };
 
-export const STORED_PHOTOS_SQL = `select url, checksum, mime_type, width from media where path is not null and url like 'https://%' and checksum ~ '^[0-9a-f]{64}$' order by id`;
+// Rows without a checksum (admin uploads before the upload recorded one) are included: their bytes
+// are downloaded and keyed by the SHA-256 of what Storage serves (see prepareStoredPhotos).
+export const STORED_PHOTOS_SQL = `select url, case when checksum ~ '^[0-9a-f]{64}$' then checksum end as checksum, mime_type, width from media where path is not null and url like 'https://%' order by id`;
 
 const sha256 = (buffer) => createHash('sha256').update(buffer).digest('hex');
 
@@ -52,17 +56,30 @@ export async function prepareStoredPhotos(rows, { root = process.cwd(), sourceDi
   const sources = indexSources(sourceDirs);
   const manifest = {};
   const counts = { cached: 0, local: 0, downloaded: 0, unavailable: 0 };
-  for (const row of rows) {
-    const ext = EXT[row.mime_type] ?? path.extname(new URL(row.url).pathname) ?? '.jpg';
-    const original = path.join(cache, `${row.checksum}${ext}`);
-    if (existsSync(original) && sha256(readFileSync(original)) === row.checksum) counts.cached += 1;
-    else if (sources.has(row.checksum)) { copyFileSync(sources.get(row.checksum), original); counts.local += 1; }
-    else {
-      const bytes = await fetcher(row.url, { signal: AbortSignal.timeout(30000) }).then(async (r) => (r.ok ? Buffer.from(await r.arrayBuffer()) : null)).catch(() => null);
-      if (!bytes || sha256(bytes) !== row.checksum) { counts.unavailable += 1; continue; }
-      writeFileSync(original, bytes);
+  const download = (url) => fetcher(url, { signal: AbortSignal.timeout(30000) }).then(async (r) => (r.ok ? Buffer.from(await r.arrayBuffer()) : null)).catch(() => null);
+  for (const stored of rows) {
+    const ext = EXT[stored.mime_type] ?? path.extname(new URL(stored.url).pathname) ?? '.jpg';
+    let row = stored;
+    if (!/^[0-9a-f]{64}$/.test(stored.checksum ?? '')) {
+      // No recorded checksum: key the copy by the SHA-256 of the bytes Storage serves.
+      const bytes = await download(stored.url);
+      if (!bytes) { counts.unavailable += 1; continue; }
+      row = { ...stored, checksum: sha256(bytes) };
+      const original = path.join(cache, `${row.checksum}${ext}`);
+      if (!existsSync(original)) writeFileSync(original, bytes);
       counts.downloaded += 1;
+    } else {
+      const original = path.join(cache, `${row.checksum}${ext}`);
+      if (existsSync(original) && sha256(readFileSync(original)) === row.checksum) counts.cached += 1;
+      else if (sources.has(row.checksum)) { copyFileSync(sources.get(row.checksum), original); counts.local += 1; }
+      else {
+        const bytes = await download(row.url);
+        if (!bytes || sha256(bytes) !== row.checksum) { counts.unavailable += 1; continue; }
+        writeFileSync(original, bytes);
+        counts.downloaded += 1;
+      }
     }
+    const original = path.join(cache, `${row.checksum}${ext}`);
     const variants = {};
     // A photo narrower than every site width (tall garland strips, 150–234 px) gets one copy at its own width.
     const fitting = PHOTO_WIDTHS.filter((w) => !row.width || w <= row.width);
@@ -72,7 +89,7 @@ export async function prepareStoredPhotos(rows, { root = process.cwd(), sourceDi
       variants[width] = `/photos/${row.checksum}-${width}.webp`;
     }
     const largest = Math.max(...Object.keys(variants).map(Number), 0);
-    manifest[row.url] = { path: largest ? variants[largest] : `/photos/${row.checksum}${ext}`, original: `/photos/${row.checksum}${ext}`, variants };
+    manifest[stored.url] = { path: largest ? variants[largest] : `/photos/${row.checksum}${ext}`, original: `/photos/${row.checksum}${ext}`, variants };
   }
   const file = path.join(root, PHOTO_MANIFEST_FILE);
   mkdirSync(path.dirname(file), { recursive: true });

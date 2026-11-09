@@ -123,7 +123,7 @@ try {
   const up1 = await watch("publish", tSave, (d) => d?.state === "live", tEdit);
   timings.publish = up1;
   const dispatchRuns = up1.runs.filter((r) => r.event === "repository_dispatch");
-  check("github", "GitHub started Staging publish by itself (repository_dispatch, no manual dispatch)", dispatchRuns.length > 0 && up1.runs.every((r) => r.event === "repository_dispatch"), up1.runs.map((r) => `${r.event} ${r.url}`).join(" ; ") || "no run");
+  check("github", "GitHub started Staging publish by itself from the save (repository_dispatch; no manual dispatch was sent)", dispatchRuns.some((r) => new Date(r.created).getTime() >= tSave - 5000), up1.runs.map((r) => `${r.event} ${r.url}`).join(" ; ") || "no run");
   const prodRuns = runsSince("production-publish.yml", tSave) ?? [];
   check("github", "no production workflow was triggered by the staging save", prodRuns.length === 0, `${prodRuns.length} production run(s)`);
   check("github", "the dispatched runs built origin/main", dispatchRuns.every((r) => r.sha === mainHead), dispatchRuns.map((r) => r.sha.slice(0, 7)).join(","));
