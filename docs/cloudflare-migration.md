@@ -2,7 +2,7 @@
 
 ## Launch (2026-11-07): `https://onlyfreshpetals.in` is served by the Worker `fresh-petals`
 
-**The storefront is live on Cloudflare.** Its pages and photos are static files built from the production database (`hjhmetomcaskrrwkgrbp`), and enquiries are stored in that database. **Admin sign-in is blocked** until Supabase lifts the production project's restriction: Auth, Storage and the REST gateway all answer **402** (egress quota; the cycle resets 8 Nov 2026). The direct database connection, which builds and Hyperdrive use, is unaffected.
+**The storefront is live on Cloudflare.** Its pages and photos are static files built from the production database (`hjhmetomcaskrrwkgrbp`), and enquiries are stored in that database. Supabase restricted the production project until its 8 Nov 2026 quota reset: Auth, Storage and the REST gateway answered **402**, and admin sign-in was blocked. **On 9 Nov 09:13 UTC, Auth and Storage answered 200 again**, so the restriction has lifted. The owner's own sign-in hasn't been exercised since; no production sign-in probes are run.
 
 **Live setup**
 - **Zone:** `onlyfreshpetals.in` on Cloudflare Free, active since 07:09 UTC. Nameservers were switched at GoDaddy, the registrar; the domain expires 15 May 2027 and auto-renew is **off**.
@@ -68,7 +68,7 @@
 **Rollback:** `npx wrangler rollback <version> --name fresh-petals`. The version before `6b37dea` is `514db6a`, the first production deploy (versions list). There is no other host: Vercel is disabled, and removing the custom domain takes the site offline.
 
 **Still open**
-- After the 8 Nov reset:
+- Now that the restriction has lifted (9 Nov), the owner checks:
   - admin sign-in with TOTP on the live site;
   - the Auth URL configuration (site URL, reset redirect);
   - one save moving from Pending to Live.
