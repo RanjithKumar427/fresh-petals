@@ -72,24 +72,29 @@
   - admin sign-in with TOTP on the live site;
   - the Auth URL configuration (site URL, reset redirect);
   - one save moving from Pending to Live.
-- **Automatic publishing is not working. Both of its triggers are unavailable:**
-  1. **GitHub does not start scheduled workflows in this repository.**
-     - **Publish workflows:** zero `schedule` runs in 5.5 hours (05:52 to 11:26 UTC on 7 Nov).
-     - **Probe:** a trivial `*/5` workflow (`03880ec`, removed afterwards) also had zero runs in 45 minutes, so the cause is not specific to the publish workflows.
-     - **Ruled out:**
-       - Actions are enabled and allow all actions;
-       - the repository is public, not a fork and not archived;
-       - every workflow is `active`, and the Actions page shows no disabled or inactivity notice;
-       - the workflow commits are attributed to the owner's account;
-       - githubstatus.com showed no open Actions incident.
-     - **Not the cause:** schedule timing. It isn't a delay, so cron timings were not changed further.
-     - **What works:** `workflow_dispatch` runs (staging 67 s build, production 70 s).
-     - **Next step:** the owner asks GitHub Support why `schedule` events never run for `RanjithKumar427/fresh-petals`.
-  2. **Publishing on save** needs the Worker secret `FP_PUBLISH_GITHUB_TOKEN`: a fine-grained token for this repository with Contents read and write, which only the owner can create. It is absent on both Workers. With it, every admin save sends `repository_dispatch`, which doesn't depend on GitHub's scheduler.
+- **Admin sign-in on production** (above) is the remaining step for the admin side of publish on save there.
 
-  **Until one of these is fixed:** an admin save reaches the website only when someone runs *Production publish → Run workflow*. The editor says no build was requested and shows Pending until then.
-
-  **Not demonstrated:** a staging change reaching the site automatically. Fixture `fp-staging-test-autopublish-demo` was added 10:59:44 and nothing published it by 11:27. It was then removed, and the staging fingerprint matches the deployed build again.
+**Publish on save: working (9 Nov 2026)**
+- **Token:** `FP_PUBLISH_GITHUB_TOKEN` is on both Workers (`fresh-petals`, `fresh-petals-staging`). It is a fine-grained token limited to this repository, with Contents read/write, installed by the owner with `scripts/cloudflare/set-publish-token.mjs` (hidden prompt). It needs replacing when it expires.
+- **Events:**
+  - staging saves send `publish-site`, which runs `staging-publish.yml`;
+  - production saves send `publish-production`, which runs `production-publish.yml`;
+  - both build `main`.
+  - A dispatched run always publishes (`c1e908d`): the 30 s fingerprint cache could otherwise hide a fresh save from the check job.
+- **Proven on staging through the admin save path** (`scripts/staging/publish-on-save.mjs`, 27/27, revision `ca182b9`).
+  - A synthetic admin signed in at aal2. Unauthenticated and cross-site writes were refused (401, 403).
+  - The editor save and the publish save each answered "Publishing requested", and GitHub started Staging publish runs by itself (`repository_dispatch`).
+  - The editor's check stayed Pending until the new build was served, then turned **Live 82 s after the publish save**. The page, `sitemap-garlands.xml` and the garland list all showed the garland with its static photo.
+  - Archiving through the admin removed it: **Hidden 81 s after the archive save**, then 404 and gone from the sitemap and list.
+  - Runs: 42582155899, 42582165100, 42582319591. Each change was carried by the next dispatched run; a save made during a build is picked up by the queued run.
+  - The fixture, its photo, its Storage object and the synthetic admin were removed. Every pre-existing table, Storage object and Auth user matched its digest.
+  - Staging's live fingerprint now equals its deployed one.
+- **Production:** a `publish-production` dispatch with no content change (run 42582864227, 9 Nov 08:00 UTC) built from the production database and deployed `ca182b9`, with the fingerprint unchanged (`ad8dd05b…`); public checks are 42/42.
+  - That event was sent with the owner's GitHub CLI login, not by a production admin save: production admin saves wait on production sign-in. The production Worker holds the same token that staging used.
+- **Defect found and fixed (`0aff6a8`):** admin uploads stored no `media.checksum`, so the build had no static copy for them.
+  - The page kept `/_image`, and the output check refused every build. All staging runs failed from 7 Nov 15:44 for this reason, and production would have failed after its first admin upload.
+  - Uploads now record the SHA-256 of the stored bytes, and the build hashes any older row that has none.
+- **Scheduled checks** began running on 7 Nov from 12:52 UTC, though GitHub starts them only about every 2 hours, not every 15 minutes. They are a fallback; publishing doesn't depend on them.
 - **Recovery email:** still unresolved (see *Email*). With the zone on Cloudflare, an SMTP sender's SPF and DKIM records can now be added.
 - **Domain auto-renew** at GoDaddy is off.
 - **Search Console:** resubmit the sitemaps.
@@ -199,7 +204,7 @@ Local: `astro check` 0 errors, 0 warnings; `node --test` 166/166 tracked; the st
 
 A storefront change is a new build: the build reads the database once, then deploys. Nothing runs on this PC.
 
-1. **On save** (admin create/edit/status/delete, garland and occasion changes): the Worker calls GitHub `repository_dispatch` (`src/server/services/Publishing.ts`, event `publish-site` for staging, `publish-production` for production). It needs the Worker secret `FP_PUBLISH_GITHUB_TOKEN`; `FP_PUBLISH_REPOSITORY` is already in `wrangler.jsonc`. Without the token, the save says so, and step 2 still publishes.
+1. **On save** (admin create/edit/status/delete, garland and occasion changes): the Worker calls GitHub `repository_dispatch` (`src/server/services/Publishing.ts`, event `publish-site` for staging, `publish-production` for production). It needs the Worker secret `FP_PUBLISH_GITHUB_TOKEN` (installed on both Workers 9 Nov; rotate with `node scripts/cloudflare/set-publish-token.mjs`); `FP_PUBLISH_REPOSITORY` is already in `wrangler.jsonc`. Without the token, the save says so, and step 2 publishes when GitHub runs it.
 2. **Scheduled check** (`.github/workflows/staging-publish.yml`, every 15 minutes): compares the live database's content fingerprint (`GET /api/publish/state`) with the deployed build's (`/_publish/state.json`) and publishes only when they differ. It catches failed requests, failed builds and changes made outside the admin.
 3. **Publish** (`scripts/staging/publish.mjs`, the same script for CI and tests):
    - build, then output checks, then deploy, then wait until the plain address serves the new build;
