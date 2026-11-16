@@ -16,6 +16,7 @@ import { whatsappLink } from "../../config/storefront";
 import { QUOTE_ONLY_PRICE_LABEL, isQuoteOnly } from "../../shared/quoteOnly";
 import { photoStatus, productPhotoAlt, representativePhoto } from "../../data/productPhotos";
 import { presentationCheck } from "../../data/collectionGuidance";
+import { categoryLabel, flowerFact, idealForText, productKind, sellsFreshFlowers, preparationText, productIdentity, quantityBasis, quoteDrivers, substitutionText, suppliedItems, trustIndicators as trustFor } from "../../data/productSupply";
 
 // Catalog/Database Reconciliation milestone — the product's displayed
 // price now comes from PostgreSQL (the admin-editable, authoritative
@@ -60,13 +61,17 @@ const quoteOnly = isQuoteOnly(product);
 // here rather than duplicated so both stay in sync automatically.
 const occasionOptions = await TaxonomyService.listOccasions();
 
-const flowerTypes = product.flowerTypes?.length
-  ? product.flowerTypes.join(", ")
-  : product.whatsIncluded?.join(", ");
-
-const idealFor = product.idealFor?.length
-  ? product.idealFor.join(", ")
-  : product.occasionTags?.join(", ");
+// What the product is and what is supplied (src/data/productSupply.ts): the
+// identity line under the name, the flower fact (or "What it is" for a vase or
+// a tool), included items apart from what is only on request, and the
+// quantity basis. Occasions are shown by name, never as raw slugs.
+const identity = productIdentity(product);
+const flowerBox = flowerFact(product);
+const idealFor = idealForText(product);
+const supplied = suppliedItems(product);
+const quantity = quantityBasis(product);
+// Colours, flowers and size can be changed for flower designs, not for a vase, a tool or an add-on.
+const customisable = sellsFreshFlowers(productKind(product));
 
 // Facts that fit the product. A stem range is a bouquet fact: it is shown
 // only for bouquets and lilies that record one, and stays a listed range, not
@@ -77,12 +82,8 @@ const stemCount = isBouquet ? product.stemCount ?? null : null;
 // One useful care instruction from the record, in place of a vague grade.
 const careLine = product.careNotes?.slice(0, 2).join(" ") || null;
 
-const trustIndicators = [
-  "Fresh Flowers",
-  "Delivery Confirmed on WhatsApp",
-  "WhatsApp Ordering",
-  "Hand-Arranged",
-];
+// Only what is true of this kind of product: a vase or a cutter is not "fresh flowers" or "hand-arranged".
+const trustIndicators = trustFor(product);
 
 // Content / Integrity milestone (Phase 0) — the old fallback silently
 // swapped in `productCatalog.slice(0, 6)` (the first six catalogue
@@ -163,7 +164,7 @@ const breadcrumbJsonLd = {
   "@type": "BreadcrumbList",
   itemListElement: [
     { "@type": "ListItem", position: 1, name: "Home", item: new URL("/", Astro.site).toString() },
-    { "@type": "ListItem", position: 2, name: product.category, item: new URL(categoryPath, Astro.site).toString() },
+    { "@type": "ListItem", position: 2, name: categoryLabel(product.category), item: new URL(categoryPath, Astro.site).toString() },
     { "@type": "ListItem", position: 3, name: product.name, item: new URL(`/products/${product.slug}`, Astro.site).toString() },
   ],
 };
@@ -249,7 +250,7 @@ const breadcrumbJsonLd = {
       <section class="max-w-[560px] lg:pl-2">
         <div class="flex flex-wrap items-center gap-3">
           <p class="text-[11px] font-semibold uppercase tracking-[0.32em] text-rose-deep">
-            {product.category}
+            {categoryLabel(product.category)}
           </p>
 
           {product.badge && (
@@ -269,7 +270,14 @@ const breadcrumbJsonLd = {
             trust-green used sitewide for verified/confirmed badges --
             directly under the H1, reading as a credential it isn't.
             Restyled as plain supporting text; content unchanged. */}
-        {product.ratingLabel && (
+        {/* What it is, in plain words, under the creative name ("Blue
+            gypsophila bouquet"). ratingLabel (mood copy) is shown only for a
+            product with no identity line. */}
+        {identity ? (
+          <p class="mt-4 text-[15px] font-semibold text-moss" data-product-identity>
+            {identity}
+          </p>
+        ) : product.ratingLabel && (
           <p class="mt-5 text-[13px] font-medium text-moss">
             {product.ratingLabel}
           </p>
@@ -280,21 +288,20 @@ const breadcrumbJsonLd = {
             <div class="mt-6">
               <p class="text-2xl font-bold text-ink" data-quote-only-price>{QUOTE_ONLY_PRICE_LABEL}</p>
               <p class="mt-2 text-sm leading-6 text-moss">
-                Choose what you like and send it to us — we reply on WhatsApp with the price and availability before anything is made.
+                Choose what you like and send it to us — we reply on WhatsApp with the price for your date and delivery address, and confirm the flowers available, before anything is made.
               </p>
             </div>
           ) : product.priceType === "quote" ? (
             <div class="mt-6">
               <p class="text-2xl font-bold text-ink">Custom quotation</p>
               <p class="mt-2 text-sm leading-6 text-moss">
-                The price depends on the design, flowers, quantity and date. We send a quotation on WhatsApp before
-                anything is made — nothing is added to a fixed total.
+                {quoteDrivers(product)} We send a quotation on WhatsApp before you pay — nothing is added to a fixed total.
               </p>
             </div>
           ) : product.priceType === "market" ? (
             <div class="mt-6">
               <p class="text-2xl font-bold text-ink">{product.priceLabel}</p>
-              <p class="mt-2 text-sm leading-6 text-moss">Priced at the day's flower market rate, confirmed on WhatsApp before you pay.</p>
+              <p class="mt-2 text-sm leading-6 text-moss">Priced at the day's flower market rate for the quantity you need, confirmed on WhatsApp before you pay.</p>
             </div>
           ) : (
             <p class="mt-6 text-2xl font-bold text-ink">
@@ -333,10 +340,10 @@ const breadcrumbJsonLd = {
               </span>
               <div>
                 <h3 class="text-sm font-bold text-ink">
-                  Types of flowers
+                  {flowerBox?.label ?? "Types of flowers"}
                 </h3>
                 <p class="mt-3 text-sm leading-7 text-moss">
-                  {flowerTypes}
+                  {flowerBox?.text}
                 </p>
               </div>
             </div>
@@ -354,7 +361,7 @@ const breadcrumbJsonLd = {
                   Ideal for
                 </h3>
                 <p class="mt-3 text-sm leading-7 text-moss">
-                  {idealFor}
+                  {idealFor ?? "Tell us the occasion on WhatsApp and we suggest what suits it."}
                 </p>
               </div>
             </div>
@@ -370,9 +377,9 @@ const breadcrumbJsonLd = {
               <span class="font-semibold text-ink">Listed stems</span> — {stemCount}. A listed range, not a count of the bouquet as made; confirm the final arrangement on WhatsApp.
             </p>
           )}
-          {!isBouquet && (
+          {!isBouquet && quantity && (
             <p class="text-xs text-moss" data-fact="quantity">
-              <span class="font-semibold text-ink">Quantity</span> — not fixed on this page. Tell us how much you need and we confirm it, and the price, on WhatsApp.
+              <span class="font-semibold text-ink">Quantity:</span> {quantity}
             </p>
           )}
           {careLine && (
@@ -393,12 +400,12 @@ const breadcrumbJsonLd = {
           <div>
             <dt class="font-semibold text-ink">Preparation</dt>
             <dd class="mt-1 text-moss">
-              {product.requiresConfirmation ? "Made to order once we confirm it with you on WhatsApp." : "Confirmed with you on WhatsApp before we prepare it."}
+              {preparationText(product)}
             </dd>
           </div>
           <div>
             <dt class="font-semibold text-ink">Substitutions</dt>
-            <dd class="mt-1 text-moss">Flowers depend on what is fresh that day; we agree any change with you before you pay.</dd>
+            <dd class="mt-1 text-moss">{substitutionText(product)}</dd>
           </div>
         </dl>
 
@@ -424,16 +431,16 @@ const breadcrumbJsonLd = {
         )}
         <ProductOptions product={product} occasionOptions={occasionOptions} />
 
-        <p class="mt-5 text-sm leading-6 text-moss">
+        {customisable && <p class="mt-5 text-sm leading-6 text-moss">
           Want different colours, flowers or size?
           <a
-            href={whatsappLink(`Hi Fresh Petals, I'd like to customise "${product.name}".\nProduct: ${new URL(`/products/${product.slug}`, Astro.site).toString()}\nWhat I'd like to change: \nOccasion and date: \nBudget (optional): `)}
+            href={whatsappLink(`Hi Fresh Petals, I'd like to customise "${product.name}"${identity ? ` (${identity.toLowerCase()})` : ""}.\nProduct: ${new URL(`/products/${product.slug}`, Astro.site).toString()}\nWhat I'd like to change: \nOccasion and date: \nBudget (optional): `)}
             target="_blank"
             rel="noopener noreferrer"
             data-customise-whatsapp
             class="font-semibold text-ink underline underline-offset-4"
           >Customise on WhatsApp</a>
-        </p>
+        </p>}
 
         <div class="mt-10 grid gap-8 border-t border-line pt-8 md:grid-cols-2">
           <div>
@@ -441,14 +448,28 @@ const breadcrumbJsonLd = {
               What’s included
             </h2>
 
-            <ul class="mt-4 space-y-3 text-sm leading-6 text-moss">
-              {product.whatsIncluded.map((item) => (
+            <ul class="mt-4 space-y-3 text-sm leading-6 text-moss" data-included>
+              {supplied.included.map((item) => (
                 <li class="flex gap-2.5">
                   <span class="mt-2.5 h-1 w-1 shrink-0 rounded-full bg-berry"></span>
                   {presentation && PRESENTATION_ITEM.test(item) ? <span data-presentation-unconfirmed>{presentation.note}</span> : item}
                 </li>
               ))}
             </ul>
+            {supplied.onRequest.length > 0 && (
+              <div data-on-request>
+                <h3 class="mt-6 text-[12px] font-semibold uppercase tracking-[0.28em] text-ink">On request</h3>
+                <p class="mt-2 text-xs leading-6 text-moss">Not part of the listed product; ask for it on WhatsApp.</p>
+                <ul class="mt-3 space-y-3 text-sm leading-6 text-moss">
+                  {supplied.onRequest.map((item) => (
+                    <li class="flex gap-2.5">
+                      <span class="mt-2.5 h-1 w-1 shrink-0 rounded-full border border-berry"></span>
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
 
           <div>

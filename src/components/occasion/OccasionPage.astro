@@ -233,6 +233,14 @@ const breadcrumbJsonLd = {
       <div class="occ__about-inner">
         {landing ? landing.intro.map((paragraph) => <p>{paragraph}</p>) : <p>{occasion.description}</p>}
         <p>{occasion.heroNote}</p>
+        {occasion.choosing?.length ? (
+          <div data-occasion-choosing>
+            <h2 class="occ__choosing-title">Choosing {journey.kind === "calm" ? "condolence flowers" : `for ${journey.label.toLowerCase()}`}</h2>
+            <ul class="occ__choosing">
+              {occasion.choosing.map((point) => <li>{point}</li>)}
+            </ul>
+          </div>
+        ) : null}
         <p class="occ__area">{SERVICE_AREA_LINE}</p>
         {
           journey.kind !== "calm" && (
@@ -273,6 +281,23 @@ const breadcrumbJsonLd = {
 
   .occ__shop > * {
     min-width: 0;
+  }
+
+  .occ__choosing-title {
+    margin: 0.5rem 0 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-ink);
+  }
+
+  .occ__choosing {
+    margin: 0.5rem 0 0;
+    padding-left: 1.1rem;
+    list-style: disc;
+  }
+
+  .occ__choosing li + li {
+    margin-top: 0.35rem;
   }
 
   .occ__calm-cta {

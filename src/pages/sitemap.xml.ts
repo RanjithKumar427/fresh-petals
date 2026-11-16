@@ -83,8 +83,8 @@ export const GET: APIRoute = async ({ site }) => {
     const path = hubPath(city);
     return hub && path ? [{ path, lastmod: hub.updated }] : [];
   });
-  // Cities without an authored hub have a catalogue root (src/data/cityHubs.ts catalogueRoot), first published 14 Oct 2026.
-  const roots = serviceableCities().filter((city) => !hasHub(city)).map((city) => ({ path: `${LOCATIONS_PATH}/${city.slug}`, lastmod: "2026-10-14" }));
+  // Cities without an authored hub have a catalogue root (src/data/cityHubs.ts catalogueRoot): first published 14 Oct 2026, its copy last changed 16 Nov 2026.
+  const roots = serviceableCities().filter((city) => !hasHub(city)).map((city) => ({ path: `${LOCATIONS_PATH}/${city.slug}`, lastmod: "2026-11-16" }));
   hubs.push(...roots);
   const latest = [...CITY_HUBS.map((hub) => hub.updated), ...(roots.length ? ["2026-10-14"] : [])].sort().at(-1);
   const cityEntries = [{ path: LOCATIONS_PATH, lastmod: latest }, ...hubs];

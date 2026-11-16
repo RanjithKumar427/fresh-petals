@@ -18,7 +18,7 @@ const titleCase = (text: string) => text.replace(/\b[a-z]/g, (letter) => letter.
 // (src/data/catalogueRange.ts): a design that comes in a box or a basket is
 // not called a bouquet; an open presentation gets the neutral "Arrangement".
 const FORM: Record<PresentationKind, string> = { wrapped: "Bouquet", unrecorded: "Bouquet", vase: "Vase Arrangement", box: "Flower Box", basket: "Flower Basket", unresolved: "Arrangement" };
-const formOf = (product: Product) => {
+export const formOf = (product: Product) => {
   const form = FORM[recordedPresentation(product).kind];
   // "Pink Serenity Flowerbox – Pink Lily Box", not "… Flowerbox … Flower Box".
   return form === "Flower Box" && /box\b/i.test(product.name) ? "Box" : form;
@@ -26,7 +26,12 @@ const formOf = (product: Product) => {
 
 /** "Red Rose", "Pink & White Tulip", "Mixed Flower" — or null when the record does not support one. */
 export function flowerDescriptor(product: Pick<Product, "flowerTypes">): string | null {
-  const main = (product.flowerTypes ?? []).map((flower) => flower.trim()).filter((flower) => flower && !SUPPORTING.test(flower));
+  const recorded = (product.flowerTypes ?? []).map((flower) => flower.trim()).filter(Boolean);
+  let main = recorded.filter((flower) => !SUPPORTING.test(flower));
+  // A design made only of gypsophila (Cloud Nine Blue, Pink Secret, Cotton
+  // Candy) is named by it, not left without a flower: "Blue Gypsophila".
+  // "Baby's breath" is the same flower and is not counted twice.
+  if (main.length === 0) main = recorded.filter((flower) => /gypsophila/i.test(flower));
   if (main.length === 0) return null;
   const parts = main.map((flower) => { const words = flower.split(/\s+/); return { noun: singular(words.at(-1)!).toLowerCase(), colour: words.slice(0, -1).join(" ").toLowerCase() }; });
   const nouns = [...new Set(parts.map((part) => part.noun))];
@@ -41,8 +46,15 @@ export function flowerDescriptor(product: Pick<Product, "flowerTypes">): string 
 
 const BRAND = "Fresh Petals";
 
+// Category names shown to customers where the stored category (which sets the
+// URL) makes a claim: "Pet Friendly" is shown as "Homes with Pets".
+const CATEGORY_LABEL: Record<string, string> = { "Pet Friendly": "Homes with Pets" };
+export const categoryLabel = (category: string) => CATEGORY_LABEL[category] ?? category;
+
 export function productTitle(product: Product): string {
-  const plain = `${product.name} – ${product.category} | ${BRAND}`;
+  const label = categoryLabel(product.category);
+  // A relabelled category already in the name is not repeated ("Flowerbox for Homes with Pets").
+  const plain = label !== product.category && product.name.toLowerCase().includes(label.toLowerCase()) ? `${product.name} | ${BRAND}` : `${product.name} – ${label} | ${BRAND}`;
   if (!/^(bouquets|lilies)$/i.test(product.category)) return plain;
   const form = formOf(product);
   const descriptor = flowerDescriptor(product);

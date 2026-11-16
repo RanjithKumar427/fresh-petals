@@ -85,6 +85,18 @@ const ANNIVERSARY: LandingLink = { href: "/occasions/anniversary", label: "Anniv
 const OCCASIONS: LandingLink = { href: "/occasions", label: "All occasions" };
 const CUSTOM: LandingLink = { href: "/custom-orders", label: "Custom orders" };
 
+/**
+ * What decides whether an order can be made for a city, shown on every city
+ * page beside the enquiry button. Practical points only: no delivery speed,
+ * fee, pincode list or lead time is stated (see the rules above).
+ */
+export const CITY_ORDERING_POINTS: string[] = [
+  "The date comes first: bouquets and loose flowers depend on what the flower market has that day.",
+  "Share the full address with a landmark, and the recipient's phone number, so we can confirm delivery to that address.",
+  "The delivery charge depends on the address and timing, and is confirmed with the price before you pay.",
+  "Same-day and express delivery are not confirmed services; ask, and we tell you what is possible for your address.",
+];
+
 export const CITY_HUBS: CityHub[] = [
   {
     slug: "bengaluru",
@@ -184,10 +196,10 @@ export const CITY_HUBS: CityHub[] = [
     description:
       "Send flowers to Hyderabad: bouquets chosen for birthdays and anniversaries, and made-to-order garlands for a ceremony. Tell us the date; price and availability on WhatsApp.",
     h1: "Send flowers to Hyderabad",
-    updated: "2026-10-13",
+    updated: "2026-11-16",
     emphasis: "This page starts with gifts for a birthday or an anniversary, then garlands for a ceremony.",
     intro: [
-      "Most flowers sent to Hyderabad are for a date that matters: a birthday, an anniversary, or a ceremony at home. This page is arranged that way, so start with the occasion and choose from the designs listed for it.",
+      "This page is arranged by occasion — a birthday, an anniversary or a ceremony at home — so start with the occasion and choose from the designs listed for it.",
       "When you write to us, give the date first. We confirm what can be made for that day in Hyderabad, the price and the delivery details on WhatsApp.",
     ],
     sections: [
@@ -629,10 +641,10 @@ export const CITY_HUBS: CityHub[] = [
     description:
       "Flowers for family in Kolkata (Calcutta): designs for a birthday or an anniversary, and how rose, lily and mixed bouquets compare. Date, price and delivery confirmed on WhatsApp.",
     h1: "Flowers for family in Kolkata",
-    updated: "2026-10-13",
+    updated: "2026-11-16",
     emphasis: "For a parent's, sibling's or relative's day: who it is for, then roses, lilies or mixed.",
     intro: [
-      "A lot of flowers sent to Kolkata, or Calcutta as it is still often searched, go to family: a mother's birthday, parents' anniversary, an aunt who is unwell. Choosing for family is different from choosing for a partner, and this page is arranged around that.",
+      "Sending flowers to family in Kolkata (or Calcutta) — for a mother's birthday, parents' anniversary or an aunt who is unwell — is different from choosing for a partner, and this page is arranged around that.",
       "Tell us who the flowers are for when you write. We confirm the design for your date, the price and the delivery details on WhatsApp.",
     ],
     sections: [
@@ -889,10 +901,10 @@ export const CITY_HUBS: CityHub[] = [
     description:
       "Flowers for Visakhapatnam (Vizag): send a bouquet as a gift, and arrange flowers for a ceremony as a separate request. Each is confirmed on WhatsApp for your date.",
     h1: "Bouquets and ceremony flowers for Visakhapatnam",
-    updated: "2026-10-13",
+    updated: "2026-11-16",
     emphasis: "Two requests that are best kept apart: a bouquet to send, and flowers for a ceremony.",
     intro: [
-      "People writing to us about Visakhapatnam, or Vizag, often have two needs at once: a bouquet for someone, and flowers for a function. They are confirmed differently, so this page keeps them apart.",
+      "An order for Visakhapatnam (Vizag) can combine two needs: a bouquet for someone, and flowers for a function. They are confirmed differently, so this page keeps them apart.",
       "A bouquet is one design for one address on one date. Ceremony flowers are a quantity for an event, and need more of a conversation. Both start on WhatsApp.",
     ],
     sections: [
@@ -1084,10 +1096,10 @@ export function catalogueRoot(city: { slug: string; name: string; state: string 
     title: `Flowers for Delivery in ${city.name} | Bouquets, Garlands & Pooja Flowers | Fresh Petals`,
     description: `Order bouquets, wedding garlands and pooja flowers for delivery in ${city.name}, ${city.state}: the full Fresh Petals catalogue by collection. Price and date confirmed on WhatsApp.`,
     h1: `Flowers for delivery in ${city.name}`,
-    updated: "2026-10-14",
-    emphasis: `${city.name} is one of the ${cityCount} cities we take orders for. Everything in our catalogue can be ordered for delivery here.`,
+    updated: "2026-11-16",
+    emphasis: `${city.name} is one of the ${cityCount} cities we take orders for. Every collection in our catalogue can be requested for delivery here.`,
     intro: [
-      `Choose from every collection below: bouquets, lilies, wedding garlands by flower group, pooja flowers and more. The catalogue is the same for every city we deliver to; nothing is held back for ${city.name}.`,
+      `Choose from every collection below: bouquets, lilies, wedding garlands by flower group, pooja flowers and more. The catalogue is the same for every city we take orders for; whether particular flowers can be made for your date in ${city.name} is confirmed for each order.`,
       "Send your choice on WhatsApp with the date and the recipient's address. We confirm availability for that date, the price and the delivery details before you pay.",
     ],
     sections: [],
@@ -1099,6 +1111,10 @@ export function catalogueRoot(city: { slug: string; name: string; state: string 
       {
         question: "Why do bouquets and garlands show no price?",
         answer: "Their price depends on the flowers available for your date, so we send it on WhatsApp once you choose a design. Products that show a price keep it. Nothing is charged on this website.",
+      },
+      {
+        question: `What should I send with an order for ${city.name}?`,
+        answer: `The design name or link, the date (and a time of day if it matters), the recipient's name and phone number, the full address in ${city.name} with a landmark, and any card message. For a wedding garland or bulk pooja flowers, add the ceremony or pooja time and the quantity. We reply with availability for that date, the price and the delivery charge.`,
       },
     ],
     links: [

@@ -42,6 +42,7 @@ const GROUP_NOTES: Record<string, string> = {
 const contents = [
   ...groups.map(({ group }) => ({ id: group.id, label: group.label })),
   { id: "presentation", label: "Wrapped or in a vase" },
+  { id: "colour", label: "By colour" },
   ...(occasions.length ? [{ id: "occasion", label: "By occasion" }] : []),
   { id: "unavailable", label: "If a flower is unavailable" },
 ];
@@ -79,6 +80,7 @@ const contents = [
       </p>
     )}
     <p>A vase can also be added to a wrapped bouquet; ask when you send your order. The wrapping and ribbon in a photograph are what the record lists, and a different finish can be requested.</p>
+    <p>A few designs come in a flower box or a basket instead, which also needs no vase on arrival: see <a href="/categories/flowerbox">flower boxes</a> and <a href="/categories/baskets">baskets</a>. A gift box arrives arranged; a loose-flower box is for arranging yourself.</p>
     <div class="mt-6 overflow-x-auto">
       <table class="w-full border-collapse text-left text-sm" data-guide-table="presentation">
         <thead>
@@ -95,6 +97,23 @@ const contents = [
         </tbody>
       </table>
     </div>
+  </section>
+
+  <section class="guide-section" id="colour" aria-labelledby="colour-title" data-guide-section="colour">
+    <h2 id="colour-title" class="fp-serif text-2xl text-ink md:text-3xl">Choosing by colour</h2>
+    <p>
+      If you know their favourite colour, start there. Each colour page lists the designs whose recorded flowers are that colour; a design with several colours can appear on more than one.
+    </p>
+    <ul class="mt-4 list-disc space-y-2 pl-5 text-[0.9375rem] leading-7 text-moss" data-guide-colours>
+      <li><a href="/categories/red-flowers">Red</a> is the direct romantic choice, mostly roses. For romance in softer colours, see <a href="/categories/romantic">romantic flowers</a>.</li>
+      <li><a href="/categories/pink-flowers">Pink</a> and <a href="/categories/pastel-flowers">pastel</a> designs (blush, peach, lilac, pale blue) are gentle and suit a birthday, a new baby or a thank-you.</li>
+      <li><a href="/categories/white-flowers">White</a> roses, lilies and chrysanthemums suit sympathy, a formal thank-you or a calm gift.</li>
+      <li><a href="/categories/yellow-flowers">Yellow</a> designs — sunflowers, chrysanthemums, daisies — are bright and informal: birthdays, congratulations, get-well wishes.</li>
+      <li><a href="/categories/blue-flowers">Blue</a> designs use blue gypsophila (baby's breath), alone or with white flowers.</li>
+    </ul>
+    <p>
+      Scent matters too, mostly with lilies: oriental lilies such as stargazers are usually strongly scented, Asiatic lilies hardly at all. If the recipient prefers mild scents, choose roses, gerberas or gypsophila, or ask us which lilies are in a design; see <a href="/categories/fragrant-lilies">fragrant lilies</a>.
+    </p>
   </section>
 
   {occasions.length > 0 && (

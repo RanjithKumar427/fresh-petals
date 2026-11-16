@@ -15,6 +15,8 @@
 // out-of-range page shows the last one, as before. Without scripts every
 // product is listed on one page (any collection link shows that same full
 // list). Photographs are lazy-loaded.
+import { enquiryName, enquiryQuantityLine } from "../../../data/productSupply";
+import { productCatalog } from "../../../data/productCatalog";
 import BaseLayout from "../../../layouts/BaseLayout.astro";
 import DestinationCity from "../../../components/DestinationCity.astro";
 import { CITY_PARAM, LOCATIONS_PATH, SERVICE_CITIES, findCity, serviceCityCount } from "../../../data/serviceCities";
@@ -36,10 +38,12 @@ const { collections, all } = await loadCityCatalogue();
 const href = (id: string | null) => (id ? `${base}?collection=${encodeURIComponent(id)}` : base);
 const origin = Astro.site ?? Astro.url;
 const withCity = (path: string) => `${path}?${CITY_PARAM}=${city.slug}`;
+// The catalogue record behind a product item, for the WhatsApp draft's identity and quantity lines.
+const recordFor = (item: CatalogueItem) => productCatalog.find((product) => product.slug === item.key);
 const action = (item: CatalogueItem) =>
   item.code
     ? { href: garlandEnquiryHref({ code: item.code, quantity: 1, city: city.slug }), label: QUOTE_ONLY_ENQUIRE_LABEL }
-    : { href: cityProductEnquiryHref({ name: item.name, url: new URL(item.path, origin).toString(), cityName: city.name, quoteOnly: item.quoteOnly, priceLabel: item.price }), label: item.quoteOnly ? QUOTE_ONLY_ENQUIRE_LABEL : "Order on WhatsApp" };
+    : { href: cityProductEnquiryHref({ name: recordFor(item) ? enquiryName(recordFor(item)!) : item.name, url: new URL(item.path, origin).toString(), cityName: city.name, quoteOnly: item.quoteOnly, priceLabel: item.price, quantityLine: recordFor(item) ? enquiryQuantityLine(recordFor(item)!) : undefined }), label: item.quoteOnly ? QUOTE_ONLY_ENQUIRE_LABEL : "Order on WhatsApp" };
 
 const heading = `All flowers and products for delivery in ${city.name}`;
 const title = `Full Catalogue for Delivery in ${city.name} | Fresh Petals`;
