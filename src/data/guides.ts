@@ -30,9 +30,10 @@ export const GUIDES: Guide[] = [
     heading: "How to choose a flower bouquet",
     title: "How to Choose a Flower Bouquet | Roses, Lilies or Mixed | Fresh Petals",
     description: "Choosing a bouquet: how rose, mixed and lily designs differ, wrapped or in a vase, which suit a birthday or an anniversary, and what happens if a flower is unavailable.",
-    summary: "Roses, lilies or mixed; wrapped or in a vase; which designs are listed for which occasion.",
+    summary: "Roses, lilies or mixed; wrapped, in a vase, box or basket; colour and scent; which designs are listed for which occasion.",
     published: "2026-10-13",
-    updated: "2026-10-13",
+    // Colour and scent section, and boxes and baskets, added 16 Nov 2026.
+    updated: "2026-11-16",
   },
   {
     slug: "choosing-wedding-garlands",
@@ -56,8 +57,9 @@ export const GUIDES: Guide[] = [
     summary: "Loose flowers or finished gajra, boxes and baskets, and bulk requirements.",
     published: "2026-10-13",
     // Card labels and the photograph note were rewritten on 16 Oct 2026
-    // (labelled by reviewed relationship, not by shared file).
-    updated: "2026-10-19",
+    // (labelled by reviewed relationship, not by shared file); the recurring
+    // jasmine plan was set apart from one-off jasmine on 16 Nov 2026.
+    updated: "2026-11-16",
   },
   {
     slug: "sending-flowers-to-another-city",

@@ -1,0 +1,451 @@
+{
+ "base": "30b2ccdd14b053ff08edc5e957360f393549a33a",
+ "note": "Dashboard-controlled copy (products.name, short_description, description) of every catalogue product at the release base, from src/data/productCatalog.ts. scripts/audit/copy-changes.test.mjs diffs it against the current catalogue, so the manifest can be checked without git history; when the base commit is reachable, the test also checks this file against it.",
+ "products": {
+  "blue-mountain-grace": {
+   "name": "Blue Mountain Grace",
+   "short_description": "A graceful blue and white bouquet with white roses and soft blue baby’s breath.",
+   "description": "A calm blue and white bouquet featuring white roses surrounded by soft blue gypsophila — perfect for elegant gifting, birthdays and thoughtful surprises."
+  },
+  "blush-garden-kiss": {
+   "name": "Blush Garden Kiss",
+   "short_description": "A blush pink garden bouquet with gerberas, carnations and soft white fillers.",
+   "description": "A fresh blush garden bouquet filled with pink gerberas, carnations, white filler flowers and soft greenery — perfect for birthdays and sweet gifting."
+  },
+  "cloud-nine-blue": {
+   "name": "Cloud Nine Blue",
+   "short_description": "A dreamy blue baby’s breath bouquet with a soft cloud-like look.",
+   "description": "A full bouquet of blue gypsophila arranged in soft white and blue wrapping — perfect for cute gifting, birthdays and dreamy surprises."
+  },
+  "cloud-white": {
+   "name": "Cloud White",
+   "short_description": "A classic white rose bouquet with soft baby’s breath.",
+   "description": "An elegant bouquet of white roses paired with white gypsophila — perfect for calm gifting, thank-you moments and graceful occasions."
+  },
+  "colour-pop-love": {
+   "name": "Colour Pop Love",
+   "short_description": "A colourful gerbera bouquet arranged in a glass vase.",
+   "description": "A bright gerbera bouquet with pink, peach, white and magenta blooms — perfect for cheerful gifting, birthdays and colourful surprises."
+  },
+  "colourful-confession": {
+   "name": "Colourful Confession",
+   "short_description": "A colourful garden bouquet filled with cheerful mixed blooms.",
+   "description": "A bright mixed bouquet with gerberas, roses, daisies and seasonal garden fillers — perfect for birthdays, celebrations and happy surprises."
+  },
+  "cotton-candy": {
+   "name": "Cotton Candy",
+   "short_description": "A pastel baby’s breath flower box with a soft cotton-candy look.",
+   "description": "A dreamy pastel flower box filled with pink, blue, lavender and peach gypsophila — perfect for cute birthdays, new mom gifting and sweet surprises."
+  },
+  "cotton-candy-poetry": {
+   "name": "Cotton Candy Poetry",
+   "short_description": "A soft pink and white chrysanthemum bouquet with baby’s breath.",
+   "description": "A delicate bouquet with pink and white chrysanthemum-style blooms and soft baby’s breath — perfect for birthdays, new mom gifting and sweet surprises."
+  },
+  "country-love-note": {
+   "name": "Country Love Note",
+   "short_description": "A rustic mixed bouquet with white gerberas and burgundy blooms.",
+   "description": "A warm country-style bouquet with white gerberas, burgundy chrysanthemums and tiny white daisy-style fillers — perfect for heartfelt gifting."
+  },
+  "daisy-morning": {
+   "name": "Daisy Morning",
+   "short_description": "A fresh yellow and white bouquet with a soft morning feel.",
+   "description": "A fresh bouquet with yellow chrysanthemums, white daisy-style fillers and soft green foliage — perfect for morning wishes and happy gifting."
+  },
+  "dear-sunshine": {
+   "name": "Dear Sunshine",
+   "short_description": "A bold sunflower bouquet for bright and happy gifting.",
+   "description": "A sunny bouquet made with fresh sunflowers — perfect for birthdays, congratulations and warm cheerful surprises."
+  },
+  "first-love": {
+   "name": "First Love",
+   "short_description": "A soft tulip bouquet with pink and white blooms.",
+   "description": "A romantic tulip bouquet with soft pink and white tulips paired with white gypsophila — perfect for anniversaries, birthdays and sweet surprises."
+  },
+  "lavender-whisper": {
+   "name": "Lavender Whisper",
+   "short_description": "A soft lavender rose bouquet with purple filler flowers.",
+   "description": "A gentle lavender bouquet featuring lavender roses with soft purple filler flowers — perfect for romantic gifting, birthdays and calm surprises."
+  },
+  "lilac-garden": {
+   "name": "Lilac Garden",
+   "short_description": "A lilac purple bouquet with a soft garden-style look.",
+   "description": "A fresh lilac bouquet filled with purple aster-style blooms and green fillers — perfect for birthdays, thank-you gifts and elegant surprises."
+  },
+  "lily-calm": {
+   "name": "Lily Calm",
+   "short_description": "A clean white lily bouquet with a calm premium feel.",
+   "description": "A graceful bouquet made with fresh white oriental lilies and unopened lily buds — perfect for elegant gifting, peaceful wishes and thoughtful moments."
+  },
+  "little-lilly-prayer": {
+   "name": "Little Lilly Prayer",
+   "short_description": "A peaceful white lily bouquet for calm and graceful gifting.",
+   "description": "A soft white bouquet with lilies, white filler flowers and gentle greenery — perfect for pooja gifting, sympathy and peaceful occasions."
+  },
+  "love-at-first-sight": {
+   "name": "Love At First Sight",
+   "short_description": "A premium white lily and rose bouquet with a clean elegant look.",
+   "description": "A graceful white bouquet featuring lilies, roses and fresh green foliage — perfect for elegant gifting, anniversaries and peaceful moments."
+  },
+  "midnight-romance": {
+   "name": "Midnight Romance",
+   "short_description": "A luxury peach rose bouquet in bold black wrapping.",
+   "description": "A premium bouquet with peach roses, spray roses, carnations and dark seasonal fillers — perfect for romantic gifting and luxury surprises."
+  },
+  "peach-petal-promise": {
+   "name": "Peach Petal Promise",
+   "short_description": "A soft peach and white rose bouquet with delicate fillers.",
+   "description": "A graceful bouquet with peach roses, white roses, baby’s breath, chamomile-style fillers and eucalyptus — perfect for elegant gifting and warm surprises."
+  },
+  "pink-lily-wish": {
+   "name": "Pink Lily Wish",
+   "short_description": "A pink lily bouquet with soft eucalyptus accents.",
+   "description": "A graceful bouquet featuring pink oriental lilies with fresh eucalyptus accents — perfect for birthdays, anniversaries and elegant gifting."
+  },
+  "pink-secret": {
+   "name": "Pink Secret",
+   "short_description": "A full pink baby’s breath bouquet for cute gifting.",
+   "description": "A soft pink gypsophila bouquet arranged in matching pink wrapping — perfect for birthdays, sweet surprises and romantic little gestures."
+  },
+  "pink-tulip-promise": {
+   "name": "Pink Tulip Promise",
+   "short_description": "A pretty pink tulip bouquet with soft white baby’s breath.",
+   "description": "A graceful pink tulip bouquet paired with white gypsophila — perfect for romantic surprises, anniversaries and special promises."
+  },
+  "purple-crush": {
+   "name": "Purple Crush",
+   "short_description": "A rich purple chrysanthemum bouquet with white baby’s breath.",
+   "description": "A bold purple bouquet filled with chrysanthemum-style blooms and white baby’s breath — perfect for stylish birthdays and expressive gifting."
+  },
+  "purple-promise": {
+   "name": "Purple Promise",
+   "short_description": "A soft purple and white bouquet with roses, gerberas and lilac fillers.",
+   "description": "A graceful bouquet with white roses, white gerberas and soft purple aster-style flowers — perfect for thoughtful gifting and calm celebrations."
+  },
+  "purple-whisper": {
+   "name": "Purple Whisper",
+   "short_description": "A soft purple statice bouquet with lavender and white accents.",
+   "description": "A full purple-toned bouquet with lavender, white and magenta statice-style flowers — perfect for stylish birthdays, thank-you gifts and elegant surprises."
+  },
+  "rainbow-hug": {
+   "name": "Rainbow Hug",
+   "short_description": "A bright rainbow bouquet with colourful gerberas and tall floral accents.",
+   "description": "A joyful bouquet filled with colourful gerberas, tall floral stems and fresh seasonal fillers — perfect for birthdays, celebrations and cheerful surprises."
+  },
+  "red-affair": {
+   "name": "Red Affair",
+   "short_description": "A bold red rose bouquet for romantic gifting.",
+   "description": "A classic bouquet of fresh red roses wrapped beautifully in white — perfect for anniversaries, proposals and heartfelt romantic surprises."
+  },
+  "rose-promise": {
+   "name": "Rose Promise",
+   "short_description": "A peach and white rose bouquet with soft greenery.",
+   "description": "A warm rose bouquet arranged with peach roses, white roses, spray roses and eucalyptus — perfect for anniversaries, birthdays and thoughtful gifting."
+  },
+  "snow-white-saga": {
+   "name": "Snow White Saga",
+   "short_description": "A pure white rose bouquet with soft green wrapping.",
+   "description": "A graceful white rose bouquet paired with delicate baby’s breath and soft green wrapping — perfect for elegant gifting, thank-you moments and peaceful wishes."
+  },
+  "sunshine-confession": {
+   "name": "Sunshine Confession",
+   "short_description": "A cheerful yellow bouquet with soft white baby’s breath.",
+   "description": "A bright yellow bouquet paired with white gypsophila — perfect for birthdays, thank-you gifts and cheerful surprises."
+  },
+  "sunshine-story": {
+   "name": "Sunshine Story",
+   "short_description": "A sunny bouquet with sunflowers, roses and yellow fillers.",
+   "description": "A bright sunflower bouquet arranged with white roses, yellow chrysanthemums and soft seasonal fillers — perfect for warm gifting and joyful celebrations."
+  },
+  "sweet-petal-hour": {
+   "name": "Sweet Petal Hour",
+   "short_description": "A bright mixed gerbera bouquet for joyful gifting.",
+   "description": "A colourful bouquet filled with red, pink and yellow gerberas with soft filler flowers — perfect for birthdays, celebrations and happy surprises."
+  },
+  "timeless-hug": {
+   "name": "Timeless Hug",
+   "short_description": "A soft pink rose bouquet for sweet and timeless gifting.",
+   "description": "A beautiful bouquet of fresh pink roses wrapped in soft white layers — perfect for birthdays, anniversaries and warm heartfelt surprises."
+  },
+  "violet-picnic": {
+   "name": "Violet Picnic",
+   "short_description": "A purple statice basket with soft pink and white accents.",
+   "description": "A charming wicker basket filled with purple, pink and white statice-style blooms — perfect for home gifting, birthdays and elegant surprises."
+  },
+  "white-silence": {
+   "name": "White Silence",
+   "short_description": "A simple white lily bouquet with a peaceful premium feel.",
+   "description": "A clean bouquet made with fresh white lilies in kraft wrapping — perfect for elegant gifting, apologies and peaceful occasions."
+  },
+  "wild-sunset-charm": {
+   "name": "Wild Sunset Charm",
+   "short_description": "A bright yellow and purple bouquet with a wild garden feel.",
+   "description": "A cheerful bouquet with yellow daisy-style blooms, purple filler flowers and small white accents — perfect for happy gifting and celebrations."
+  },
+  "winter-whisper": {
+   "name": "Winter Whisper",
+   "short_description": "A soft blue and white bouquet with chrysanthemums and baby’s breath.",
+   "description": "A cool-toned bouquet featuring white chrysanthemum-style blooms with blue baby’s breath — perfect for calm gifting and elegant surprises."
+  },
+  "all-white-fragrance": {
+   "name": "All White Fragrance",
+   "short_description": "A premium white lily arrangement with a soft fragrant feel.",
+   "description": "A graceful white lily arrangement made for elegant gifting, peaceful wishes and premium floral moments."
+  },
+  "fragrance-festive-giftbox": {
+   "name": "Fragrance Festive Giftbox",
+   "short_description": "A festive lily giftbox with a premium fragrant look.",
+   "description": "A premium lily giftbox designed for festive gifting, birthdays, housewarming and elegant surprises."
+  },
+  "mandarin-lily-glow": {
+   "name": "Mandarin Lily Glow",
+   "short_description": "A bright lily arrangement with warm orange mandarin tones.",
+   "description": "A warm lily arrangement with orange-toned blooms, made for cheerful gifting, birthdays and celebrations."
+  },
+  "pink-serenity-flowerbox": {
+   "name": "Pink Serenity Flowerbox",
+   "short_description": "A soft pink lily flowerbox for graceful gifting.",
+   "description": "A serene pink lily flowerbox designed for birthdays, anniversaries, new mom gifting and soft elegant surprises."
+  },
+  "blush-lily-letter": {
+   "name": "Blush Lily Letter",
+   "short_description": "A blush-toned lily arrangement for sweet gifting.",
+   "description": "A soft blush lily arrangement made for romantic gifting, anniversaries and thoughtful floral surprises."
+  },
+  "coral-lily-bloom": {
+   "name": "Coral Lily Bloom",
+   "short_description": "A coral lily arrangement with a fresh bright bloom.",
+   "description": "A fresh coral lily arrangement made for birthdays, congratulations and warm cheerful gifting."
+  },
+  "ivory-lily-grace": {
+   "name": "Ivory Lily Grace",
+   "short_description": "An ivory lily arrangement with a graceful premium feel.",
+   "description": "A graceful ivory lily arrangement made for elegant gifting, thank-you moments and peaceful occasions."
+  },
+  "luxe-lily-bloom": {
+   "name": "Luxe Lily Bloom",
+   "short_description": "A luxury lily arrangement for premium floral gifting.",
+   "description": "A premium lily bloom arrangement designed for luxury gifting, anniversaries and special celebrations."
+  },
+  "stargazer-affair": {
+   "name": "Stargazer Affair",
+   "short_description": "A bold stargazer lily arrangement for premium gifting.",
+   "description": "A striking stargazer lily arrangement made for romantic surprises, anniversaries and bold floral gifting."
+  },
+  "sunrise-asiatic-vase": {
+   "name": "Sunrise Asiatic Vase",
+   "short_description": "A bright Asiatic lily vase arrangement with sunrise tones.",
+   "description": "A cheerful Asiatic lily vase arrangement with warm sunrise tones — perfect for birthdays, congratulations and fresh home gifting."
+  },
+  "daily-pooja-flowers": {
+   "name": "Daily Pooja Flowers",
+   "short_description": "Fresh daily pooja flowers packed based on morning availability.",
+   "description": "Fresh pooja flowers prepared for daily home worship, temple use and small rituals. Final flower mix depends on daily market freshness and seasonal availability."
+  },
+  "jasmine-malli": {
+   "name": "Jasmine / Malli",
+   "short_description": "Fresh jasmine/malli based on daily market availability.",
+   "description": "Fresh jasmine or malli flowers for pooja, hair decoration, functions and daily use. Price changes based on freshness, season and market rate."
+  },
+  "pooja-flower-box": {
+   "name": "Pooja Flower Box",
+   "short_description": "Assorted pooja flower box prepared fresh on order.",
+   "description": "A fresh pooja flower box with assorted seasonal flowers selected based on the day’s market availability. Suitable for home pooja, temple visits and festive rituals."
+  },
+  "temple-bulk-flowers": {
+   "name": "Temple Bulk Flowers",
+   "short_description": "Bulk pooja flowers for temples, events and rituals.",
+   "description": "Bulk flowers for temple pooja, rituals, functions and event requirements. Pricing depends on flower type, quantity, date and delivery location."
+  },
+  "diy-flowerbox": {
+   "name": "DIY Flowerbox",
+   "short_description": "Fresh loose flowers packed for DIY home flower arranging.",
+   "description": "A DIY flowerbox with fresh flowers selected for home styling, vase arrangement, gifting or personal use. Flower mix depends on daily availability and freshness."
+  },
+  "loose-flower-box": {
+   "name": "Loose Flower Box",
+   "short_description": "Fresh loose flower box based on today’s market availability.",
+   "description": "A loose flower box prepared with fresh seasonal flowers. Suitable for home decoration, small events, pooja use or DIY floral styling."
+  },
+  "gift-flower-box": {
+   "name": "Gift Flower Box",
+   "short_description": "Premium flower box for gifting and special occasions.",
+   "description": "A curated gift flower box arranged with fresh flowers for birthdays, anniversaries, celebrations and premium gifting. Final design depends on flower choice and availability."
+  },
+  "pooja-flowerbox": {
+   "name": "Pooja Flower Box",
+   "short_description": "Fresh pooja flower box packed for home and temple use.",
+   "description": "A fresh pooja flower box prepared for daily worship, temple visits and festive rituals. Flower selection depends on season and market availability."
+  },
+  "flower-basket": {
+   "name": "Flower Basket",
+   "short_description": "Fresh flower basket arranged for gifting and occasions.",
+   "description": "A fresh flower basket prepared with seasonal flowers for birthdays, anniversaries, housewarming, gifting and small celebrations. Final flower selection depends on daily availability."
+  },
+  "gift-basket": {
+   "name": "Gift Basket",
+   "short_description": "Gift basket with flowers and optional add-ons.",
+   "description": "A gifting basket prepared with fresh flowers and optional add-ons like chocolates, cards, candles or decor items. Best for birthdays, anniversaries and premium surprise gifting."
+  },
+  "pooja-basket": {
+   "name": "Pooja Basket",
+   "short_description": "Fresh pooja flower basket based on daily market availability.",
+   "description": "A pooja flower basket prepared with fresh seasonal flowers for home pooja, temple visits and festive rituals. Price depends on flower type, quantity and market availability."
+  },
+  "premium-flower-basket": {
+   "name": "Premium Basket",
+   "short_description": "Premium custom flower basket for gifting and events.",
+   "description": "A premium custom flower basket designed based on occasion, budget, flower preference and availability. Suitable for high-value gifting, table decor, celebrations and event requirements."
+  },
+  "flowers-under-499": {
+   "name": "Under ₹499 Flowers",
+   "short_description": "Affordable fresh flower options based on daily availability.",
+   "description": "Budget-friendly fresh flower options under ₹499, depending on the day’s market availability. Suitable for small gifting, pooja use, simple decor and quick flower needs."
+  },
+  "bouquets-under-999": {
+   "name": "Under ₹999 Bouquets",
+   "short_description": "Fresh bouquet options under ₹999 based on flower availability.",
+   "description": "Fresh bouquet options under ₹999 for simple gifting and small celebrations. Flower type, size and wrapping depend on current availability and final confirmation."
+  },
+  "flower-gifts-under-1499": {
+   "name": "Under ₹1499 Gifts",
+   "short_description": "Popular flower gifting options under ₹1499.",
+   "description": "Fresh flower gifting options under ₹1499 for birthdays, anniversaries, thank-you gifts and small surprises. Final flower selection depends on daily market freshness."
+  },
+  "todays-flower-offers": {
+   "name": "Today’s Offers",
+   "short_description": "Today’s fresh flower offers based on market availability.",
+   "description": "Today’s Fresh Petals offers depend on market availability, flower freshness, quantity and delivery location. Contact us on WhatsApp to know what is available today."
+  },
+  "chocolates-addon": {
+   "name": "Chocolates",
+   "short_description": "Chocolates that can be added along with flower orders.",
+   "description": "Chocolates can be added along with bouquets, flower boxes, baskets or gifting orders. Final options and price will be confirmed on WhatsApp based on availability."
+  },
+  "candle-diffuser-addon": {
+   "name": "Candle & Diffusers",
+   "short_description": "Candles or diffusers to pair with premium flower gifts.",
+   "description": "Candles and diffusers can be paired with flowers for premium gifting, anniversaries, birthdays, housewarming and special occasions. Availability and final price will be confirmed before order."
+  },
+  "premium-card-addon": {
+   "name": "Premium Cards",
+   "short_description": "Premium greeting cards for flower gifting orders.",
+   "description": "Premium greeting cards can be added to bouquets, flower boxes, baskets and other gifting orders. You can share your message on WhatsApp while confirming the order."
+  },
+  "table-decor-addon": {
+   "name": "Table Decor",
+   "short_description": "Table decor add-ons for flowers, events and gifting setups.",
+   "description": "Table decor add-ons can be used with flowers for small events, home celebrations, pooja setups, gifting presentations and premium decor arrangements."
+  },
+  "daily-pooja-flower-subscription": {
+   "name": "Daily Pooja Flower Subscription",
+   "short_description": "Fresh pooja flowers delivered on a recurring schedule.",
+   "description": "A recurring pooja flower subscription for homes that need fresh flowers regularly. Delivery frequency, quantity and final price will be confirmed on WhatsApp based on your area and requirement."
+  },
+  "weekly-flowerbox-subscription": {
+   "name": "Weekly Flowerbox Subscription",
+   "short_description": "Weekly fresh flowerbox for home styling and vase arrangements.",
+   "description": "A weekly flowerbox subscription for customers who want fresh flowers at home for decor, vase styling or personal use. Flower selection changes based on seasonal availability."
+  },
+  "jasmine-malli-subscription": {
+   "name": "Jasmine / Malli Subscription",
+   "short_description": "Recurring jasmine or malli delivery based on market availability.",
+   "description": "A jasmine or malli subscription for regular pooja, daily use, functions or personal requirements. Pricing depends on daily market rate, quantity and delivery frequency."
+  },
+  "custom-flower-subscription": {
+   "name": "Custom Flower Subscription",
+   "short_description": "Custom recurring flower plan for homes, pooja and events.",
+   "description": "A custom flower subscription created based on your requirement, delivery area, frequency, budget and flower preference. Suitable for homes, apartments, pooja use and small recurring setups."
+  },
+  "dried-flower-bunch": {
+   "name": "Dried Flower Bunch",
+   "short_description": "Long-lasting dried flower bunch for decor and gifting.",
+   "description": "A dried flower bunch arranged for home styling, desk decor, gifting and aesthetic room corners. Final colors and flower mix depend on available dried stems."
+  },
+  "dried-flower-vase-set": {
+   "name": "Dried Flower Vase Set",
+   "short_description": "Dried flower arrangement with vase for premium decor.",
+   "description": "A custom dried flower vase arrangement for home decor, gifting, cafes, desks and premium corners. Vase style, flower tones and size can be discussed on WhatsApp."
+  },
+  "mini-succulent-gift": {
+   "name": "Mini Succulent Gift",
+   "short_description": "Mini succulent plant for simple gifting and desk decor.",
+   "description": "A mini succulent gift option for birthdays, desk decor, return gifts and small surprises. Plant variety and pot option depend on availability."
+  },
+  "plant-and-flower-hamper": {
+   "name": "Plant & Flower Hamper",
+   "short_description": "Fresh flowers paired with a small plant for gifting.",
+   "description": "A plant and flower hamper curated for housewarming, birthdays, thank-you gifts and premium surprises. Final plant, flowers and add-ons are confirmed on WhatsApp."
+  },
+  "clear-glass-vase": {
+   "name": "Clear Glass Vase",
+   "short_description": "Simple clear glass vase for flowerbox and loose flowers.",
+   "description": "A clear glass vase add-on for customers ordering loose flowers, flowerboxes, subscriptions or table decor flowers. Final vase size and availability are confirmed on WhatsApp."
+  },
+  "premium-decor-vase": {
+   "name": "Premium Decor Vase",
+   "short_description": "Premium vase option for curated flower arrangements.",
+   "description": "A premium vase option for customers who want curated flowers for home decor, gifting or event styling. Vase material, size and availability are confirmed before order."
+  },
+  "florist-cutter": {
+   "name": "Florist Cutter",
+   "short_description": "Florist cutter add-on for flowerbox and subscription customers.",
+   "description": "A florist cutter add-on for customers who regularly arrange fresh flowers at home. Useful for trimming stems before placing flowers in a vase."
+  },
+  "flower-food-sachets": {
+   "name": "Flower Food Sachets",
+   "short_description": "Flower food sachets for vase flowers and loose flowerboxes.",
+   "description": "Flower food sachets can be added with loose flowers, flowerboxes and subscription orders to help vase flowers stay fresh for longer."
+  },
+  "pet-friendly-flowerbox": {
+   "name": "Pet Friendly Flowerbox",
+   "short_description": "Flowerbox planned with you if you have pets at home.",
+   "description": "If you have cats or dogs at home, tell us on WhatsApp before ordering and we will go through the flowers available that day with you. We cannot guarantee that any flower is safe for pets, so please keep every arrangement out of their reach."
+  },
+  "fresh-flower-toran": {
+   "name": "Fresh Flower Toran",
+   "short_description": "Fresh flower toran for doors, pooja and festive decor.",
+   "description": "Fresh flower torans prepared for pooja, housewarming, festivals, temple use and door decoration. Pricing depends on flower type, length, quantity and market rate."
+  },
+  "jasmine-gajra": {
+   "name": "Jasmine Gajra",
+   "short_description": "Fresh jasmine gajra based on daily flower availability.",
+   "description": "Fresh jasmine gajra for hair decoration, pooja, functions and traditional occasions. Price changes based on daily jasmine market rate."
+  },
+  "room-mist-flower-gift-addon": {
+   "name": "Room Mist Gift Add-on",
+   "short_description": "Room mist add-on for premium flower gifting orders.",
+   "description": "A room mist or diffuser add-on that can be paired with bouquets, hampers and premium flower gifts for birthdays, anniversaries and housewarming."
+  },
+  "flower-chocolate-hamper": {
+   "name": "Flower & Chocolate Hamper",
+   "short_description": "Fresh flowers paired with chocolates for premium gifting.",
+   "description": "A premium flower and chocolate hamper for birthdays, anniversaries, thank-you gifts and celebration surprises. Final flowers, chocolate options and packing are confirmed on WhatsApp."
+  },
+  "housewarming-flower-hamper": {
+   "name": "Housewarming Flower Hamper",
+   "short_description": "Housewarming hamper with flowers and optional decor add-ons.",
+   "description": "A housewarming flower hamper with fresh flowers and optional add-ons like candles, diffuser, plant, card or decor item. Final hamper is customized based on budget and availability."
+  },
+  "bridal-flower-accessories": {
+   "name": "Bridal Flower Accessories",
+   "short_description": "Custom bridal flower accessories for wedding functions.",
+   "description": "Custom bridal flower accessories including floral hair styling elements, poola jada support, gajra and traditional flower requirements. Final design depends on flowers, event date and quantity."
+  },
+  "event-garlands": {
+   "name": "Event Garlands",
+   "short_description": "Fresh garlands for weddings, pooja and events.",
+   "description": "Fresh garlands for weddings, pooja, temple functions, housewarming and event requirements. Price depends on flower type, size, count and daily market rate."
+  },
+  "roses-by-stem": {
+   "name": "Roses by Stem",
+   "short_description": "Fresh roses by stem for DIY arrangements and gifting.",
+   "description": "Fresh roses sold by stem quantity for DIY arrangements, simple gifting, vase styling and event use. Daily price depends on rose quality, color and market rate."
+  },
+  "lilies-by-stem": {
+   "name": "Lilies by Stem",
+   "short_description": "Fresh lily stems for premium flower arrangements.",
+   "description": "Fresh lily stems for bouquets, vase styling, premium gifting and custom arrangements. Availability depends on market stock, color and freshness."
+  }
+ }
+}

@@ -253,7 +253,8 @@ test('flower pages: /rose and /lilies list every arrangement with that flower pl
   for (const slug of ['lily-calm', 'little-lilly-prayer', 'love-at-first-sight', 'pink-lily-wish', 'white-silence', 'lilies-by-stem']) assert(slugs(lilies).includes(slug), slug);
   assert.deepEqual(json(guide.flowerSections(lilies, 'lilies').map((s) => [s.id, s.products.length])), [['arrangements', lilies.length - 1], ['stems', 1]]);
   assert.deepEqual(slugs(range.stemsOf(catalogue, 'roses')), ['roses-by-stem']);
-  const route = readFileSync('src/pages/categories/[slug].astro', 'utf8');
+  // Category names and membership moved to src/data/categoryPages.ts (16 Nov 2026).
+  const route = readFileSync('src/data/categoryPages.ts', 'utf8');
   assert(/roses: "Roses by Stem"/.test(route) && /rose: "Rose Bouquets & Arrangements"/.test(route) && /lilies: "Lilies: Bouquets, Arrangements & Stems"/.test(route));
   // No canonical consolidation: the pages have different content.
   const seo = load('src/data/seoLanding.ts');
@@ -357,7 +358,7 @@ test('admin: dashboard status is shown apart from storefront readiness; unmapped
 test('archived and draft records are excluded from routes, lists, recommendations, search and sitemaps; the unavailable page is a 404 with no sales actions', () => {
   const surfaces = {
     'src/pages/products/[slug].astro': /return publicCatalogue\.map\(/,
-    'src/pages/categories/[slug].astro': /publicCatalogue\.filter\(/,
+    'src/data/categoryPages.ts': /publicCatalogue\.filter\(/,
     'src/pages/categories/bouquets.astro': /bouquetRange\(publicCatalogue\)/,
     'src/pages/categories/garlands.astro': /const otherProducts = publicCatalogue/,
     'src/pages/search.astro': /const searchableProducts = publicCatalogue\.map/,
@@ -434,7 +435,7 @@ test('pooja and jasmine copy: no archived product presented as listed; no dangli
   const landing = load('src/data/seoLanding.ts').CATEGORY_LANDING['pooja-flowers'];
   assert(!/pooja flower boxes, baskets and temple bulk flowers, priced/.test(landing.description) && /not listed/.test(landing.intro[0]));
   const guide = load('src/data/guides.ts').POOJA_GUIDE;
-  assert(!/the two pooja flower boxes|with their listed prices/.test(guide.description + guide.summary) && guide.updated === '2026-10-19');
+  assert(!/the two pooja flower boxes|with their listed prices/.test(guide.description + guide.summary) && guide.updated === '2026-11-16');
   const page = readFileSync('src/pages/guides/jasmine-pooja-flowers-and-gajra.astro', 'utf8');
   assert(/boxes\.length === 2 \? ", and the two boxes on this website/.test(page) && /data-guide-unlisted="jasmine"/.test(page) && /\.\.\.\(boxes\.length === 2 \? \[\{ id: "boxes"/.test(page));
   // City pages: guidance-only pooja sections stay without examples; pooja-collection anchors must exist.
@@ -567,7 +568,7 @@ test('baskets, wrapped bouquets, vases and stems: primary sets from records; exc
   assert.deepEqual(stems.related, { loose: ['loose-flower-box'] });
   // Category pages and city views read the same primary set; related products stay on their own pages, search and basket.
   const page = readFileSync('src/pages/categories/[slug].astro', 'utf8');
-  assert(/recorded\(slug\)\?\.primary \?\?/.test(page) && /related,\s+countNoun: membership\?\.noun/.test(page));
+  assert(/RECORDED_COLLECTIONS\[slug\]\?\.\(publicCatalogue\)/.test(readFileSync('src/data/categoryPages.ts', 'utf8')) && /related,\s+countNoun: membership\.noun/.test(page));
   assert(/items: \(entry\.props\.products as Product\[\]\)\.map\(productItem\)/.test(readFileSync('src/server/services/CityCatalogue.ts', 'utf8')));
   const component = readFileSync('src/components/category/CategoryPage.astro', 'utf8');
   assert(/\{products\.length\} \{countNoun\}/.test(component) && /Related, not counted above/.test(component));
@@ -580,7 +581,7 @@ test('baskets, wrapped bouquets, vases and stems: primary sets from records; exc
 
 test('presentation copy: titles name a box or basket; All Flowers places each product once; the bouquet note no longer calls every other bouquet wrapped; alt text unchanged', () => {
   const titles = load('src/data/productTitles.ts');
-  assert.equal(titles.productTitle(bySlug('cotton-candy')), 'Cotton Candy – Flower Box | Fresh Petals');
+  assert.equal(titles.productTitle(bySlug('cotton-candy')), 'Cotton Candy Pastel Gypsophila Flower Box | Fresh Petals');
   assert.equal(titles.productTitle(bySlug('violet-picnic')), 'Violet Picnic Mixed Statice Flower Basket | Fresh Petals');
   assert.equal(titles.productTitle(bySlug('pink-serenity-flowerbox')), 'Pink Serenity Flowerbox – Pink Lily Box | Fresh Petals');
   assert.equal(titles.productTitle(bySlug('sweet-petal-hour')).includes('Vase'), false, 'a "vase-style" record is not titled a vase arrangement');
@@ -701,7 +702,7 @@ test('metadata and claims: subscriptions name no archived plan; housewarming and
   const product = readFileSync('src/pages/products/[slug].astro', 'utf8').replace(/<!--[\s\S]*?-->/g, '');
   assert(!/Be the first to write a review|>\s*Write a review/.test(product) && /Read general feedback/.test(product) && /No reviews are shown for this product/.test(product));
   // The bestselling shortlist keeps its URL and members; it is not called a sales ranking.
-  const category = readFileSync('src/pages/categories/[slug].astro', 'utf8');
+  const category = readFileSync('src/data/categoryPages.ts', 'utf8');
   assert(/"bestselling-bouquets": "Selected Bouquets"/.test(category) && !/most requested/.test(category) && /not a sales ranking/.test(category));
   assert(catalogue.filter((p) => p.collectionTags.includes('bestselling-bouquets')).length > 0);
 });

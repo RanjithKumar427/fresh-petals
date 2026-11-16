@@ -18,6 +18,7 @@ import type { Product } from "../data/productCatalog";
 import { loadPublicCatalogue } from "../server/services/PublicCatalogue";
 import { loadAuthoritativePrices, withAuthoritativePrice } from "../server/services/ProductPricing";
 import { isQuoteOnly } from "../shared/quoteOnly";
+import { enquiryConfirmLine, identityInSentence, productIdentity, quantityBasis } from "../data/productSupply";
 
 type Props = {
   product: Product;
@@ -30,6 +31,13 @@ const whatsappNumber = "919652012274";
 // Quote-only products (src/shared/quoteOnly.ts): no amount for the product
 // or for the add-ons chosen with it.
 const quoteOnly = isQuoteOnly(product);
+// The draft names the design and says what it is ("Cloud Nine Blue (blue
+// gypsophila bouquet)"); a product sold by quantity asks for it instead of
+// sending "Quantity: 1" (src/data/productSupply.ts).
+const identity = productIdentity(product);
+const askQuantity = !/^(bouquets|lilies)$/i.test(product.category) && quantityBasis(product) !== null;
+// What the quote must settle because the record says neither way (a vase, a pot).
+const confirmLine = enquiryConfirmLine(product);
 
 // Add-ons are catalogue products; each shows its published price (or the
 // catalogue's own wording where the price is quoted), like its own page.
@@ -88,6 +96,9 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
   data-product-id={product.id}
   data-product-slug={product.slug}
   data-product-name={product.name}
+  data-product-identity={identity ? identityInSentence(identity) : ""}
+  data-product-ask-quantity={askQuantity ? "true" : undefined}
+  data-product-confirm-line={confirmLine ?? undefined}
   data-product-image={product.image}
   data-product-price-label={product.priceLabel}
   data-product-category={product.category}
@@ -536,6 +547,9 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
       productId: section.dataset.productId || "",
       slug: section.dataset.productSlug || "",
       name: section.dataset.productName || "",
+      identity: section.dataset.productIdentity || "",
+      askQuantity: section.dataset.productAskQuantity === "true",
+      confirmLine: section.dataset.productConfirmLine || "",
       image: section.dataset.productImage || "",
       priceLabel: section.dataset.productPriceLabel || "",
       category: section.dataset.productCategory || "",
@@ -581,10 +595,14 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
     }
 
     const area = recipientCity();
+    const named = meta.identity ? `${meta.name} (${meta.identity})` : meta.name;
+    const quantityLine = meta.askQuantity ? "Quantity needed: " : "Quantity: 1";
+    // Joined onto the quantity line so every draft below carries it.
+    const quantityLines = meta.confirmLine ? `${quantityLine}\n${meta.confirmLine}` : quantityLine;
 
     const quoteLines = [
-      `Hi Fresh Petals, I'd like to enquire about ${meta.name}.`,
-      "Quantity: 1",
+      `Hi Fresh Petals, I'd like to enquire about ${named}.`,
+      quantityLines,
       `Link: ${productUrl(meta.slug)}`,
       ...journeyLines(currentJourney()),
       ...(area ? [`Recipient city: ${area}`] : []),
@@ -599,11 +617,11 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
           "FreshPetals Order Request 🌸",
           "",
           "Product:",
-          meta.name,
+          named,
           "",
           "Price:",
           meta.priceLabel,
-          "Quantity: 1",
+          quantityLines,
           `Link: ${productUrl(meta.slug)}`,
           ...journeyLines(currentJourney()),
           "",
@@ -613,8 +631,9 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
           "Please confirm availability, final price and delivery details.",
         ].join("\n")
         : [
-            `Hi Fresh Petals, I want to order ${meta.name} (${meta.priceLabel}).`,
-            "Quantity: 1",
+            `Hi Fresh Petals, I want to order ${named}.`,
+            `Price: ${meta.priceLabel}`,
+            quantityLines,
           `Link: ${productUrl(meta.slug)}`,
           ...journeyLines(currentJourney()),
           "Please confirm today's availability and price.",
@@ -923,8 +942,10 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
       quoteOnly ? "This is a request, not a confirmed order." : "This is a request, not a confirmed order — please confirm availability, final price, delivery fee and payment details.",
       "",
       "PRODUCT",
-      meta.name,
-      quoteOnly ? "Quantity: 1" : `Price: ${meta.priceLabel}`,
+      meta.identity ? `${meta.name} (${meta.identity})` : meta.name,
+      ...(meta.askQuantity ? ["Quantity needed: "] : quoteOnly ? ["Quantity: 1"] : []),
+      ...(quoteOnly ? [] : [`Price: ${meta.priceLabel}`]),
+      ...(meta.confirmLine ? [meta.confirmLine] : []),
       `Link: ${productUrl(meta.slug)}`,
       "",
       "DELIVERY",

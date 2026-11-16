@@ -9,10 +9,11 @@
 // A city without a published hub, an unknown name, or anything else answers
 // 404. An alias of a published hub (/locations/bangalore) redirects to its
 // one canonical page.
+import { enquiryName, enquiryQuantityLine } from "../../data/productSupply";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import LandingDetails from "../../components/LandingDetails.astro";
 import DestinationCity from "../../components/DestinationCity.astro";
-import { HUB_PHOTO_NOTE, catalogueRoot, cityHub, type HubSource } from "../../data/cityHubs";
+import { CITY_ORDERING_POINTS, HUB_PHOTO_NOTE, catalogueRoot, cityHub, type HubSource } from "../../data/cityHubs";
 import { CITY_PARAM, LOCATIONS_PATH, SERVICE_CITIES, findCity, hasHub, serviceCityCount } from "../../data/serviceCities";
 import { featuredGroups } from "../../data/launchCatalogue";
 import { loadPublicCatalogue } from "../../server/services/PublicCatalogue";
@@ -97,7 +98,7 @@ function productCard(product: Product): Card {
     },
     price: quoteOnly ? QUOTE_ONLY_PRICE_LABEL : priced.priceLabel,
     line: isBouquet ? bouquetLine(product) : product.description,
-    enquiryHref: cityProductEnquiryHref({ name: product.name, url: new URL(`/products/${product.slug}`, origin).toString(), cityName: city!.name, quoteOnly, priceLabel: priced.priceLabel }),
+    enquiryHref: cityProductEnquiryHref({ name: enquiryName(product), url: new URL(`/products/${product.slug}`, origin).toString(), cityName: city!.name, quoteOnly, priceLabel: priced.priceLabel, quantityLine: enquiryQuantityLine(product) }),
     enquiryLabel: quoteOnly ? QUOTE_ONLY_ENQUIRE_LABEL : "Order on WhatsApp",
     garland: false,
   };
@@ -244,6 +245,11 @@ const steps = [
             <p class="mt-2 text-sm leading-6 text-moss">
               {city.name} is one of {serviceCityCount()} cities we take orders for. Share the date and the address; we confirm availability, price and delivery details on WhatsApp.
             </p>
+            <ul class="mt-3 space-y-2 text-sm leading-6 text-moss" data-city-ordering-points>
+              {CITY_ORDERING_POINTS.map((point) => (
+                <li class="flex gap-2.5"><span class="mt-2.5 h-1 w-1 shrink-0 rounded-full bg-berry"></span>{point}</li>
+              ))}
+            </ul>
             <a href={enquiryHref} target="_blank" rel="noopener noreferrer" data-city-enquiry={city.slug} class="mt-4 inline-flex min-h-[48px] items-center justify-center rounded-full bg-berry px-6 text-sm font-semibold text-white transition hover:bg-berry-deep">
               Ask about flowers for {city.name} on WhatsApp
             </a>

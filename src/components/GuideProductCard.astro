@@ -8,6 +8,7 @@ import { photoDimensions, photoVariants } from "../data/photoManifest";
 import { QUOTE_ONLY_CLOSING, QUOTE_ONLY_PRICE_LABEL, isQuoteOnly } from "../shared/quoteOnly";
 import { whatsappLink } from "../config/storefront";
 import { productPhotoAlt } from "../data/productPhotos";
+import { enquiryName, enquiryQuantityLine } from "../data/productSupply";
 
 interface Props {
   product: Product;
@@ -26,8 +27,8 @@ const quoteOnly = isQuoteOnly(product);
 // Names the product and its one canonical page; a quote request carries no amount.
 const url = new URL(`/products/${product.slug}`, Astro.site ?? Astro.url).toString();
 const draft = quoteOnly
-  ? [`Hi Fresh Petals, I'd like a quote for ${product.name}.`, "Quantity: 1", `Link: ${url}`, "Recipient city: ", "Date: ", "", QUOTE_ONLY_CLOSING]
-  : [`Hi Fresh Petals, I'd like to order ${product.name}.`, `Price shown: ${product.priceLabel}`, "Quantity: 1", `Link: ${url}`, "Recipient city: ", "Date: ", "", "Please confirm availability, the final price and the delivery details."];
+  ? [`Hi Fresh Petals, I'd like a quote for ${enquiryName(product)}.`, enquiryQuantityLine(product), `Link: ${url}`, "Recipient city: ", "Date: ", "", QUOTE_ONLY_CLOSING]
+  : [`Hi Fresh Petals, I'd like to order ${enquiryName(product)}.`, `Price shown: ${product.priceLabel}`, enquiryQuantityLine(product), `Link: ${url}`, "Recipient city: ", "Date: ", "", "Please confirm availability, the final price and the delivery details."];
 ---
 
 <article class="guide-card relative flex h-full flex-col overflow-hidden rounded-[18px] border border-line bg-paper" data-guide-card={product.slug} data-quote-only={quoteOnly ? "true" : "false"}>

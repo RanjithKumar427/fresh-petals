@@ -12,9 +12,9 @@ export function cityEnquiryHref(cityName: string): string {
 }
 
 /** An enquiry about one catalogue product for one city. Quote-only products carry no amount. */
-export function cityProductEnquiryHref({ name, url, cityName, quoteOnly, priceLabel }: { name: string; url: string; cityName: string; quoteOnly: boolean; priceLabel: string }): string {
+export function cityProductEnquiryHref({ name, url, cityName, quoteOnly, priceLabel, quantityLine = "Quantity: 1" }: { name: string; url: string; cityName: string; quoteOnly: boolean; priceLabel: string; quantityLine?: string }): string {
   const lines = quoteOnly
-    ? [`Hi Fresh Petals, I'd like to enquire about ${name}.`, "Quantity: 1", `Link: ${url}`, `Recipient city: ${cityName}`, "Date: ", "", QUOTE_ONLY_CLOSING]
-    : [`Hi Fresh Petals, I'd like to order ${name}.`, `Price shown: ${priceLabel}`, "Quantity: 1", `Link: ${url}`, `Recipient city: ${cityName}`, "Date: ", "", "Please confirm availability, the final price and the delivery details."];
+    ? [`Hi Fresh Petals, I'd like to enquire about ${name}.`, quantityLine, `Link: ${url}`, `Recipient city: ${cityName}`, "Date: ", "", QUOTE_ONLY_CLOSING]
+    : [`Hi Fresh Petals, I'd like to order ${name}.`, `Price shown: ${priceLabel}`, quantityLine, `Link: ${url}`, `Recipient city: ${cityName}`, "Date: ", "", "Please confirm availability, the final price and the delivery details."];
   return whatsappLink(lines.join("\n"));
 }

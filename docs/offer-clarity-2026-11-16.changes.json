@@ -1,0 +1,151 @@
+{
+ "release": "offer-clarity-2026-11-16",
+ "base": "30b2ccd",
+ "note": "Dashboard-controlled copy (products.name, short_description, description) changed in src/data/productCatalog.ts since 30b2ccd. \"old\" is the value live before this release; \"new\" is the storefront copy. Applied only by scripts/content/apply-copy-changes.mjs.",
+ "changes": [
+  {
+   "slug": "colourful-confession",
+   "column": "short_description",
+   "old": "A colourful garden bouquet filled with cheerful mixed blooms.",
+   "new": "Gerberas, roses and daisies in a bright mixed bouquet, kraft-wrapped."
+  },
+  {
+   "slug": "daisy-morning",
+   "column": "short_description",
+   "old": "A fresh yellow and white bouquet with a soft morning feel.",
+   "new": "Yellow chrysanthemums and white daisies arranged in a glass vase."
+  },
+  {
+   "slug": "daisy-morning",
+   "column": "description",
+   "old": "A fresh bouquet with yellow chrysanthemums, white daisy-style fillers and soft green foliage — perfect for morning wishes and happy gifting.",
+   "new": "Yellow chrysanthemums, white daisy-style fillers and white stock with fern greenery, arranged in a glass vase — for morning wishes and happy gifting."
+  },
+  {
+   "slug": "dear-sunshine",
+   "column": "short_description",
+   "old": "A bold sunflower bouquet for bright and happy gifting.",
+   "new": "Sunflowers with fresh greenery, arranged in a glass vase."
+  },
+  {
+   "slug": "dear-sunshine",
+   "column": "description",
+   "old": "A sunny bouquet made with fresh sunflowers — perfect for birthdays, congratulations and warm cheerful surprises.",
+   "new": "Fresh sunflowers with greenery in a glass vase — for birthdays, congratulations and cheerful surprises."
+  },
+  {
+   "slug": "lilac-garden",
+   "column": "short_description",
+   "old": "A lilac purple bouquet with a soft garden-style look.",
+   "new": "Purple asters with green fillers in a soft, garden-style wrapped bouquet."
+  },
+  {
+   "slug": "lily-calm",
+   "column": "short_description",
+   "old": "A clean white lily bouquet with a calm premium feel.",
+   "new": "White oriental lilies and lily buds in kraft wrapping."
+  },
+  {
+   "slug": "sunshine-confession",
+   "column": "short_description",
+   "old": "A cheerful yellow bouquet with soft white baby’s breath.",
+   "new": "Yellow chrysanthemums with white baby’s breath, arranged in a glass vase."
+  },
+  {
+   "slug": "sunshine-confession",
+   "column": "description",
+   "old": "A bright yellow bouquet paired with white gypsophila — perfect for birthdays, thank-you gifts and cheerful surprises.",
+   "new": "Yellow chrysanthemums paired with white gypsophila in a glass vase — for birthdays, thank-you gifts and cheerful surprises."
+  },
+  {
+   "slug": "sweet-petal-hour",
+   "column": "short_description",
+   "old": "A bright mixed gerbera bouquet for joyful gifting.",
+   "new": "Red, pink and yellow gerberas with fillers in a bright arrangement."
+  },
+  {
+   "slug": "sweet-petal-hour",
+   "column": "description",
+   "old": "A colourful bouquet filled with red, pink and yellow gerberas with soft filler flowers — perfect for birthdays, celebrations and happy surprises.",
+   "new": "A colourful arrangement of red, pink and yellow gerberas with purple fillers and greenery — for birthdays, celebrations and happy surprises."
+  },
+  {
+   "slug": "wild-sunset-charm",
+   "column": "short_description",
+   "old": "A bright yellow and purple bouquet with a wild garden feel.",
+   "new": "Yellow daisies with purple statice in a hand-tied bouquet."
+  },
+  {
+   "slug": "all-white-fragrance",
+   "column": "short_description",
+   "old": "A premium white lily arrangement with a soft fragrant feel.",
+   "new": "White lilies and lily buds in premium wrapping."
+  },
+  {
+   "slug": "all-white-fragrance",
+   "column": "description",
+   "old": "A graceful white lily arrangement made for elegant gifting, peaceful wishes and premium floral moments.",
+   "new": "White lilies and lily buds with greenery in premium wrapping, for elegant gifting, thank-you moments and peaceful wishes. The scent depends on the lily variety supplied; ask on WhatsApp if it matters."
+  },
+  {
+   "slug": "fragrance-festive-giftbox",
+   "column": "short_description",
+   "old": "A festive lily giftbox with a premium fragrant look.",
+   "new": "Lilies and lily buds arranged in a gift box."
+  },
+  {
+   "slug": "fragrance-festive-giftbox",
+   "column": "description",
+   "old": "A premium lily giftbox designed for festive gifting, birthdays, housewarming and elegant surprises.",
+   "new": "Lilies and lily buds with seasonal fillers arranged in a gift box, for festive gifting, birthdays, housewarmings and elegant surprises. The scent depends on the lily variety supplied; ask on WhatsApp if it matters."
+  },
+  {
+   "slug": "blush-lily-letter",
+   "column": "short_description",
+   "old": "A blush-toned lily arrangement for sweet gifting.",
+   "new": "Blush lilies and lily buds in premium wrapping."
+  },
+  {
+   "slug": "coral-lily-bloom",
+   "column": "short_description",
+   "old": "A coral lily arrangement with a fresh bright bloom.",
+   "new": "Coral lilies and lily buds in premium wrapping."
+  },
+  {
+   "slug": "ivory-lily-grace",
+   "column": "short_description",
+   "old": "An ivory lily arrangement with a graceful premium feel.",
+   "new": "Ivory lilies and lily buds in premium wrapping."
+  },
+  {
+   "slug": "flower-gifts-under-1499",
+   "column": "short_description",
+   "old": "Popular flower gifting options under ₹1499.",
+   "new": "Flower gift options under ₹1499, suggested from the day's flowers."
+  },
+  {
+   "slug": "dried-flower-vase-set",
+   "column": "short_description",
+   "old": "Dried flower arrangement with vase for premium decor.",
+   "new": "Made-to-order dried flower arrangement; whether a vase is included is agreed in your quote."
+  },
+  {
+   "slug": "dried-flower-vase-set",
+   "column": "description",
+   "old": "A custom dried flower vase arrangement for home decor, gifting, cafes, desks and premium corners. Vase style, flower tones and size can be discussed on WhatsApp.",
+   "new": "A custom dried flower arrangement for home decor, gifting, cafes, desks and premium corners. Flower tones and size can be discussed on WhatsApp, and whether a vase is included is agreed in your quote."
+  },
+  {
+   "slug": "mini-succulent-gift",
+   "column": "description",
+   "old": "A mini succulent gift option for birthdays, desk decor, return gifts and small surprises. Plant variety and pot option depend on availability.",
+   "new": "A mini succulent gift option for birthdays, desk decor, return gifts and small surprises. The plant variety depends on availability; whether a pot is included, and how the plant is presented, is confirmed in your quote."
+  },
+  {
+   "slug": "pet-friendly-flowerbox",
+   "column": "name",
+   "old": "Pet Friendly Flowerbox",
+   "new": "Flowerbox for Homes with Pets"
+  }
+ ]
+}

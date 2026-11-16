@@ -1,0 +1,98 @@
+# Reviewed product-copy updates to the production database (dashboard-controlled
+# products.name / short_description / description), run only by hand.
+# The production DATABASE_URL exists only as a secret here, so the reviewed
+# script runs here: scripts/content/apply-copy-changes.mjs (locks, rechecks,
+# guarded writes, verification before COMMIT, receipt of actual before-values).
+#
+#   plan       read-only classification of the manifest (expected-old / already-new / conflicting / missing)
+#   apply      writes; needs confirm = "apply <manifest release>"; the receipt is kept as an artifact
+#   reconcile  after an interrupted apply: decides from the records whether its .pending receipt committed
+#   rollback   restores a receipt's fields (same product id and slug, only while each still holds the copy written)
+#
+# reconcile and rollback take receipt_run_id: the run whose "copy-receipt-<run id>" artifact to use.
+# Nothing here publishes: after apply, run the production publish or Cloudflare deploy workflow.
+name: Content copy
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: plan, apply, reconcile or rollback
+        type: choice
+        options: [plan, apply, reconcile, rollback]
+        default: plan
+      manifest:
+        description: Reviewed manifest in the repository
+        type: string
+        default: docs/offer-clarity-2026-11-16.changes.json
+      confirm:
+        description: 'For apply, rollback and reconcile: "<action> <manifest release>", e.g. "apply offer-clarity-2026-11-16"'
+        type: string
+        default: ""
+      receipt_run_id:
+        description: For reconcile and rollback, the run id of the apply whose receipt to use
+        type: string
+        default: ""
+
+concurrency:
+  group: content-copy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  copy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: cloudflare-production
+    env:
+      ACTION: ${{ inputs.action }}
+      MANIFEST: ${{ inputs.manifest }}
+      CONFIRM: ${{ inputs.confirm }}
+      RECEIPT: receipt/copy-receipt.json
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: npm }
+      - run: npm ci
+      - name: Check the request
+        run: |
+          test -f "$MANIFEST" || { echo "No manifest $MANIFEST"; exit 64; }
+          release=$(jq -r .release "$MANIFEST")
+          echo "manifest $MANIFEST release $release fields $(jq '.changes | length' "$MANIFEST") products $(jq '[.changes[].slug] | unique | length' "$MANIFEST")"
+          if [ "$ACTION" != plan ] && [ "$CONFIRM" != "$ACTION $release" ]; then echo "confirm must be \"$ACTION $release\""; exit 64; fi
+          if { [ "$ACTION" = rollback ] || [ "$ACTION" = reconcile ]; } && [ -z "${{ inputs.receipt_run_id }}" ]; then echo "receipt_run_id is required"; exit 64; fi
+          mkdir -p receipt
+      - name: Receipt from the apply run
+        if: inputs.action == 'rollback' || inputs.action == 'reconcile'
+        uses: actions/download-artifact@v4
+        with:
+          name: copy-receipt-${{ inputs.receipt_run_id }}
+          path: receipt
+          run-id: ${{ inputs.receipt_run_id }}
+          github-token: ${{ github.token }}
+      - name: Run
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          case "$ACTION" in
+            plan)      node scripts/content/apply-copy-changes.mjs plan --manifest "$MANIFEST" --database-url "$DATABASE_URL" ;;
+            apply)     node scripts/content/apply-copy-changes.mjs apply --manifest "$MANIFEST" --database-url "$DATABASE_URL" --receipt "$RECEIPT" ;;
+            reconcile) node scripts/content/apply-copy-changes.mjs reconcile --receipt "$RECEIPT" --database-url "$DATABASE_URL" ;;
+            rollback)  node scripts/content/apply-copy-changes.mjs rollback --receipt "$RECEIPT" --database-url "$DATABASE_URL" ;;
+          esac
+      # The receipt holds product copy only (the before-values); it is also printed so it survives an artifact failure.
+      - name: Show receipt
+        if: always() && inputs.action != 'plan'
+        run: for f in receipt/*; do [ -f "$f" ] && { echo "== $f"; cat "$f"; echo; }; done; true
+      - name: Keep receipt
+        if: always() && (inputs.action == 'apply' || inputs.action == 'reconcile')
+        uses: actions/upload-artifact@v4
+        with:
+          name: copy-receipt-${{ github.run_id }}
+          path: receipt/
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 90
