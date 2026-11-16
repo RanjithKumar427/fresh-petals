@@ -430,6 +430,15 @@ test('publishing workflows: staging and production listen to their own events; p
   assert.match(readFileSync('src/server/services/Publishing.ts', 'utf8'), /process\.env\.FP_PUBLISH_EVENT \|\| "publish-site"/);
 });
 
+test('Cloudflare deploy workflow: the production job itself passes the Hyperdrive id to deploy.mjs', async () => {
+  const { parse } = await import('yaml');
+  const legacy = parse(readFileSync('.github/workflows/cloudflare.yml', 'utf8'));
+  const expected = '${{ vars.HYPERDRIVE_ID }}';
+  assert.equal(legacy.jobs.production?.env?.HYPERDRIVE_ID, expected, 'jobs.production.env.HYPERDRIVE_ID must map to the repository variable; the preview job having it is not enough');
+  assert.equal(legacy.jobs.preview?.env?.HYPERDRIVE_ID, expected, 'preview keeps its own mapping');
+  assert(!/^[0-9a-f]{32}$/i.test(String(legacy.jobs.production.env.HYPERDRIVE_ID)), 'the id is never hardcoded');
+});
+
 test('stored photos: static copies replace /_image, only referenced files are published, bytes checked against the checksum', async () => {
   const photos = sourceLoader()('src/data/storedPhotos.ts');
   const entries = { 'https://x/a.jpg': { path: '/photos/h-1080.webp', original: '/photos/h.jpg', variants: { 240: '/photos/h-240.webp', 480: '/photos/h-480.webp', 1080: '/photos/h-1080.webp' } } };
