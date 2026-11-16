@@ -254,3 +254,36 @@ No customer-visible change in this commit: memberships, identities, the oriental
 | Release vs `30b2ccd` built HTML | same 314 files; no canonical change; robots change only on `/categories/mini-bouquets` (empty → noindex, existing rule); sitemap 213 → 212 (that URL); no unresolved internal link |
 | Populated tuberose garlands (separate fixture state: 3 tuberose designs listed) | pass, 317 pages; `/categories/garlands/tuberose` built and linked from `/categories/tuberose-rajnigandha`; without them, neither |
 | Chrome 1366 and 390, release with copy applied | 18 pages (8 product, 9 category, 1 guide): 200, no horizontal overflow, no script errors. Drafts decoded without sending: dried set and succulent ask the quote question (product page and card); Cloud Nine Blue names "blue gypsophila bouquet"; Roses by Stem asks "Quantity needed" |
+
+### Production release (16 Nov 2026) — live
+
+Released commit `2488d0b` (merge of pull request #1, tree identical to `199bcd6`); manifest `docs/offer-clarity-2026-11-16.changes.json`, sha256 `06a067a1d96c80e942222a2cb443ac1cb047af764aee70974b83a5006c88243b`. Before the release, production served `30b2ccd` (built 14 Nov 07:10 UTC); no publish job was running or queued before the plan, the apply or the deploy.
+
+| Step | Run | Result |
+|---|---|---|
+| Push-triggered Cloudflare deploy on merge | [43863266549](https://github.com/RanjithKumar427/fresh-petals/actions/runs/43863266549) | skipped (no automatic deploy on push): nothing mixed was published |
+| Content copy, plan | [43881669600](https://github.com/RanjithKumar427/fresh-petals/actions/runs/43881669600) | expected-old 24 fields / 17 products; already-new, conflicting, missing, replaced 0 |
+| Content copy, apply | [43881823211](https://github.com/RanjithKumar427/fresh-petals/actions/runs/43881823211) | 24 fields / 17 products changed and verified before COMMIT; 0 already-new. Receipt: artifact `copy-receipt-43881823211` (kept to 14 Feb 2027) and printed in the job log; its 24 before-values equal the manifest's old values |
+| Cloudflare deploy, `environment=production` | [43882097992](https://github.com/RanjithKumar427/fresh-petals/actions/runs/43882097992) | failed before building: the workflow's production job does not pass `HYPERDRIVE_ID` to `deploy.mjs` (only the preview job does), so `deploy.mjs` refuses on the placeholder. Pre-existing; nothing was uploaded |
+| Production publish, `force` (same `deploy.mjs`, with `HYPERDRIVE_ID`) | [43882523455](https://github.com/RanjithKumar427/fresh-petals/actions/runs/43882523455) | success: checkout `main` (`2488d0b`); 82 of 89 products public; no copy drift reported apart from the known card photograph and the two deliberate pet-box fields; 470 static pages, CSP check on 469 prerendered pages; content fingerprint `93949deec4e4`; Worker version `d74ee618-0f3f-4229-b6ca-a2cbe6f2e7c7` |
+
+**Served:** `/_publish/state.json` → revision `2488d0b99075c5eac81b794a2821e312a2897a9d`, builtAt `2026-11-16T14:08:47.549Z`, fingerprint `93949deec4e4d13ab746475b1f71c59f`: the publish run's build.
+
+**Live checks (16 Nov, 14:10–14:20 UTC; read in the owner's Chrome, same-origin reads; nothing submitted or sent)**
+
+| Page | Result |
+|---|---|
+| `/products/dried-flower-vase-set` | description "Made-to-order dried flower arrangement; whether a vase is included is agreed in your quote." Included: dried flower arrangement, decor styling suggestion. Agreed in your quote: whether a vase is included. On request: none. Identity "Dried flower arrangement, made to order" |
+| `/products/mini-succulent-gift` | included: plant, gift packing; agreed in your quote: whether a pot or planter is included, and how the plant is presented; identity "Live mini succulent" |
+| `/products/all-white-fragrance` | badge "White lilies"; identity "White lily bouquet"; no scent claim in the description |
+| `/products/sunrise-asiatic-vase`, `cloud-nine-blue`, `daisy-morning` | identities "Asiatic lily vase arrangement", "Blue gypsophila bouquet", "Mixed flower vase arrangement"; daisy-morning shows the applied copy ("Yellow chrysanthemums and white daisies arranged in a glass vase") |
+| `/categories/fragrant-lilies` | H1 "Oriental & Stargazer Lilies"; 4 designs: lily-calm, pink-lily-wish, white-silence, stargazer-affair |
+| `/categories/yellow-flowers` | 5 designs; Sunrise Asiatic Vase not listed |
+| `/categories/stationery`, `/diy-kits`, `/diy`, `/jasmine` | H1s "Greeting Card Add-ons & Stationery", "DIY Flower Arranging Boxes" (both; `/diy` canonical → `/categories/diy-kits`), "Recurring Jasmine (Malli / Mallige) Delivery" |
+| `/categories/tuberose-rajnigandha` | "Loose tuberose (rajnigandha) flowers are not listed online…"; link to `/categories/garlands/tuberose`, which serves 200, indexable (production lists tuberose garlands); the tuberose page itself stays noindex (empty, existing rule) |
+| `/categories/mini-bouquets` | noindex, follow; not in the sitemap (sitemap 212 URLs) |
+| Canonicals | self-canonical on every page checked except `/categories/diy` (existing canonical to `/categories/diy-kits`) |
+| WhatsApp drafts (decoded, not sent) | dried set (product page): "Dried Flower Vase Set (dried flower arrangement, made to order) … Please confirm in the quote: whether a vase is included."; succulent (card on All Decor): "…Mini Succulent Gift (live mini succulent)… Please confirm in the quote: whether a pot or planter is included, and how the plant is presented." |
+| Widths | desktop 1536 px: no horizontal overflow; the inclusion sections render as separate lists. Mobile: the window could not be resized, so the live HTML and stylesheets were rendered in a 390 px same-origin frame: 7 affected pages, no horizontal overflow, layout as built |
+
+**Open:** the `Cloudflare deploy` workflow's production job needs `HYPERDRIVE_ID: ${{ vars.HYPERDRIVE_ID }}` in its env to work by hand (not changed here; Production publish is the working production path). Owner questions Q1–Q10 above are unchanged; the dried set's name still suggests a vase (Q3).
