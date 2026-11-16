@@ -52,9 +52,11 @@ interface Props {
   related?: { id: string; label: string; note: string; products: Product[] }[];
   /** The word the count uses ("plan"); "option" by default. */
   countNoun?: string;
+  /** A sentence and link after the introduction (a related range listed elsewhere). */
+  introLink?: { text: string; href: string; label: string };
 }
 
-const { category, products: listedProducts, groups: listedGroups = [], membership = null, priceNote, sections = [], publicSlugs = new Set<string>(), related = [], countNoun = "option" } = Astro.props;
+const { category, products: listedProducts, groups: listedGroups = [], membership = null, priceNote, sections = [], publicSlugs = new Set<string>(), related = [], countNoun = "option", introLink } = Astro.props;
 
 // The bouquet list: each bouquet's occasions come from the admin's
 // assignments (product_occasions), never the catalogue's original tags; the
@@ -173,9 +175,14 @@ const breadcrumbJsonLd = {
                 )}
               </div>
             ) : (
-              <p class="max-w-2xl text-sm leading-7 text-moss md:text-base">
-                {category.description}
-              </p>
+              <div class="max-w-2xl space-y-3 text-sm leading-7 text-moss md:text-base">
+                <p>{category.description}</p>
+                {introLink && (
+                  <p data-intro-link>
+                    {introLink.text} <a href={introLink.href} class="font-semibold text-ink underline underline-offset-4">{introLink.label}</a>.
+                  </p>
+                )}
+              </div>
             )
           }
 

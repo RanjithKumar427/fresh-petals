@@ -15,6 +15,7 @@
 import type { Product } from "./productCatalog";
 import { allFlowersRange, arrangementsWith, stemsOf, RECORDED_COLLECTIONS, type CollectionMembership } from "./catalogueRange";
 import { FLOWER_PAGES } from "./collectionGuidance";
+import type { GarlandFilterKey } from "./garlandRules";
 
 export const slugify = (value: string) =>
   value
@@ -41,9 +42,9 @@ export const titleFromSlug = (slug: string) =>
 // They name forms and differences, not individual products (a product can be
 // unpublished between releases) and no counts. An empty page says what is
 // not listed and where to go instead; it never offers what is not on sale.
+// All Flowers, Pooja Flowers and Subscriptions have no entry: their landing
+// copy (CATEGORY_LANDING in src/data/seoLanding.ts) is what renders there.
 export const CATEGORY_INTROS: Record<string, string> = {
-  "all-flowers":
-    "Every fresh-flower product we list, grouped by how it is presented: wrapped bouquets, vase arrangements, flowers in a box or basket, and stems.",
 
   lilies:
     "Lily bouquets and arrangements first — white, pink, orange and other colours, wrapped, in a box or in a vase — then lily stems sold loose for arranging yourself. Lilies usually arrive partly in bud and open over the following days; remove the pollen as they open. Choose a design and we confirm the lilies available for your date on WhatsApp.",
@@ -52,10 +53,8 @@ export const CATEGORY_INTROS: Record<string, string> = {
     "Rose stems sold loose, by the stem, for arranging yourself or for an event. Tell us how many stems and which colour; colours depend on the day's market and the price follows the day's rate. For ready-made rose designs, see Rose Bouquets & Arrangements.",
 
   "fragrant-lilies":
-    "Lily designs where scent is part of the gift. How strong the scent is depends on the lily variety supplied: oriental lilies, including stargazers, are usually strongly scented, while Asiatic lilies have little scent, so the Asiatic vase design is listed under Lilies instead. If scent matters, say so on WhatsApp and we confirm the variety for your date.",
+    "Lily designs whose flowers are recorded as oriental lilies, including stargazers. Scent varies from bunch to bunch, so we do not promise it; if scent is important, say so on WhatsApp. For every lily design, see Lilies.",
 
-  "pooja-flowers":
-    "Fresh flowers for daily pooja, festivals and temple offerings, listed by form and priced on the day's flower market.",
 
   flowerbox:
     "Two kinds of flower box. Gift boxes arrive arranged — lilies or gypsophila set in a box, ready to hand over. Loose-flower boxes are packed for you to arrange in your own vase. A box planned with you for a home with pets is also here. The weekly box plan and vase equipment are listed separately below.",
@@ -69,14 +68,12 @@ export const CATEGORY_INTROS: Record<string, string> = {
   "add-ons":
     "Extras to add to a flower order — sweets, a greeting card, a candle, diffuser or room mist, a clear glass vase, a florist cutter and event table decor. Each is priced separately from the flowers; add it when you choose a design's options, or mention it on WhatsApp.",
 
-  subscriptions:
-    "Recurring flower plans, with delivery days, start date and price agreed on WhatsApp. Flower care products are listed separately; they are not plans.",
 
   "dried-flowers":
-    "Dried stems that need no water: a wrapped dried bunch, and a dried arrangement for a vase made to order. Keep them dry and out of strong sun. Colours and stems depend on the dried stock available, and we confirm them on WhatsApp.",
+    "Dried stems that need no water: a wrapped dried bunch, and a dried flower arrangement made to order. Keep them dry and out of strong sun. Colours and stems depend on the dried stock available, and we confirm them on WhatsApp.",
 
   "plants-and-succulents":
-    "Live plants: a mini succulent on its own, and fresh flowers paired with a small plant or succulent. The plant variety and pot depend on availability; we confirm both on WhatsApp.",
+    "Live plants: a mini succulent on its own, and fresh flowers paired with a small plant or succulent. The plant variety depends on availability; whether a pot is included, and how the plant is presented, is confirmed in your quote.",
 
   vases:
     "Vases sold on their own: a clear glass vase, and a decor vase quoted by type and size. Below them are arrangements that already come in a vase, and flowers that need a vase of your own.",
@@ -109,7 +106,7 @@ export const CATEGORY_INTROS: Record<string, string> = {
     "No Eid al-Adha designs are listed at the moment. For an Eid gift, see White Flowers, or describe what you would like on WhatsApp for a custom arrangement.",
 
   "tuberose-rajnigandha":
-    "Tuberose (rajnigandha) is not listed online at the moment. If you need it for pooja or decoration, ask on WhatsApp and we tell you whether it is available for your date.",
+    "Loose tuberose (rajnigandha) flowers are not listed online at the moment. If you need loose tuberose for pooja or decoration, ask on WhatsApp and we tell you whether it is available for your date.",
 
   hydrangeas:
     "No hydrangea designs are listed at the moment. For soft-toned designs, see Pastel Flowers, or ask on WhatsApp whether hydrangeas are available for your date.",
@@ -136,7 +133,7 @@ export const CATEGORY_INTROS: Record<string, string> = {
     "Red designs for romantic gifts; red roses are the classic choice. For romantic designs in other colours, see Romantic, and for every design with roses, see Rose Bouquets & Arrangements.",
 
   "yellow-flowers":
-    "Yellow designs in sunflowers, chrysanthemums and daisies, wrapped or in a glass vase, plus a lily vase arrangement in warm sunrise tones. Orange and coral lily designs are under Lilies.",
+    "Yellow designs in sunflowers, chrysanthemums and daisies, wrapped or in a glass vase. Orange, coral and other warm-toned lily designs are under Lilies.",
 
   "blue-flowers":
     "Designs with blue gypsophila (baby's breath): blue gypsophila on its own, with white roses, or with white chrysanthemums. For other cool tones, see White Flowers.",
@@ -170,7 +167,7 @@ export const CATEGORY_INTROS: Record<string, string> = {
     "Diyas and tea-light holders are not sold at the moment. For pooja and festival flowers, see Pooja Flowers and Flower Strings & Torans.",
 
   "all-decor":
-    "Decor that lasts beyond fresh flowers: dried flowers, a decor vase, a mini succulent and table decor quoted for events. Torans, lights and diyas are not part of this range; fresh flower torans are under Flower Strings & Torans.",
+    "Dried flowers — a wrapped dried bunch and a dried arrangement made to order — a decor vase quoted by type, a live mini succulent, and table decor quoted for events. Choose dried flowers or the succulent for a shelf or desk; the decor vase and table decor are quoted to your setup. Torans, lights and diyas are not part of this range; fresh flower torans are under Flower Strings & Torans.",
 
   "all-gifts":
     "Everything suited to giving: bouquet and lily designs suggested for a formal gift, gift flower boxes and baskets, hampers, and extras such as chocolates, a greeting card, a candle or room mist. Extras are priced separately from the flowers.",
@@ -179,16 +176,16 @@ export const CATEGORY_INTROS: Record<string, string> = {
     "Floral jewellery is not listed online at the moment. For bridal flowers such as gajra and poola jada, see Bridal Flower Accessories under Wedding, or ask on WhatsApp.",
 
   stationery:
-    "Stationery here is a greeting card added to a flower order, with your message shared on WhatsApp. Planners and journals are not sold at the moment.",
+    "Greeting cards to add to a flower order: choose the card and share your message on WhatsApp with the order. Planners and journals are not sold at the moment.",
 
   "planners-and-journal":
     "Planners and journals are not sold at the moment. To send a message with flowers, add a greeting card from Add-ons.",
 
   "diy-kits":
-    "Not a kit with tools: the DIY flower box is loose fresh flowers packed in a box, with basic care guidance, for arranging in your own vase. A vase, florist cutter and flower food are sold separately if you need them.",
+    "The DIY flower box: loose fresh flowers packed in a box, with basic care guidance, for arranging in your own vase. Choose it if you enjoy arranging or want flowers to fill your own vases; for flowers that arrive arranged, see Flower Boxes. Tools are not included: a vase, florist cutter and flower food are sold separately.",
 
   diy:
-    "Not a kit with tools: the DIY flower box is loose fresh flowers packed in a box, with basic care guidance, for arranging in your own vase. A vase, florist cutter and flower food are sold separately if you need them.",
+    "The DIY flower box: loose fresh flowers packed in a box, with basic care guidance, for arranging in your own vase. Choose it if you enjoy arranging or want flowers to fill your own vases; for flowers that arrive arranged, see Flower Boxes. Tools are not included: a vase, florist cutter and flower food are sold separately.",
 
   skincare:
     "Skincare gifts are not sold at the moment. For extras to add to flowers, see Add-ons.",
@@ -207,7 +204,7 @@ export const CATEGORY_INTROS: Record<string, string> = {
     "For regular home needs: daily pooja flowers and a custom recurring plan. For one-off pooja flowers, see Pooja Flowers; for every plan, see Subscriptions.",
 
   jasmine:
-    "Jasmine (malli / mallige) listed online is a recurring delivery plan, priced on the day's market rate. For jasmine on a single date, loose or as gajra, ask on WhatsApp.",
+    "A recurring jasmine (malli / mallige) delivery plan: the quantity per delivery, how often and the start date are agreed on WhatsApp, and the price follows the day's market rate. For jasmine on a single date, loose or as gajra, ask on WhatsApp.",
 
   "flower-strings-torans":
     "Flower strings and torans: fresh torans for doorways and pooja rooms, priced on the day's market by length, and bridal flowers such as gajra and poola jada, quoted to the event.",
@@ -222,7 +219,7 @@ export const CATEGORY_INTROS: Record<string, string> = {
     "For events: a custom flower basket and table decor, each quoted to your setup, date and quantity. For garlands and torans, see Wedding.",
 
   custom:
-    "Made to your brief rather than chosen from a photograph: a custom flower basket, event table decor, a dried flower vase arrangement, bridal flower accessories and a custom flower plan. Share the occasion, date, budget and any reference pictures on WhatsApp for a quotation.",
+    "Made to your brief rather than chosen from a photograph: a custom flower basket, event table decor, a dried flower arrangement, bridal flower accessories and a custom flower plan. Share the occasion, date, budget and any reference pictures on WhatsApp for a quotation.",
 
   budget:
     "Budget bands rather than fixed designs: flowers under ₹499 and bouquets under ₹999. Choose a band and we suggest what fits from the day's flowers, with the price confirmed before you pay.",
@@ -237,13 +234,13 @@ export const CATEGORY_INTROS: Record<string, string> = {
     "Scent add-ons for a flower gift: a candle or diffuser, and room mist. The scent is confirmed when you order.",
 
   "premium-decor":
-    "Decor quoted to order: a decor vase, a dried flower vase arrangement and event table decor. Type, size and price are confirmed on WhatsApp.",
+    "Decor quoted to order: a decor vase, a dried flower arrangement and event table decor. Type, size and price are confirmed on WhatsApp.",
 
   "home-decor":
     "A dried flower bunch for home styling; it needs no water. For more decor, see All Decor.",
 
   "plants-succulents":
-    "Live plants: a mini succulent on its own, and fresh flowers paired with a small plant or succulent. The plant variety and pot depend on availability; we confirm both on WhatsApp.",
+    "Live plants: a mini succulent on its own, and fresh flowers paired with a small plant or succulent. The plant variety depends on availability; whether a pot is included, and how the plant is presented, is confirmed in your quote.",
 
   "desk-decor":
     "A mini succulent for a desk or shelf. For more decor, see All Decor.",
@@ -280,7 +277,8 @@ export const CATEGORY_NAMES: Record<string, string> = {
   "eid-al-adha": "Eid Al-Adha",
   lilies: "Lilies: Bouquets, Arrangements & Stems",
   roses: "Roses by Stem",
-  "fragrant-lilies": "Fragrant Lilies",
+  // URL kept; the name describes the recorded variety, not a scent promise.
+  "fragrant-lilies": "Oriental & Stargazer Lilies",
   "tuberose-rajnigandha": "Tuberose / Rajnigandha",
   hydrangeas: "Hydrangeas",
   sunflower: "Sunflower",
@@ -305,9 +303,9 @@ export const CATEGORY_NAMES: Record<string, string> = {
   "all-decor": "All Decor",
   "all-gifts": "All Gifts",
   "flowers-and-jewellery": "Flowers & Jewellery",
-  stationery: "Stationery",
+  stationery: "Greeting Card Add-ons & Stationery",
   "planners-and-journal": "Planners & Journal",
-  "diy-kits": "DIY Kits",
+  "diy-kits": "DIY Flower Arranging Boxes",
   skincare: "Skincare",
   tea: "Tea",
   // Collection-tag pages had names built from the slug ("Flower Strings Torans").
@@ -317,9 +315,9 @@ export const CATEGORY_NAMES: Record<string, string> = {
   "premium-gifting": "Premium Gifting",
   romantic: "Romantic Flowers",
   "daily-use": "Flowers for Daily Use",
-  jasmine: "Jasmine (Malli)",
+  jasmine: "Recurring Jasmine (Malli / Mallige) Delivery",
   "bulk-orders": "Bulk Flowers",
-  diy: "DIY Flowers",
+  diy: "DIY Flower Arranging Boxes",
   gifting: "Gifts & Extras",
   events: "Event Flowers & Decor",
   custom: "Custom Flowers & Decor",
@@ -387,6 +385,16 @@ export const MENU_CATEGORY_RULES: Record<string, (product: Product) => boolean> 
 };
 
 
+export const recordsOrientalLily = (product: Pick<Product, "flowerTypes">) => (product.flowerTypes ?? []).some((flower) => /\b(oriental|stargazer)\b.*\blil/i.test(flower));
+
+/**
+ * A link from a category introduction to a garland collection, shown only
+ * while that collection lists a public design (src/data/garlandCollections.ts).
+ */
+export const CATEGORY_GARLAND_LINKS: Record<string, { key: GarlandFilterKey; text: string; label: string }> = {
+  "tuberose-rajnigandha": { key: "tuberose", text: "Tuberose garlands (rajnigandha, sampangi) for weddings are listed separately, with photographs and design codes:", label: "Tuberose wedding garlands" },
+};
+
 /** Every category address the build generates: product categories, collection tags and menu categories. */
 export function categorySlugs(catalogue: Pick<Product, "category" | "collectionTags">[]): string[] {
   // /categories/garlands and /categories/bouquets have their own routes.
@@ -400,6 +408,9 @@ export function categoryProducts<T extends Product>(slug: string, publicCatalogu
   if (flower) return { primary: [...arrangementsWith(publicCatalogue, flower), ...stemsOf(publicCatalogue, flower)], related: [] };
   const recorded = RECORDED_COLLECTIONS[slug]?.(publicCatalogue);
   if (recorded) return recorded;
+  // Scent is not recorded for any design; the lily variety is. This page lists
+  // lilies recorded as oriental or stargazer, not designs tagged "fragrant".
+  if (slug === "fragrant-lilies") return { primary: publicCatalogue.filter(recordsOrientalLily), related: [] };
   return {
     primary: publicCatalogue.filter((product) => slugify(product.category) === slug || product.collectionTags?.includes(slug) || MENU_CATEGORY_RULES[slug]?.(product) === true),
     related: [],

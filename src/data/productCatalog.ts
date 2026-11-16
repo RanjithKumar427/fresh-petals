@@ -18,6 +18,11 @@ export type Product = {
   whatsIncluded: string[];
   /** Offered on request or optional, not part of the listed product (a message note, add-ons). */
   onRequest?: string[];
+  /**
+   * Not recorded either way, so neither "included" nor "on request": shown as
+   * agreed in the quote, and asked about in the WhatsApp draft.
+   */
+  toConfirm?: string[];
   careNotes: string[];
 
   flowerTypes?: string[];
@@ -394,7 +399,7 @@ const baseCatalog: Product[] = [
     requiresConfirmation: true,
     badge: "Lily bouquet",
     ratingLabel: "Premium calm",
-    collectionTags: ["bouquets", "all-flowers", "hand-tied-bouquets", "fragrant-lilies", "white-flowers"],
+    collectionTags: ["bouquets", "all-flowers", "hand-tied-bouquets", "white-flowers"],
     occasionTags: ["birthday", "anniversary", "sympathy", "thank-you"],
     flowerTypes: ["White oriental lilies", "Lily buds", "Fresh lily foliage"],
     idealFor: ["Elegant gifting", "Thank you", "Peaceful wishes"],
@@ -419,7 +424,7 @@ const baseCatalog: Product[] = [
     requiresConfirmation: true,
     badge: "Peaceful pick",
     ratingLabel: "Soft white",
-    collectionTags: ["bouquets", "all-flowers", "hand-tied-bouquets", "white-flowers", "fragrant-lilies"],
+    collectionTags: ["bouquets", "all-flowers", "hand-tied-bouquets", "white-flowers"],
     occasionTags: ["pooja", "sympathy", "thank-you", "just-because"],
     flowerTypes: ["White lilies", "White stock", "Chamomile fillers", "Seasonal greenery"],
     idealFor: ["Pooja", "Sympathy", "Thank you"],
@@ -515,7 +520,7 @@ const baseCatalog: Product[] = [
     requiresConfirmation: true,
     badge: "Pink premium",
     ratingLabel: "Lily mood",
-    collectionTags: ["bouquets", "all-flowers", "hand-tied-bouquets", "pink-flowers", "fragrant-lilies"],
+    collectionTags: ["bouquets", "all-flowers", "hand-tied-bouquets", "pink-flowers"],
     occasionTags: ["birthday", "anniversary", "romantic", "thank-you"],
     flowerTypes: ["Pink oriental lilies", "Lily buds", "Eucalyptus"],
     idealFor: ["Birthday", "Anniversary", "Romantic"],
@@ -953,9 +958,9 @@ const baseCatalog: Product[] = [
       "White lilies and lily buds with greenery in premium wrapping, for elegant gifting, thank-you moments and peaceful wishes. The scent depends on the lily variety supplied; ask on WhatsApp if it matters.",
     isAvailable: true,
     requiresConfirmation: true,
-    badge: "Fragrant lilies",
+    badge: "White lilies",
     ratingLabel: "Premium white",
-    collectionTags: ["all-flowers", "fragrant-lilies", "lilies", "white-flowers", "premium-gifting"],
+    collectionTags: ["all-flowers", "lilies", "white-flowers", "premium-gifting"],
     occasionTags: ["birthday", "anniversary", "thank-you", "sympathy"],
     flowerTypes: ["White lilies", "Lily buds", "Fresh greenery"],
     idealFor: ["Elegant gifting", "Thank you", "Peaceful wishes"],
@@ -980,7 +985,7 @@ const baseCatalog: Product[] = [
     requiresConfirmation: true,
     badge: "Giftbox",
     ratingLabel: "Festive pick",
-    collectionTags: ["all-flowers", "fragrant-lilies", "lilies", "flowerbox", "premium-gifting"],
+    collectionTags: ["all-flowers", "lilies", "flowerbox", "premium-gifting"],
     occasionTags: ["birthday", "housewarming", "thank-you", "anniversary"],
     flowerTypes: ["Lilies", "Lily buds", "Seasonal fillers"],
     idealFor: ["Festive gifting", "Housewarming", "Premium surprises"],
@@ -1005,7 +1010,7 @@ const baseCatalog: Product[] = [
     requiresConfirmation: true,
     badge: "Bright lilies",
     ratingLabel: "Warm glow",
-    collectionTags: ["all-flowers", "fragrant-lilies", "lilies", "premium-gifting"],
+    collectionTags: ["all-flowers", "lilies", "premium-gifting"],
     occasionTags: ["birthday", "congratulations", "thank-you", "just-because"],
     flowerTypes: ["Orange lilies", "Lily buds", "Fresh greenery"],
     idealFor: ["Birthday", "Congratulations", "Happy surprises"],
@@ -1030,7 +1035,7 @@ const baseCatalog: Product[] = [
     requiresConfirmation: true,
     badge: "Flowerbox",
     ratingLabel: "Soft pink",
-    collectionTags: ["all-flowers", "fragrant-lilies", "lilies", "flowerbox", "pink-flowers"],
+    collectionTags: ["all-flowers", "lilies", "flowerbox", "pink-flowers"],
     occasionTags: ["birthday", "anniversary", "new-mom", "thank-you"],
     flowerTypes: ["Pink lilies", "Lily buds", "Seasonal fillers"],
     idealFor: ["Birthday", "Anniversary", "New mom"],
@@ -1055,7 +1060,7 @@ const baseCatalog: Product[] = [
     requiresConfirmation: true,
     badge: "Blush lilies",
     ratingLabel: "Soft romantic",
-    collectionTags: ["all-flowers", "fragrant-lilies", "lilies", "pink-flowers", "romantic"],
+    collectionTags: ["all-flowers", "lilies", "pink-flowers", "romantic"],
     occasionTags: ["romantic", "anniversary", "birthday", "thank-you"],
     flowerTypes: ["Blush lilies", "Lily buds", "Fresh greenery"],
     idealFor: ["Romantic", "Anniversary", "Sweet surprises"],
@@ -1080,7 +1085,7 @@ const baseCatalog: Product[] = [
     requiresConfirmation: true,
     badge: "Coral lilies",
     ratingLabel: "Fresh bloom",
-    collectionTags: ["all-flowers", "fragrant-lilies", "lilies", "premium-gifting"],
+    collectionTags: ["all-flowers", "lilies", "premium-gifting"],
     occasionTags: ["birthday", "congratulations", "thank-you", "just-because"],
     flowerTypes: ["Coral lilies", "Lily buds", "Fresh greenery"],
     idealFor: ["Birthday", "Congratulations", "Warm gifting"],
@@ -1105,7 +1110,7 @@ const baseCatalog: Product[] = [
     requiresConfirmation: true,
     badge: "Ivory lilies",
     ratingLabel: "Graceful pick",
-    collectionTags: ["all-flowers", "fragrant-lilies", "lilies", "white-flowers", "premium-gifting"],
+    collectionTags: ["all-flowers", "lilies", "white-flowers", "premium-gifting"],
     occasionTags: ["birthday", "thank-you", "sympathy", "anniversary"],
     flowerTypes: ["Ivory lilies", "Lily buds", "Fresh greenery"],
     idealFor: ["Elegant gifting", "Thank you", "Peaceful wishes"],
@@ -1130,7 +1135,7 @@ const baseCatalog: Product[] = [
     requiresConfirmation: true,
     badge: "Luxury lilies",
     ratingLabel: "Premium bloom",
-    collectionTags: ["all-flowers", "fragrant-lilies", "lilies", "premium-gifting"],
+    collectionTags: ["all-flowers", "lilies", "premium-gifting"],
     occasionTags: ["anniversary", "birthday", "romantic", "congratulations"],
     flowerTypes: ["Premium lilies", "Lily buds", "Seasonal greenery"],
     idealFor: ["Luxury gifting", "Anniversary", "Celebration"],
@@ -1155,7 +1160,7 @@ const baseCatalog: Product[] = [
     requiresConfirmation: true,
     badge: "Stargazer lilies",
     ratingLabel: "Bold premium",
-    collectionTags: ["all-flowers", "fragrant-lilies", "lilies", "pink-flowers", "romantic"],
+    collectionTags: ["all-flowers", "lilies", "pink-flowers", "romantic"],
     occasionTags: ["romantic", "anniversary", "birthday", "congratulations"],
     flowerTypes: ["Stargazer lilies", "Lily buds", "Fresh greenery"],
     idealFor: ["Romantic", "Anniversary", "Premium gifting"],
@@ -1180,7 +1185,7 @@ const baseCatalog: Product[] = [
     requiresConfirmation: true,
     badge: "Vase arrangement",
     ratingLabel: "Sunrise tones",
-    collectionTags: ["all-flowers", "lilies", "vases", "yellow-flowers"],
+    collectionTags: ["all-flowers", "lilies", "vases"],
     occasionTags: ["birthday", "congratulations", "thank-you", "housewarming"],
     flowerTypes: ["Asiatic lilies", "Lily buds", "Fresh greenery"],
     idealFor: ["Birthday", "Housewarming", "Congratulations"],
@@ -1837,9 +1842,9 @@ const baseCatalog: Product[] = [
     image: "/images/product-placeholder.svg",
     priceLabel: "Custom quote",
     priceType: "quote",
-    description: "Made-to-order dried flower arrangement, with a vase option.",
+    description: "Made-to-order dried flower arrangement; whether a vase is included is agreed in your quote.",
     longDescription:
-      "A custom dried flower vase arrangement for home decor, gifting, cafes, desks and premium corners. Vase style, flower tones and size can be discussed on WhatsApp.",
+      "A custom dried flower arrangement for home decor, gifting, cafes, desks and premium corners. Flower tones and size can be discussed on WhatsApp, and whether a vase is included is agreed in your quote.",
     isAvailable: true,
     requiresConfirmation: true,
     badge: "Custom decor",
@@ -1847,7 +1852,8 @@ const baseCatalog: Product[] = [
     collectionTags: ["dried-flowers", "vases", "premium-decor", "custom"],
     occasionTags: ["housewarming", "thank-you"],
     whatsIncluded: ["Dried flower arrangement", "Decor styling suggestion"],
-    onRequest: ["Vase, depending on availability"],
+    // Not recorded either way (owner question): neither included nor optional.
+    toConfirm: ["Whether a vase is included"],
     careNotes: [
       "Do not add water.",
       "Handle dried stems gently.",
@@ -1866,18 +1872,16 @@ const baseCatalog: Product[] = [
     priceType: "from",
     description: "Mini succulent plant for simple gifting and desk decor.",
     longDescription:
-      "A mini succulent gift option for birthdays, desk decor, return gifts and small surprises. Plant variety and pot option depend on availability.",
+      "A mini succulent gift option for birthdays, desk decor, return gifts and small surprises. The plant variety depends on availability; whether a pot is included, and how the plant is presented, is confirmed in your quote.",
     isAvailable: true,
     requiresConfirmation: true,
     badge: "Desk gift",
     ratingLabel: "Low-maintenance gifting",
     collectionTags: ["plants-succulents", "gifting", "desk-decor"],
     occasionTags: ["birthday", "thank-you", "housewarming"],
-    whatsIncluded: [
-      "Mini succulent plant",
-      "Basic pot or planter (style depends on availability)",
-      "Simple gift packing",
-    ],
+    whatsIncluded: ["Mini succulent plant", "Simple gift packing"],
+    // Not recorded either way (owner question): neither included nor optional.
+    toConfirm: ["Whether a pot or planter is included, and how the plant is presented"],
     careNotes: [
       "Water lightly only when soil is dry.",
       "Keep in bright indirect light.",

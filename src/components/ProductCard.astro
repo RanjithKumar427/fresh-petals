@@ -4,7 +4,7 @@ import imageDimensions from "../data/imageDimensions.json";
 import { journeyHref, journeyLines, type Journey } from "../utils/journey";
 import { QUOTE_ONLY_CLOSING, isQuoteOnlyLabel } from "../shared/quoteOnly";
 import { productCatalog } from "../data/productCatalog";
-import { categoryLabel, enquiryQuantityLine, productIdentity } from "../data/productSupply";
+import { categoryLabel, enquiryConfirmLine, enquiryQuantityLine, identityInSentence, productIdentity } from "../data/productSupply";
 
 type PriceType = "fixed" | "from" | "market" | "quote";
 
@@ -46,8 +46,9 @@ const whatsappNumber = "919652012274";
 // creative name ("Pink Secret") is never the only identification on a card.
 const record = slug ? productCatalog.find((product) => product.slug === slug) : undefined;
 const identity = record ? productIdentity(record) : null;
-const named = identity ? `${name} (${identity.toLowerCase()})` : name;
-const quantityLine = record ? enquiryQuantityLine(record) : "Quantity: 1";
+const named = identity ? `${name} (${identityInSentence(identity)})` : name;
+// The quote question for a container the record leaves open (a vase, a pot) travels with the quantity line.
+const quantityLine = record ? [enquiryQuantityLine(record), enquiryConfirmLine(record)].filter(Boolean).join("\n") : "Quantity: 1";
 
 const productUrl = slug ? journeyHref(`/products/${slug}`, journey) : "#";
 // Literal link text: what the link opens.

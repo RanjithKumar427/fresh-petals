@@ -16,7 +16,7 @@ import { whatsappLink } from "../../config/storefront";
 import { QUOTE_ONLY_PRICE_LABEL, isQuoteOnly } from "../../shared/quoteOnly";
 import { photoStatus, productPhotoAlt, representativePhoto } from "../../data/productPhotos";
 import { presentationCheck } from "../../data/collectionGuidance";
-import { categoryLabel, flowerFact, idealForText, productKind, sellsFreshFlowers, preparationText, productIdentity, quantityBasis, quoteDrivers, substitutionText, suppliedItems, trustIndicators as trustFor } from "../../data/productSupply";
+import { categoryLabel, identityInSentence, flowerFact, idealForText, productKind, sellsFreshFlowers, preparationText, productIdentity, quantityBasis, quoteDrivers, substitutionText, suppliedItems, trustIndicators as trustFor } from "../../data/productSupply";
 
 // Catalog/Database Reconciliation milestone — the product's displayed
 // price now comes from PostgreSQL (the admin-editable, authoritative
@@ -434,7 +434,7 @@ const breadcrumbJsonLd = {
         {customisable && <p class="mt-5 text-sm leading-6 text-moss">
           Want different colours, flowers or size?
           <a
-            href={whatsappLink(`Hi Fresh Petals, I'd like to customise "${product.name}"${identity ? ` (${identity.toLowerCase()})` : ""}.\nProduct: ${new URL(`/products/${product.slug}`, Astro.site).toString()}\nWhat I'd like to change: \nOccasion and date: \nBudget (optional): `)}
+            href={whatsappLink(`Hi Fresh Petals, I'd like to customise "${product.name}"${identity ? ` (${identityInSentence(identity)})` : ""}.\nProduct: ${new URL(`/products/${product.slug}`, Astro.site).toString()}\nWhat I'd like to change: \nOccasion and date: \nBudget (optional): `)}
             target="_blank"
             rel="noopener noreferrer"
             data-customise-whatsapp
@@ -456,11 +456,24 @@ const breadcrumbJsonLd = {
                 </li>
               ))}
             </ul>
+            {supplied.toConfirm.length > 0 && (
+              <div data-to-confirm>
+                <h3 class="mt-6 text-[12px] font-semibold uppercase tracking-[0.28em] text-ink">Agreed in your quote</h3>
+                <ul class="mt-3 space-y-3 text-sm leading-6 text-moss">
+                  {supplied.toConfirm.map((item) => (
+                    <li class="flex gap-2.5">
+                      <span class="mt-2.5 h-1 w-1 shrink-0 rounded-full border border-berry"></span>
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
             {supplied.onRequest.length > 0 && (
               <div data-on-request>
                 <h3 class="mt-6 text-[12px] font-semibold uppercase tracking-[0.28em] text-ink">On request</h3>
                 <p class="mt-2 text-xs leading-6 text-moss">Not part of the listed product; ask for it on WhatsApp.</p>
-                <ul class="mt-3 space-y-3 text-sm leading-6 text-moss">
+                <ul class="mt-3 space-y-3 text-sm leading-6 text-moss" data-on-request-list>
                   {supplied.onRequest.map((item) => (
                     <li class="flex gap-2.5">
                       <span class="mt-2.5 h-1 w-1 shrink-0 rounded-full border border-berry"></span>

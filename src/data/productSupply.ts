@@ -84,7 +84,7 @@ export const PRODUCT_IDENTITY: Record<string, string> = {
   "table-decor-addon": "Add-on: event table decor",
   "daily-pooja-flower-subscription": "Plan: regular pooja flowers",
   "weekly-flowerbox-subscription": "Plan: a flower box every week",
-  "jasmine-malli-subscription": "Plan: regular jasmine (malli)",
+  "jasmine-malli-subscription": "Plan: regular jasmine / malli",
   "custom-flower-subscription": "Plan: flowers on your schedule",
   "dried-flower-bunch": "Dried stems, no water needed",
   "dried-flower-vase-set": "Dried flower arrangement, made to order",
@@ -122,18 +122,43 @@ export function productIdentity(product: Product): string | null {
 const PROCESS_STEP = /\b(confirmation|confirmed|whatsapp|final (price|quote|option)|market[- ]?(price|rate|based pricing)|quote\b)/i;
 const ON_REQUEST = /\s*\b(on request|optional)\b\s*/i;
 
-/** Included items and on-request items. Admin-added records are read the same way. */
-export function suppliedItems(product: Pick<Product, "whatsIncluded" | "onRequest">): { included: string[]; onRequest: string[] } {
+// A container (vase, pot, box, basket) offered "depending on availability"
+// is not known to be included or optional: it belongs with the quote, not in
+// either list.
+// ("Vase option based on availability", "Basket, depending on availability";
+// not "Clear glass vase (size depends on availability)", where the vase is the product.)
+const UNRESOLVED_CONTAINER = /\b(vase|pot|planter|box|basket)\b(\s+option)?,?\s+(depending on|based on) availability\b/i;
+
+/**
+ * Included items, on-request items, and what is agreed in the quote because
+ * the record says neither. Admin-added records are read the same way.
+ */
+export function suppliedItems(product: Pick<Product, "whatsIncluded" | "onRequest" | "toConfirm">): { included: string[]; onRequest: string[]; toConfirm: string[] } {
   const included: string[] = [];
-  const onRequest = [...(product.onRequest ?? [])];
+  const toConfirm = [...(product.toConfirm ?? [])];
+  const onRequest = (product.onRequest ?? []).filter((item) => {
+    if (!UNRESOLVED_CONTAINER.test(item)) return true;
+    toConfirm.push(item);
+    return false;
+  });
   for (const item of product.whatsIncluded ?? []) {
     if (PROCESS_STEP.test(item)) continue;
+    if (UNRESOLVED_CONTAINER.test(item)) {
+      toConfirm.push(item);
+      continue;
+    }
     if (ON_REQUEST.test(item)) {
       const cleaned = item.replace(ON_REQUEST, " ").replace(/\s+/g, " ").trim();
       if (cleaned && !onRequest.includes(cleaned)) onRequest.push(cleaned.charAt(0).toUpperCase() + cleaned.slice(1));
     } else included.push(item);
   }
-  return { included, onRequest };
+  return { included, onRequest, toConfirm };
+}
+
+/** The WhatsApp draft's question for what the quote must settle, or null. */
+export function enquiryConfirmLine(product: Pick<Product, "whatsIncluded" | "onRequest" | "toConfirm">): string | null {
+  const { toConfirm } = suppliedItems(product);
+  return toConfirm.length ? `Please confirm in the quote: ${toConfirm.map((item) => item.charAt(0).toLowerCase() + item.slice(1)).join("; ")}.` : null;
 }
 
 /** What one unit is, where the record says it. */
@@ -210,14 +235,17 @@ export function quoteDrivers(product: Pick<Product, "slug" | "category" | "flowe
   const kind = productKind(product);
   if (kind === "item" || kind === "plant") return "The price depends on the option available, such as its type or size, and how many you need.";
   if (kind === "plan") return "The price depends on the flowers, the quantity per delivery and how often you want them.";
-  if (kind === "dried") return "The price depends on the dried stems, the size and any vase you choose.";
+  if (kind === "dried") return "The price depends on the dried stems, the size and the presentation.";
   return "The price depends on the design, flowers, quantity and date.";
 }
+
+/** The identity line inside a sentence: first letter lowered, unless it starts a proper name ("Asiatic"). */
+export const identityInSentence = (identity: string) => (/^(Asiatic|Oriental)\b/.test(identity) ? identity : identity.charAt(0).toLowerCase() + identity.slice(1));
 
 /** How a WhatsApp draft names the product: "Cloud Nine Blue (blue gypsophila bouquet)". */
 export function enquiryName(product: Product): string {
   const identity = productIdentity(product);
-  return identity ? `${product.name} (${identity.toLowerCase()})` : product.name;
+  return identity ? `${product.name} (${identityInSentence(identity)})` : product.name;
 }
 
 /** "Quantity: 1" for one design; a product sold by quantity asks for the amount instead. */

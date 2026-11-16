@@ -5,7 +5,9 @@ import { loadPublicCatalogue } from "../../server/services/PublicCatalogue";
 import CategoryPage from "../../components/category/CategoryPage.astro";
 import { allFlowerSections, flowerSections, poojaSections, FLOWER_PAGES } from "../../data/collectionGuidance";
 import { type RelatedSection } from "../../data/catalogueRange";
-import { categoryMeta, categoryProducts, categorySlugs } from "../../data/categoryPages";
+import { CATEGORY_GARLAND_LINKS, categoryMeta, categoryProducts, categorySlugs } from "../../data/categoryPages";
+import { loadGarlands } from "../../data/garlands";
+import { garlandCollection } from "../../data/garlandCollections";
 
 type CategoryMeta = {
   name: string;
@@ -17,7 +19,7 @@ export async function getStaticPaths() {
   // Catalog/Database Reconciliation milestone — see products/[slug].astro's
   // matching comment. One shared price map for every category page this
   // build generates, not one query per category.
-  const [priceMap, publicCatalogue] = await Promise.all([loadAuthoritativePrices(), loadPublicCatalogue()]);
+  const [priceMap, publicCatalogue, garlands] = await Promise.all([loadAuthoritativePrices(), loadPublicCatalogue(), loadGarlands()]);
 
   // Addresses, names, introductions and membership: src/data/categoryPages.ts.
   // Only public catalogue products are listed (src/server/services/PublicCatalogue.ts).
@@ -36,6 +38,10 @@ export async function getStaticPaths() {
     const membership = categoryProducts(slug, publicCatalogue);
     const products = membership.primary.map((product) => withAuthoritativePrice(product, priceMap));
     const related = membership.related.map((section) => ({ ...section, products: section.products.map((product) => withAuthoritativePrice(product, priceMap)) }));
+    // Linked only while the garland collection is built, i.e. lists a design (./garlands/[flower].astro).
+    const garlandLink = CATEGORY_GARLAND_LINKS[slug];
+    const garlandPath = garlandLink && garlands.some((product) => product.garland.filters.includes(garlandLink.key)) ? garlandCollection(garlandLink.key)?.path : undefined;
+    const introLink = garlandLink && garlandPath ? { text: garlandLink.text, href: garlandPath, label: garlandLink.label } : undefined;
 
     return {
       params: {
@@ -46,6 +52,7 @@ export async function getStaticPaths() {
         products,
         related,
         countNoun: membership.noun,
+        introLink,
       },
     };
   });
@@ -56,13 +63,14 @@ export async function getStaticPaths() {
 const listed = (Astro.props as { products: Product[] }).products;
 const slug = Astro.params.slug ?? "";
 const sections = slug === "pooja-flowers" ? poojaSections(listed) : slug === "all-flowers" ? allFlowerSections(listed) : FLOWER_PAGES[slug] ? flowerSections(listed, FLOWER_PAGES[slug]) : [];
-const { category, products, related = [], countNoun } = Astro.props as {
+const { category, products, related = [], countNoun, introLink } = Astro.props as {
   category: CategoryMeta;
   products: Product[];
   related?: RelatedSection<Product>[];
   countNoun?: string;
+  introLink?: { text: string; href: string; label: string };
 };
 const publicSlugs = new Set((await loadPublicCatalogue()).map((product) => product.slug));
 ---
 
-<CategoryPage category={category} products={products} sections={sections} related={related} countNoun={countNoun} publicSlugs={publicSlugs} />
+<CategoryPage category={category} products={products} sections={sections} related={related} countNoun={countNoun} publicSlugs={publicSlugs} introLink={introLink} />
