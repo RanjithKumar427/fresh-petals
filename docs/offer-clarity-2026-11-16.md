@@ -286,4 +286,18 @@ Released commit `2488d0b` (merge of pull request #1, tree identical to `199bcd6`
 | WhatsApp drafts (decoded, not sent) | dried set (product page): "Dried Flower Vase Set (dried flower arrangement, made to order) … Please confirm in the quote: whether a vase is included."; succulent (card on All Decor): "…Mini Succulent Gift (live mini succulent)… Please confirm in the quote: whether a pot or planter is included, and how the plant is presented." |
 | Widths | desktop 1536 px: no horizontal overflow; the inclusion sections render as separate lists. Mobile: the window could not be resized, so the live HTML and stylesheets were rendered in a 390 px same-origin frame: 7 affected pages, no horizontal overflow, layout as built |
 
-**Open:** the `Cloudflare deploy` workflow's production job needs `HYPERDRIVE_ID: ${{ vars.HYPERDRIVE_ID }}` in its env to work by hand (not changed here; Production publish is the working production path). Owner questions Q1–Q10 above are unchanged; the dried set's name still suggests a vase (Q3).
+**Open:** owner questions Q1–Q10 above are unchanged; the dried set's name still suggests a vase (Q3).
+
+### Manual deployment path repaired (16 Nov 2026)
+
+| Step | Record | Result |
+|---|---|---|
+| Fix | PR [#3](https://github.com/RanjithKumar427/fresh-petals/pull/3), commit `67ae14d`, merged as `598502070b83a126729f4121a427981bcae275a7` | `jobs.production.env` in `cloudflare.yml` now maps `HYPERDRIVE_ID: ${{ vars.HYPERDRIVE_ID }}` (existing variable; preview job, triggers, permissions, concurrency and environment unchanged). New YAML-parser audit asserts the production job's own mapping; removing the line fails it even with the preview mapping present |
+| Tests | `node --test scripts/audit/security.test.mjs scripts/audit/cloudflare.test.mjs` | 52/52 locally and in the run |
+| Overlap check | runs list before dispatch | nothing queued or in progress; the push run for `5985020` was skipped (auto-deploy off) |
+| Cloudflare deploy, `environment=production` | [43888134597](https://github.com/RanjithKumar427/fresh-petals/actions/runs/43888134597) | success, head `5985020`; production job ran (preview skipped by design). No placeholder refusal; Hyperdrive binding resolved; build OK, 470 static pages, fingerprint `93949deec4e4`; 356 new assets uploaded; Worker uploaded, version `378eb653-85a1-4817-b4f4-5f5b329ba8e7` |
+| Live `/_publish/state.json` | read with `cache: no-store` | revision `598502070b83…`, builtAt `2026-11-16T14:46:10.891Z` (the run's build finished 14:46:10), fingerprint `93949deec4e4d13ab746475b1f71c59f` (content unchanged from the release) |
+| Spot checks | `/products/dried-flower-vase-set`, `/products/mini-succulent-gift` | both show "Agreed in your quote" (vase; pot or planter and presentation), no placeholders, WhatsApp draft carries the "Please confirm in the quote" line |
+
+Content copy was not rerun; no product records changed. Both `Cloudflare deploy` (manual) and `Production publish` are now working production paths.
+
