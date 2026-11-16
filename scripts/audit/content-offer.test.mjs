@@ -96,8 +96,9 @@ test('inclusion uncertainty: an unrecorded pot or vase is neither included nor o
   const dried = plain(supply.suppliedItems(bySlug('dried-flower-vase-set')));
   assert(!dried.included.some((item) => /vase/i.test(item)) && !dried.onRequest.some((item) => /vase/i.test(item)));
   assert.deepEqual(dried.toConfirm, ['Whether a vase is included']);
-  // A record phrased "… depending on availability" (an admin-added product) is read the same way.
-  assert.deepEqual(plain(supply.suppliedItems({ whatsIncluded: ['Fresh roses', 'Vase option based on availability'], onRequest: ['Basket, depending on availability', 'Message note'] })), { included: ['Fresh roses'], onRequest: ['Message note'], toConfirm: ['Basket, depending on availability', 'Vase option based on availability'] });
+  // A record's explicit status wins over availability wording: only toConfirm puts an item with the quote.
+  assert.deepEqual(plain(supply.suppliedItems({ whatsIncluded: ['Fresh roses', 'Vase option based on availability'], onRequest: ['Basket, depending on availability', 'Message note'] })), { included: ['Fresh roses', 'Vase option based on availability'], onRequest: ['Basket, depending on availability', 'Message note'], toConfirm: [] });
+  assert.deepEqual(plain(supply.suppliedItems({ whatsIncluded: ['Fresh roses'], toConfirm: ['Whether a vase is included'] })), { included: ['Fresh roses'], onRequest: [], toConfirm: ['Whether a vase is included'] });
   assert.equal(supply.enquiryConfirmLine(bySlug('dried-flower-vase-set')), 'Please confirm in the quote: whether a vase is included.');
   assert.equal(supply.enquiryConfirmLine(bySlug('red-affair')), null);
   assert.equal(supply.enquiryName(bySlug('sunrise-asiatic-vase')), 'Sunrise Asiatic Vase (Asiatic lily vase arrangement)');

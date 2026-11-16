@@ -1,9 +1,8 @@
 # Offer clarity, 16 November 2026
 
-Content, data and template corrections so a customer can tell what a design is, what is supplied, how it is priced and which collection fits, before sending a WhatsApp enquiry. Branch `content/offer-clarity-2026-11`, on top of `30b2ccd`.
+Content, data and template corrections so a customer can tell what a design is, what is supplied, how it is priced and which collection fits, before sending a WhatsApp enquiry. Three commits on top of `30b2ccd`: `f0f4b7c` (offer clarity), `fbe9786` (correction) and the release commit (see "Release, 16 Nov 2026"); released from branch `release/offer-clarity-live-2026-11-16`.
 
-- **Status:** two local commits (`f0f4b7c`, then the correction commit described under "Correction"). Not pushed, deployed or applied to the database.
-- **Remaining application step:** after approval, run `scripts/content/apply-copy-changes.mjs` with `docs/offer-clarity-2026-11-16.changes.json` against production (24 fields across 17 products; see "Applying the dashboard copy"), then publish. Until it runs, Cloudflare builds keep the dashboard's names and short/long descriptions for those 17 products (`src/data/dashboardCatalogue.ts`); every other change here is code-only and appears with the next build.
+- **Status:** see "Release, 16 Nov 2026" for what is in production. The dashboard copy (24 fields across 17 products) is applied only by `scripts/content/apply-copy-changes.mjs`, run through the `Content copy` workflow; until it has run, Cloudflare builds keep the dashboard's names and short/long descriptions for those products (`src/data/dashboardCatalogue.ts`), and every other change is code-only.
 - **Reference gap:** the caption audit, URL register and competitor research named in the brief were not attached; only the brief was. Findings were rechecked against this repository and the live site (16 Nov: sitemap 82 products, 55 categories, 58 city pages; Sweet Petal Hour, Violet Picnic, Florist Cutter and All Decor pages read live).
 - **Not changed:** URLs, slugs, design codes, garland records, canonicals, migrations, dependencies, checkout, Supabase settings.
 
@@ -37,11 +36,11 @@ Content, data and template corrections so a customer can tell what a design is, 
 | `/products/violet-picnic` caption | Stylish bouquet | Mixed statice flower basket (identity line) |
 | `/products/sweet-petal-hour` caption | Pastel soft | Mixed gerbera arrangement |
 | `/products/florist-cutter` | Types of flowers: "Florist cutter option, …, Final price on WhatsApp"; Fresh Flowers · Hand-Arranged; Ideal for: housewarming, just-because | What it is: Stem cutter for home arranging; Delivery Confirmed on WhatsApp · WhatsApp Ordering; Ideal for: Housewarming, Just because |
-| `/categories/all-decor` | Explore flower decor, torans, lights, diyas … | Decor that lasts beyond fresh flowers … Torans, lights and diyas are not part of this range |
-| `/categories/diy-kits` | DIY floral kits and creative gifting options available on request. | Not a kit with tools: the DIY flower box is loose fresh flowers … |
+| `/categories/all-decor` | Explore flower decor, torans, lights, diyas … | Dried flowers — a wrapped dried bunch and a dried arrangement made to order — a decor vase quoted by type, a live mini succulent … (exclusions last; as corrected) |
+| `/categories/diy-kits` | DIY Kits: "DIY floral kits and creative gifting options available on request." | DIY Flower Arranging Boxes: "The DIY flower box: loose fresh flowers packed in a box …" (as corrected) |
 | WhatsApp draft, Roses by Stem | I want to order Roses by Stem (Market price today). Quantity: 1 | I want to order Roses by Stem (rose stems, sold by the stem). Price: Market price today. Quantity needed: |
 
-## Checks (16 Nov 2026)
+## Checks (16 Nov 2026, first commit; historical, superseded by the later checks below)
 
 | Check | Before | After |
 |---|---|---|
@@ -225,3 +224,33 @@ Admin editing is unchanged: nothing was added to `DELIBERATE_CATALOGUE_COPY`, an
 | Built HTML B vs `f0f4b7c` build | sitemap 212 = 212; no canonical changes; no unresolved internal links; title changes are only the 5 intended ones (plus the garlands page, from the fixture's listed garlands) | rendered |
 | Chrome 1366 and 390 (build B) | 17 pages (7 product, 9 category, 1 guide): 200, no horizontal overflow, no script errors. Drafts decoded without opening WhatsApp: the dried set and succulent drafts carry the quote question, the product card for the dried set too, Asiatic keeps its capital, the jasmine plan asks for quantity | rendered (sampled, not exhaustive) |
 | Production | not run: no production data, preview or deploy was touched | unavailable |
+
+## Release, 16 Nov 2026
+
+### Release commit: safety fixes (on top of `fbe9786`)
+
+| Area | Defect found in `fbe9786` | Now |
+|---|---|---|
+| Receipts (`scripts/content/apply-copy-changes.mjs`) | Only the final receipt was checked; `.pending` was written non-exclusively, so a rerun after "committed, not renamed" could replace the before-values with an empty receipt | apply refuses to start if `<receipt>` or `<receipt>.pending` exists (exit 65); `.pending` is created exclusively (`wx`) before COMMIT; a failed rename after COMMIT exits 3 and keeps `.pending`. New `reconcile` reads the records: every field holds the written copy → committed, `.pending` becomes the receipt; every field holds its before-value → not committed, kept as `.uncommitted`; anything else → left in place, exit 2 |
+| Rollback | Matched rows by slug only: a replacement record with the same slug passed | Matched by the receipt's product id and slug; a missing id, a different slug on that id (replacement) or any newer edit aborts the whole rollback; only the receipt's changed fields are touched |
+| Production connection | `rejectUnauthorized: true` without the Supabase CA | The application's pinned Supabase CA with full verification (`src/server/db/postgres/ssl.mjs`) |
+| Supply (`src/data/productSupply.ts`) | Any vase/pot/box/basket item phrased "… depending on availability" was moved out of "included" or "on request", overriding the record's explicit status | A record's explicit included / on-request status is kept; only its `toConfirm` field puts an item with the quote. The succulent pot and the dried-arrangement vase stay in `toConfirm` (no verified fact resolves them) |
+| Manifest check (`scripts/audit/copy-changes.test.mjs`) | Checked "new" against the catalogue in one direction only, with a fixed count; needed git history for the base | `docs/offer-clarity-2026-11-16.baseline.json` (dashboard-controlled copy of all 89 products at `30b2ccd`) is diffed against the current catalogue in both directions: omitted and extra fields, and every old and new value. The baseline itself is checked against `30b2ccd` whenever that commit is in the checkout, and the check is skipped with a reason in a shallow one |
+| Production database access | None in the repository: the production `DATABASE_URL` exists only as an Actions secret | `.github/workflows/content-copy.yml`: dispatch-only; plan / apply / reconcile / rollback of a reviewed manifest; writes need a typed confirmation; receipts kept as artifacts (90 days) and printed in the log |
+
+No customer-visible change in this commit: memberships, identities, the oriental/stargazer lily grouping, Sunrise's removal from Yellow, headings and intros are as in `fbe9786`.
+
+### Local checks (this pass; disposable PostgreSQL 16)
+
+| Check | Result |
+|---|---|
+| Node tests, all suites, without a database | 187 tests: 186 pass, 0 fail, 1 skipped (database case) |
+| Same, with `FP_COPY_TEST_DATABASE_URL` | 187/187 pass |
+| Database case | clean apply (24), rerun (24 already-new, empty receipt), rollback blocked by a newer edit, clean rollback, already-new field never rolled back, conflict abort, missing-record abort, replacement record refused by rollback, interrupted receipt through the CLI (committed → rerun refused with the pending file untouched → reconcile finalises it → rollback restores), not-committed pending → `.uncommitted`, clean CLI apply |
+| Manifest check, mutated | omitted field, wrong "old" value, extra field: each fails; shallow checkout (no base commit): manifest check passes from the baseline file, authenticity check skipped with its reason |
+| `astro check` (fixture copy outside the project) | 390 files: 0 errors, 0 warnings |
+| Cloudflare builds with the build's own dashboard-records step, one fixture state for both revisions (82 of 89 public; dashboard copy at `30b2ccd` values; garlands public, none tuberose-listed) | `30b2ccd`: pass, 313 pages. Release: pass, 313 pages. Dashboard-controlled descriptions identical in both (the dashboard wins); code-controlled lists, names, H1s and intros differ as intended |
+| Same release after applying the manifest to the fixture with the CLI | plan 24 expected-old / 17 → apply 24 changed → plan 24 already-new. Build pass, 313 pages; only the dashboard-controlled descriptions change |
+| Release vs `30b2ccd` built HTML | same 314 files; no canonical change; robots change only on `/categories/mini-bouquets` (empty → noindex, existing rule); sitemap 213 → 212 (that URL); no unresolved internal link |
+| Populated tuberose garlands (separate fixture state: 3 tuberose designs listed) | pass, 317 pages; `/categories/garlands/tuberose` built and linked from `/categories/tuberose-rajnigandha`; without them, neither |
+| Chrome 1366 and 390, release with copy applied | 18 pages (8 product, 9 category, 1 guide): 200, no horizontal overflow, no script errors. Drafts decoded without sending: dried set and succulent ask the quote question (product page and card); Cloud Nine Blue names "blue gypsophila bouquet"; Roses by Stem asks "Quantity needed" |

@@ -122,31 +122,19 @@ export function productIdentity(product: Product): string | null {
 const PROCESS_STEP = /\b(confirmation|confirmed|whatsapp|final (price|quote|option)|market[- ]?(price|rate|based pricing)|quote\b)/i;
 const ON_REQUEST = /\s*\b(on request|optional)\b\s*/i;
 
-// A container (vase, pot, box, basket) offered "depending on availability"
-// is not known to be included or optional: it belongs with the quote, not in
-// either list.
-// ("Vase option based on availability", "Basket, depending on availability";
-// not "Clear glass vase (size depends on availability)", where the vase is the product.)
-const UNRESOLVED_CONTAINER = /\b(vase|pot|planter|box|basket)\b(\s+option)?,?\s+(depending on|based on) availability\b/i;
-
 /**
  * Included items, on-request items, and what is agreed in the quote because
  * the record says neither. Admin-added records are read the same way.
  */
 export function suppliedItems(product: Pick<Product, "whatsIncluded" | "onRequest" | "toConfirm">): { included: string[]; onRequest: string[]; toConfirm: string[] } {
+  // A record's own status is kept: an item it lists as included or on request
+  // stays there whatever its wording ("… depending on availability"). Only the
+  // record's toConfirm field puts an item with the quote.
   const included: string[] = [];
   const toConfirm = [...(product.toConfirm ?? [])];
-  const onRequest = (product.onRequest ?? []).filter((item) => {
-    if (!UNRESOLVED_CONTAINER.test(item)) return true;
-    toConfirm.push(item);
-    return false;
-  });
+  const onRequest = [...(product.onRequest ?? [])];
   for (const item of product.whatsIncluded ?? []) {
     if (PROCESS_STEP.test(item)) continue;
-    if (UNRESOLVED_CONTAINER.test(item)) {
-      toConfirm.push(item);
-      continue;
-    }
     if (ON_REQUEST.test(item)) {
       const cleaned = item.replace(ON_REQUEST, " ").replace(/\s+/g, " ").trim();
       if (cleaned && !onRequest.includes(cleaned)) onRequest.push(cleaned.charAt(0).toUpperCase() + cleaned.slice(1));

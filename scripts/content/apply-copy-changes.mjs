@@ -7,6 +7,7 @@
 //   node scripts/content/apply-copy-changes.mjs plan     --manifest <file> --database-url <url>
 //   node scripts/content/apply-copy-changes.mjs apply    --manifest <file> --database-url <url> --receipt <new file>
 //   node scripts/content/apply-copy-changes.mjs rollback --receipt <file>  --database-url <url>
+//   node scripts/content/apply-copy-changes.mjs reconcile --receipt <file> --database-url <url>
 //
 // Every intended field is classified against the record as it is now:
 //   expected-old  holds the value live before the release  -> will be changed
@@ -20,10 +21,26 @@
 // and the write), classified again, updated with a guard on the expected
 // value, read back and compared before COMMIT. The receipt records only the
 // fields this run changed, with their actual before-values; rollback restores
-// exactly those, and only while each still holds the value this run wrote.
+// exactly those, matched by the product's id and slug, and only while each
+// still holds the value this run wrote (a replacement record or a newer edit
+// aborts the whole rollback).
+//
+// Receipts. apply refuses to start if <receipt> or <receipt>.pending already
+// exists, and creates <receipt>.pending exclusively before COMMIT; after
+// COMMIT it is renamed to <receipt>. If the process stops between the two,
+// the commit's outcome is uncertain and the .pending file is the only copy of
+// the before-values: a rerun refuses to start (so they cannot be overwritten
+// by a receipt of "nothing changed"). Run `reconcile`: it reads the records
+// and renames .pending to <receipt> when every listed field holds the new
+// copy (committed), to <receipt>.uncommitted when every one holds its
+// before-value (not committed), and otherwise stops without touching it.
 // The database URL is never read from the environment: it must be passed.
 import { existsSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+
+export const PENDING = (receipt) => `${receipt}.pending`;
 import pg from 'pg';
+// The same pinned Supabase CA and full verification the application uses (src/server/db/postgres/client.ts).
+import { supabasePoolSsl } from '../../src/server/db/postgres/ssl.mjs';
 
 export const COLUMNS = new Set(['name', 'short_description', 'description']);
 
@@ -43,7 +60,7 @@ export function classify(changes, rows) {
 /** Field and distinct-product counts per status. */
 export function summarise(classified) {
   const out = {};
-  for (const status of ['expected-old', 'already-new', 'conflicting', 'missing']) {
+  for (const status of ['expected-old', 'already-new', 'conflicting', 'missing', 'replaced']) {
     const items = classified.filter((item) => item.status === status);
     out[status] = { fields: items.length, products: new Set(items.map((item) => item.slug)).size };
   }
@@ -51,7 +68,7 @@ export function summarise(classified) {
   return out;
 }
 
-const blocking = (classified) => classified.filter((item) => item.status === 'conflicting' || item.status === 'missing');
+const blocking = (classified) => classified.filter((item) => item.status === 'conflicting' || item.status === 'missing' || item.status === 'replaced');
 
 const report = (label, classified) => {
   console.log(`${label}: ${JSON.stringify(summarise(classified))}`);
@@ -118,21 +135,44 @@ export async function apply(client, changes, { release, beforeCommit } = {}) {
   }
 }
 
-/** Restores the receipt's changed fields; any field edited since (or missing) aborts the batch. */
+/**
+ * Classify a receipt's changed fields against rows read by product id: the
+ * record must be the same product (id and slug) and hold what this run wrote
+ * ("expected-old" here, to be restored) or already its before-value
+ * ("already-new": nothing to do). A missing id, a different slug on that id
+ * (a replacement record) or any other value blocks.
+ */
+export function classifyReceipt(changed, rows) {
+  const byId = new Map(rows.map((row) => [String(row.id), row]));
+  return changed.map((item) => {
+    if (!COLUMNS.has(item.column)) throw new Error(`Unsupported column ${item.column}`);
+    const change = { slug: item.slug, column: item.column, old: item.after, new: item.before, id: item.id };
+    const row = byId.get(String(item.id));
+    if (!row) return { ...change, status: 'missing', current: null };
+    if (row.slug !== item.slug) return { ...change, status: 'replaced', current: row.slug };
+    const current = row[item.column];
+    return { ...change, current, status: current === item.before ? 'already-new' : current === item.after ? 'expected-old' : 'conflicting' };
+  });
+}
+
+async function rowsById(client, ids, { lock = false } = {}) {
+  return (await client.query(`select id, slug, name, short_description, description from products where id::text = any($1::text[]) order by id${lock ? ' for update' : ''}`, [ids.map(String)])).rows;
+}
+
+/** Restores the receipt's changed fields; a replaced record, a field edited since, or a missing record aborts the batch. */
 export async function rollback(client, receipt) {
   await client.query('begin');
   try {
     await client.query("set local lock_timeout = '10s'");
-    const changes = receipt.changed.map((item) => ({ slug: item.slug, column: item.column, old: item.after, new: item.before }));
-    const slugs = [...new Set(changes.map((c) => c.slug))];
+    const ids = [...new Set(receipt.changed.map((c) => c.id))];
     // "old" here is what this run wrote, "new" the restored value.
-    const classified = classify(changes, await lockedRows(client, slugs));
-    if (blocking(classified).length) {
+    const classified = classifyReceipt(receipt.changed, await rowsById(client, ids, { lock: true }));
+    if (classified.some((item) => item.status !== 'expected-old' && item.status !== 'already-new')) {
       await client.query('rollback');
       return { ok: false, classified, summary: summarise(classified) };
     }
     for (const item of classified.filter((i) => i.status === 'expected-old')) await writeField(client, { id: item.id, column: item.column, from: item.current, to: item.new });
-    const after = classify(changes, await readRows(client, slugs));
+    const after = classifyReceipt(receipt.changed, await rowsById(client, ids));
     const wrong = after.filter((item) => item.status !== 'already-new');
     if (wrong.length) throw new Error(`Rollback verification failed for ${wrong.map((w) => `${w.slug}.${w.column}`).join(', ')}`);
     await client.query('commit');
@@ -141,6 +181,21 @@ export async function rollback(client, receipt) {
     await client.query('rollback').catch(() => {});
     throw error;
   }
+}
+
+/**
+ * After an interrupted apply: decide from the records whether the pending
+ * receipt's transaction committed. Read-only.
+ *   committed     every listed field holds the copy this run wrote
+ *   not-committed every listed field holds its before-value
+ *   uncertain     anything else (a mix, a newer edit, a replaced or missing record)
+ */
+export async function reconcile(client, pendingReceipt) {
+  const rows = await rowsById(client, [...new Set(pendingReceipt.changed.map((c) => c.id))]);
+  const classified = classifyReceipt(pendingReceipt.changed, rows);
+  const all = (status) => classified.every((item) => item.status === status);
+  const outcome = classified.length === 0 ? 'committed' : all('expected-old') ? 'committed' : all('already-new') ? 'not-committed' : 'uncertain';
+  return { outcome, classified };
 }
 
 function args(argv) {
@@ -155,15 +210,30 @@ function args(argv) {
 if (process.argv[1]?.endsWith('apply-copy-changes.mjs')) {
   const opts = args(process.argv.slice(2));
   const action = opts._[0];
-  if (!['plan', 'apply', 'rollback'].includes(action) || !opts['database-url']) {
-    console.error('Usage: plan|apply --manifest <file> --database-url <url> [--receipt <new file>] | rollback --receipt <file> --database-url <url>');
+  if (!['plan', 'apply', 'rollback', 'reconcile'].includes(action) || !opts['database-url']) {
+    console.error('Usage: plan|apply --manifest <file> --database-url <url> [--receipt <new file>] | rollback|reconcile --receipt <file> --database-url <url>');
     process.exit(64);
   }
+  // Checked before connecting: an apply never starts beside an earlier receipt, final or pending.
+  if (action === 'apply') {
+    if (!opts.receipt) { console.error('apply needs --receipt <new file>'); process.exit(64); }
+    for (const file of [opts.receipt, PENDING(opts.receipt)]) if (existsSync(file)) { console.error(`${file} exists: an earlier apply used this receipt name. If it is .pending, run reconcile first.`); process.exit(65); }
+  }
   const url = opts['database-url'];
-  const client = new pg.Client({ connectionString: url, ssl: /@(localhost|127\.0\.0\.1)[:/]/.test(url) ? false : { rejectUnauthorized: true } });
+  const client = new pg.Client({ connectionString: url, ssl: /@(localhost|127\.0\.0\.1)[:/]/.test(url) ? false : supabasePoolSsl });
   await client.connect();
   try {
-    if (action === 'rollback') {
+    if (action === 'reconcile') {
+      const pending = PENDING(opts.receipt);
+      if (!existsSync(pending)) throw new Error(`No ${pending} to reconcile`);
+      if (existsSync(opts.receipt)) throw new Error(`${opts.receipt} already exists; not overwriting it`);
+      const { outcome, classified } = await reconcile(client, JSON.parse(readFileSync(pending, 'utf8')));
+      report(`reconcile (${outcome})`, classified);
+      if (outcome === 'committed') { renameSync(pending, opts.receipt); console.log(`Committed: receipt is ${opts.receipt}.`); }
+      else if (outcome === 'not-committed') { renameSync(pending, `${opts.receipt}.uncommitted`); console.log(`Not committed: nothing changed; kept as ${opts.receipt}.uncommitted.`); }
+      else console.log(`Uncertain: ${pending} left in place; resolve the fields listed above by hand.`);
+      process.exitCode = outcome === 'uncertain' ? 2 : 0;
+    } else if (action === 'rollback') {
       const receipt = JSON.parse(readFileSync(opts.receipt, 'utf8'));
       const result = await rollback(client, receipt);
       report('rollback', result.classified);
@@ -175,18 +245,22 @@ if (process.argv[1]?.endsWith('apply-copy-changes.mjs')) {
         report('plan', result.classified);
         process.exitCode = result.ok ? 0 : 2;
       } else {
-        if (!opts.receipt) throw new Error('apply needs --receipt <new file>');
-        if (existsSync(opts.receipt)) throw new Error(`Receipt ${opts.receipt} exists; choose a new file`);
-        const pending = `${opts.receipt}.pending`;
-        const result = await apply(client, manifest.changes, { release: manifest.release, beforeCommit: (receipt) => writeFileSync(pending, JSON.stringify(receipt, null, 1)) });
+        const pending = PENDING(opts.receipt);
+        // flag "wx": created exclusively; if it appeared meanwhile, the write fails and nothing commits.
+        const result = await apply(client, manifest.changes, { release: manifest.release, beforeCommit: (receipt) => writeFileSync(pending, JSON.stringify(receipt, null, 1), { flag: 'wx' }) });
         report('apply', result.classified);
         if (result.ok) {
-          renameSync(pending, opts.receipt);
-          console.log(`Changed ${result.receipt.changed.length} fields; receipt written to ${opts.receipt}.`);
+          try {
+            renameSync(pending, opts.receipt);
+          } catch (error) {
+            console.error(`Committed, but the receipt could not be renamed (${error.code ?? error.message}). The before-values are in ${pending}; run reconcile.`);
+            process.exitCode = 3;
+          }
+          if (!process.exitCode) console.log(`Changed ${result.receipt.changed.length} fields; receipt written to ${opts.receipt}.`);
         } else {
           console.log('Aborted: nothing was written.');
         }
-        process.exitCode = result.ok ? 0 : 2;
+        if (!process.exitCode) process.exitCode = result.ok ? 0 : 2;
       }
     }
   } finally {
