@@ -30,6 +30,10 @@ const total = cards.length;
 const mode = total >= 3 ? "carousel" : total === 2 ? "pair" : "single";
 const sizes = "(min-width: 1280px) 350px, (min-width: 1024px) 300px, (min-width: 768px) 300px, 70vw";
 const pad = (value: number) => String(value).padStart(2, "0");
+// A carousel's slides are groups (role="group", "slide"), which a list item
+// may not be; without the carousel the cards stay an ordinary list.
+const Track = mode === "carousel" ? "div" : "ul";
+const Slide = mode === "carousel" ? "div" : "li";
 ---
 
 {
@@ -47,9 +51,9 @@ const pad = (value: number) => String(value).padStart(2, "0");
       </div>
 
       <div class="occ__viewport" data-occ-viewport>
-        <ul class="occ__track">
+        <Track class="occ__track">
           {cards.map((card, index) => (
-            <li
+            <Slide
               class="occ__slide"
               data-occ-slide
               data-tone={card.tone}
@@ -82,9 +86,9 @@ const pad = (value: number) => String(value).padStart(2, "0");
                   </span>
                 </span>
               </a>
-            </li>
+            </Slide>
           ))}
-        </ul>
+        </Track>
       </div>
 
       {mode === "carousel" && (

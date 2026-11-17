@@ -1,83 +1,103 @@
 ---
-// Homepage — the floral atelier, built around the questions a shopper has
-// (docs/occasion-journeys.md, "Homepage structure"): a full-width hero of
-// three campaign photographs → bouquets to choose from (budget shortcut,
-// availability helper) → the occasion carousel → what will arrive → how
-// ordering works → focused questions → assisted choice → footer. No
-// promotional claims: the delivery strip uses the confirmed initial areas.
-// The bouquet edit shows four designs; the category retains the full range.
-// (The bouquet builder — /studio — was removed
-// on 4 Oct 2026; its URL redirects to /categories/bouquets.) All server-rendered HTML;
-// depth is CSS perspective plus small scripts. HeroReel.astro is kept but
-// not mounted: a second browsing carousel before the products duplicated
-// the occasion carousel and pushed the first price further down.
+// Homepage — one flower, three petals (docs/homepage-petals-2026-11-17.md).
+// Fresh Petals sells three things, and the page is built around choosing
+// between them:
+//   1. PetalHero: the offer, how ordering works in one sentence, the three
+//      ranges as links, and the signature scene — three photographic petals,
+//      one per range, that turn towards whichever range is chosen.
+//   2. Three chapters, one per range, each shown the way it is chosen:
+//      bouquets by photograph (four featured designs and the basket),
+//      wedding garlands by design code (designs hanging from one thread),
+//      pooja flowers by form (loose, strung, regular, bulk).
+//   3. The occasion carousel (admin assignments), how ordering works with the
+//      delivery facts, focused questions and the closing invitation.
+// Every count is computed from this build's public catalogue. Bouquets and
+// garlands are quote-only: no amount appears for them. All essential text,
+// headings and links are in the HTML; the WebGL scene is optional.
 // The SEO title and description come from src/data/seoLanding.ts.
 import BaseLayout from "../layouts/BaseLayout.astro";
-import HeroAtelier from "../components/atelier/HeroAtelier.astro";
+import PetalHero from "../components/home/PetalHero.astro";
+import RangeBouquets from "../components/home/RangeBouquets.astro";
+import RangeGarlands from "../components/home/RangeGarlands.astro";
+import RangePooja from "../components/home/RangePooja.astro";
+import HowOrdering from "../components/home/HowOrdering.astro";
 import OccasionCarousel from "../components/atelier/OccasionCarousel.astro";
-import BouquetEdit from "../components/atelier/BouquetEdit.astro";
-import InsideBouquet from "../components/atelier/InsideBouquet.astro";
-import OrderJourney from "../components/atelier/OrderJourney.astro";
 import FinalInvite from "../components/atelier/FinalInvite.astro";
 import HomeFaq from "../components/atelier/HomeFaq.astro";
+import "../styles/home.css";
 import { HOME_LANDING } from "../data/seoLanding";
-import { HERO_SCENE_SIZES, getArrivalBouquet, getBouquetBrowse, getBouquetEdit, getBudgetShortcut, getFeaturedBouquets, getHeroCampaigns } from "../data/atelierHome";
+import { getBouquetBrowse, getBouquetEdit, getBudgetShortcut, getFeaturedBouquets, getHomeRanges, PETAL_SIZES } from "../data/atelierHome";
 import { garlandsPromoted } from "../data/launchCatalogue";
 import { bouquetRange } from "../data/catalogueRange";
+import { categoryProducts } from "../data/categoryPages";
+import { poojaSections } from "../data/collectionGuidance";
+import { pilotGarlands, populatedCollections } from "../data/garlandCollections";
 import { loadPublicCatalogue } from "../server/services/PublicCatalogue";
 import { loadGarlands, isListedGarland } from "../data/garlands";
 import { organizationNode, websiteNode } from "../data/businessProfile";
 import { loadOccasionMembership } from "../server/services/OccasionMembership";
-import { loadAuthoritativePrices } from "../server/services/ProductPricing";
+import { loadAuthoritativePrices, withAuthoritativePrice } from "../server/services/ProductPricing";
+import { petalPath } from "../shared/petalShape";
 import frauncesUrl from "@fontsource-variable/fraunces/files/fraunces-latin-wght-normal.woff2?url";
+import jostUrl from "@fontsource-variable/jost/files/jost-latin-wght-normal.woff2?url";
 
-// Rendered on request and CDN-cached with the occasion index tag, so the
-// occasion carousel and the hero's shortcuts follow the admin's occasion
-// assignments from the first byte (no script needed); saving a changed
-// assignment purges the copy (src/server/services/OccasionWebsite.ts).
-export const prerender = true; // static file: served without running the Worker; published by a build (src/server/services/Publishing.ts)
+// A static file: served without running the Worker; published by a build
+// (src/server/services/Publishing.ts), so admin changes reach it then.
+export const prerender = true;
 
-// This deployment's public catalogue: the carousel cards count every
-// assigned public bouquet (occasionJourneys.carouselOccasions); the bouquet
-// edit shows four featured designs and "See all" counts the whole list.
 const [priceMap, publicCatalogue] = await Promise.all([loadAuthoritativePrices(), loadPublicCatalogue()]);
 const membership = await loadOccasionMembership(publicCatalogue.map((product) => product.slug));
-const editProducts = getBouquetEdit(priceMap, publicCatalogue);
-const featuredProducts = getFeaturedBouquets(editProducts);
+
+// 01 Bouquets: four featured designs; "View all" counts the whole list.
+const featuredProducts = getFeaturedBouquets(getBouquetEdit(priceMap, publicCatalogue));
 const bouquetCount = bouquetRange(publicCatalogue).length;
 const budget = getBudgetShortcut(priceMap, publicCatalogue);
-const publicGarlands = garlandsPromoted() ? (await loadGarlands()).map((product) => product.garland).filter(isListedGarland) : [];
-// The hero's campaign slides; the garland slide and its buttons need public garlands.
-const heroCampaigns = getHeroCampaigns({ garlandsPublic: publicGarlands.length > 0 });
+
+// 02 Garlands: the public designs (read live at build), the guide's pilot
+// designs first; collections only while they list a design.
+const publicGarlands = garlandsPromoted() ? (await loadGarlands()).filter((product) => isListedGarland(product.garland)) : [];
+const pilot = pilotGarlands(publicGarlands);
+const garlandShowcase = [...pilot, ...publicGarlands.filter((product) => !pilot.some((p) => p.slug === product.slug))].slice(0, 6);
+const garlandLinks = populatedCollections(publicGarlands).map(({ collection, count }) => ({ label: collection.label, href: collection.path, count }));
+
+// 03 Pooja flowers: the collection page's own products and sections.
+const poojaProducts = categoryProducts("pooja-flowers", publicCatalogue).primary.map((product) => withAuthoritativePrice(product, priceMap));
+const pooja = poojaSections(poojaProducts);
+
+const ranges = getHomeRanges({ bouquets: bouquetCount, garlands: publicGarlands.length, pooja: poojaProducts.length });
+
+const petalMask = `url("data:image/svg+xml,${encodeURIComponent(
+  `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1' preserveAspectRatio='none'><path d='${petalPath(40)}'/></svg>`
+)}")`;
 
 // Organization and WebSite structured data come from the shared business
-// profile (src/data/businessProfile.ts): the name, the site, the WhatsApp
-// number, the Instagram account, the FP mark and the service cities. It is
-// an Organization only: no address, branch, hours or rating
-// is verified.
+// profile (src/data/businessProfile.ts). An Organization only: no address,
+// branch, hours, rating or price is verified, so none is published.
 const homeJsonLd = [organizationNode(Astro.site), websiteNode(Astro.site)];
 ---
 
 <BaseLayout
   title={HOME_LANDING.title}
   description={HOME_LANDING.description}
+  image="/images/og-home.jpg"
   showCategoryCarousel={false}
   homeHeader={true}
   jsonLd={homeJsonLd}
 >
-  <!-- Homepage only: the display serif sets the hero headline in the first
-       viewport (measured: helps here, hurts listing pages, so not global). -->
+  <!-- Homepage only: both faces of the first viewport (headline serif, text
+       sans), so the copy above the petals does not re-wrap and move them. -->
   <link slot="head" rel="preload" href={frauncesUrl} as="font" type="font/woff2" crossorigin />
-  <!-- The first hero photograph only, with the same AVIF srcset/sizes as its
-       <picture> (HeroAtelier.astro); the other two are fetched after it. -->
-  {heroCampaigns[0] && <link slot="head" rel="preload" as="image" type="image/avif" imagesrcset={heroCampaigns[0].image.avif} imagesizes={HERO_SCENE_SIZES} fetchpriority="high" />}
+  <link slot="head" rel="preload" href={jostUrl} as="font" type="font/woff2" crossorigin />
+  <!-- The three petal photographs (small files), with the same srcset/sizes as their <picture> elements. -->
+  {ranges.map((range) => <link slot="head" rel="preload" as="image" type="image/avif" imagesrcset={range.image.avif} imagesizes={PETAL_SIZES} fetchpriority="high" />)}
 
-  <main class="atelier-home">
-    <HeroAtelier membership={membership} catalogue={publicCatalogue} campaigns={heroCampaigns} publicGarlands={publicGarlands} budget={budget} />
-    <BouquetEdit products={featuredProducts} totalCount={bouquetCount} browse={getBouquetBrowse()} budget={budget} />
+  <main class="home" style={`--petal-mask: ${petalMask};`}>
+    <PetalHero ranges={ranges} />
+    <RangeBouquets products={featuredProducts} totalCount={bouquetCount} browse={getBouquetBrowse()} budget={budget} />
+    <RangeGarlands designs={garlandShowcase} totalCount={publicGarlands.length} collections={garlandLinks} />
+    {pooja.length > 0 && <RangePooja sections={pooja} />}
     <OccasionCarousel membership={membership} catalogue={publicCatalogue} />
-    <InsideBouquet bouquet={getArrivalBouquet(priceMap, publicCatalogue)} />
-    <OrderJourney />
+    <HowOrdering />
     <HomeFaq />
     <FinalInvite catalogue={publicCatalogue} />
   </main>

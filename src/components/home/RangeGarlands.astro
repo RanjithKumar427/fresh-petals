@@ -1,0 +1,192 @@
+---
+// Chapter 02 — wedding garlands, which customers choose by photograph and
+// design code. The designs shown are the garland guide's six-design pilot
+// (src/data/garlandCollections.ts GARLAND_PILOT) while public, topped up
+// with other public designs; each keeps its own name, code and page. They
+// hang from one thread, the way garlands are displayed before a ceremony.
+// Garlands are quote-only: no amount is shown anywhere.
+import type { GarlandProduct } from "../../data/garlands";
+import { garlandPhotoSrcset } from "../../data/garlandRules";
+import { GARLAND_GUIDE_PATH, GARLANDS_PATH } from "../../data/garlandCollections";
+import { QUOTE_ONLY_PRICE_LABEL } from "../../shared/quoteOnly";
+
+interface Props {
+  designs: GarlandProduct[];
+  /** Every public garland design. */
+  totalCount: number;
+  collections: { label: string; href: string; count: number }[];
+}
+const { designs, totalCount, collections } = Astro.props;
+const example = designs[0]?.garland.code;
+const steps = [
+  { title: "Pick a photograph", text: `Each design has a code${example ? `, such as ${example},` : ""} on its card and its page.` },
+  { title: "Send the code and date", text: "Enquire on WhatsApp with the code, the ceremony date and the delivery city." },
+  { title: "We confirm the details", text: "The flowers, length, single or pair, and the price, before anything is made." },
+];
+---
+
+<section id="garlands" class="chapter chapter--garlands" aria-labelledby="garlands-title">
+  <div class="chapter__inner">
+    <header class="chapter__head">
+      <p class="chapter__index"><span class="chapter__glyph chapter__glyph--garlands" aria-hidden="true"></span>02 · Wedding garlands</p>
+      <h2 id="garlands-title" class="chapter__title">Wedding garlands, <em>chosen by design code.</em></h2>
+      <p class="chapter__lede">
+        Varmala, jaimala and poola mala, made to order. Every design is photographed and numbered, so you can ask for exactly the
+        one you saw.
+      </p>
+      <a href={GARLANDS_PATH} class="chapter__cta">{totalCount > 0 ? `See all ${totalCount} garland designs` : "See wedding garlands"} <span aria-hidden="true">→</span></a>
+    </header>
+
+    {designs.length > 0 && (
+      <div class="gl__rail-wrap">
+        <ul class="gl__rail" aria-label="Featured garland designs">
+          {designs.map((product, index) => {
+            const design = product.garland;
+            const srcset = garlandPhotoSrcset(design.image, 480);
+            return (
+              <li class="gl__item" style={`--sway:${index % 2 ? 0.6 : -0.6}deg`}>
+                <span class="gl__string" aria-hidden="true"></span>
+                <div class="gl__card">
+                  <div class="gl__photo">
+                    <img src={design.image.path} srcset={srcset} sizes={srcset ? "(min-width: 1024px) 200px, 42vw" : undefined}
+                      width={design.image.width} height={design.image.height} alt={design.image.alt} loading="lazy" decoding="async" />
+                    <span class="gl__code">{design.code}</span>
+                  </div>
+                  <h3 class="gl__name"><a href={`/products/${product.slug}`}>{design.title}<span class="sr-only">, design {design.code}</span></a></h3>
+                  <p class="gl__price">{QUOTE_ONLY_PRICE_LABEL}</p>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    )}
+
+    <div class="gl__foot">
+      <ol class="gl__steps">
+        {steps.map((step, index) => (
+          <li>
+            <span class="gl__num" aria-hidden="true">{index + 1}</span>
+            <span><strong>{step.title}.</strong> {step.text}</span>
+          </li>
+        ))}
+      </ol>
+      <nav class="chapter__links" aria-label="Browse garlands">
+        <span class="chapter__links-label">{collections.length > 0 ? "Browse by flower" : "Before you choose"}</span>
+        {collections.map((link) => <a href={link.href}>{link.label}</a>)}
+        <a href={GARLAND_GUIDE_PATH}>How to choose a wedding garland</a>
+      </nav>
+    </div>
+  </div>
+</section>
+
+<style>
+  .gl__rail-wrap {
+    position: relative;
+    margin-inline: calc(-1 * clamp(16px, 4vw, 56px));
+    padding-inline: clamp(16px, 4vw, 56px);
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: clamp(16px, 4vw, 56px);
+    scrollbar-width: thin;
+    scrollbar-color: rgba(250, 247, 242, 0.35) transparent;
+  }
+  .gl__rail {
+    position: relative;
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(150px, 42%);
+    gap: 0.9rem;
+    list-style: none;
+    margin: 0;
+    padding: 1.4rem 0 1.2rem;
+  }
+  /* The thread the garlands hang from, with a knot above each design. */
+  .gl__rail::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0.5rem;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(232, 214, 176, 0), rgba(232, 214, 176, 0.7) 4%, rgba(232, 214, 176, 0.7) 96%, rgba(232, 214, 176, 0));
+  }
+  .gl__item {
+    position: relative;
+    scroll-snap-align: start;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .gl__string {
+    position: relative;
+    width: 1px;
+    height: 18px;
+    margin-top: -0.9rem;
+    background: rgba(232, 214, 176, 0.7);
+  }
+  .gl__string::before {
+    content: "";
+    position: absolute;
+    left: -3px;
+    top: -3px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #e8d6b0;
+  }
+  .gl__card {
+    position: relative;
+    width: 100%;
+    transform-origin: 50% -16px;
+    transition: transform 0.6s var(--ease-atelier, ease);
+  }
+  .gl__item:hover .gl__card { transform: rotate(var(--sway)); }
+  .gl__photo {
+    position: relative;
+    aspect-ratio: 4 / 5;
+    border-radius: 14px;
+    overflow: hidden;
+    background: #f4efe6;
+  }
+  .gl__photo img { display: block; width: 100%; height: 100%; object-fit: contain; }
+  .gl__code {
+    position: absolute;
+    left: 0.5rem;
+    top: 0.5rem;
+    padding: 0.28rem 0.6rem;
+    border-radius: 999px;
+    background: rgba(250, 247, 242, 0.95);
+    color: var(--color-ink-deep);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+  }
+  .gl__name { margin: 0.7rem 0 0; font-size: 0.92rem; font-weight: 600; line-height: 1.3; }
+  .gl__name a { color: var(--color-ivory); text-decoration: none; }
+  .gl__name a::after { content: ""; position: absolute; inset: 0; }
+  .gl__name a:hover { text-decoration: underline; text-underline-offset: 0.18em; }
+  .gl__name a:focus-visible { outline: none; }
+  .gl__card:has(a:focus-visible) { outline: 2px solid #f1d9a8; outline-offset: 5px; border-radius: 14px; }
+  .gl__price { margin: 0.2rem 0 0; font-size: 0.78rem; color: rgba(250, 247, 242, 0.7); }
+
+  .gl__foot { display: grid; gap: 1.25rem; margin-top: 1.25rem; }
+  .gl__steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.75rem; }
+  .gl__steps li { display: grid; grid-template-columns: auto 1fr; gap: 0.75rem; align-items: start; font-size: 0.92rem; line-height: 1.5; color: rgba(250, 247, 242, 0.82); }
+  .gl__steps strong { color: var(--color-ivory); font-weight: 600; }
+  .gl__num { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; border: 1px solid rgba(241, 217, 168, 0.6); color: #f1d9a8; font-family: var(--font-display); font-size: 0.95rem; }
+
+  @media (min-width: 720px) {
+    .gl__rail { grid-auto-columns: minmax(170px, 28%); }
+  }
+  @media (min-width: 1024px) {
+    .gl__rail-wrap { margin-inline: 0; padding-inline: 0; overflow: visible; }
+    .gl__rail { grid-auto-flow: row; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 1.25rem; }
+    .gl__foot { grid-template-columns: 1.2fr 1fr; align-items: start; gap: 2.5rem; margin-top: 1.75rem; }
+    .gl__steps { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.25rem; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .gl__item:hover .gl__card { transform: none; }
+  }
+</style>

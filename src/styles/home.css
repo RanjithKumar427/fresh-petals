@@ -1,0 +1,159 @@
+/* Homepage chapters (src/components/home/Range*.astro): the three ranges
+   share one header pattern — petal glyph and index, a display heading, one
+   paragraph and the link to the full collection — and differ in their body
+   and ground, so bouquets, garlands and pooja flowers read as three forms. */
+
+.chapter {
+  --chapter-pad: clamp(16px, 4vw, 56px);
+  padding: clamp(3rem, 6vw, 5.5rem) var(--chapter-pad);
+  scroll-margin-top: calc(var(--header-h) + 16px);
+}
+.chapter__inner {
+  max-width: 1320px;
+  margin-inline: auto;
+}
+.chapter__head {
+  display: grid;
+  gap: 0.75rem 3rem;
+  margin-bottom: clamp(1.5rem, 3vw, 2.5rem);
+}
+.chapter__index {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-rose-deep);
+}
+.chapter__glyph {
+  display: inline-block;
+  width: 14px;
+  height: 19px;
+  -webkit-mask: var(--petal-mask) center / 100% 100% no-repeat;
+  mask: var(--petal-mask) center / 100% 100% no-repeat;
+}
+.chapter__glyph--bouquets { background: linear-gradient(170deg, #f2c7cf, #d98c9c); }
+.chapter__glyph--garlands { background: linear-gradient(170deg, #d4475b, #9e2236); }
+.chapter__glyph--pooja { background: linear-gradient(170deg, #f7c04a, #e57f1d); }
+.chapter__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 380;
+  font-size: clamp(1.95rem, 1.35rem + 2.6vw, 3.5rem);
+  line-height: 1.04;
+  letter-spacing: -0.025em;
+  color: var(--color-ink-deep);
+  max-width: 18ch;
+  text-wrap: balance;
+}
+.chapter__title em {
+  font-style: italic;
+  font-weight: 340;
+  color: var(--color-rose-deep);
+}
+.chapter__lede {
+  margin: 0;
+  max-width: 46ch;
+  color: var(--color-moss);
+  font-size: 0.98rem;
+  line-height: 1.6;
+}
+.chapter__cta {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 48px;
+  padding: 0 1.35rem;
+  border: 1px solid color-mix(in srgb, var(--color-ink) 40%, transparent);
+  border-radius: 999px;
+  color: var(--color-ink);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+}
+.chapter__cta:hover {
+  background: var(--color-ink);
+  border-color: var(--color-ink);
+  color: var(--color-ivory);
+}
+.chapter__cta:focus-visible,
+.chapter__links a:focus-visible {
+  outline: 2px solid var(--color-rose-deep);
+  outline-offset: 3px;
+}
+.chapter__links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 1.2rem;
+  margin-top: 1.75rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid color-mix(in srgb, var(--color-ink) 14%, transparent);
+}
+.chapter__links-label {
+  width: 100%;
+  padding-top: 0.6rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-moss);
+}
+.chapter__links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--color-ink);
+  font-size: 0.92rem;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, currentColor 35%, transparent);
+  text-underline-offset: 0.25em;
+}
+.chapter__links a:hover { text-decoration-color: currentColor; }
+
+@media (min-width: 900px) {
+  .chapter__head {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    grid-template-areas: "index index" "title lede" "title cta";
+    align-items: end;
+  }
+  .chapter__index { grid-area: index; }
+  .chapter__title { grid-area: title; }
+  .chapter__lede { grid-area: lede; }
+  .chapter__cta { grid-area: cta; }
+}
+
+/* 01 bouquets: the ivory page. */
+.chapter--bouquets { background: var(--color-ivory); }
+
+/* 02 garlands: the deep green of a mandap backdrop, so the white and red
+   garland photographs stand out. */
+.chapter--garlands {
+  background:
+    radial-gradient(80% 60% at 85% 0%, rgba(241, 217, 168, 0.1), transparent 60%),
+    var(--color-ink-deep);
+  color: var(--color-ivory);
+}
+.chapter--garlands .chapter__index { color: #f1d9a8; }
+.chapter--garlands .chapter__title { color: var(--color-ivory); }
+.chapter--garlands .chapter__title em { color: #f1d9a8; }
+.chapter--garlands .chapter__lede { color: rgba(250, 247, 242, 0.78); }
+.chapter--garlands .chapter__cta { color: var(--color-ivory); border-color: rgba(250, 247, 242, 0.5); }
+.chapter--garlands .chapter__cta:hover { background: var(--color-ivory); color: var(--color-ink-deep); border-color: var(--color-ivory); }
+.chapter--garlands .chapter__cta:focus-visible,
+.chapter--garlands .chapter__links a:focus-visible { outline-color: #f1d9a8; }
+.chapter--garlands .chapter__links { border-top-color: rgba(250, 247, 242, 0.18); }
+.chapter--garlands .chapter__links-label { color: rgba(250, 247, 242, 0.6); }
+.chapter--garlands .chapter__links a { color: var(--color-ivory); }
+
+/* 03 pooja: warm paper, a marigold tint. */
+.chapter--pooja {
+  background:
+    radial-gradient(70% 60% at 0% 100%, rgba(247, 192, 74, 0.14), transparent 60%),
+    #fbf4ea;
+}

@@ -1,0 +1,562 @@
+---
+// The homepage's opening: one flower, three petals. Each petal holds a
+// photograph of one of the three things Fresh Petals sells — bouquets,
+// wedding garlands, pooja flowers — and the three range links beside it are
+// the way in. Pointing at or focusing a range turns its petal towards the
+// visitor; pointing at a petal highlights its range and a click opens it.
+//
+// Layers: the static petals are ordinary <img> elements masked to the petal
+// outline (src/shared/petalShape.ts). They are in the first HTML, so the
+// photographs and every link render immediately, without JavaScript, with
+// reduced motion and when WebGL is unavailable. Once the page is idle, on a
+// capable device, src/scripts/petal-scene.ts draws the same petals as lit,
+// cupped surfaces from the same (already loaded) images and fades in over
+// them. The canvas is decorative: aria-hidden, no focus, no text in it.
+import type { HomeRange } from "../../data/atelierHome";
+import { PETAL_SIZES } from "../../data/atelierHome";
+import { PETAL_ASPECT, PETAL_OFFSET, PETAL_SCALE, PETAL_SPREAD, petalPhotoBox } from "../../shared/petalShape";
+import { serviceCityCount } from "../../data/serviceCities";
+
+interface Props {
+  ranges: HomeRange[];
+}
+const { ranges } = Astro.props;
+const slots = ["left", "centre", "right"];
+// Each petal's turn (counter-clockwise, radians) and where its photograph
+// sits inside it so the flowers stay upright — the same placement the WebGL
+// scene uses (src/shared/petalShape.ts petalPhotoBox).
+const turns = [PETAL_SPREAD, 0, -PETAL_SPREAD];
+const deg = (rad: number) => `${((rad * 180) / Math.PI).toFixed(2)}deg`;
+const petalStyle = (index: number) => {
+  const theta = turns[index];
+  const { ox, oy, sx, sy } = petalPhotoBox(theta);
+  const c = Math.cos(theta), s = Math.sin(theta);
+  const lx = c * ox + s * oy;
+  const ly = -s * ox + c * oy;
+  const pct = (n: number) => `${(n * 100).toFixed(2)}%`;
+  return [
+    `--r:${deg(-theta)}`,
+    `--dx:${((index - 1) * PETAL_OFFSET / PETAL_SCALE.centre).toFixed(4)}`,
+    `--ix:${pct(0.5 + lx / PETAL_ASPECT)}`,
+    `--iy:${pct(1 - ly)}`,
+    `--iw:${pct(sx / PETAL_ASPECT)}`,
+    `--ih:${pct(sy)}`,
+    `--ir:${deg(theta)}`,
+  ].join(";");
+};
+---
+
+<section class="ph" data-petal-hero aria-labelledby="ph-title" style={`--petal-aspect: ${PETAL_ASPECT};`}>
+  <div class="ph__grid">
+    <div class="ph__head">
+      <p class="ph__eyebrow">Florist · delivery to {serviceCityCount()} cities in India</p>
+      <h1 id="ph-title" class="ph__title">Bouquets, wedding garlands <em>&amp; flowers for pooja.</em></h1>
+      <p class="ph__lede">
+        Choose a design, then send us the date and delivery address on WhatsApp. We confirm availability, presentation and the
+        final price before you pay.
+      </p>
+    </div>
+
+    <div class="ph__stage" data-petal-stage aria-hidden="true">
+      <div class="ph__ground"></div>
+      <div class="ph__petals">
+        {
+          ranges.map((range, index) => (
+            <div class={`ph__petal ph__petal--${slots[index]}`} data-petal={range.id} style={petalStyle(index)}>
+              <div class="ph__clip">
+              <picture>
+                <source type="image/avif" srcset={range.image.avif} sizes={PETAL_SIZES} />
+                <source type="image/webp" srcset={range.image.webp} sizes={PETAL_SIZES} />
+                <img
+                  src={range.image.src}
+                  width={range.image.width}
+                  height={range.image.height}
+                  alt={range.image.alt}
+                  decoding="async"
+                  fetchpriority="high"
+                  data-petal-image
+                />
+              </picture>
+              </div>
+            </div>
+          ))
+        }
+      </div>
+      <canvas class="ph__canvas" data-petal-canvas></canvas>
+    </div>
+
+    <nav class="ph__ranges" aria-label="Shop by range">
+      <ul>
+        {
+          ranges.map((range) => (
+            <li>
+              <a class="ph__range" href={range.href} data-range={range.id}>
+                <span class={`ph__glyph ph__glyph--${range.id}`} aria-hidden="true" />
+                <span class="ph__range-text">
+                  <span class="ph__range-name">{range.name}</span>
+                  <span class="ph__range-line">{range.line}</span>
+                </span>
+                <span class="ph__range-count">{range.countLabel}</span>
+                <span class="ph__range-arrow" aria-hidden="true">
+                  <svg viewBox="0 0 20 20"><path d="M4 10h11M11 5.5 15.5 10 11 14.5" /></svg>
+                </span>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+
+    <p class="ph__more">
+      <a href="/search">Search by name or garland code</a>
+      <span aria-hidden="true">·</span>
+      <a href="/occasions">Shop by occasion</a>
+      <span aria-hidden="true">·</span>
+      <a href="/custom-orders">Custom orders</a>
+    </p>
+  </div>
+</section>
+
+<script>
+  type Scene = import("../../scripts/petal-scene").PetalScene;
+
+  const hero = document.querySelector<HTMLElement>("[data-petal-hero]");
+  const stage = hero?.querySelector<HTMLElement>("[data-petal-stage]");
+  const canvas = hero?.querySelector<HTMLCanvasElement>("[data-petal-canvas]");
+  if (hero && stage && canvas) {
+    const links = [...hero.querySelectorAll<HTMLAnchorElement>("[data-range]")];
+    const ids = links.map((link) => link.dataset.range ?? "");
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let scene: Scene | null = null;
+    let hovered = -1;
+    let focused = -1;
+    let picked = -1;
+
+    // One source of truth for the emphasised range: keyboard focus, then the
+    // hovered link, then the petal under the pointer.
+    const apply = () => {
+      const index = focused !== -1 ? focused : hovered !== -1 ? hovered : picked;
+      const id = index === -1 ? "" : ids[index];
+      if (stage.dataset.active !== id) stage.dataset.active = id;
+      links.forEach((link, i) => link.classList.toggle("is-active", i === index));
+      scene?.setActive(index);
+    };
+    links.forEach((link, index) => {
+      link.addEventListener("pointerenter", () => { hovered = index; apply(); });
+      link.addEventListener("pointerleave", () => { if (hovered === index) hovered = -1; apply(); });
+      link.addEventListener("focus", () => { focused = index; apply(); });
+      link.addEventListener("blur", () => { if (focused === index) focused = -1; apply(); });
+    });
+
+    // Pointer on the photographs: the petal under it is emphasised and a
+    // click opens its range (the links above are the keyboard route).
+    const petalAt = (event: PointerEvent): number => {
+      if (scene) {
+        const rect = canvas.getBoundingClientRect();
+        return scene.pick(event.clientX - rect.left, event.clientY - rect.top);
+      }
+      const el = (event.target as Element | null)?.closest<HTMLElement>("[data-petal]");
+      return el ? ids.indexOf(el.dataset.petal ?? "") : -1;
+    };
+    let down: { x: number; y: number; index: number } | null = null;
+    stage.addEventListener("pointermove", (event) => {
+      const index = petalAt(event);
+      if (index !== picked) { picked = index; apply(); }
+      stage.style.cursor = index === -1 ? "" : "pointer";
+      if (scene && event.pointerType === "mouse") {
+        const rect = stage.getBoundingClientRect();
+        scene.setPointer(((event.clientX - rect.left) / rect.width) * 2 - 1, ((event.clientY - rect.top) / rect.height) * 2 - 1);
+      }
+    });
+    stage.addEventListener("pointerleave", () => {
+      picked = -1;
+      stage.style.cursor = "";
+      scene?.setPointer(null);
+      apply();
+    });
+    stage.addEventListener("pointerdown", (event) => { down = { x: event.clientX, y: event.clientY, index: petalAt(event) }; });
+    stage.addEventListener("pointerup", (event) => {
+      if (!down) return;
+      const moved = Math.hypot(event.clientX - down.x, event.clientY - down.y) > 10;
+      const index = petalAt(event);
+      if (!moved && index !== -1 && index === down.index && links[index]) window.location.assign(links[index].href);
+      down = null;
+    });
+
+    // Scroll: the petals fold together as the hero leaves the screen.
+    let visible = true;
+    let raf = 0;
+    const onScroll = () => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        const rect = hero.getBoundingClientRect();
+        scene?.setFold(Math.max(0, Math.min(1, -rect.top / Math.max(1, rect.height * 0.9))));
+      });
+    };
+    new IntersectionObserver((entries) => {
+      visible = entries[0].isIntersecting;
+      scene?.setVisible(visible && !document.hidden);
+      if (visible) window.addEventListener("scroll", onScroll, { passive: true });
+      else window.removeEventListener("scroll", onScroll);
+    }).observe(hero);
+    document.addEventListener("visibilitychange", () => scene?.setVisible(visible && !document.hidden));
+
+    // The WebGL scene is optional: only where it is likely to run smoothly
+    // and not on a data-saving or very slow connection.
+    const nav = navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string }; deviceMemory?: number };
+    const constrained = nav.connection?.saveData === true || /(^|-)2g$/.test(nav.connection?.effectiveType ?? "");
+    const weak = (nav.deviceMemory ?? 8) <= 2 || (navigator.hardwareConcurrency || 8) <= 2;
+    const supported = (() => {
+      try {
+        const probe = document.createElement("canvas");
+        return !!(probe.getContext("webgl2") || probe.getContext("webgl"));
+      } catch {
+        return false;
+      }
+    })();
+
+    async function start() {
+      const images = ids.map((id) => hero!.querySelector<HTMLImageElement>(`[data-petal="${id}"] img`)!);
+      await Promise.all(images.map((img) => (img.complete ? img.decode().catch(() => {}) : new Promise((r) => img.addEventListener("load", r, { once: true })))));
+      if (images.some((img) => !img.naturalWidth)) return;
+      const { createPetalScene } = await import("../../scripts/petal-scene");
+      const small = window.innerWidth < 720;
+      scene = await createPetalScene({
+        canvas: canvas!,
+        images,
+        reducedMotion: reduced,
+        quality: small || (navigator.hardwareConcurrency || 8) <= 4 ? "low" : "high",
+        onReady: () => stage!.classList.add("is-3d"),
+        onLost: () => { stage!.classList.remove("is-3d"); scene = null; },
+      });
+      if (!scene) return;
+      new ResizeObserver(() => scene?.resize()).observe(canvas!);
+      scene.setVisible(visible && !document.hidden);
+      apply();
+      onScroll();
+    }
+
+    if (supported && !constrained && !weak) {
+      const idle = (fn: () => void) => (typeof window.requestIdleCallback === "function" ? window.requestIdleCallback(fn, { timeout: 2000 }) : setTimeout(fn, 400));
+      const go = () => idle(() => void start().catch(() => stage.classList.remove("is-3d")));
+      if (document.readyState === "complete") go();
+      else window.addEventListener("load", go, { once: true });
+    }
+  }
+</script>
+
+<style>
+  .ph {
+    position: relative;
+    overflow: clip;
+    background:
+      radial-gradient(60% 70% at 78% 62%, color-mix(in srgb, var(--color-rose-soft) 85%, transparent) 0%, transparent 70%),
+      linear-gradient(180deg, var(--color-ivory) 0%, #f7efe9 100%);
+    padding: clamp(1.25rem, 3.2vw, 2.75rem) clamp(16px, 4vw, 56px) clamp(1.5rem, 3vw, 2.5rem);
+  }
+
+  .ph__grid {
+    max-width: 1320px;
+    margin-inline: auto;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "head" "stage" "ranges" "more";
+    gap: 0.9rem;
+  }
+
+  .ph__head { grid-area: head; }
+  .ph__stage { grid-area: stage; }
+  .ph__ranges { grid-area: ranges; }
+  .ph__more { grid-area: more; }
+
+  .ph__eyebrow {
+    margin: 0 0 0.6rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--color-rose-deep);
+  }
+
+  .ph__title {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: clamp(2.05rem, 7.6vw, 3.4rem);
+    font-weight: 380;
+    line-height: 1.02;
+    letter-spacing: -0.02em;
+    color: var(--color-ink-deep);
+    text-wrap: balance;
+    max-width: 15ch;
+  }
+  .ph__title em {
+    font-style: italic;
+    font-weight: 340;
+    color: var(--color-rose-deep);
+  }
+
+  .ph__lede {
+    margin: 0.85rem 0 0;
+    max-width: 34rem;
+    font-size: clamp(0.95rem, 1.2vw, 1.08rem);
+    line-height: 1.55;
+    color: var(--color-moss);
+  }
+
+  /* ---- stage */
+  .ph__stage {
+    position: relative;
+    height: clamp(232px, 64vw, 380px);
+    container-type: size;
+    touch-action: pan-y;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .ph__ground {
+    position: absolute;
+    left: 12%;
+    right: 12%;
+    bottom: -6%;
+    height: 22%;
+    background: radial-gradient(50% 50% at 50% 50%, rgba(92, 52, 52, 0.18), rgba(92, 52, 52, 0) 70%);
+    filter: blur(6px);
+  }
+  .ph__petals {
+    position: absolute;
+    inset: 0;
+    transition: opacity 0.6s var(--ease-premium, ease);
+  }
+  .ph__petal {
+    --h: min(92cqh, 63cqw);
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    height: var(--h);
+    aspect-ratio: var(--petal-aspect);
+    transform-origin: 50% 100%;
+    transform: translateX(calc(-50% + var(--dx, 0) * var(--h))) rotate(var(--r, 0deg)) scale(var(--s, 1));
+    filter: drop-shadow(0 14px 18px rgba(64, 38, 38, 0.16)) brightness(var(--b, 1)) saturate(var(--sat, 1));
+    transition: transform 0.55s var(--ease-atelier, ease), filter 0.45s ease;
+  }
+  .ph__clip {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    background: var(--color-linen);
+    -webkit-mask: var(--petal-mask) center / 100% 100% no-repeat;
+    mask: var(--petal-mask) center / 100% 100% no-repeat;
+  }
+  .ph__clip img {
+    position: absolute;
+    left: var(--ix);
+    top: var(--iy);
+    width: var(--iw);
+    height: var(--ih);
+    max-width: none;
+    object-fit: cover;
+    transform: translate(-50%, -50%) rotate(var(--ir));
+  }
+  .ph__clip::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(70% 55% at 50% 45%, rgba(255, 250, 245, 0) 55%, rgba(60, 30, 30, 0.22) 100%),
+      linear-gradient(0deg, rgba(40, 24, 20, 0.22), rgba(40, 24, 20, 0) 30%);
+  }
+  .ph__petal--left,
+  .ph__petal--right { --s: 0.83; z-index: 1; }
+  .ph__petal--centre { z-index: 2; }
+
+  .ph__stage[data-active] .ph__petal { --b: 0.9; --sat: 0.75; }
+  .ph__stage[data-active=""] .ph__petal { --b: 1; --sat: 1; }
+  .ph__stage[data-active="bouquets"] .ph__petal--left,
+  .ph__stage[data-active="garlands"] .ph__petal--centre,
+  .ph__stage[data-active="pooja"] .ph__petal--right {
+    --b: 1;
+    --sat: 1;
+    z-index: 3;
+  }
+  .ph__stage[data-active="bouquets"] .ph__petal--left,
+  .ph__stage[data-active="pooja"] .ph__petal--right { --s: 0.9; }
+  .ph__stage[data-active="garlands"] .ph__petal--centre { --s: 1.04; }
+
+  /* Larger than the stage (8% each side, 10% above) so a petal turned
+     forward is never cut at the canvas edge; the scene fits its resting fan
+     to the stage itself (src/scripts/petal-scene.ts fit). */
+  .ph__canvas {
+    position: absolute;
+    top: -10%;
+    left: -8%;
+    width: 116%;
+    height: 110%;
+    opacity: 0;
+    transition: opacity 0.7s var(--ease-premium, ease);
+    -webkit-mask: linear-gradient(0deg, transparent 0, #000 7%);
+    mask: linear-gradient(0deg, transparent 0, #000 7%);
+  }
+  .ph__stage.is-3d .ph__canvas { opacity: 1; }
+  .ph__stage.is-3d .ph__petals { opacity: 0; }
+
+  /* ---- ranges */
+  .ph__ranges ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+  .ph__range {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.3rem;
+    height: 100%;
+    min-height: 44px;
+    padding: 0.7rem 0.65rem 0.75rem;
+    border: 1px solid color-mix(in srgb, var(--color-ink) 14%, transparent);
+    border-radius: 16px;
+    background: color-mix(in srgb, var(--color-paper) 82%, transparent);
+    color: var(--color-ink);
+    text-decoration: none;
+    transition: background-color 0.25s ease, border-color 0.25s ease, transform 0.25s ease;
+  }
+  .ph__range:hover,
+  .ph__range.is-active {
+    border-color: color-mix(in srgb, var(--color-rose-deep) 55%, transparent);
+    background: var(--color-paper);
+  }
+  .ph__range:focus-visible {
+    outline: 2px solid var(--color-rose-deep);
+    outline-offset: 2px;
+  }
+  .ph__glyph {
+    display: block;
+    width: 16px;
+    height: 22px;
+    -webkit-mask: var(--petal-mask) center / 100% 100% no-repeat;
+    mask: var(--petal-mask) center / 100% 100% no-repeat;
+  }
+  .ph__glyph--bouquets { background: linear-gradient(170deg, #f2c7cf, #d98c9c); }
+  .ph__glyph--garlands { background: linear-gradient(170deg, #d4475b, #9e2236); }
+  .ph__glyph--pooja { background: linear-gradient(170deg, #f7c04a, #e57f1d); }
+  .ph__range-text { display: grid; gap: 0.2rem; }
+  .ph__range-name {
+    font-family: var(--font-display);
+    font-size: 1.06rem;
+    line-height: 1.12;
+    color: var(--color-ink-deep);
+  }
+  .ph__range-line {
+    font-size: 0.78rem;
+    line-height: 1.35;
+    color: var(--color-moss);
+  }
+  .ph__range-count {
+    margin-top: auto;
+    padding-top: 0.15rem;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-rose-deep);
+  }
+  .ph__range-arrow { display: none; }
+
+  .ph__more {
+    margin: 0.2rem 0 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0 0.55rem;
+    font-size: 0.88rem;
+    color: var(--color-moss);
+  }
+  .ph__more a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    color: var(--color-ink);
+    text-decoration: underline;
+    text-decoration-color: color-mix(in srgb, var(--color-ink) 30%, transparent);
+    text-underline-offset: 4px;
+  }
+  .ph__more a:hover { text-decoration-color: currentColor; }
+
+  @media (min-width: 720px) {
+    .ph__stage { height: clamp(340px, 46vw, 440px); }
+    .ph__range { padding: 0.95rem 1rem 1rem; }
+    .ph__range-name { font-size: 1.3rem; }
+    .ph__range-line { font-size: 0.86rem; }
+  }
+
+  /* Desktop: copy and range list on the left, the flower on the right. */
+  @media (min-width: 1024px) {
+    .ph { padding-top: clamp(1.75rem, 3vw, 3rem); padding-bottom: clamp(1.75rem, 3vw, 3rem); }
+    .ph__grid {
+      grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+      grid-template-areas: "head stage" "ranges stage" "more stage";
+      grid-template-rows: auto auto 1fr;
+      column-gap: clamp(2rem, 4vw, 4.5rem);
+      row-gap: 1.6rem;
+      align-items: start;
+    }
+    .ph__title { max-width: 14ch; font-size: clamp(2.9rem, 4.1vw, 4rem); }
+    .ph__stage {
+      height: auto;
+      aspect-ratio: 1.42;
+      max-height: min(640px, calc(100svh - 150px));
+      align-self: center;
+    }
+    .ph__ranges ul {
+      grid-template-columns: 1fr;
+      gap: 0;
+      border-top: 1px solid var(--color-line);
+    }
+    .ph__range {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto auto;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.95rem 0.6rem;
+      border: 0;
+      border-bottom: 1px solid var(--color-line);
+      border-radius: 0;
+      background: transparent;
+    }
+    .ph__range:hover,
+    .ph__range.is-active {
+      background: color-mix(in srgb, var(--color-rose-soft) 55%, transparent);
+    }
+    .ph__glyph { width: 22px; height: 30px; transition: transform 0.35s var(--ease-atelier, ease); }
+    .ph__range:hover .ph__glyph,
+    .ph__range.is-active .ph__glyph { transform: scale(1.15) rotate(-6deg); }
+    .ph__range-name { font-size: 1.5rem; }
+    .ph__range-line { font-size: 0.92rem; }
+    .ph__range-count { margin: 0; padding: 0; white-space: nowrap; }
+    .ph__range-arrow {
+      display: grid;
+      place-items: center;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 1px solid color-mix(in srgb, var(--color-ink) 22%, transparent);
+      transition: background-color 0.25s ease, color 0.25s ease, transform 0.3s var(--ease-atelier, ease);
+    }
+    .ph__range-arrow svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+    .ph__range:hover .ph__range-arrow,
+    .ph__range.is-active .ph__range-arrow {
+      background: var(--color-ink);
+      color: var(--color-ivory);
+      transform: translateX(3px);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ph__petal, .ph__canvas, .ph__petals { transition: none; }
+  }
+</style>
