@@ -496,16 +496,18 @@ const petalStyle = (index: number) => {
 
   /* Desktop: copy and range list on the left, the flower on the right. */
   @media (min-width: 1024px) {
-    .ph { padding-top: clamp(1.75rem, 3vw, 3rem); padding-bottom: clamp(1.75rem, 3vw, 3rem); }
+    .ph { padding-top: clamp(1.25rem, min(3vw, 4svh), 3rem); padding-bottom: clamp(1.25rem, min(3vw, 4svh), 3rem); }
     .ph__grid {
       grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
       grid-template-areas: "head stage" "ranges stage" "more stage";
       grid-template-rows: auto auto 1fr;
       column-gap: clamp(2rem, 4vw, 4.5rem);
-      row-gap: 1.6rem;
+      row-gap: clamp(1rem, 2.4svh, 1.6rem);
       align-items: start;
     }
-    .ph__title { max-width: 14ch; font-size: clamp(2.9rem, 4.1vw, 4rem); }
+    /* Short laptop screens: the headline also scales with the viewport height,
+       so the three range links stay in the first view. */
+    .ph__title { max-width: 14ch; font-size: clamp(2.6rem, min(4.1vw, 7.4svh), 4rem); }
     .ph__stage {
       height: auto;
       aspect-ratio: 1.42;
@@ -522,7 +524,7 @@ const petalStyle = (index: number) => {
       grid-template-columns: auto minmax(0, 1fr) auto auto;
       align-items: center;
       gap: 1rem;
-      padding: 0.95rem 0.6rem;
+      padding: clamp(0.6rem, 1.7svh, 0.95rem) 0.6rem;
       border: 0;
       border-bottom: 1px solid var(--color-line);
       border-radius: 0;
