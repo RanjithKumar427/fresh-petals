@@ -89,7 +89,12 @@ async function checks(base) {
   await check('city', '/locations/hyderabad', page);
   await check('city shop page 2', '/locations/hyderabad/shop?page=2', page);
   const garlands = await check('garlands (live DB)', '/categories/garlands', page);
-  await check('filter link → fragment', '/categories/bouquets?occasion=birthday', (r) => (r.status === 301 && /#/.test(r.headers.get('location') ?? '') ? '' : `status ${r.status} location ${r.headers.get('location')}`));
+  // Old filter links: since storefront pages became static files, the server
+  // answers 200 with the collection itself and the page's script moves the
+  // address to #occasion=… (docs/cloudflare-migration.md, "Query-string
+  // behaviour moved to the browser"). This is the HTTP half; the selection,
+  // the results and the fragment are checked in a browser (preview-browser.mjs).
+  await check('filter link: static collection page (browser moves it to the fragment)', '/categories/bouquets?occasion=birthday', (r, b) => page(r, b) || (r.headers.get('location') ? `unexpected redirect to ${r.headers.get('location')}` : '') || (/<link rel="canonical" href="https:\/\/onlyfreshpetals\.in\/categories\/bouquets"/.test(b) ? '' : 'canonical is not the clean collection address') || (/data-filter-group="occasion"[^>]*data-filter-value="birthday"/.test(b) ? '' : 'no Birthday filter on the page'));
   await check('legacy /studio', '/studio', (r) => (r.status === 301 ? '' : `status ${r.status}`));
   await check('trailing slash', '/faqs/', (r) => ([301, 307, 308].includes(r.status) && /\/faqs$/.test(r.headers.get('location') ?? '') ? '' : `status ${r.status}`));
   await check('unknown path', '/no-such-page-preview-check', (r) => (r.status === 404 ? '' : `status ${r.status}`));
@@ -133,6 +138,11 @@ async function checks(base) {
   if (!report.data.images.length) results.push({ name: 'stored photo resized by Images binding', path: '-', status: 0, ok: true, problem: 'not exercised: no stored (uploaded) garland photo is public' });
   else results.push({ name: 'stored photos resized by Images binding', path: `${report.data.images.length} sources`, status: broken.length ? 500 : 200, ok: broken.length === 0 && resized.length > 0, problem: `${resized.length}/${sourced.length} available sources resized; ${report.data.images.length - sourced.length} source(s) unavailable in Storage` });
   if (!img && imagePaths.length) img = [imagePaths[0]];
+  // Browser behaviour: required checks; a missing browser is reported as a failure.
+  const { runBrowserChecks } = await import('./preview-browser.mjs');
+  for (const r of await runBrowserChecks(base, { playwright: env.PLAYWRIGHT_CORE, chrome: env.CHROME_PATH })) {
+    results.push({ name: r.name, path: '(browser)', status: r.ok ? 200 : 0, ok: r.ok, problem: r.ok ? '' : r.evidence });
+  }
   return { results, imagePath: img?.[0]?.replaceAll('&amp;', '&') };
 }
 
@@ -148,7 +158,7 @@ async function phases(base, imagePath) {
     ['/occasions/birthday', ['/occasions/birthday'], 25],
     ['/categories/garlands', ['/categories/garlands'], 25],
     ['tracking-parameter variants of /occasions/birthday', Array.from({ length: 25 }, () => `/occasions/birthday?utm_source=${rnd()}`), 1],
-    ['filter-query variants (301)', Array.from({ length: 25 }, () => `/categories/bouquets?occasion=${rnd()}`), 1],
+    ['filter-query variants (static 200)', Array.from({ length: 25 }, () => `/categories/bouquets?occasion=${rnd()}`), 1],
     ['unknown paths (404)', Array.from({ length: 25 }, () => `/x-${rnd()}`), 1],
     ['static pages (assets, no Worker)', Array.from({ length: 25 }, () => '/faqs'), 1],
   ];

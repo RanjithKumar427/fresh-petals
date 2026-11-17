@@ -55,6 +55,9 @@ jobs:
         with: { node-version: 24, cache: npm }
       - run: npm ci
       - run: node --test scripts/audit/security.test.mjs scripts/audit/cloudflare.test.mjs
+      # Browser checks of the deployed preview (scripts/cloudflare/preview-browser.mjs) drive the
+      # runner's Google Chrome; playwright-core is installed for this job only, not a dependency.
+      - run: npm install --no-save --no-package-lock playwright-core@1.56.1
       - run: node scripts/cloudflare/preview-pipeline.mjs
 
   production:

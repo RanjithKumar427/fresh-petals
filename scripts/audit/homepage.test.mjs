@@ -111,3 +111,52 @@ test('phones keep search beside the basket in the homepage header', () => {
   const header = read('src/components/atelier/SiteHeader.astro');
   assert(/\.site-header--home \.site-header__actions > \.site-icon:not\(\[href="\/search"\]\)/.test(header));
 });
+
+test('petal hand-over: the first WebGL frame projects every petal exactly onto the static CSS petals', () => {
+  const shape = load('src/shared/petalShape.ts');
+  const scene = load('src/scripts/petal-scene.ts');
+  const t = Math.tan(scene.SCENE_FOV / 2);
+  // Stage sizes from the hero at 390, 768, 1366 and 1440 px; the canvas is the stage plus 8% each side and 10% above.
+  for (const [sw, sh] of [[358, 250], [705, 352], [694, 478], [734, 517]]) {
+    const cw = sw * 1.16, ch = sh * 1.1, ox = sw * 0.08, oy = sh * 0.1;
+    const H = Math.min(0.92 * sh, 0.63 * sw); // .ph__petal --h
+    const layout = { height: H, baseX: ox + sw / 2, baseY: oy + sh };
+    const cam = scene.handoverCamera(layout, cw, ch);
+    const d = cam.eye[2], aspect = cw / ch;
+    const project = (X, Y) => [cw / 2 + ((X - cam.eye[0]) / (t * d * aspect)) * (cw / 2), ch / 2 - ((Y - cam.eye[1]) / (t * d)) * (ch / 2)];
+    const turns = [shape.PETAL_SPREAD, 0, -shape.PETAL_SPREAD];
+    turns.forEach((theta, i) => {
+      const side = i !== 1;
+      const worldScale = side ? shape.PETAL_SCALE.side : shape.PETAL_SCALE.centre;
+      const worldDx = (i - 1) * shape.PETAL_OFFSET;
+      const cssScale = side ? 0.83 : 1; // .ph__petal--left/right --s
+      const cssDx = ((i - 1) * shape.PETAL_OFFSET) / shape.PETAL_SCALE.centre * H; // --dx × --h
+      for (const [lx, ly] of [[0, 1], [0, 0], [shape.PETAL_ASPECT / 2, 0.633], [-shape.PETAL_ASPECT / 2, 0.633], [0.1, 0.9]]) {
+        const rx = Math.cos(theta) * lx - Math.sin(theta) * ly, ry = Math.sin(theta) * lx + Math.cos(theta) * ly;
+        const [px, py] = project(worldDx + rx * worldScale, ry * worldScale);
+        const cx = layout.baseX + cssDx + rx * H * cssScale, cy = layout.baseY - ry * H * cssScale;
+        assert(Math.hypot(px - cx, py - cy) < 0.75, `stage ${sw}×${sh}, petal ${i}, point (${lx}, ${ly}): WebGL ${px.toFixed(1)},${py.toFixed(1)} vs CSS ${cx.toFixed(1)},${cy.toFixed(1)}`);
+      }
+    });
+  }
+});
+
+test('preview validation: old filter links are checked as static pages plus real browser behaviour; real redirects keep their 301s', async () => {
+  const pipeline = read('scripts/cloudflare/preview-pipeline.mjs');
+  assert(!/occasion=birthday', \(r\) => \(r\.status === 301/.test(pipeline), 'no server 301 expected for ?occasion=');
+  assert(/filter link: static collection page/.test(pipeline) && /unexpected redirect/.test(pipeline) && /onlyfreshpetals\\\.in\\\/categories\\\/bouquets"/.test(pipeline));
+  assert(!/filter-query variants \(301\)/.test(pipeline) && /filter-query variants \(static 200\)/.test(pipeline));
+  assert(/check\('legacy \/studio', '\/studio', \(r\) => \(r\.status === 301/.test(pipeline) && /check\('trailing slash', '\/faqs\/'/.test(pipeline));
+  assert(/runBrowserChecks\(base/.test(pipeline));
+  // A missing browser is a failure, never a silent pass.
+  const { runBrowserChecks } = await import('../cloudflare/preview-browser.mjs');
+  const results = await runBrowserChecks('http://127.0.0.1:9', { playwright: '/nonexistent/playwright-core.mjs' });
+  assert.equal(results.length, 1);
+  assert.equal(results[0].ok, false);
+  assert.match(results[0].evidence, /NOT executed/);
+  // The preview job installs the browser driver; the production job does not run browser checks.
+  const workflow = read('.github/workflows/cloudflare.yml');
+  const preview = workflow.slice(workflow.indexOf('\n  preview:'), workflow.indexOf('\n  production:'));
+  const production = workflow.slice(workflow.indexOf('\n  production:'));
+  assert(/npm install --no-save --no-package-lock playwright-core@/.test(preview) && !/playwright/.test(production));
+});

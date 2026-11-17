@@ -23,6 +23,12 @@ export type PetalScene = {
   setVisible(visible: boolean): void;
   /** Which petal is under a canvas-relative CSS pixel point (-1 for none). */
   pick(px: number, py: number): number;
+  /**
+   * Leave the hand-over pose: the petals unfold from the flat layout that
+   * matches the static HTML petals into the lit, cupped 3D pose. Called once
+   * the canvas covers the static petals completely.
+   */
+  reveal(): void;
   resize(): void;
   destroy(): void;
 };
@@ -33,6 +39,13 @@ export type PetalSceneOptions = {
   reducedMotion: boolean;
   /** "low": fewer vertices and a lower pixel ratio, for small or weak devices. */
   quality: "high" | "low";
+  /**
+   * Where the static HTML petals are, in canvas CSS pixels: the centre
+   * petal's unscaled height and its base point. The first frames are drawn
+   * flat at exactly this place, so the canvas can cover the static petals
+   * without a second silhouette showing; reveal() then unfolds them.
+   */
+  staticLayout: () => { height: number; baseX: number; baseY: number; scales: number[] } | null;
   /** Called once, after the first frame with all textures is on screen. */
   onReady?: () => void;
   onLost?: () => void;
@@ -46,10 +59,12 @@ uniform mat4 uModel; uniform mat4 uViewProj; uniform vec3 uEye;
 // The photograph stays upright: the petal's own (x, y) turned by its fan
 // angle, then placed in the box it covers (src/shared/petalShape.ts).
 uniform vec2 uTexRot; uniform vec4 uTexBox;
+// 0 = flat (the hand-over pose, matching the static petals), 1 = cupped.
+uniform float uShape;
 varying vec2 vUV; varying vec2 vTex; varying vec3 vN; varying vec3 vView;
 void main() {
-  vec4 world = uModel * vec4(aPos, 1.0);
-  vN = mat3(uModel) * aNormal;
+  vec4 world = uModel * vec4(aPos.xy, aPos.z * uShape, 1.0);
+  vN = mat3(uModel) * normalize(mix(vec3(0.0, 0.0, 1.0), aNormal, uShape));
   vView = uEye - world.xyz;
   vec2 q = vec2(uTexRot.x * aPos.x - uTexRot.y * aPos.y, uTexRot.y * aPos.x + uTexRot.x * aPos.y);
   // Rows are uploaded top first, so t = 0 is the top of the photograph.
@@ -163,6 +178,24 @@ const LIGHT = (() => { const l = [-0.45, 0.62, 0.64]; const n = Math.hypot(...l)
 
 type PetalState = { emph: number; phi: number; scale: number; dz: number };
 
+/**
+ * The camera for the flat hand-over pose: looking straight at the z = 0
+ * plane, so the flat petals project as a pure scale and offset that puts the
+ * centre petal's base and height exactly where the static petal is (canvas
+ * CSS pixels; FOV as the scene uses). Exported for the projection test.
+ */
+export function handoverCamera(layout: { height: number; baseX: number; baseY: number }, cw: number, ch: number): { eye: number[]; target: number[] } | null {
+  if (!layout.height || !cw || !ch) return null;
+  const k = layout.height / PETAL_SCALE.centre; // CSS px per world unit
+  const t = Math.tan(FOV / 2);
+  const d = ch / (2 * k * t);
+  const aspect = cw / ch;
+  const ex = -((2 * layout.baseX) / cw - 1) * t * d * aspect;
+  const ey = -(1 - (2 * layout.baseY) / ch) * t * d;
+  return { eye: [ex, ey, d], target: [ex, ey, 0] };
+}
+export const SCENE_FOV = FOV;
+
 // Yields to the browser between setup steps, so no single task is long.
 const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 
@@ -210,7 +243,7 @@ export async function createPetalScene(options: PetalSceneOptions): Promise<Peta
 
   const u = (name: string) => gl.getUniformLocation(program, name);
   const uModel = u("uModel"), uViewProj = u("uViewProj"), uEye = u("uEye"), uEmph = u("uEmph"), uLight = u("uLight"), uTex = u("uTex");
-  const uTexRot = u("uTexRot"), uTexBox = u("uTexBox");
+  const uTexRot = u("uTexRot"), uTexBox = u("uTexBox"), uShape = u("uShape");
   gl.uniform3fv(uLight, LIGHT);
   gl.uniform1i(uTex, 0);
 
@@ -257,7 +290,18 @@ export async function createPetalScene(options: PetalSceneOptions): Promise<Peta
     if (active === i) return { emph: 1, phi: 0.1, scale: base * 1.06, dz: 0.22 };
     return { emph: 0, phi: -0.24, scale: base * 0.95, dz: i === 1 ? 0.04 : -0.04 };
   };
+  // The hand-over pose, matching the static petals' CSS: flat, unturned,
+  // the static emphasis scales (PetalHero.astro), centre petal on top.
+  const flatTarget = (i: number, active: number) => {
+    const base = i === 1 ? PETAL_SCALE.centre : PETAL_SCALE.side;
+    const raised = active === i ? (i === 1 ? 1.04 : 0.9 / 0.83) : 1;
+    return { scale: base * raised, emph: active === -1 || active === i ? 1 : 0, dz: (i === 1 ? 0.002 : 0) + (active === i ? 0.004 : 0) };
+  };
   let active = -1;
+  // 0 while handing over from the static petals, 1 in the 3D pose.
+  let intro = 0;
+  let introTarget = 0;
+  const flat = [0, 1, 2].map((i) => flatTarget(i, -1));
   let fold = 0;
   let foldTarget = 0;
   const pointer = { x: 0, y: 0, tx: 0, ty: 0 };
@@ -272,11 +316,19 @@ export async function createPetalScene(options: PetalSceneOptions): Promise<Peta
   let viewProj = identity();
   const models: Mat4[] = [identity(), identity(), identity()];
 
+  const mix = (a: number, b: number, t: number) => a + (b - a) * t;
+  const emphFor = (i: number) => mix(flat[i].emph, petals[i].emph, intro);
   const modelFor = (i: number) => {
     const p = petals[i];
-    const t = thetas[i] * (1 - 0.62 * fold);
-    return model(t, p.phi - 0.32 * fold, p.scale * (1 - 0.06 * fold), p.dz, offsets[i] * (1 - 0.7 * fold));
+    const f = fold * intro;
+    const t = thetas[i] * (1 - 0.62 * f);
+    return model(t, p.phi * intro - 0.32 * f, mix(flat[i].scale, p.scale, intro) * (1 - 0.06 * f), mix(flat[i].dz, p.dz, intro), offsets[i] * (1 - 0.7 * f));
   };
+
+  function flatCamera(): { eye: number[]; target: number[] } | null {
+    const layout = options.staticLayout();
+    return layout ? handoverCamera(layout, canvas.clientWidth, canvas.clientHeight) : null;
+  }
 
   // Fit the camera so the open fan fills the canvas: the base on the bottom
   // edge (hidden by the canvas's soft lower fade), the tips and the sides
@@ -328,20 +380,27 @@ export async function createPetalScene(options: PetalSceneOptions): Promise<Peta
 
   function draw() {
     const aspect = canvas.clientWidth / Math.max(1, canvas.clientHeight);
-    const yaw = reducedMotion ? 0 : pointer.x * 0.09;
-    const pitch = reducedMotion ? 0 : -pointer.y * 0.05;
-    const target = [0, targetY, 0];
-    const eye = [Math.sin(yaw) * distance, target[1] + Math.sin(pitch) * distance, Math.cos(yaw) * distance];
+    const yaw = reducedMotion ? 0 : pointer.x * 0.09 * intro;
+    const pitch = reducedMotion ? 0 : -pointer.y * 0.05 * intro;
+    let target = [0, targetY, 0];
+    let eye = [Math.sin(yaw) * distance, target[1] + Math.sin(pitch) * distance, Math.cos(yaw) * distance];
+    const start = intro < 1 ? flatCamera() : null;
+    if (start) {
+      target = target.map((v, n) => mix(start.target[n], v, intro));
+      eye = eye.map((v, n) => mix(start.eye[n], v, intro));
+    }
     viewProj = mul(perspective(FOV, aspect, 0.1, 50), lookAt(eye, target));
+    gl.uniform1f(uShape, intro);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.uniformMatrix4fv(uViewProj, false, viewProj);
     gl.uniform3fv(uEye, new Float32Array(eye));
     // Back to front: the emphasised petal last.
-    const order = [0, 2, 1].sort((a, b) => petals[a].dz - petals[b].dz);
+    const depth = (i: number) => mix(flat[i].dz, petals[i].dz, intro);
+    const order = [0, 2, 1].sort((a, b) => depth(a) - depth(b));
     for (const i of order) {
       models[i] = modelFor(i);
       gl.uniformMatrix4fv(uModel, false, models[i]);
-      gl.uniform1f(uEmph, petals[i].emph);
+      gl.uniform1f(uEmph, emphFor(i));
       gl.uniform2fv(uTexRot, photoBoxes[i].rot);
       gl.uniform4fv(uTexBox, photoBoxes[i].box);
       gl.activeTexture(gl.TEXTURE0);
@@ -359,6 +418,22 @@ export async function createPetalScene(options: PetalSceneOptions): Promise<Peta
       if (Math.abs(to - next) > 1e-4) moving = true;
       return Math.abs(to - next) > 1e-4 ? next : to;
     };
+    // Until the hand-over is complete, the flat petals take each static
+    // petal's current CSS scale (mid-transition included), so an early hover
+    // or focus cannot pull the two layers apart.
+    const layout = intro < 1 ? options.staticLayout() : null;
+    flat.forEach((p, i) => {
+      const goal = flatTarget(i, active);
+      const css = layout?.scales[i];
+      if (css && Number.isFinite(css)) {
+        const scale = (i === 1 ? PETAL_SCALE.centre : PETAL_SCALE.side) * css;
+        if (introTarget === 0 && Math.abs(scale - p.scale) > 1e-4) moving = true;
+        p.scale = scale;
+      } else p.scale = approach(p.scale, goal.scale, 7);
+      p.emph = approach(p.emph, goal.emph, 7);
+      p.dz = goal.dz;
+    });
+    intro = approach(intro, introTarget, 3.4);
     petals.forEach((p, i) => {
       const goal = rest(i, active);
       p.emph = approach(p.emph, goal.emph, 9);
@@ -420,7 +495,7 @@ export async function createPetalScene(options: PetalSceneOptions): Promise<Peta
       const { nu, nv } = mesh;
       const at = (ii: number, jj: number) => {
         const k = (jj * (nu + 1) + ii) * 3;
-        return project(m, mesh.pos[k], mesh.pos[k + 1], mesh.pos[k + 2]);
+        return project(m, mesh.pos[k], mesh.pos[k + 1], mesh.pos[k + 2] * intro);
       };
       for (let j = 0; j < nv; j += stride) for (let ii = 0; ii < nu; ii += stride) {
         const j2 = Math.min(nv, j + stride), i2 = Math.min(nu, ii + stride);
@@ -444,7 +519,14 @@ export async function createPetalScene(options: PetalSceneOptions): Promise<Peta
   resize();
 
   return {
-    setActive(index) { if (index !== active) { active = index; wake(); } },
+    setActive(index) {
+      if (index === active) return;
+      active = index;
+      // Before the first frame, start from the emphasis the static petals
+      // already show rather than animating into it.
+      if (!ready) [0, 1, 2].forEach((i) => { flat[i] = flatTarget(i, active); petals[i] = rest(i, active); });
+      wake();
+    },
     setFold(value) {
       const next = reducedMotion ? 0 : Math.max(0, Math.min(1, value));
       if (Math.abs(next - foldTarget) > 1e-3) { foldTarget = next; wake(); }
@@ -459,6 +541,7 @@ export async function createPetalScene(options: PetalSceneOptions): Promise<Peta
       if (value) wake(); else { cancelAnimationFrame(raf); raf = 0; last = 0; }
     },
     pick,
+    reveal() { if (introTarget !== 1) { introTarget = 1; wake(); } },
     resize,
     destroy,
   };

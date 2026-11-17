@@ -9,9 +9,16 @@
 // outline (src/shared/petalShape.ts). They are in the first HTML, so the
 // photographs and every link render immediately, without JavaScript, with
 // reduced motion and when WebGL is unavailable. Once the page is idle, on a
-// capable device, src/scripts/petal-scene.ts draws the same petals as lit,
-// cupped surfaces from the same (already loaded) images and fades in over
-// them. The canvas is decorative: aria-hidden, no focus, no text in it.
+// capable device without reduced motion, src/scripts/petal-scene.ts takes
+// over from the same (already loaded) images:
+//   1. its first frames draw the petals flat, exactly where the static
+//      petals are (it measures them: staticLayout below);
+//   2. the canvas fades in over the static petals, which stay fully opaque;
+//   3. when that fade ends (transitionend), the static petals are hidden and
+//      the scene unfolds the petals into their lit, cupped 3D pose.
+// So only one silhouette is ever visible. If the context is lost, the
+// static petals come straight back. The canvas is decorative: aria-hidden,
+// no focus, no text in it.
 import type { HomeRange } from "../../data/atelierHome";
 import { PETAL_SIZES } from "../../data/atelierHome";
 import { PETAL_ASPECT, PETAL_OFFSET, PETAL_SCALE, PETAL_SPREAD, petalPhotoBox } from "../../shared/petalShape";
@@ -222,13 +229,50 @@ const petalStyle = (index: number) => {
       if (images.some((img) => !img.naturalWidth)) return;
       const { createPetalScene } = await import("../../scripts/petal-scene");
       const small = window.innerWidth < 720;
+      // Where the static centre petal is, in canvas pixels: its unscaled
+      // height (offsetHeight ignores the emphasis transform) and its base,
+      // the stage's bottom centre.
+      const centre = hero!.querySelector<HTMLElement>(".ph__petal--centre");
+      const petalEls = ids.map((id) => hero!.querySelector<HTMLElement>(`[data-petal="${id}"]`));
+      // A petal's current CSS scale relative to its resting one (side petals
+      // rest at 0.83), read from the computed — possibly mid-transition —
+      // transform: the length of its first column, rotation removed.
+      const rest = [0.83, 1, 0.83];
+      const scaleOf = (el: HTMLElement | null, i: number) => {
+        const m = el ? new DOMMatrixReadOnly(getComputedStyle(el).transform) : null;
+        return m ? Math.hypot(m.a, m.b) / rest[i] : 1;
+      };
+      const staticLayout = () => {
+        if (!centre) return null;
+        const s = stage!.getBoundingClientRect();
+        const c = canvas!.getBoundingClientRect();
+        return { height: centre.offsetHeight, baseX: s.left + s.width / 2 - c.left, baseY: s.bottom - c.top, scales: petalEls.map(scaleOf) };
+      };
+      const fallback = () => {
+        stage!.classList.remove("is-3d", "is-3d-settled");
+        scene = null;
+      };
+      // Hide the static petals only once the canvas is fully opaque over them.
+      const settle = () => {
+        if (!scene || !stage!.classList.contains("is-3d") || stage!.classList.contains("is-3d-settled")) return;
+        stage!.classList.add("is-3d-settled");
+        scene.reveal();
+      };
+      canvas!.addEventListener("transitionend", (event) => {
+        if (event.propertyName === "opacity" && getComputedStyle(canvas!).opacity === "1") settle();
+      });
       scene = await createPetalScene({
         canvas: canvas!,
         images,
-        reducedMotion: reduced,
+        reducedMotion: false,
         quality: small || (navigator.hardwareConcurrency || 8) <= 4 ? "low" : "high",
-        onReady: () => stage!.classList.add("is-3d"),
-        onLost: () => { stage!.classList.remove("is-3d"); scene = null; },
+        staticLayout,
+        onReady: () => {
+          stage!.classList.add("is-3d");
+          // No fade to wait for (transitions disabled): hand over at once.
+          if (parseFloat(getComputedStyle(canvas!).transitionDuration) === 0) requestAnimationFrame(settle);
+        },
+        onLost: fallback,
       });
       if (!scene) return;
       new ResizeObserver(() => scene?.resize()).observe(canvas!);
@@ -237,9 +281,11 @@ const petalStyle = (index: number) => {
       onScroll();
     }
 
-    if (supported && !constrained && !weak) {
+    // With reduced motion the static petals are the experience: unfolding
+    // into 3D would itself be motion, and no transition is the alternative.
+    if (supported && !constrained && !weak && !reduced) {
       const idle = (fn: () => void) => (typeof window.requestIdleCallback === "function" ? window.requestIdleCallback(fn, { timeout: 2000 }) : setTimeout(fn, 400));
-      const go = () => idle(() => void start().catch(() => stage.classList.remove("is-3d")));
+      const go = () => idle(() => void start().catch(() => { stage.classList.remove("is-3d", "is-3d-settled"); scene = null; }));
       if (document.readyState === "complete") go();
       else window.addEventListener("load", go, { once: true });
     }
@@ -322,10 +368,11 @@ const petalStyle = (index: number) => {
     background: radial-gradient(50% 50% at 50% 50%, rgba(92, 52, 52, 0.18), rgba(92, 52, 52, 0) 70%);
     filter: blur(6px);
   }
+  /* Shown again at once if the scene is lost; hidden only after the canvas
+     covers them (is-3d-settled), the short fade removing just their shadows. */
   .ph__petals {
     position: absolute;
     inset: 0;
-    transition: opacity 0.6s var(--ease-premium, ease);
   }
   .ph__petal {
     --h: min(92cqh, 63cqw);
@@ -393,12 +440,16 @@ const petalStyle = (index: number) => {
     width: 116%;
     height: 110%;
     opacity: 0;
-    transition: opacity 0.7s var(--ease-premium, ease);
+    transition: opacity 0.35s ease-out;
     -webkit-mask: linear-gradient(0deg, transparent 0, #000 7%);
     mask: linear-gradient(0deg, transparent 0, #000 7%);
   }
   .ph__stage.is-3d .ph__canvas { opacity: 1; }
-  .ph__stage.is-3d .ph__petals { opacity: 0; }
+  .ph__stage.is-3d-settled .ph__petals {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease-out, visibility 0s linear 0.3s;
+  }
 
   /* ---- ranges */
   .ph__ranges ul {
