@@ -80,7 +80,7 @@ test('editorial selections stay small and labelled: homepage four, featured eigh
   // The homepage "View all" names the full list.
   const index = readFileSync('src/pages/index.astro', 'utf8');
   assert(/totalCount=\{bouquetCount\}/.test(index) && /bouquetRange\(publicCatalogue\)\.length/.test(index));
-  assert(/View all \$\{totalCount\}/.test(readFileSync('src/components/atelier/BouquetEdit.astro', 'utf8')));
+  assert(/View all \$\{totalCount\}/.test(readFileSync('src/components/home/RangeBouquets.astro', 'utf8')));
   const city = readFileSync('src/server/services/CityCatalogue.ts', 'utf8');
   assert(/label: "Featured bouquets"/.test(city) && /export const CITY_SHOP_PAGE_SIZE = 24;/.test(city) && /isListedGarland/.test(city));
   // Menu: "All bouquets" is the full list; group links are the flower groups.

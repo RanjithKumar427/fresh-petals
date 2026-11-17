@@ -1,0 +1,119 @@
+---
+// Chapter 03 — pooja flowers, shown by the form they come in, as on the
+// collection page (src/data/collectionGuidance.ts POOJA_SECTIONS): loose
+// flowers, boxes, strings and torans, regular deliveries (recurring plans,
+// agreed on WhatsApp before they start) and bulk or ceremony flowers. Each
+// product keeps its own name, price wording and page; the section notes are
+// the collection page's own.
+import type { Product } from "../../data/productCatalog";
+import { responsiveImage } from "../../data/atelierHome";
+import { productPhotoAlt } from "../../data/productPhotos";
+import { POOJA_ENQUIRY_HREF, POOJA_PHOTO_NOTE } from "../../data/collectionGuidance";
+
+interface Props {
+  sections: { id: string; label: string; note: string | null; products: Product[] }[];
+}
+const { sections } = Astro.props;
+// The first sentence of each section's note: what the form is, in brief.
+const brief = (note: string | null) => (note ? (note.match(/^[^.]+\./)?.[0] ?? note) : "");
+---
+
+<section id="pooja" class="chapter chapter--pooja" aria-labelledby="pooja-title">
+  <div class="chapter__inner">
+    <header class="chapter__head">
+      <p class="chapter__index"><span class="chapter__glyph chapter__glyph--pooja" aria-hidden="true"></span>03 · Pooja flowers</p>
+      <h2 id="pooja-title" class="chapter__title">Pooja flowers, <em>loose, strung or on a schedule.</em></h2>
+      <p class="chapter__lede">
+        The mix follows the morning’s flower market. Tell us what the flowers are for, the date and how much you need; we confirm
+        what is available and the price.
+      </p>
+      <a href="/categories/pooja-flowers" class="chapter__cta">See all pooja flowers <span aria-hidden="true">→</span></a>
+    </header>
+
+    <ul class="pj__forms">
+      {sections.map((section) => {
+        const lead = section.products[0];
+        const img = lead ? responsiveImage(lead.image) : null;
+        return (
+          <li class="pj__form" data-reveal="fade">
+            {img && lead && (
+              <div class="pj__photo fp-photo">
+                <img src={img.src} srcset={img.srcset} sizes="(min-width: 1024px) 140px, 96px" width={img.width} height={img.height}
+                  alt={productPhotoAlt(lead)} loading="lazy" decoding="async" />
+              </div>
+            )}
+            <div class="pj__body">
+              <h3 class="pj__label"><a href={`/categories/pooja-flowers#${section.id}`}>{section.label}</a></h3>
+              <p class="pj__note">{brief(section.note)}</p>
+              <ul class="pj__products">
+                {section.products.map((product) => (
+                  <li>
+                    <a href={`/products/${product.slug}`}>{product.name}</a>
+                    <span class="pj__price">{product.priceLabel}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+
+    <div class="pj__foot">
+      <p class="pj__photo-note">{POOJA_PHOTO_NOTE}</p>
+      <a class="pj__ask" href={POOJA_ENQUIRY_HREF} target="_blank" rel="noopener noreferrer">Describe your pooja on WhatsApp <span aria-hidden="true">↗</span></a>
+    </div>
+  </div>
+</section>
+
+<style>
+  .pj__forms {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0;
+    border-top: 1px solid color-mix(in srgb, var(--color-ink) 14%, transparent);
+  }
+  .pj__form {
+    display: grid;
+    grid-template-columns: 96px minmax(0, 1fr);
+    gap: 1rem;
+    padding: 1.1rem 0;
+    border-bottom: 1px solid color-mix(in srgb, var(--color-ink) 14%, transparent);
+  }
+  .pj__photo { width: 96px; aspect-ratio: 1; border-radius: 50% 50% 50% 8px; }
+  .pj__body { min-width: 0; }
+  .pj__label { margin: 0; font-family: var(--font-display); font-weight: 420; font-size: 1.25rem; line-height: 1.2; }
+  .pj__label a { color: var(--color-ink-deep); text-decoration: none; }
+  .pj__label a:hover { text-decoration: underline; text-underline-offset: 0.15em; }
+  .pj__note { margin: 0.3rem 0 0; color: var(--color-moss); font-size: 0.9rem; line-height: 1.5; }
+  .pj__products { list-style: none; margin: 0.5rem 0 0; padding: 0; display: grid; gap: 0; }
+  .pj__products li { display: flex; flex-wrap: wrap; align-items: center; gap: 0 0.6rem; }
+  .pj__products a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    color: var(--color-ink);
+    font-weight: 600;
+    font-size: 0.95rem;
+    text-decoration: underline;
+    text-decoration-color: color-mix(in srgb, var(--color-ink) 28%, transparent);
+    text-underline-offset: 0.25em;
+  }
+  .pj__products a:hover { text-decoration-color: currentColor; }
+  .pj__price { color: var(--color-rose-deep); font-size: 0.85rem; }
+
+  .pj__foot { display: grid; gap: 0.75rem; margin-top: 1.25rem; }
+  .pj__photo-note { margin: 0; max-width: 60ch; color: var(--color-moss); font-size: 0.82rem; line-height: 1.5; }
+  .pj__ask { justify-self: start; display: inline-flex; align-items: center; gap: 0.4rem; min-height: 48px; padding: 0 1.3rem; border-radius: 999px; background: var(--color-ink); color: var(--color-ivory); font-weight: 600; font-size: 0.92rem; text-decoration: none; }
+  .pj__ask:hover { background: var(--color-ink-deep); }
+  .pj__ask:focus-visible { outline: 2px solid var(--color-rose-deep); outline-offset: 3px; }
+
+  @media (min-width: 900px) {
+    .pj__forms { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 3rem; }
+    .pj__form { grid-template-columns: 120px minmax(0, 1fr); gap: 1.25rem; padding: 1.4rem 0; }
+    .pj__photo { width: 120px; }
+    .pj__foot { grid-template-columns: 1fr auto; align-items: center; gap: 2rem; }
+  }
+</style>

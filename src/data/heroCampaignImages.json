@@ -31,6 +31,26 @@
         "180": "/images/hero/hero-bouquets-print-180w.webp",
         "360": "/images/hero/hero-bouquets-print-360w.webp"
       }
+    },
+    "petal": {
+      "width": 705,
+      "height": 940,
+      "crop": {
+        "left": 745,
+        "top": 0,
+        "width": 705,
+        "height": 940
+      },
+      "avif": {
+        "360": "/images/hero/hero-bouquets-petal-360w.avif",
+        "540": "/images/hero/hero-bouquets-petal-540w.avif",
+        "705": "/images/hero/hero-bouquets-petal-705w.avif"
+      },
+      "webp": {
+        "360": "/images/hero/hero-bouquets-petal-360w.webp",
+        "540": "/images/hero/hero-bouquets-petal-540w.webp",
+        "705": "/images/hero/hero-bouquets-petal-705w.webp"
+      }
     }
   },
   "hero-garlands": {
@@ -65,6 +85,26 @@
         "180": "/images/hero/hero-garlands-print-180w.webp",
         "360": "/images/hero/hero-garlands-print-360w.webp"
       }
+    },
+    "petal": {
+      "width": 705,
+      "height": 940,
+      "crop": {
+        "left": 760,
+        "top": 0,
+        "width": 705,
+        "height": 940
+      },
+      "avif": {
+        "360": "/images/hero/hero-garlands-petal-360w.avif",
+        "540": "/images/hero/hero-garlands-petal-540w.avif",
+        "705": "/images/hero/hero-garlands-petal-705w.avif"
+      },
+      "webp": {
+        "360": "/images/hero/hero-garlands-petal-360w.webp",
+        "540": "/images/hero/hero-garlands-petal-540w.webp",
+        "705": "/images/hero/hero-garlands-petal-705w.webp"
+      }
     }
   },
   "hero-pooja": {
@@ -98,6 +138,26 @@
       "webp": {
         "180": "/images/hero/hero-pooja-print-180w.webp",
         "360": "/images/hero/hero-pooja-print-360w.webp"
+      }
+    },
+    "petal": {
+      "width": 705,
+      "height": 940,
+      "crop": {
+        "left": 790,
+        "top": 0,
+        "width": 705,
+        "height": 940
+      },
+      "avif": {
+        "360": "/images/hero/hero-pooja-petal-360w.avif",
+        "540": "/images/hero/hero-pooja-petal-540w.avif",
+        "705": "/images/hero/hero-pooja-petal-705w.avif"
+      },
+      "webp": {
+        "360": "/images/hero/hero-pooja-petal-360w.webp",
+        "540": "/images/hero/hero-pooja-petal-540w.webp",
+        "705": "/images/hero/hero-pooja-petal-705w.webp"
       }
     }
   }

@@ -1,0 +1,127 @@
+---
+// Chapter 01 — bouquets. Four featured designs (an editorial shortlist from
+// src/data/launchCatalogue.ts); "View all" opens the bouquet list, which holds
+// every public bouquet, and `totalCount` is that list's size. Bouquets are
+// quote-only (src/shared/quoteOnly.ts): each card shows "Price on WhatsApp".
+// The basket button uses the existing basket (src/utils/cart.ts).
+import type { EditProduct } from "../../data/atelierHome";
+import { productPhotoAlt } from "../../data/productPhotos";
+
+interface Props {
+  products: EditProduct[];
+  /** Every public bouquet (the bouquet list's size), not the shortlist. */
+  totalCount: number;
+  browse?: { label: string; href: string }[];
+  budget?: { label: string; href: string } | null;
+}
+const { products, totalCount, browse = [], budget = null } = Astro.props;
+const imageSizes = "(min-width: 1440px) 300px, (min-width: 1024px) 22vw, 46vw";
+const flowerLine = (product: EditProduct) => (product.flowerTypes ?? []).slice(0, 3).map((type) => type.toLowerCase()).join(" · ");
+---
+
+{products.length > 0 && (
+  <section id="bouquets" class="chapter chapter--bouquets" aria-labelledby="bouquets-title">
+    <div class="chapter__inner">
+      <header class="chapter__head">
+        <p class="chapter__index"><span class="chapter__glyph chapter__glyph--bouquets" aria-hidden="true"></span>01 · Bouquets</p>
+        <h2 id="bouquets-title" class="chapter__title">Hand-tied bouquets, <em>each shown in its own photograph.</em></h2>
+        <p class="chapter__lede">
+          Roses, lilies and mixed flowers. Every design lists its flowers and how it is presented. Add the ones you like to your
+          basket and send them on WhatsApp; we reply with the price for your date.
+        </p>
+        <a href="/categories/bouquets" class="chapter__cta" data-all-bouquets-link>{`View all ${totalCount} ${totalCount === 1 ? "bouquet" : "bouquets"}`} <span aria-hidden="true">→</span></a>
+      </header>
+
+      <ul class="bq__grid">
+        {products.map((product, index) => (
+          <li class="bq__item" data-featured-bouquet={product.slug} data-reveal="fade" style={`--reveal-delay:${index * 70}ms`}>
+            <div class="bq__photo fp-photo">
+              <img src={product.img.src} srcset={product.img.srcset} sizes={imageSizes}
+                width={product.img.width} height={product.img.height} alt={productPhotoAlt(product)}
+                loading="lazy" decoding="async" />
+            </div>
+            <div class="bq__info">
+              <h3 class="bq__name"><a href={`/products/${product.slug}`}>{product.name}</a></h3>
+              {flowerLine(product) && <p class="bq__flowers">{flowerLine(product)}</p>}
+              <p class="bq__price fp-price">{product.priceLabel}</p>
+            </div>
+            <div class="bq__actions">
+              <button type="button" class="bq__add" data-edit-add aria-label={`Add to basket: ${product.name}`}
+                data-cart-id={product.id} data-cart-slug={product.slug} data-cart-name={product.name}
+                data-cart-image={product.image} data-cart-price-label={product.priceLabel} data-cart-category={product.category}>
+                <span data-edit-label>Add to basket</span>
+              </button>
+              <span class="sr-only" role="status" data-edit-feedback={product.id}></span>
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      <nav class="chapter__links" aria-label="Browse bouquets">
+        <span class="chapter__links-label">Browse by flower</span>
+        {browse.map((link) => <a href={link.href}>{link.label}</a>)}
+        {budget && <a href={budget.href}>{budget.label}</a>}
+        <a href="/categories/all-flowers" data-all-flowers-link>Every flower we make</a>
+      </nav>
+    </div>
+  </section>
+)}
+
+<script>
+  import { addToCart } from "../../utils/cart";
+
+  document.querySelectorAll<HTMLButtonElement>("[data-edit-add]").forEach((button) => {
+    let reset = 0;
+    button.addEventListener("click", () => {
+      const { cartId = "", cartSlug = "", cartName = "", cartImage = "", cartPriceLabel = "", cartCategory = "" } = button.dataset;
+      addToCart({ id: cartId, slug: cartSlug, name: cartName, image: cartImage, priceLabel: cartPriceLabel, category: cartCategory }, 1);
+      const feedback = button.parentElement?.querySelector<HTMLElement>("[data-edit-feedback]");
+      const label = button.querySelector<HTMLElement>("[data-edit-label]");
+      window.clearTimeout(reset);
+      if (feedback) feedback.textContent = `${cartName} added to your basket`;
+      if (label) label.textContent = "Added ✓";
+      button.classList.add("is-added");
+      reset = window.setTimeout(() => {
+        if (feedback) feedback.textContent = "";
+        if (label) label.textContent = "Add to basket";
+        button.classList.remove("is-added");
+      }, 2200);
+    });
+  });
+</script>
+
+<style>
+  .bq__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.6rem 0.85rem;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .bq__item { display: flex; flex-direction: column; min-width: 0; }
+  .bq__photo { display: block; aspect-ratio: 4 / 5; border-radius: 18px 18px 18px 4px; }
+  .bq__photo img { transition: transform 0.7s var(--ease-premium); }
+  .bq__item:hover .bq__photo img { transform: scale(1.035); }
+  .bq__info { padding-top: 0.8rem; }
+  .bq__name { margin: 0; font-family: var(--font-display); font-weight: 420; font-size: clamp(1.1rem, 0.95rem + 0.6vw, 1.45rem); line-height: 1.2; }
+  .bq__name a { color: var(--color-ink-deep); text-decoration: none; }
+  .bq__name a::after { content: ""; position: absolute; inset: 0; }
+  .bq__item { position: relative; }
+  .bq__name a:hover { text-decoration: underline; text-underline-offset: 0.15em; }
+  .bq__name a:focus-visible { outline: none; }
+  .bq__item:has(.bq__name a:focus-visible) { outline: 2px solid var(--color-rose-deep); outline-offset: 6px; border-radius: 18px; }
+  .bq__flowers { margin: 0.3rem 0 0; color: var(--color-moss); font-size: 0.82rem; line-height: 1.4; }
+  .bq__price { margin: 0.45rem 0 0; font-size: 0.95rem; font-weight: 600; color: var(--color-ink); }
+  .bq__actions { position: relative; z-index: 1; margin-top: auto; padding-top: 0.7rem; }
+  .bq__add { display: none; justify-content: center; align-items: center; width: 100%; min-height: 44px; padding: 0.5rem 0.9rem; border: 1px solid color-mix(in srgb, var(--color-ink) 35%, transparent); border-radius: 999px; background: transparent; color: var(--color-ink); font: inherit; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s, border-color 0.2s, color 0.2s; }
+  :global(html.js) .bq__add { display: inline-flex; }
+  .bq__add:hover { border-color: var(--color-berry); background: var(--color-berry); color: #fff; }
+  .bq__add:focus-visible { outline: 2px solid var(--color-rose-deep); outline-offset: 2px; }
+  .bq__add.is-added { border-color: var(--color-ink); background: var(--color-ink); color: var(--color-ivory); }
+
+  @media (min-width: 1024px) {
+    .bq__grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 2rem 1.5rem; }
+    .bq__add { width: auto; }
+  }
+</style>

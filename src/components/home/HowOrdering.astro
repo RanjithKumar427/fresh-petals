@@ -1,0 +1,166 @@
+---
+// How ordering works, for all three ranges, with the delivery facts beside
+// it. The process is the one the terms describe: choosing, a WhatsApp
+// enquiry (from a product page or the basket), our confirmation of
+// availability, presentation and the complete price, then acceptance and
+// payment. Opening WhatsApp is an enquiry, not an order; nothing is paid on
+// this website. Coverage is the owner-confirmed list of delivery cities
+// (src/data/serviceCities.ts); no delivery speed, fee or rating is stated.
+import { HOME_LANDING } from "../../data/seoLanding";
+import { LOCATIONS_PATH } from "../../data/serviceCities";
+
+const steps = [
+  { title: "Choose", text: "Add bouquets to your basket, note a garland’s design code, or decide which pooja flowers you need." },
+  { title: "Send it on WhatsApp", text: "From the basket or any product page, with the date, the recipient city and the address. This is an enquiry, not an order." },
+  { title: "We confirm", text: "Availability for your date and address, any change to the flowers or presentation, and the full price including delivery." },
+  { title: "Accept, then pay", text: "When you accept, we confirm the order and share the payment details." },
+];
+---
+
+<section id="ordering" class="ordering" aria-labelledby="ordering-title">
+  <div class="ordering__inner">
+    <div class="ordering__main">
+      <p class="ordering__eyebrow">How ordering works</p>
+      <h2 id="ordering-title" class="ordering__title">We confirm everything <em>before you pay.</em></h2>
+      <ol class="ordering__steps">
+        {steps.map((step, index) => (
+          <li data-reveal="fade" style={`--reveal-delay:${index * 90}ms`}>
+            <span class="ordering__num" aria-hidden="true">{index + 1}</span>
+            <h3>{step.title}</h3>
+            <p>{step.text}</p>
+          </li>
+        ))}
+      </ol>
+    </div>
+
+    <aside class="ordering__facts" aria-label="Delivery and policies">
+      <h3 class="ordering__facts-title">Delivery</h3>
+      <p data-home-coverage>{HOME_LANDING.intro[0]}</p>
+      <p>{HOME_LANDING.intro[1]}</p>
+      <ul class="ordering__links">
+        <li><a href={LOCATIONS_PATH}>See the delivery cities</a></li>
+        <li><a href="/shipping">Delivery and charges</a></li>
+        <li><a href="/refunds">Refunds and changes</a></li>
+        <li><a href="/faqs">All questions</a></li>
+      </ul>
+      <a class="ordering__basket" href="/cart" data-journey-basket>Go to your basket</a>
+    </aside>
+  </div>
+</section>
+
+<script>
+  import { getCartCount } from "../../utils/cart";
+  const link = document.querySelector<HTMLAnchorElement>("[data-journey-basket]");
+  const update = () => {
+    const count = getCartCount();
+    if (link) link.textContent = count > 0 ? `Review your basket (${count})` : "Go to your basket";
+  };
+  update();
+  window.addEventListener("fresh-petals-cart-updated", update);
+  window.addEventListener("pageshow", update);
+</script>
+
+<style>
+  .ordering {
+    background: var(--color-ivory);
+    padding: clamp(3rem, 6vw, 5.5rem) clamp(16px, 4vw, 56px);
+  }
+  .ordering__inner {
+    max-width: 1320px;
+    margin-inline: auto;
+    display: grid;
+    gap: 2.5rem;
+  }
+  .ordering__eyebrow {
+    margin: 0 0 0.7rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--color-rose-deep);
+  }
+  .ordering__title {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 380;
+    font-size: clamp(2rem, 1.4rem + 2.6vw, 3.6rem);
+    line-height: 1.04;
+    letter-spacing: -0.025em;
+    color: var(--color-ink-deep);
+    max-width: 16ch;
+  }
+  .ordering__title em { font-style: italic; color: var(--color-rose-deep); }
+  .ordering__steps {
+    list-style: none;
+    margin: 2rem 0 0;
+    padding: 0;
+    display: grid;
+    gap: 1.5rem;
+    counter-reset: step;
+  }
+  .ordering__steps li {
+    position: relative;
+    display: grid;
+    grid-template-columns: 2.6rem 1fr;
+    column-gap: 0.9rem;
+  }
+  .ordering__num {
+    grid-row: span 2;
+    display: grid;
+    place-items: center;
+    width: 2.6rem;
+    height: 2.6rem;
+    border-radius: 50% 50% 50% 6px;
+    background: var(--color-rose-soft);
+    color: var(--color-rose-deep);
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+  }
+  .ordering__steps h3 { margin: 0.15rem 0 0; font-size: 1.05rem; font-weight: 600; color: var(--color-ink-deep); }
+  .ordering__steps p { margin: 0.3rem 0 0; color: var(--color-moss); font-size: 0.93rem; line-height: 1.55; }
+
+  .ordering__facts {
+    align-self: start;
+    padding: 1.5rem;
+    border-radius: 22px;
+    background: var(--color-paper);
+    border: 1px solid var(--color-line);
+  }
+  .ordering__facts-title { margin: 0 0 0.6rem; font-family: var(--font-display); font-weight: 420; font-size: 1.4rem; color: var(--color-ink-deep); }
+  .ordering__facts p { margin: 0 0 0.7rem; color: var(--color-moss); font-size: 0.93rem; line-height: 1.55; }
+  .ordering__links { list-style: none; margin: 0.4rem 0 1rem; padding: 0; display: grid; }
+  .ordering__links a {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 44px;
+    border-bottom: 1px solid var(--color-line);
+    color: var(--color-ink);
+    font-weight: 600;
+    font-size: 0.92rem;
+    text-decoration: none;
+  }
+  .ordering__links a::after { content: "→"; color: var(--color-rose-deep); }
+  .ordering__links a:hover { color: var(--color-rose-deep); }
+  .ordering__basket {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 48px;
+    border-radius: 999px;
+    background: var(--color-berry);
+    color: #fff;
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .ordering__basket:hover { background: var(--color-berry-deep); }
+  .ordering__basket:focus-visible, .ordering__links a:focus-visible { outline: 2px solid var(--color-rose-deep); outline-offset: 3px; }
+
+  @media (min-width: 720px) {
+    .ordering__steps { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2rem 2.5rem; }
+  }
+  @media (min-width: 1024px) {
+    .ordering__inner { grid-template-columns: minmax(0, 1.6fr) minmax(300px, 0.8fr); gap: 4rem; align-items: start; }
+    .ordering__facts { margin-top: 0.4rem; padding: 2rem; }
+  }
+</style>

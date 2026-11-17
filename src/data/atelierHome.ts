@@ -70,7 +70,7 @@ export function photo(name: string, alt: string): Photo {
 }
 
 // A. Hero banner — three photographs, one shown at a time
-// (HeroAtelier.astro). Each is a public launch bouquet's own product
+// (the former HeroAtelier.astro, replaced by src/components/home/PetalHero.astro). Each is a public launch bouquet's own product
 // photograph, captioned with that bouquet's name and published price and
 // linked to its page: nothing editorial, nothing unidentified. Chosen for
 // three distinct looks (pink roses, cream roses with eucalyptus, pink
@@ -121,7 +121,7 @@ export function getHeroPhoto(catalogue: Product[]) {
   };
 }
 
-// A1. Hero campaigns — the full-width opening scene (HeroAtelier.astro):
+// A1. Hero campaigns — the full-width opening scene (the former HeroAtelier.astro; its photographs now supply the petal crops, getHomeRanges):
 // three campaign photographs, each with its own copy and two destinations.
 // They are campaign imagery, not products: no product name or price is
 // attached, and every button goes to a collection or to custom orders. The
@@ -201,6 +201,64 @@ export function getHeroCampaigns({ garlandsPublic }: { garlandsPublic: boolean }
     },
   ];
   return campaigns.filter((campaign) => garlandsPublic || !campaign.needsGarlands).map(({ needsGarlands: _needsGarlands, ...campaign }) => campaign);
+}
+
+// A0. The three ranges — the homepage's opening scene
+// (src/components/home/PetalHero.astro): one petal per range, each holding
+// its campaign photograph cropped to the flowers (scripts/hero-campaign-images.mjs,
+// PETAL boxes). Campaign imagery, not products: no product name or price is
+// attached. Counts are what each collection page lists right now.
+type PetalManifest = Record<string, { petal: CampaignImage }>;
+
+export type RangeId = "bouquets" | "garlands" | "pooja";
+
+export type HomeRange = {
+  id: RangeId;
+  name: string;
+  href: string;
+  /** One short line: what the range is and how it is chosen. */
+  line: string;
+  count: number;
+  countLabel: string;
+  image: HeroPicture & { alt: string };
+};
+
+/** The petal photographs are drawn at most about 360 CSS pixels wide. */
+export const PETAL_SIZES = "(min-width: 1024px) 380px, (min-width: 720px) 260px, 40vw";
+
+export function getHomeRanges(counts: Record<RangeId, number>): HomeRange[] {
+  const images = heroCampaignImages as unknown as PetalManifest;
+  const petal = (name: string, alt: string) => ({ ...heroPicture(images[name].petal), alt });
+  const label = (count: number, noun: string) => (count > 0 ? `${count} ${noun}${count === 1 ? "" : "s"}` : "Ask on WhatsApp");
+  return [
+    {
+      id: "bouquets",
+      name: "Bouquets",
+      href: "/categories/bouquets",
+      line: "Roses, lilies and mixed flowers, hand-tied",
+      count: counts.bouquets,
+      countLabel: label(counts.bouquets, "design"),
+      image: petal("hero-bouquets", "A hand-tied bouquet of pink roses, lilies and eucalyptus in blush wrapping."),
+    },
+    {
+      id: "garlands",
+      name: "Wedding garlands",
+      href: "/categories/garlands",
+      line: "Varmala and poola mala, chosen by design code",
+      count: counts.garlands,
+      countLabel: label(counts.garlands, "design"),
+      image: petal("hero-garlands", "A pair of wedding garlands of white flowers banded with red and pink roses, beside a brass urn of flowers."),
+    },
+    {
+      id: "pooja",
+      name: "Pooja flowers",
+      href: "/categories/pooja-flowers",
+      line: "Loose flowers, strings and torans, regular deliveries",
+      count: counts.pooja,
+      countLabel: label(counts.pooja, "choice"),
+      image: petal("hero-pooja", "A cane basket of marigolds and white flowers, with strings of jasmine and marigold beside it."),
+    },
+  ];
 }
 
 // A2. Hero gallery — the other photographs from the original homepage

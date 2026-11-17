@@ -983,7 +983,7 @@ test('image discovery: only photographs reviewed as the product reach the sitema
   const main = readFileSync('src/pages/sitemap.xml.ts', 'utf8');
   assert(/productImages\(product\)/.test(main) && /IMAGE_SITEMAP_NS/.test(main));
   assert(/data-representative-photo/.test(readFileSync('src/pages/products/[slug].astro', 'utf8')));
-  for (const file of ['src/components/category/CategoryPage.astro', 'src/components/occasion/OccasionCard.astro', 'src/components/atelier/BouquetEdit.astro', 'src/server/services/CityCatalogue.ts', 'src/components/GuideProductCard.astro']) assert(/productPhotoAlt\(/.test(readFileSync(file, 'utf8')), file);
+  for (const file of ['src/components/category/CategoryPage.astro', 'src/components/occasion/OccasionCard.astro', 'src/components/home/RangeBouquets.astro', 'src/components/home/RangePooja.astro', 'src/server/services/CityCatalogue.ts', 'src/components/GuideProductCard.astro']) assert(/productPhotoAlt\(/.test(readFileSync(file, 'utf8')), file);
 });
 
 test('photo reviews: runtime matches by product and exact path only; the build refuses a reviewed file whose content changed (isolated fixtures)', async () => {

@@ -360,7 +360,8 @@ const isCurrent = (href: string) => path === href || (href !== "/" && path.start
       justify-self: end;
       margin-left: 0;
     }
-    .site-header--home .site-header__actions > .site-icon,
+    /* Search stays beside the basket on phones; saved flowers are in the menu. */
+    .site-header--home .site-header__actions > .site-icon:not([href="/search"]),
     .site-header--home .site-basket__label {
       display: none;
     }
