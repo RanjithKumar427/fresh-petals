@@ -20,7 +20,6 @@
 // Every check either runs and passes or fails; a missing browser or WebGL is
 // a failure, never a skip.
 import { pathToFileURL } from 'node:url';
-import { createRequire } from 'node:module';
 import { inflateSync } from 'node:zlib';
 
 // Minimal PNG reader (8-bit RGB/RGBA, non-interlaced: Chrome's screenshots).
@@ -55,8 +54,11 @@ export async function runBrowserChecks(base, { playwright, chrome, cores } = {})
   const check = (name, ok, evidence = '') => results.push({ name: `browser: ${name}`, ok: !!ok, evidence: String(evidence).slice(0, 220) });
   let chromium;
   try {
-    const path = playwright ?? createRequire(import.meta.url).resolve('playwright-core');
-    ({ chromium } = await import(pathToFileURL(path).href));
+    // An explicit path (local runs), else the package itself (installed by the preview job).
+    // Either entry may be CommonJS, whose exports arrive on `default`.
+    const mod = playwright ? await import(pathToFileURL(playwright).href) : await import('playwright-core');
+    chromium = mod.chromium ?? mod.default?.chromium;
+    if (!chromium?.launch) throw new Error('playwright-core has no chromium.launch');
   } catch (error) {
     check('browser available', false, `playwright-core not found (${error.message.split('\n')[0]}); browser checks NOT executed`);
     return results;
@@ -203,7 +205,7 @@ export async function runBrowserChecks(base, { playwright, chrome, cores } = {})
   return results;
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const args = Object.fromEntries(process.argv.slice(2).map((a) => a.replace(/^--/, '').split('=')).map(([k, ...v]) => [k, v.join('=')]));
   if (!args.base) { console.log('usage: --base=<preview URL> [--playwright=<index.mjs>] [--chrome=<path>]'); process.exit(2); }
   const results = await runBrowserChecks(args.base.replace(/\/$/, ''), { playwright: args.playwright, chrome: args.chrome, cores: args.cores });
