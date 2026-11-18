@@ -92,7 +92,7 @@ const priceBadgeShort =
 ---
 
 <article
-  class="group fp-card overflow-hidden hover:-translate-y-1"
+  class="group fp-card flex h-full flex-col overflow-hidden hover:-translate-y-1"
 >
   <!-- P1.5 (Phase 1 discovery hardening) -- the <a> below used to wrap the
        whole image container including where the price badge sits. Adding
@@ -172,13 +172,15 @@ const priceBadgeShort =
     }
   </div>
 
-  <div class="p-5">
-    <p class="text-[10px] font-semibold uppercase tracking-[0.24em] text-rose-deep" data-card-identity={identity ? "" : undefined}>
+  <!-- A column whose actions sit at the bottom, so the buttons line up
+       across a row whatever the length of the name, code or price. -->
+  <div class="flex flex-1 flex-col p-4 sm:p-5">
+    <p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-rose-deep [overflow-wrap:anywhere] sm:tracking-[0.24em]" data-card-identity={identity ? "" : undefined}>
       {identity ?? categoryLabel(category)}
     </p>
 
     <a href={productUrl} data-journey-link class="mt-2 block">
-      <h3 class="line-clamp-2 min-h-[42px] text-[15px] font-semibold leading-snug text-ink transition group-hover:text-berry">
+      <h3 class="line-clamp-3 text-[15px] font-semibold leading-snug text-ink [overflow-wrap:anywhere] transition group-hover:text-berry">
         {name}
       </h3>
     </a>
@@ -187,7 +189,7 @@ const priceBadgeShort =
       {description}
     </p>
 
-    <p class="mt-4 text-[14px] font-bold text-ink">
+    <p class="mt-auto pt-4 text-[14px] font-bold text-ink">
       {priceLabel}
     </p>
 

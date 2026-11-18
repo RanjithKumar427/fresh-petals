@@ -13,6 +13,7 @@ import { parseShopFilters, withoutUnpricedBudget, matchesShopFilters, shopFilter
 import { makeJourney } from "../../utils/journey";
 import { whatsappLink } from "../../config/storefront";
 import { filterGroups, shopItemData, type Membership } from "../../data/occasionJourneys";
+import { EMPTY_RANGES } from "../../data/categoryPages";
 import { ALL_FLOWERS_MOVED_GROUPS, BOUQUET_GROUP_GUIDANCE, POOJA_ENQUIRY_HREF, POOJA_ENQUIRY_POINTS, POOJA_PHOTO_NOTE, bouquetLine, bouquetPresentation, presentationComparison, presentationKind } from "../../data/collectionGuidance";
 import { productPhotoAlt } from "../../data/productPhotos";
 import { recordsFlower, stemsOf } from "../../data/catalogueRange";
@@ -78,6 +79,8 @@ const pageDescription = landing?.description ?? meta?.description ?? category.de
 const pageHeading = landing?.h1 ?? category.name;
 // All Flowers is mostly quoted designs; a "from" amount taken from its few priced products would misdescribe the page.
 const fromPrice = landing && category.slug !== "all-flowers" ? lowestPrice(products) : null;
+// An empty range says whether it is not sold, made to order or not listed now (src/data/categoryPages.ts).
+const emptyRange = products.length === 0 ? EMPTY_RANGES[category.slug] : undefined;
 const noindex = products.length === 0 || NOINDEX_CATEGORY_SLUGS.has(category.slug);
 const canonical = CANONICAL_CATEGORY[category.slug] ? `/categories/${CANONICAL_CATEGORY[category.slug]}` : undefined;
 // The bouquet list can be narrowed by occasion, budget and
@@ -150,9 +153,9 @@ const breadcrumbJsonLd = {
   jsonLd={noindex || canonical ? [] : [breadcrumbJsonLd]}
 >
   <main class="bg-ivory" data-track-list={landing ? category.slug : undefined}>
-    <section class="px-5 py-10 md:px-8 md:py-16">
+    <section class="px-5 pb-10 pt-6 md:px-8 md:pb-16 md:pt-8">
       <div class="mx-auto max-w-7xl">
-        <div class="collection-head mb-10 md:mb-14">
+        <div class="collection-head mb-6 md:mb-8">
           <div>
           <p class="fp-eyebrow">
             <a href="/" class="hover:underline">Home</a> <span aria-hidden="true">/</span> Collection
@@ -166,7 +169,7 @@ const breadcrumbJsonLd = {
 
           {
             landing ? (
-              <div class="max-w-2xl space-y-3 text-sm leading-7 text-moss md:text-base">
+              <div class="max-w-3xl space-y-3 text-sm leading-7 text-moss md:text-base">
                 {landing.intro.map((paragraph) => <p>{paragraph}</p>)}
                 {fromPrice !== null && (
                   <p class="font-semibold text-ink">
@@ -175,7 +178,7 @@ const breadcrumbJsonLd = {
                 )}
               </div>
             ) : (
-              <div class="max-w-2xl space-y-3 text-sm leading-7 text-moss md:text-base">
+              <div class="max-w-3xl space-y-3 text-sm leading-7 text-moss md:text-base">
                 <p>{category.description}</p>
                 {introLink && (
                   <p data-intro-link>
@@ -186,48 +189,51 @@ const breadcrumbJsonLd = {
             )
           }
 
-          <div class="mt-5 flex max-w-2xl flex-wrap items-center gap-2">
-            <span class="rounded-full border border-line bg-linen px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-berry">
+          {products.length > 0 && (
+          <div class="mt-4 flex max-w-3xl flex-wrap items-center gap-2">
+            <span class="rounded-full border border-line bg-linen px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-berry">
               {products.length} {countNoun}{products.length === 1 ? "" : "s"}
             </span>
 
-            <span class="rounded-full border border-mint-soft bg-mint-soft px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-ink">
+            <span class="rounded-full border border-mint-soft bg-mint-soft px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink">
               WhatsApp confirmed
             </span>
 
-            <span class="rounded-full border border-line bg-paper px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-moss">
+            <span class="rounded-full border border-line bg-paper px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-moss">
               Recipient city and delivery confirmed on WhatsApp
             </span>
           </div>
+          )}
           </div>
         </div>
 
         <div data-shop data-shop-key={`category:${category.slug}`} data-shop-noun="bouquets">
         {
           shopGroups.length > 0 && (
-            <div class="mb-6">
+            <div class="mb-4">
               <ShopFilters groups={facets} total={products.length} shown={shown} noun="bouquets" />
             </div>
           )
         }
         {
           groups.length > 0 && (
-            // One scrollable row on phones (it wrapped to two), so the first
-            // bouquets sit higher; wraps again on wider screens.
-            <nav aria-label="Bouquet types" class="-mx-1 mb-8 flex gap-2 overflow-x-auto px-1 py-1 md:flex-wrap md:overflow-visible">
-              {groups.map((group) => (
-                <a href={`#${group.id}`} class="inline-flex min-h-[44px] shrink-0 items-center gap-1 rounded-full border border-line bg-paper px-4 text-[12px] font-semibold text-ink transition hover:border-ink">
-                  {group.label} <span class="text-moss">({group.products.length})</span>
-                </a>
-              ))}
-            </nav>
-          )
-        }
-        {
-          groups.length > 1 && category.slug === "bouquets" && (
-            <p class="-mt-4 mb-8 max-w-3xl text-sm leading-7 text-moss" data-group-overlap>
-              {products.length} bouquets in all, grouped by the flowers recorded for each design. A bouquet with both roses and lilies is listed in both groups; every other bouquet appears once.
-            </p>
+            // The group links and the overlap note share a line on wider
+            // screens, so the first photographs reach the opening view.
+            <div class="mb-6 md:flex md:items-center md:gap-6">
+              {/* One scrollable row on phones; wraps again on wider screens. */}
+              <nav aria-label="Bouquet types" class="-mx-1 mb-3 flex shrink-0 gap-2 overflow-x-auto px-1 py-1 md:mb-0 md:flex-wrap md:overflow-visible">
+                {groups.map((group) => (
+                  <a href={`#${group.id}`} data-group-link={group.id} hidden={!group.products.some(matches)} class="inline-flex min-h-[44px] shrink-0 items-center gap-1 rounded-full border border-line bg-paper px-4 text-[12px] font-semibold text-ink transition hover:border-ink">
+                    {group.label} <span class="text-moss" data-group-count>({group.products.filter(matches).length})</span>
+                  </a>
+                ))}
+              </nav>
+              {groups.length > 1 && category.slug === "bouquets" && (
+                <p class="max-w-2xl text-[13px] leading-6 text-moss md:leading-5" data-group-overlap>
+                  {products.length} bouquets in all, grouped by the flowers recorded for each design. A bouquet with both roses and lilies is listed in both groups; every other bouquet appears once.
+                </p>
+              )}
+            </div>
           )
         }
         {
@@ -235,25 +241,7 @@ const breadcrumbJsonLd = {
             <div class="space-y-14">
               {groups.map((group) => (
                 <section id={group.id} aria-labelledby={`${group.id}-title`} class="scroll-mt-28" data-shop-group hidden={!group.products.some(matches)}>
-                  <h2 id={`${group.id}-title`} class={`fp-serif text-2xl text-ink md:text-3xl ${guidanceFor(group.id) ? "mb-3" : "mb-5"}`}>{group.label}</h2>
-                  {guidanceFor(group.id) && (
-                    <div class="mb-6 max-w-3xl text-sm leading-7 text-moss" data-group-guidance={group.id}>
-                      <p>{guidanceFor(group.id)!.intro}</p>
-                      <ul class="mt-2 space-y-1">
-                        {group.products.map((product) => bouquetLine(product) && (
-                          <li>
-                            <a href={`/products/${product.slug}`} class="font-semibold text-ink underline underline-offset-4">{product.name}</a>: {bouquetLine(product)}
-                          </li>
-                        ))}
-                      </ul>
-                      <p class="mt-2">
-                        Often chosen for:{" "}
-                        {guidanceFor(group.id)!.links.map((link, index) => (
-                          <Fragment>{index > 0 && ", "}<a href={link.href} class="text-ink underline underline-offset-4">{link.label.toLowerCase()}</a></Fragment>
-                        ))}.
-                      </p>
-                    </div>
-                  )}
+                  <h2 id={`${group.id}-title`} class="fp-serif mb-4 text-2xl text-ink md:text-3xl">{group.label}</h2>
                   <div class="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
                     {group.products.map((product) => {
                       const data = shopItemData(product);
@@ -286,6 +274,32 @@ const breadcrumbJsonLd = {
                   <a class="fp-btn" href={helpHref} data-filter-help target="_blank" rel="noopener noreferrer">Ask on WhatsApp</a>
                 </p>
               </div>
+              {category.slug === "bouquets" && groups.some((group) => guidanceFor(group.id)) && (
+                // How the groups differ, after the cards: the named-design lists
+                // used to sit between each heading and its photographs.
+                <section class="max-w-3xl text-sm leading-7 text-moss" aria-labelledby="group-guidance-title" data-group-guidance-all>
+                  <h2 id="group-guidance-title" class="fp-serif text-2xl text-ink md:text-3xl">How the groups differ</h2>
+                  {groups.filter((group) => guidanceFor(group.id)).map((group) => (
+                    <div class="mt-6" data-group-guidance={group.id}>
+                      <h3 class="text-base font-semibold text-ink"><a href={`#${group.id}`} class="underline decoration-line underline-offset-4 hover:text-berry">{group.label}</a></h3>
+                      <p class="mt-1">{guidanceFor(group.id)!.intro}</p>
+                      <ul class="mt-2 space-y-1">
+                        {group.products.map((product) => bouquetLine(product) && (
+                          <li>
+                            <a href={`/products/${product.slug}`} class="font-semibold text-ink underline underline-offset-4">{product.name}</a>: {bouquetLine(product)}
+                          </li>
+                        ))}
+                      </ul>
+                      <p class="mt-2">
+                        Often chosen for:{" "}
+                        {guidanceFor(group.id)!.links.map((link, index) => (
+                          <Fragment>{index > 0 && ", "}<a href={link.href} class="text-ink underline underline-offset-4">{link.label.toLowerCase()}</a></Fragment>
+                        ))}.
+                      </p>
+                    </div>
+                  ))}
+                </section>
+              )}
               {category.slug === "bouquets" && (
                 <div class="max-w-3xl rounded-[24px] border border-line bg-paper p-6 text-sm leading-7 text-moss" data-presentation-note>
                   <h2 class="text-base font-semibold text-ink">How each bouquet arrives</h2>
@@ -462,27 +476,35 @@ const breadcrumbJsonLd = {
               ))}
             </div>
           ) : (
-            <div class="rounded-[28px] border border-line bg-linen p-8 text-center md:p-12">
+            <div class="rounded-[28px] border border-line bg-linen p-8 text-center md:p-12" data-empty-range={emptyRange?.kind ?? "unclassified"}>
               <p class="text-[10px] font-semibold uppercase tracking-[0.28em] text-rose-deep">
-                Available on request
+                {emptyRange?.kind === "not-offered" ? "Not sold at the moment" : emptyRange?.kind === "custom" ? "Made to order on request" : "Nothing listed at the moment"}
               </p>
 
               <h2 class="fp-serif mt-3 text-2xl text-ink">
-                Custom {category.name} Orders
+                {emptyRange?.kind === "custom" ? `Custom ${category.name} Orders` : emptyRange?.kind === "unavailable" ? `Ask about ${category.name}` : emptyRange?.kind === "not-offered" ? "Not sold by Fresh Petals" : `Nothing listed in ${category.name}`}
               </h2>
 
               <p class="mx-auto mt-4 max-w-xl text-sm leading-7 text-moss">
-                This category is available as a WhatsApp-confirmed custom order.
-                Share your preferred quantity, occasion and delivery date. We’ll
-                confirm today’s availability and price before payment.
+                {emptyRange?.kind === "custom"
+                  ? "Share what you need, the quantity, occasion and delivery date on WhatsApp. We confirm whether we can make it, and the price, before you pay."
+                  : emptyRange?.kind === "unavailable"
+                    ? "Ask on WhatsApp whether it is available for your date. We confirm availability and the price before you pay."
+                    : "There is nothing to order here."}
+                {emptyRange && <Fragment>{" "}See <a href={emptyRange.see.href} class="font-semibold text-ink underline underline-offset-4">{emptyRange.see.label}</a>.</Fragment>}
               </p>
 
-              <a
-                href={`https://wa.me/919652012274?text=Hi%20Fresh%20Petals%2C%20I%20want%20to%20check%20availability%20for%20${encodeURIComponent(category.name)}`}
-                class="mt-7 inline-flex rounded-full bg-berry px-7 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-berry-deep"
-              >
-                Check on WhatsApp
-              </a>
+              {emptyRange && emptyRange.kind !== "not-offered" && (
+                <a
+                  href={whatsappLink(emptyRange.kind === "custom" ? `Hi Fresh Petals, I'd like to ask about a custom order: ${category.name}.` : `Hi Fresh Petals, I'd like to check availability for ${category.name} on my date.`)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-whatsapp-enquiry
+                  class="mt-7 inline-flex min-h-[44px] items-center rounded-full bg-berry px-7 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-berry-deep"
+                >
+                  {emptyRange.kind === "custom" ? "Ask on WhatsApp" : "Check on WhatsApp"}
+                </a>
+              )}
             </div>
           )
         }
@@ -559,15 +581,17 @@ const breadcrumbJsonLd = {
   .collection-head {
     display: grid;
     gap: 1.25rem;
-    padding-bottom: 2rem;
+    padding-bottom: 1.5rem;
     border-bottom: 1px solid var(--color-line);
   }
 
   @media (min-width: 1024px) {
     .collection-head {
-      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
-      align-items: end;
-      gap: 3rem;
+      grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.5fr);
+      /* Title and introduction start together: bottom alignment left a blank
+         column above a short title beside a long introduction. */
+      align-items: start;
+      gap: 2.5rem;
     }
   }
 </style>

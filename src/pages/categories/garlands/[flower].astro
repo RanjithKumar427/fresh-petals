@@ -179,14 +179,16 @@ const landing = {
   .collection-head {
     display: grid;
     gap: 1.25rem;
-    padding-bottom: 2rem;
+    padding-bottom: 1.5rem;
     border-bottom: 1px solid var(--color-line);
   }
 
   @media (min-width: 1024px) {
     .collection-head {
-      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
-      align-items: end;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+      /* Title and introduction start together: bottom alignment left a blank
+         column above a short title beside a long introduction. */
+      align-items: start;
       gap: 3rem;
     }
   }

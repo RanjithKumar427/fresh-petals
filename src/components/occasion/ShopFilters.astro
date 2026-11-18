@@ -59,6 +59,15 @@ const clearHref = shopFilterUrl(Astro.url.pathname, { occasion: [], budget: [], 
       for (const item of items) item.hidden = !matchesShopFilters(itemData(item), state);
       const shown = distinct(scoped.filter((item) => !item.hidden));
       root.querySelectorAll<HTMLElement>("[data-shop-group]").forEach((group) => { group.hidden = ![...group.querySelectorAll<HTMLElement>("[data-shop-item]")].some((item) => !item.hidden); });
+      // Group jump links show the visible placements in each group (a bouquet
+      // in two groups counts in both; the status line counts it once).
+      root.querySelectorAll<HTMLAnchorElement>("[data-group-link]").forEach((link) => {
+        const group = document.getElementById(link.dataset.groupLink!);
+        const n = group ? group.querySelectorAll("[data-shop-item]:not([hidden])").length : 0;
+        const count = link.querySelector("[data-group-count]");
+        if (count) count.textContent = "(" + n + ")";
+        link.hidden = n === 0;
+      });
       root.querySelectorAll<HTMLElement>("[data-shop-empty]").forEach((empty) => { empty.hidden = shown !== 0; });
       for (const chip of chips) {
         const group = chip.dataset.filterGroup as FilterKey, value = chip.dataset.filterValue!;
@@ -172,28 +181,55 @@ const clearHref = shopFilterUrl(Astro.url.pathname, { occasion: [], budget: [], 
     display: block;
   }
 
+  /* One line per filter group, so Occasion and Colour are both in view
+     (a single sideways-scrolling row hid Colour past the right edge). Phones
+     scroll a long group sideways under its own label; wider screens wrap. */
   .filters__row {
-    display: flex;
-    gap: 0.9rem;
-    overflow-x: auto;
+    display: grid;
+    gap: 0.5rem;
     padding: 0.1rem 0 0.25rem;
-    scrollbar-width: none;
-    overscroll-behavior-x: contain;
   }
 
   .filters__group {
     display: flex;
     align-items: center;
     gap: 0.4rem;
-    flex-shrink: 0;
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+    overscroll-behavior-x: contain;
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 1.5rem), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - 1.5rem), transparent);
   }
 
   .filters__label {
+    flex: 0 0 4.75rem;
     font-size: 10px;
     font-weight: 700;
     letter-spacing: 0.14em;
     text-transform: uppercase;
     color: var(--color-moss);
+  }
+
+  .filters__group > .chip {
+    flex-shrink: 0;
+  }
+
+  @media (min-width: 768px) {
+    .filters__group {
+      flex-wrap: wrap;
+      overflow: visible;
+      -webkit-mask-image: none;
+      mask-image: none;
+    }
+  }
+
+  /* Pointer-precise screens: tighter chips so the first photographs reach
+     the opening view; touch screens keep 44px targets. */
+  @media (min-width: 1024px) and (pointer: fine) {
+    .filters__group .chip {
+      min-height: 36px;
+    }
   }
 
   .chip {

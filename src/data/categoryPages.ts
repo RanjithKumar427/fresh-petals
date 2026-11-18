@@ -425,3 +425,28 @@ export function categoryMeta(slug: string): { name: string; slug: string; descri
 
 // A category with no written introduction (one added later through a new tag or category).
 const defaultIntro = (name: string) => `${name}: the designs listed under this name. Choose one and send it on WhatsApp; we confirm the flowers, price and delivery for your date before you pay.`;
+
+/**
+ * What an empty range means, from each range's own introduction above
+ * (CATEGORY_INTROS), so the page does not offer what the business does not:
+ *   not-offered  the business does not sell it; no enquiry, a link to what it sells instead
+ *   custom       not listed, but made to order on request; confirmed on WhatsApp
+ *   unavailable  a flower not listed at the moment; availability is confirmed on WhatsApp
+ * An empty range missing here gets no enquiry button (the safe default).
+ */
+export type EmptyRangeKind = "not-offered" | "custom" | "unavailable";
+export const EMPTY_RANGES: Record<string, { kind: EmptyRangeKind; see: { href: string; label: string } }> = {
+  "handcrafted-torans-and-streamers": { kind: "not-offered", see: { href: "/categories/flower-strings-and-torans", label: "Flower Strings & Torans" } },
+  "fairy-lights-tim-tim-lights": { kind: "not-offered", see: { href: "/categories/flower-strings-and-torans", label: "Flower Strings & Torans" } },
+  "diyas-and-tea-light-holders": { kind: "not-offered", see: { href: "/categories/pooja-flowers", label: "Pooja Flowers" } },
+  "planners-and-journal": { kind: "not-offered", see: { href: "/categories/add-ons", label: "Add-ons" } },
+  skincare: { kind: "not-offered", see: { href: "/categories/add-ons", label: "Add-ons" } },
+  tea: { kind: "not-offered", see: { href: "/categories/add-ons", label: "Add-ons" } },
+  "eid-al-adha": { kind: "custom", see: { href: "/categories/white-flowers", label: "White Flowers" } },
+  "mini-bouquets": { kind: "custom", see: { href: "/categories/bouquets", label: "All Bouquets" } },
+  "pooja-urli-boxes": { kind: "custom", see: { href: "/categories/pooja-flowers", label: "Pooja Flowers" } },
+  "flowers-and-jewellery": { kind: "custom", see: { href: "/categories/wedding", label: "Wedding" } },
+  "tuberose-rajnigandha": { kind: "unavailable", see: { href: "/categories/pooja-flowers", label: "Pooja Flowers" } },
+  hydrangeas: { kind: "unavailable", see: { href: "/categories/pastel-flowers", label: "Pastel Flowers" } },
+  orchid: { kind: "unavailable", see: { href: "/categories/lilies", label: "Lilies" } },
+};
