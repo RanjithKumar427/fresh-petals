@@ -219,9 +219,9 @@ const breadcrumbJsonLd = {
           groups.length > 0 && (
             // The group links and the overlap note share a line on wider
             // screens, so the first photographs reach the opening view.
-            <div class="mb-6 md:flex md:items-center md:gap-6">
+            <div class="mb-6 lg:flex lg:items-center lg:gap-6">
               {/* One scrollable row on phones; wraps again on wider screens. */}
-              <nav aria-label="Bouquet types" class="-mx-1 mb-3 flex shrink-0 gap-2 overflow-x-auto px-1 py-1 md:mb-0 md:flex-wrap md:overflow-visible">
+              <nav aria-label="Bouquet types" class="-mx-1 mb-3 flex shrink-0 gap-2 overflow-x-auto px-1 py-1 lg:mb-0 md:flex-wrap md:overflow-visible">
                 {groups.map((group) => (
                   <a href={`#${group.id}`} data-group-link={group.id} hidden={!group.products.some(matches)} class="inline-flex min-h-[44px] shrink-0 items-center gap-1 rounded-full border border-line bg-paper px-4 text-[12px] font-semibold text-ink transition hover:border-ink">
                     {group.label} <span class="text-moss" data-group-count>({group.products.filter(matches).length})</span>
@@ -229,7 +229,7 @@ const breadcrumbJsonLd = {
                 ))}
               </nav>
               {groups.length > 1 && category.slug === "bouquets" && (
-                <p class="max-w-2xl text-[13px] leading-6 text-moss md:leading-5" data-group-overlap>
+                <p class="max-w-2xl text-[13px] leading-6 text-moss lg:leading-5" data-group-overlap>
                   {products.length} bouquets in all, grouped by the flowers recorded for each design. A bouquet with both roses and lilies is listed in both groups; every other bouquet appears once.
                 </p>
               )}
