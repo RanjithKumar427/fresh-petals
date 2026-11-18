@@ -144,6 +144,83 @@ export async function runBrowserChecks(base, { playwright, chrome, cores } = {})
     check(`group links agree with the visible results (colour ${red})`, agree.length > 0 && agree.every((g) => (g.n === 0 ? g.hidden : !g.hidden && g.label === `(${g.n})`)), agree.map((g) => `${g.id}:${g.hidden ? 'hidden' : g.label}/${g.n}`).join(' '));
     await lay.close();
 
+    // ---- 1c. the lower guide ("How the groups differ") under filters (audit F4)
+    const gctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+    await gctx.route('**/*', (route) => (route.request().url().startsWith(origin + '/') || route.request().url().startsWith('data:') ? route.continue() : route.abort()));
+    const gp = await gctx.newPage();
+    const gErrors = []; gp.on('pageerror', (e) => gErrors.push(e.message));
+    const guide = () => gp.evaluate(() => {
+      const shown = (el) => !!el && !el.hidden && !el.closest('[hidden]');
+      const items = [...document.querySelectorAll('[data-shop-item]')].filter(shown);
+      const visibleSlugs = new Set(items.map((i) => i.dataset.slug));
+      const jumps = [...document.querySelectorAll('[data-group-jump]')].map((a) => ({ id: a.dataset.groupJump, visible: shown(a), targetVisible: shown(document.getElementById(a.dataset.groupJump)) }));
+      const lines = [...document.querySelectorAll('[data-guide-slug]')].filter(shown).map((l) => l.dataset.guideSlug);
+      return {
+        hash: location.hash, search: location.search,
+        count: document.querySelector('[data-shop-count]')?.textContent.replace(/\s+/g, ' ').trim(),
+        distinct: visibleSlugs.size, total: new Set([...document.querySelectorAll('[data-shop-item]')].map((i) => i.dataset.slug)).size,
+        pressed: [...document.querySelectorAll('[data-filter-value][aria-pressed="true"]')].map((c) => `${c.dataset.filterGroup}:${c.dataset.filterValue}`).sort().join(','),
+        guideVisible: shown(document.querySelector('[data-group-guidance-all]')),
+        filteredNote: shown(document.querySelector('[data-guide-filtered]')),
+        jumps, lines, linesOutsideResults: lines.filter((s) => !visibleSlugs.has(s)).length,
+        empty: shown(document.querySelector('[data-shop-empty]')),
+      };
+    });
+    // No visible jump may target a hidden group, and no guide line may name a design outside the results.
+    const consistent = (g) => g.jumps.every((j) => !j.visible || j.targetVisible) && g.jumps.every((j) => j.visible === j.targetVisible) && g.linesOutsideResults === 0;
+    const countOk = (g) => (g.pressed ? g.count === `Showing ${g.distinct} of ${g.total} bouquets` : g.count === `${g.total} bouquets`);
+    await gp.goto(`${origin}/categories/bouquets`, { waitUntil: 'load' });
+    let g = await guide();
+    check('guide, unfiltered: every group jump and design line is offered', g.guideVisible && !g.filteredNote && g.jumps.length >= 3 && g.jumps.every((j) => j.visible && j.targetVisible) && g.lines.length > 0, `${g.jumps.map((j) => j.id).join(',')}; ${g.lines.length} lines`);
+    const allLines = g.lines.length;
+    // Red (or the first colour on offer) removes at least one group.
+    const colourValue = (await gp.locator('[data-filter-group="colour"][data-filter-value="red"]').count()) ? 'red' : await gp.locator('[data-filter-group="colour"]:not([hidden])').first().getAttribute('data-filter-value');
+    await gp.click(`[data-filter-group="colour"][data-filter-value="${colourValue}"]`);
+    await gp.waitForTimeout(250);
+    g = await guide();
+    const excluded = g.jumps.filter((j) => !j.targetVisible).map((j) => j.id);
+    check(`guide, ${colourValue}: excluded groups (${excluded.join(',') || 'none'}) have no jump; lines match the results`, consistent(g) && g.filteredNote && g.lines.length < allLines && countOk(g), `jumps ${g.jumps.map((j) => `${j.id}:${j.visible ? 'shown' : 'hidden'}`).join(' ')}; ${g.lines.length}/${allLines} lines; "${g.count}"`);
+    const validJump = g.jumps.find((j) => j.visible);
+    if (validJump) {
+      const before = g;
+      await gp.click(`[data-group-jump="${validJump.id}"]`);
+      await gp.waitForTimeout(900);
+      const landed = await gp.evaluate((id) => { const h = document.getElementById(`${id}-title`); const r = h.getBoundingClientRect(); return { inView: r.top >= -1 && r.top < innerHeight && !h.closest('[hidden]'), focused: document.activeElement === h }; }, validJump.id);
+      g = await guide();
+      check(`guide jump to ${validJump.id}: lands on its visible heading; filter, chips and count unchanged`, landed.inView && landed.focused && g.hash === before.hash && g.pressed === before.pressed && g.count === before.count, `${JSON.stringify(landed)} ${g.hash} ${g.pressed} "${g.count}"`);
+      await gp.reload({ waitUntil: 'load' }); await gp.waitForTimeout(250);
+      g = await guide();
+      check('guide jump then reload: the selection survives', g.pressed === before.pressed && g.count === before.count && consistent(g), `${g.hash} "${g.count}"`);
+      // Keyboard: Enter on the guide jump does the same.
+      await gp.focus(`[data-group-jump="${validJump.id}"]`); await gp.keyboard.press('Enter'); await gp.waitForTimeout(900);
+      const kb = await gp.evaluate((id) => document.activeElement?.id === `${id}-title` && location.hash, validJump.id);
+      check('guide jump by keyboard (Enter): focus moves to the heading, address keeps the filter', kb === before.hash, String(kb));
+    } else check('guide: a valid jump under the colour filter', false, 'no group left visible');
+    // Combined filters.
+    await gp.goto(`${origin}/categories/bouquets#occasion=birthday&colour=${colourValue}`, { waitUntil: 'load' }); await gp.waitForTimeout(250);
+    g = await guide();
+    check(`guide, birthday + ${colourValue}: consistent with the results`, consistent(g) && countOk(g) && g.pressed === `colour:${colourValue},occasion:birthday`, `"${g.count}" ${g.lines.length} lines`);
+    // Zero results: no guide, no jumps.
+    await gp.goto(`${origin}/categories/bouquets#occasion=mom-to-be&colour=${colourValue}`, { waitUntil: 'load' }); await gp.waitForTimeout(250);
+    const zero = await guide();
+    check('guide, zero results: guide and every jump hidden; empty state shown', !zero.guideVisible && zero.jumps.every((j) => !j.visible) && zero.empty && zero.distinct === 0, `"${zero.count}"`);
+    // Clear, then Back/Forward.
+    await gp.locator('[data-shop-empty] [data-filters-clear]').click(); await gp.waitForTimeout(250);
+    g = await guide();
+    check('guide after Clear: full guide again, address has no filter', g.guideVisible && !g.filteredNote && g.lines.length === allLines && g.jumps.every((j) => j.visible) && !/=/.test(g.hash), `${g.hash} ${g.lines.length} lines`);
+    await gp.goBack(); await gp.waitForTimeout(300);
+    g = await guide();
+    check('Back: the zero-result selection and its hidden guide return', !g.guideVisible && g.empty && g.count === zero.count, `${g.hash} "${g.count}"`);
+    await gp.goForward(); await gp.waitForTimeout(300);
+    g = await guide();
+    check('Forward: unfiltered again with the full guide', g.guideVisible && g.lines.length === allLines && !g.pressed, `${g.hash} "${g.count}"`);
+    // Legacy query link.
+    await gp.goto(`${origin}/categories/bouquets?occasion=birthday`, { waitUntil: 'load' }); await gp.waitForTimeout(300);
+    g = await guide();
+    check('legacy ?occasion=birthday: fragment address, guide consistent with the results', g.hash === '#occasion=birthday' && !g.search && consistent(g) && countOk(g), `${g.search}${g.hash} "${g.count}"`);
+    check('guide checks: no script errors', gErrors.length === 0, gErrors.join(' | '));
+    await gctx.close();
+
     // ---- 2. homepage petal hand-over (desktop)
     const home = await browser.newContext({ viewport: { width: 1440, height: 900 } });
     await home.route('**/*', (route) => (route.request().url().startsWith(origin + '/') || route.request().url().startsWith('data:') ? route.continue() : route.abort()));
