@@ -444,6 +444,7 @@ export const EMPTY_RANGES: Record<string, { kind: EmptyRangeKind; see: { href: s
   tea: { kind: "not-offered", see: { href: "/categories/add-ons", label: "Add-ons" } },
   "eid-al-adha": { kind: "custom", see: { href: "/categories/white-flowers", label: "White Flowers" } },
   "mini-bouquets": { kind: "custom", see: { href: "/categories/bouquets", label: "All Bouquets" } },
+  "bulk-orders": { kind: "custom", see: { href: "/categories/garlands", label: "Garlands" } },
   "pooja-urli-boxes": { kind: "custom", see: { href: "/categories/pooja-flowers", label: "Pooja Flowers" } },
   "flowers-and-jewellery": { kind: "custom", see: { href: "/categories/wedding", label: "Wedding" } },
   "tuberose-rajnigandha": { kind: "unavailable", see: { href: "/categories/pooja-flowers", label: "Pooja Flowers" } },
