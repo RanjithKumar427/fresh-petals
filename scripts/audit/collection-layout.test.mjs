@@ -52,3 +52,12 @@ test('F7: every empty range says whether it is sold; no enquiry for ranges not s
   assert(/emptyRange && emptyRange\.kind !== "not-offered" && \(/.test(page));
   assert(!/This category is available as a WhatsApp-confirmed custom order/.test(page));
 });
+
+test('filter links carry the served address: no trailing slash from a prerendered path', () => {
+  const { shopFilterUrl } = sourceLoader()('src/utils/shopFilters.ts');
+  const none = { occasion: [], budget: [], colour: [], intent: null };
+  assert.equal(shopFilterUrl('/categories/bouquets/', { ...none, colour: ['red'] }), '/categories/bouquets#colour=red');
+  assert.equal(shopFilterUrl('/occasions/birthday/', none), '/occasions/birthday');
+  assert.equal(shopFilterUrl('/categories/bouquets/?utm_source=x', none), '/categories/bouquets?utm_source=x');
+  assert.equal(shopFilterUrl('/', none), '/');
+});

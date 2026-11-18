@@ -270,7 +270,7 @@ const breadcrumbJsonLd = {
                 <h2 class="text-lg font-semibold text-ink">No bouquet matches all of those filters</h2>
                 <p class="mt-2 text-sm leading-6 text-moss">Try fewer filters, or tell us your colours and budget on WhatsApp.</p>
                 <p class="mt-4 flex flex-wrap gap-3">
-                  <a href={Astro.url.pathname} class="fp-btn-outline" data-filters-clear>Clear filters</a>
+                  <a href={shopFilterUrl(Astro.url.pathname, { occasion: [], budget: [], colour: [], intent: null })} class="fp-btn-outline" data-filters-clear>Clear filters</a>
                   <a class="fp-btn" href={helpHref} data-filter-help target="_blank" rel="noopener noreferrer">Ask on WhatsApp</a>
                 </p>
               </div>

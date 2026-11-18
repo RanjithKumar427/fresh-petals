@@ -118,6 +118,32 @@ export async function runBrowserChecks(base, { playwright, chrome, cores } = {})
     check('bouquet list: no script errors', errors.length === 0, errors.join(' | '));
     await ctx.close();
 
+    // ---- 1b. collection layout (audit 18 Nov 2026): first view at 1366x768,
+    // filter groups in view, group links agree with the visible results.
+    const lay = await browser.newContext({ viewport: { width: 1366, height: 768 } });
+    await lay.route('**/*', (route) => (route.request().url().startsWith(origin + '/') || route.request().url().startsWith('data:') ? route.continue() : route.abort()));
+    const lp = await lay.newPage();
+    await lp.goto(`${origin}/categories/bouquets`, { waitUntil: 'load' });
+    const first = await lp.evaluate(() => {
+      const h1 = document.querySelector('h1').getBoundingClientRect();
+      const intro = document.querySelector('.collection-head > div:nth-child(2) p')?.getBoundingClientRect();
+      const img = [...document.querySelectorAll('[data-shop-item] img')].find((i) => i.offsetParent)?.getBoundingClientRect();
+      const groups = [...document.querySelectorAll('.filters__group')].filter((g) => !g.hidden).map((g) => ({ label: g.querySelector('.filters__label')?.textContent.trim(), left: g.getBoundingClientRect().left, top: g.getBoundingClientRect().top }));
+      return { h1Top: Math.round(h1.top), introTop: Math.round(intro?.top ?? -1), img: Math.round(img?.top ?? 9999), groups };
+    });
+    check('1366x768: title and introduction start together', Math.abs(first.h1Top - first.introTop) < 60, `h1 ${first.h1Top}, intro ${first.introTop}`);
+    check('1366x768: the first bouquet photographs start in the opening view', first.img < 768 - 40, `first photo at ${first.img}px`);
+    check('1366x768: Occasion and Colour filters are both in view', first.groups.length >= 2 && first.groups.every((g) => g.left >= 0 && g.left < 1366 && g.top < 768), first.groups.map((g) => `${g.label}@${Math.round(g.left)},${Math.round(g.top)}`).join(' '));
+    const red = await lp.locator('[data-filter-group="colour"]:not([hidden])').first().getAttribute('data-filter-value');
+    await lp.click(`[data-filter-group="colour"][data-filter-value="${red}"]`);
+    await lp.waitForTimeout(250);
+    const agree = await lp.evaluate(() => [...document.querySelectorAll('[data-group-link]')].map((l) => {
+      const n = document.getElementById(l.dataset.groupLink)?.querySelectorAll('[data-shop-item]:not([hidden])').length ?? 0;
+      return { id: l.dataset.groupLink, hidden: l.hidden, label: l.querySelector('[data-group-count]')?.textContent, n };
+    }));
+    check(`group links agree with the visible results (colour ${red})`, agree.length > 0 && agree.every((g) => (g.n === 0 ? g.hidden : !g.hidden && g.label === `(${g.n})`)), agree.map((g) => `${g.id}:${g.hidden ? 'hidden' : g.label}/${g.n}`).join(' '));
+    await lay.close();
+
     // ---- 2. homepage petal hand-over (desktop)
     const home = await browser.newContext({ viewport: { width: 1440, height: 900 } });
     await home.route('**/*', (route) => (route.request().url().startsWith(origin + '/') || route.request().url().startsWith('data:') ? route.continue() : route.abort()));

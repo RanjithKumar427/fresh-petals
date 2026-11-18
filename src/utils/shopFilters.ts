@@ -50,7 +50,10 @@ export function shopFilterUrl(pathname: string, state: ShopFilterState): string 
   const params = new URLSearchParams();
   for (const group of FILTER_GROUPS) if (state[group].length) params.set(group, state[group].join(","));
   if (state.intent) params.set("for", state.intent);
-  return pathname + (params.size ? `#${params}` : "");
+  // A prerendered page sees its own path with a trailing slash; the served
+  // address has none, so a link with the slash cost a redirect.
+  const path = pathname.replace(/(.)\/+(?=$|\?)/, "$1");
+  return path + (params.size ? `#${params}` : "");
 }
 
 /** Where a selection is read from: the fragment, or an older ?colour=… query link. */
