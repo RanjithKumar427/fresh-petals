@@ -1,6 +1,7 @@
-// Server-rendered WhatsApp drafts that name the recipient city. They work
-// without scripts, go to the one business number, and state no price, fee or
-// delivery time: the draft asks for them.
+// WhatsApp drafts for the city pages. They go to the one business number and
+// state no price, fee or delivery time: the draft asks for them. The general
+// city enquiry (not about a product) names the page's city and works without
+// scripts; a product draft carries no city until the customer chooses one.
 import { whatsappLink } from "../config/storefront";
 import { QUOTE_ONLY_CLOSING } from "../shared/quoteOnly";
 
@@ -11,10 +12,14 @@ export function cityEnquiryHref(cityName: string): string {
   );
 }
 
-/** An enquiry about one catalogue product for one city. Quote-only products carry no amount. */
-export function cityProductEnquiryHref({ name, url, cityName, quoteOnly, priceLabel, quantityLine = "Quantity: 1" }: { name: string; url: string; cityName: string; quoteOnly: boolean; priceLabel: string; quantityLine?: string }): string {
+/**
+ * The draft for an enquiry about one catalogue product, without a recipient
+ * city: product enquiries name only the city the customer chose, added when
+ * the link is used (src/utils/productEnquiry.ts). Quote-only products carry no amount.
+ */
+export function productEnquiryDraft({ name, url, quoteOnly, priceLabel, quantityLine = "Quantity: 1" }: { name: string; url: string; quoteOnly: boolean; priceLabel: string; quantityLine?: string }): string {
   const lines = quoteOnly
-    ? [`Hi Fresh Petals, I'd like to enquire about ${name}.`, quantityLine, `Link: ${url}`, `Recipient city: ${cityName}`, "Date: ", "", QUOTE_ONLY_CLOSING]
-    : [`Hi Fresh Petals, I'd like to order ${name}.`, `Price shown: ${priceLabel}`, quantityLine, `Link: ${url}`, `Recipient city: ${cityName}`, "Date: ", "", "Please confirm availability, the final price and the delivery details."];
-  return whatsappLink(lines.join("\n"));
+    ? [`Hi Fresh Petals, I'd like to enquire about ${name}.`, quantityLine, `Link: ${url}`, "Date: ", "", QUOTE_ONLY_CLOSING]
+    : [`Hi Fresh Petals, I'd like to order ${name}.`, `Price shown: ${priceLabel}`, quantityLine, `Link: ${url}`, "Date: ", "", "Please confirm availability, the final price and the delivery details."];
+  return lines.join("\n");
 }

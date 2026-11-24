@@ -348,7 +348,7 @@ test('garland enquiry lookup reads one design and matches the full catalogue rea
   assert.deepEqual(json(shown.options), [{ label: 'Finish', values: [{ label: 'Pearl tassels', extraCharge: null }, { label: 'Plain', extraCharge: null }] }, { label: 'Length', values: [{ label: '5 ft', extraCharge: null }] }]);
 });
 
-test('garland enquiry route: redirects, refusals, headers and database failures unchanged', async () => {
+test('garland enquiry route: redirects, refusals, headers and database failures; no draft without a chosen city', async () => {
   const { a, b, c, calls, catalogue, load } = enquiryFixture();
   const route = load('src/pages/garland-enquiry.ts');
   const site = new URL('https://onlyfreshpetals.in');
@@ -370,9 +370,33 @@ test('garland enquiry route: redirects, refusals, headers and database failures 
   assert.match(message, /Occasion: Wedding/);
   assert.match(message, /For: /);
   assert.doesNotMatch(message, /₹|4500|300|Diamonds/);
-  assert.match(text(await get(`?code=${c.code}&qty=-3`)), /Quantity: 1 pair\n/);
-  assert.match(text(await get(`?code=${c.code}&qty=abc&city=atlantis&occ=nope&for=other`)), /Quantity: 1 pair\n(?![\s\S]*(Recipient city|Occasion:|For:))/);
-  assert.match(text(await get(`?code=${a.code}`)), /Single garland or pair/, 'bundled fallback, unit unknown');
+  assert.equal(message.match(/^Recipient city:/gm).length, 1, 'the city is named exactly once');
+  assert.match(text(await get(`?code=${c.code}&qty=-3&city=pune`)), /Quantity: 1 pair\n/);
+  assert.match(text(await get(`?code=${c.code}&qty=abc&city=Bangalore&occ=nope&for=other`)), /Recipient city: Bengaluru\nQuantity: 1 pair\n(?![\s\S]*(Occasion:|For:))/);
+  assert.match(text(await get(`?code=${a.code}&city=kochi`)), /Single garland or pair/, 'bundled fallback, unit unknown');
+
+  // No city, or one we do not deliver to: a page that asks for it, never a WhatsApp draft, never a city
+  // picked for the customer. Every other answer travels on in hidden fields.
+  const step = async (query, status) => {
+    const r = await get(query);
+    assert.equal(r.status, status, query);
+    assert.equal(r.headers.get('location'), null, query);
+    assert(noStore(r) && /text\/html/.test(r.headers.get('content-type')), query);
+    return r.text();
+  };
+  const page = await step(`?code=${c.code}&qty=2&opt=Finish::Plain&occ=wedding`, 200);
+  assert.match(page, /<form method="get" action="\/garland-enquiry">/);
+  assert.match(page, /<select id="city" name="city" required>/);
+  assert.match(page, /<option value="">Choose a city<\/option>/);
+  assert.doesNotMatch(page, /selected/, 'nothing preselected');
+  for (const field of [`name="code" value="${c.code}"`, 'name="qty" value="2"', 'name="opt" value="Finish::Plain"', 'name="occ" value="wedding"']) assert(page.includes(field), field);
+  assert.match(page, /<option value="mumbai">Mumbai<\/option>/);
+  assert.match(page, /noindex/);
+  const invalid = await step(`?code=${c.code}&city=atlantis`, 400);
+  assert.match(invalid, /role="alert"/);
+  assert.match(invalid, /aria-invalid="true"/);
+  assert.doesNotMatch(invalid, /name="city" value=/, 'the unknown city is not carried along');
+  assert.doesNotMatch(await step(`?code=${c.code}&opt=%22%3E%3Cscript%3E`, 200), /<script>/, 'values are escaped');
 
   const refused = async (query, location) => {
     const r = await get(query);

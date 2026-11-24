@@ -528,64 +528,86 @@ test('city hubs: one authored page per published hub, distinct copy, real source
   assert(/aria-label="Breadcrumb"/.test(page) && !/canonical=/.test(page) && !/LocalBusiness|aggregateRating|PostalAddress/.test(page));
 });
 
-test('recipient city: one stored value, validated; browsing never re-points a basket; drafts and the enquiry check name only registry cities', () => {
+test('recipient city: only an explicit choice, validated; browsing offers a city and never sets one; drafts name only the chosen city', () => {
   const store = new Map();
   const events = [];
   const window = {
     localStorage: { getItem: (key) => (store.has(key) ? store.get(key) : null), setItem: (key, value) => store.set(key, String(value)), removeItem: (key) => store.delete(key) },
     location: { search: '' },
     dispatchEvent: (event) => events.push(event.detail?.city ?? null),
+    addEventListener: () => {},
   };
   const document = { querySelector: () => null };
   class CustomEvent { constructor(type, init) { this.type = type; this.detail = init?.detail; } }
   const destination = sourceLoader({ globals: { window, document, CustomEvent } })('src/utils/destination.ts');
 
-  // Nothing decided: a city link sets it; an invalid value is ignored.
+  // A city link or a city page is offered, never chosen; an invalid value is ignored.
   window.location.search = '?city=atlantis';
-  assert.deepEqual(json(destination.resolveDestination()), { destination: null, browsing: null, conflict: false });
+  assert.deepEqual(json(destination.resolveDestination()), { destination: null, browsing: null, conflict: false, suggest: false });
   window.location.search = '?city=Bangalore&occ=birthday';
-  assert.deepEqual(json(destination.resolveDestination()), { destination: 'bengaluru', browsing: 'bengaluru', conflict: false });
-  // Empty basket: browsing another city moves with the visitor.
-  window.location.search = '?city=pune';
-  assert.equal(destination.resolveDestination().destination, 'pune');
-  // A basket with a destination is never re-pointed by a visit; the page asks.
-  store.set('fresh_petals_cart', JSON.stringify([{ id: 'red-affair', quantity: 1 }]));
-  window.location.search = '?city=mumbai';
-  assert.deepEqual(json(destination.resolveDestination()), { destination: 'pune', browsing: 'mumbai', conflict: true });
-  assert.equal(destination.getDestination(), 'pune');
-  // Only an explicit choice changes it.
+  assert.deepEqual(json(destination.resolveDestination()), { destination: null, browsing: 'bengaluru', conflict: false, suggest: true });
+  assert.equal(store.size, 0, 'browsing writes nothing');
+  // Only an explicit choice sets it, normalised; it is kept as the confirmed choice and mirrored.
   assert.equal(destination.setDestination('Gurgaon'), 'gurugram');
+  assert.equal(store.get('fresh_petals_destination_confirmed'), 'gurugram');
+  assert.equal(store.get('fresh_petals_destination_city'), 'gurugram');
   assert.deepEqual(json(destination.destinationLines()), ['Recipient city: Gurugram']);
-  // An old basket with no city: the first city seen fills the empty value.
-  store.delete('fresh_petals_destination_city');
-  window.location.search = '';
-  assert.deepEqual(json(destination.resolveDestination()), { destination: null, browsing: null, conflict: false });
-  assert.deepEqual(json(destination.destinationLines()), []);
-  // A tampered stored value reads as no city.
-  store.set('fresh_petals_destination_city', 'not-a-city');
+  // Another city in view: the page asks; the choice stays.
+  window.location.search = '?city=mumbai';
+  assert.deepEqual(json(destination.resolveDestination()), { destination: 'gurugram', browsing: 'mumbai', conflict: true, suggest: false });
+  assert.equal(destination.getDestination(), 'gurugram');
+  // A value saved without an explicit choice (an older site adopted the browsed city) is not a choice.
+  store.clear();
+  store.set('fresh_petals_destination_city', 'pune');
   assert.equal(destination.getDestination(), null);
+  assert.equal(store.size, 0, 'and it is cleared, so the basket and analytics agree');
+  // A tampered value reads as no city.
+  store.set('fresh_petals_destination_confirmed', 'not-a-city');
+  assert.equal(destination.getDestination(), null);
+  // Clearing the choice.
+  destination.setDestination('kochi');
+  destination.setDestination('');
+  assert.equal(destination.getDestination(), null);
+  assert.deepEqual(json(destination.destinationLines()), []);
 
-  // Garland enquiry text and link.
+  // The city line: written once, wherever a draft had one, without touching the rest.
+  const line = load('src/utils/recipientCityLine.ts');
+  const once = (text) => line.recipientCityLines(text).length;
+  const card = "Hi Fresh Petals, I'd like to enquire about Red Affair.\nQuantity: 1\nLink: https://onlyfreshpetals.in/products/red-affair\n\nClosing.";
+  assert.equal(line.withRecipientCity(card, 'Pune'), "Hi Fresh Petals, I'd like to enquire about Red Affair.\nQuantity: 1\nLink: https://onlyfreshpetals.in/products/red-affair\nRecipient city: Pune\n\nClosing.");
+  const placeholder = "Hi Fresh Petals, I'd like to order X.\nLink: https://x/products/x\nRecipient city: \nDate: ";
+  assert.equal(once(line.withRecipientCity(placeholder, 'Pune')), 1);
+  const twoLine = "FreshPetals Order Request\n\nProduct:\nX\nLink: https://x/products/x\n\nRecipient city:\nMumbai\n\nPlease confirm.";
+  const fixed = line.withRecipientCity(twoLine, 'Pune');
+  assert.equal(once(fixed), 1);
+  assert(!/Mumbai/.test(fixed) && /Recipient city: Pune/.test(fixed) && /Please confirm\./.test(fixed));
+  const basket = 'Order\n\nDELIVERY\nRecipient city: Old\nPincode: 1\n\nPRODUCTS\n1. X\nLink: https://x/products/x';
+  assert.match(line.withRecipientCity(basket, 'Delhi'), /DELIVERY\nRecipient city: Delhi\nPincode: 1/);
+  assert.equal(once(line.withRecipientCity(basket, 'Delhi')), 1);
+  const again = line.withRecipientCity(line.withRecipientCity(card, 'Pune'), 'Pune');
+  assert.equal(again, line.withRecipientCity(card, 'Pune'), 'idempotent');
+
+  // Garland enquiry text and link: the endpoint adds the chosen city once.
   const enquiry = load('src/utils/garlandEnquiry.ts');
   const text = enquiry.garlandEnquiryText({ code: 'FP-G001', title: 'Rose', quantity: 2, city: 'Mumbai' });
   assert(/Recipient city: Mumbai/.test(text) && !/₹/.test(text));
-  assert(!/Recipient city/.test(enquiry.garlandEnquiryText({ code: 'FP-G001', title: 'Rose', quantity: 1 })));
   assert.equal(enquiry.garlandEnquiryHref({ code: 'FP-G001', city: 'mumbai' }), '/garland-enquiry?code=FP-G001&qty=1&city=mumbai');
-  assert(/findCity\(url\.searchParams\.get\(CITY_PARAM\)\)\?\.name/.test(readFileSync('src/pages/garland-enquiry.ts', 'utf8')));
-  // City drafts: the one number, the city named, no amount for quote-only products.
+  assert(/normalizeCity\(url\.searchParams\.get\(CITY_PARAM\)\)/.test(readFileSync('src/pages/garland-enquiry.ts', 'utf8')));
+  // City drafts: the general city enquiry names the page's city; a product draft names none until chosen.
   const city = load('src/utils/cityEnquiry.ts');
   const general = decodeURIComponent(city.cityEnquiryHref('Kochi'));
   assert(general.startsWith('https://wa.me/919652012274?text=') && /Recipient city: Kochi/.test(general) && !/₹/.test(general));
-  const quote = decodeURIComponent(city.cityProductEnquiryHref({ name: 'Red Affair', url: 'https://onlyfreshpetals.in/products/red-affair', cityName: 'Pune', quoteOnly: true, priceLabel: 'From ₹999' }));
-  assert(/Recipient city: Pune/.test(quote) && !/₹|999/.test(quote) && /products\/red-affair\n/.test(quote));
-  const priced = decodeURIComponent(city.cityProductEnquiryHref({ name: 'Pooja Basket', url: 'https://onlyfreshpetals.in/products/pooja-basket', cityName: 'Chennai', quoteOnly: false, priceLabel: 'From ₹499' }));
-  assert(/Price shown: From ₹499/.test(priced) && /Recipient city: Chennai/.test(priced));
-  // The basket and the product page use the same stored value, and no second copy.
+  const quote = city.productEnquiryDraft({ name: 'Red Affair', url: 'https://onlyfreshpetals.in/products/red-affair', quoteOnly: true, priceLabel: 'From ₹999' });
+  assert(!/Recipient city/.test(quote) && !/₹|999/.test(quote) && /products\/red-affair\n/.test(quote));
+  const priced = city.productEnquiryDraft({ name: 'Pooja Basket', url: 'https://onlyfreshpetals.in/products/pooja-basket', quoteOnly: false, priceLabel: 'From ₹499' });
+  assert(/Price shown: From ₹499/.test(priced) && !/Recipient city/.test(priced));
+  // The basket reads the confirmed choice, requires it before sending, and names it once.
   const cart = (readFileSync('src/pages/cart.astro', 'utf8') + readFileSync('src/scripts/inline/cart.js', 'utf8'));
-  assert(/fresh_petals_destination_city/.test(cart) && /Recipient city: \$\{destinationName\(\)/.test(cart) && /destination_city: destinationSlug\(\)/.test(cart));
-  for (const file of ['src/components/ProductOptions.astro', 'src/components/ProductCard.astro']) {
+  assert(/fresh_petals_destination_confirmed/.test(cart) && /Recipient city: \$\{destinationName\(\)\}/.test(cart) && /destination_city: destinationSlug\(\)/.test(cart));
+  assert(/if \(!requireCity\(\)\) return;\s*sendCartInFlight = true;/.test(cart), 'checked before the tab opens, the log and the event');
+  for (const file of ['src/components/ProductOptions.astro']) {
     const source = readFileSync(file, 'utf8');
-    assert(/utils\/destination/.test(source) && !/utils\/area/.test(source), file);
+    assert(/utils\/productEnquiry/.test(source) && !/utils\/area/.test(source), file);
   }
   // City parameters never make a new indexable URL: canonicals drop every query.
   assert(/Query strings never enter the canonical/.test(readFileSync('src/layouts/BaseLayout.astro', 'utf8')));
@@ -774,7 +796,7 @@ test('product titles and facts: flower and form from the record; model names kep
 // City catalogue: every city, the whole public catalogue
 // ---------------------------------------------------------------------------
 
-test('city catalogue: one shared source with no sample limits or per-city restriction; a noindex shop view per city; prebuilt, paged in the browser; city kept in links and drafts', () => {
+test('city catalogue: one shared source with no sample limits or per-city restriction; a noindex shop view per city; prebuilt, paged in the browser; city kept in links, drafts wait for a chosen city', () => {
   const service = readFileSync('src/server/services/CityCatalogue.ts', 'utf8');
   // Sources are the shop's own: category pages, the featured bouquets (labelled), listed garlands; nothing is sliced or limited.
   assert(/getCategoryStaticPaths\(\)/.test(service) && /featuredBouquets\(publicCatalogue\)/.test(service) && /label: "Featured bouquets"/.test(service) && /isListedGarland/.test(service) && /loadAuthoritativePrices/.test(service));
@@ -787,7 +809,8 @@ test('city catalogue: one shared source with no sample limits or per-city restri
   assert(/noindex=\{true\} canonical=\{base\}/.test(shop) && /data-city-context=\{city\.slug\}/.test(shop));
   assert(/rel: "prev"/.test(shop) && /rel: "next"/.test(shop) && /setAttribute\("aria-current", "page"\)/.test(shop) && /loading=\{index < 4 \? "eager" : "lazy"\}/.test(shop));
   assert(/Math\.min\(pages, Math\.max\(1, Math\.floor\(Number\(params\.get\("page"\)\)\) \|\| 1\)\)/.test(shop) && /Object\.hasOwn\(data\.views, id\)/.test(shop), 'an out-of-range page shows the last one; an unknown collection shows everything');
-  assert(/garlandEnquiryHref\(\{ code: item\.code, quantity: 1, city: city\.slug \}\)/.test(shop) && /cityProductEnquiryHref/.test(shop) && /withCity\(item\.path\)/.test(shop));
+  // Product enquiries never take the page's city by themselves: the enquiry gate adds the chosen one.
+  assert(/garlandEnquiryHref\(\{ code: item\.code, quantity: 1 \}\)/.test(shop) && /productEnquiryDraft/.test(shop) && /withCity\(item\.path\)/.test(shop) && /data-product-enquiry/.test(shop));
   assert.equal(shop.match(/<h1/g).length, 1);
   assert(!/₹|same[- ]day delivery in|branch|store in/i.test(shop.replace('We do not promise same-day or timed delivery', '')));
   // One address per city: collections and pages are query parameters, not routes.

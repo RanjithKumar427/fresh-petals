@@ -93,6 +93,7 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
 <section
   class="mt-7"
   data-product-options
+  data-enquiry-scope
   data-product-id={product.id}
   data-product-slug={product.slug}
   data-product-name={product.name}
@@ -104,9 +105,12 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
   data-product-category={product.category}
   data-whatsapp-number={whatsappNumber}
 >
-  <!-- Recipient city: visible, editable, never required. One value for the
-       product draft and the basket (src/utils/destination.ts). -->
-  <DestinationCity class="mb-4" label="Recipient city" />
+  <!-- Recipient city: visible, editable, and required before any WhatsApp
+       enquiry (src/utils/productEnquiry.ts). One value for the product
+       draft and the basket (src/utils/destination.ts). -->
+  <div id="recipient-city" class="scroll-mt-28">
+    <DestinationCity class="mb-4" label="Recipient city" />
+  </div>
 
   <!-- Journey A — Simple Order: no fields, just product + area. -->
   <button
@@ -457,7 +461,7 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
 <script>
   import { addToCart } from "../utils/cart";
   import { QUOTE_ONLY_CLOSING, isQuoteOnly } from "../shared/quoteOnly";
-  import { cityName, getDestination } from "../utils/destination";
+  import { productEnquiryHref, requireRecipientCity } from "../utils/productEnquiry";
   import { checkDeliveryMethod } from "../utils/deliveryCheck";
   import { journeyLines, readJourney, makeJourney, journeyHref } from "../utils/journey";
 
@@ -557,8 +561,6 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
     };
   }
 
-  // The recipient city's name for drafts, or null when none is chosen.
-  const recipientCity = () => cityName(getDestination());
 
   // GA4 whatsapp_enquiry_click for this panel's two WhatsApp buttons, sent
   // only when WhatsApp is actually opened: after the double-tap guard and,
@@ -594,7 +596,13 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
       return;
     }
 
-    const area = recipientCity();
+    // No WhatsApp (and no enquiry event) until a recipient city is chosen.
+    const city = requireRecipientCity(simpleWhatsappButton);
+    if (!city) {
+      simpleWhatsappInFlight = false;
+      return;
+    }
+
     const named = meta.identity ? `${meta.name} (${meta.identity})` : meta.name;
     const quantityLine = meta.askQuantity ? "Quantity needed: " : "Quantity: 1";
     // Joined onto the quantity line so every draft below carries it.
@@ -605,15 +613,14 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
       quantityLines,
       `Link: ${productUrl(meta.slug)}`,
       ...journeyLines(currentJourney()),
-      ...(area ? [`Recipient city: ${area}`] : []),
       "",
       QUOTE_ONLY_CLOSING,
     ].join("\n");
 
+    // The city line is written by productEnquiryHref, once, after the link.
     const message = isQuoteOnly(meta)
       ? quoteLines
-      : area
-      ? [
+      : [
           "FreshPetals Order Request 🌸",
           "",
           "Product:",
@@ -625,22 +632,11 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
           `Link: ${productUrl(meta.slug)}`,
           ...journeyLines(currentJourney()),
           "",
-          "Recipient city:",
-          area,
-          "",
           "Please confirm availability, final price and delivery details.",
-        ].join("\n")
-        : [
-            `Hi Fresh Petals, I want to order ${named}.`,
-            `Price: ${meta.priceLabel}`,
-            quantityLines,
-          `Link: ${productUrl(meta.slug)}`,
-          ...journeyLines(currentJourney()),
-          "Please confirm today's availability and price.",
         ].join("\n");
 
     trackWhatsappEnquiry(meta);
-    window.open(`https://wa.me/${meta.whatsappNumber}?text=${encodeURIComponent(message)}`, "_blank");
+    window.open(productEnquiryHref(message, city), "_blank");
 
     // Short cooldown, not a permanent lock: absorbs a rapid double/triple
     // tap on the same gesture, but a customer who comes back moments
@@ -871,6 +867,10 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
 
     hideDeliveryDetailsError();
 
+    // No WhatsApp (and no enquiry event) until a recipient city is chosen.
+    const city = requireRecipientCity(deliveryDetailsWhatsappButton);
+    if (!city) return;
+
     const pincode = getInputValue("[data-option-pincode]");
     const deliveryDate = getInputValue("[data-option-delivery-date]");
     const method = getSelectedMethod();
@@ -949,7 +949,6 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
       `Link: ${productUrl(meta.slug)}`,
       "",
       "DELIVERY",
-      ...(recipientCity() ? [`Recipient city: ${recipientCity()}`] : []),
       `Pincode: ${pincode}`,
       `Date: ${deliveryDate}`,
       ...deliveryLines,
@@ -971,7 +970,7 @@ const timeSlots = DELIVERY_METHOD_OPTIONS;
     ].join("\n");
 
     trackWhatsappEnquiry(meta);
-    window.open(`https://wa.me/${meta.whatsappNumber}?text=${encodeURIComponent(whatsappMessage)}`, "_blank");
+    window.open(productEnquiryHref(whatsappMessage, city), "_blank");
     } finally {
       deliveryDetailsInFlight = false;
     }

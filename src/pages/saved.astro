@@ -76,6 +76,7 @@ const products = (await loadPublicCatalogue())
             href="#"
             target="_blank"
             rel="noopener noreferrer"
+            data-product-enquiry
             class="fp-btn-whatsapp inline-flex items-center rounded-full bg-berry px-5 py-2.5 text-[11px] font-bold uppercase tracking-[0.18em] text-white shadow-[0_10px_22px_rgba(138,63,86,0.22)] transition hover:bg-berry-deep"
           >
             Ask about these on WhatsApp
@@ -136,7 +137,6 @@ const products = (await loadPublicCatalogue())
   // only exists on the full cart checkout flow (cart.astro), a heavier,
   // separate journey this page intentionally doesn't imitate — saving is
   // meant to stay the lowest-friction path available.
-  const whatsappNumber = "919652012274";
 
   function render() {
     const savedIds = getSavedIds();
@@ -175,7 +175,9 @@ const products = (await loadPublicCatalogue())
         "Could you help me with availability and delivery?",
       ].join("\n");
 
-      whatsappLink.href = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+      // A product enquiry: the gate (src/utils/productEnquiry.ts) requires the
+      // recipient city and writes its line when the link is used.
+      whatsappLink.dataset.enquiryText = message;
     }
 
     // Self-heal: a saved id that no longer matches any real product

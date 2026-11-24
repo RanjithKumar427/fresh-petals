@@ -1,12 +1,15 @@
 ---
 // The recipient city, visible and editable where an order is put together
-// (product pages, garland pages, the basket, the city pages). A plain
-// <select>: no modal, no account, no pincode. State and rules live in
-// src/utils/destination.ts.
+// (product pages, garland pages, the basket, the city pages, the city step).
+// A plain <select>: no account, no pincode. State and rules live in
+// src/utils/destination.ts; every product enquiry requires a city chosen
+// here (src/utils/productEnquiry.ts), which marks this control invalid and
+// focuses it when one is missing.
 //
-// Without scripts the control is hidden: city pages render their own
-// city-specific WhatsApp links on the server, and every other draft simply
-// leaves the city for the customer to add.
+// A page about a city offers that city as a button; it is never chosen for
+// the customer. Without scripts the control is hidden, and product
+// enquiries ask for the city on the server (/garland-enquiry) or lead to
+// the product page.
 import { citiesByRegion } from "../data/serviceCities";
 
 interface Props {
@@ -38,12 +41,19 @@ const id = `destination-city-${Math.random().toString(36).slice(2, 8)}`;
       }
     </select>
   </div>
+  <p class="destination__error" id={`${id}-error`} data-destination-error role="alert" hidden></p>
   <p class="destination__help" id={`${id}-help`} data-destination-help>
-    Where the flowers are going. We confirm availability and delivery details for that city on WhatsApp.
+    Required for WhatsApp enquiries: where the flowers are going. We confirm availability and delivery details for that city on WhatsApp.
   </p>
+  <div class="destination__ask" data-destination-suggest hidden role="status">
+    <p>This page is about <strong data-destination-browsing></strong>. Is that where the flowers are going?</p>
+    <div class="destination__ask-actions">
+      <button type="button" data-destination-switch></button>
+    </div>
+  </div>
   <div class="destination__ask" data-destination-conflict hidden role="status">
     <p>
-      Your basket is going to <strong data-destination-current></strong>. This page is about <strong data-destination-browsing></strong>.
+      You chose <strong data-destination-current></strong>. This page is about <strong data-destination-browsing></strong>.
     </p>
     <div class="destination__ask-actions">
       <button type="button" data-destination-switch></button>
@@ -92,6 +102,20 @@ const id = `destination-city-${Math.random().toString(36).slice(2, 8)}`;
     outline: 2px solid var(--color-berry);
     outline-offset: 2px;
   }
+  .destination__error {
+    margin-top: 0.45rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1.45;
+    color: var(--color-berry-deep, #6f2f43);
+  }
+  .destination--ivory .destination__error {
+    color: inherit;
+  }
+  .destination.is-invalid .destination__select {
+    border-color: var(--color-berry);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-berry) 25%, transparent);
+  }
   .destination__help {
     margin-top: 0.4rem;
     font-size: 0.75rem;
@@ -137,42 +161,56 @@ const id = `destination-city-${Math.random().toString(36).slice(2, 8)}`;
 
 <script>
   import { DESTINATION_UPDATED_EVENT, cityName, getDestination, resolveDestination, setDestination } from "../utils/destination";
+  import { cityConflict, settleCityConflict } from "../utils/productEnquiry";
 
-  const state = resolveDestination();
-  let dismissed = false;
+  const browsing = resolveDestination().browsing;
 
   function render() {
     const destination = getDestination();
+    const conflict = cityConflict();
+    const suggest = Boolean(browsing && !destination);
     document.querySelectorAll<HTMLElement>("[data-destination-control]").forEach((control) => {
       const select = control.querySelector<HTMLSelectElement>("[data-destination-select]");
       if (select && select.value !== (destination ?? "")) select.value = destination ?? "";
+      const offer = control.querySelector<HTMLElement>("[data-destination-suggest]");
+      if (offer) {
+        offer.hidden = !suggest;
+        if (suggest) {
+          const name = cityName(browsing) ?? "";
+          offer.querySelector("[data-destination-browsing]")!.textContent = name;
+          offer.querySelector("[data-destination-switch]")!.textContent = `Yes, send to ${name}`;
+        }
+      }
       const ask = control.querySelector<HTMLElement>("[data-destination-conflict]");
-      const conflict = !dismissed && Boolean(state.browsing && destination && state.browsing !== destination);
       if (!ask) return;
       ask.hidden = !conflict;
       if (!conflict) return;
       const current = cityName(destination) ?? "";
-      const browsing = cityName(state.browsing) ?? "";
+      const other = cityName(browsing) ?? "";
       ask.querySelector("[data-destination-current]")!.textContent = current;
-      ask.querySelector("[data-destination-browsing]")!.textContent = browsing;
-      ask.querySelector("[data-destination-switch]")!.textContent = `Send the order to ${browsing}`;
+      ask.querySelector("[data-destination-browsing]")!.textContent = other;
+      ask.querySelector("[data-destination-switch]")!.textContent = `Send the order to ${other}`;
       ask.querySelector("[data-destination-keep]")!.textContent = `Keep ${current}`;
     });
   }
 
-  document.querySelectorAll<HTMLElement>("[data-destination-control]").forEach((control) => {
-    control.querySelector<HTMLSelectElement>("[data-destination-select]")?.addEventListener("change", (event) => {
-      dismissed = true;
-      setDestination((event.currentTarget as HTMLSelectElement).value || null);
-    });
-    control.querySelector("[data-destination-switch]")?.addEventListener("click", () => {
-      dismissed = true;
-      setDestination(state.browsing);
-    });
-    control.querySelector("[data-destination-keep]")?.addEventListener("click", () => {
-      dismissed = true;
-      render();
-    });
+  // Delegated, so a control added later (the city step) answers too. Each
+  // action is the customer's own choice; nothing here picks a city for them.
+  document.addEventListener("change", (event) => {
+    const select = (event.target as Element | null)?.closest?.<HTMLSelectElement>("[data-destination-select]");
+    if (!select) return;
+    settleCityConflict();
+    setDestination(select.value || null);
+  });
+  document.addEventListener("click", (event) => {
+    const target = event.target as Element | null;
+    if (target?.closest?.("[data-destination-switch]")) {
+      settleCityConflict();
+      setDestination(browsing);
+    } else if (target?.closest?.("[data-destination-keep]")) {
+      settleCityConflict();
+      setDestination(getDestination());
+    }
   });
 
   window.addEventListener(DESTINATION_UPDATED_EVENT, render);

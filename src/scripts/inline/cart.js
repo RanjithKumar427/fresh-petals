@@ -8,17 +8,26 @@
     const addOnPriceText = (item, addOn) => (!isQuoteOnlyItem(item) && addOn.priceLabel ? ` (${addOn.priceLabel})` : "");
     const CART_KEY = "fresh_petals_cart";
 
-    // The order's recipient city: the one value src/utils/destination.ts
-    // keeps, read here and checked against the registry. A basket saved
-    // before cities existed simply has none.
+    // The order's recipient city: the explicit choice src/utils/destination.ts
+    // records, read here and checked against the registry. A basket saved
+    // before that has none, and the basket cannot be sent until one is chosen.
     const serviceCities = JSON.parse(document.getElementById("service-cities")?.textContent || "{}");
     function destinationSlug() {
       try {
-        const slug = window.localStorage.getItem("fresh_petals_destination_city") || "";
+        const slug = window.localStorage.getItem("fresh_petals_destination_confirmed") || "";
         return Object.prototype.hasOwnProperty.call(serviceCities, slug) ? slug : "";
       } catch {
         return "";
       }
+    }
+    // The shared enquiry gate (src/utils/productEnquiry.ts): marks the
+    // Recipient city selector invalid, explains and focuses it.
+    function requireCity() {
+      const gate = window.fpProductEnquiry;
+      if (gate) return gate.requireRecipientCity(sendWhatsappButton) || "";
+      const slug = destinationSlug();
+      if (!slug) showError("Choose the recipient city to send this enquiry.");
+      return slug;
     }
     function destinationName() {
       return serviceCities[destinationSlug()] || "";
@@ -950,7 +959,7 @@ Name: ${recipientName}
 Phone: ${recipientPhoneLocal}
 
 DELIVERY
-Recipient city: ${destinationName() || "Not chosen — please confirm the recipient city"}
+Recipient city: ${destinationName()}
 Pincode: ${pincode || "Not given"}
 Area: ${areaText}
 Delivery Option: ${deliveryResult.label}
@@ -983,7 +992,9 @@ ${priceRequest ? quoteOnly.closing : "Please confirm availability, final price, 
         deliveryFee: deliveryResult.available ? deliveryResult.fee : null,
       });
 
-      return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+      // The shared builder writes the city line exactly once (src/utils/recipientCityLine.ts).
+      const gate = window.fpProductEnquiry;
+      return gate ? gate.productEnquiryHref(message, destinationSlug()) : `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
     }
 
     // Customer UX validation milestone — this handler awaits a real
@@ -997,6 +1008,11 @@ ${priceRequest ? quoteOnly.closing : "Please confirm availability, final price, 
 
     sendWhatsappButton?.addEventListener("click", async () => {
       if (sendCartInFlight) return;
+
+      // No WhatsApp, no enquiry log and no basket_quote_request event until a
+      // recipient city is chosen. Checked before the blank tab opens.
+      if (!requireCity()) return;
+
       sendCartInFlight = true;
 
       try {

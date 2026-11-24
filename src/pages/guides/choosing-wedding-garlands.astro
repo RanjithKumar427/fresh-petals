@@ -257,7 +257,7 @@ const otherGuides = GUIDES.filter((entry) => entry.slug !== GARLAND_GUIDE.slug);
                               {!sharedConfirm && <div><dt class="inline font-semibold text-ink">Confirm for your order: </dt><dd class="inline">{evidence.toConfirm.join(", ")}.</dd></div>}
                             </dl>
                             <p class="mt-2 flex flex-wrap gap-x-4 gap-y-1">
-                              <a href={garlandEnquiryHref({ code: product.garland.code, quantity: 1 })} target="_blank" rel="noopener noreferrer" data-garland-quote={product.garland.code} class="font-semibold text-berry underline underline-offset-4">Request a quote for {product.garland.code}</a>
+                              <a href={garlandEnquiryHref({ code: product.garland.code, quantity: 1 })} target="_blank" rel="noopener noreferrer" data-garland-quote={product.garland.code} data-product-enquiry class="font-semibold text-berry underline underline-offset-4">Request a quote for {product.garland.code}</a>
                               {collection && <a href={collection.path} class="text-ink underline underline-offset-4">{collection.label}</a>}
                             </p>
                           </div>
@@ -333,7 +333,7 @@ const otherGuides = GUIDES.filter((entry) => entry.slug !== GARLAND_GUIDE.slug);
                     <li>
                       <strong class="text-ink">{product.garland.code}</strong>{" "}
                       <a href={`/products/${product.slug}`} class="font-semibold text-ink underline underline-offset-4">{product.garland.title}</a>: {product.garland.image.alt}{" "}
-                      <a href={garlandEnquiryHref({ code: product.garland.code, quantity: 1 })} target="_blank" rel="noopener noreferrer" data-garland-quote={product.garland.code} class="font-semibold text-berry underline underline-offset-4">Request a quote for {product.garland.code}</a>
+                      <a href={garlandEnquiryHref({ code: product.garland.code, quantity: 1 })} target="_blank" rel="noopener noreferrer" data-garland-quote={product.garland.code} data-product-enquiry class="font-semibold text-berry underline underline-offset-4">Request a quote for {product.garland.code}</a>
                     </li>
                   ))}
                 </ul>

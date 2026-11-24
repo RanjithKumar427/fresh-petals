@@ -221,6 +221,89 @@ export async function runBrowserChecks(base, { playwright, chrome, cores } = {})
     check('guide checks: no script errors', gErrors.length === 0, gErrors.join(' | '));
     await gctx.close();
 
+    // ---- 1d. recipient city before every product WhatsApp enquiry (24 Nov 2026).
+    // window.open is stubbed and WhatsApp, the garland check's redirect and
+    // the enquiry log are intercepted: nothing is sent or logged.
+    const rc = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+    await rc.addInitScript(() => {
+      window.__opened = []; window.__events = [];
+      window.open = (u) => { const t = { close() {}, location: {} }; Object.defineProperty(t.location, 'href', { set: (v) => window.__opened.push(v) }); if (u) window.__opened.push(u); return t; };
+      document.addEventListener('fp:track', (e) => window.__events.push(e.detail.name));
+    });
+    const rcOut = [];
+    await rc.route('**/*', (route) => {
+      const u = new URL(route.request().url());
+      if (u.pathname === '/garland-enquiry' || u.hostname === 'wa.me' || u.pathname === '/api/inquiries') { rcOut.push(u.pathname + u.search); return route.fulfill({ status: 200, contentType: 'text/plain', body: 'intercepted' }); }
+      return u.href.startsWith(origin + '/') || u.href.startsWith('data:') ? route.continue() : route.abort();
+    });
+    const rp = await rc.newPage();
+    const rcErrors = []; rp.on('pageerror', (e) => rcErrors.push(e.message));
+    let rcPopups = 0; rp.on('popup', (p) => { rcPopups++; p.close().catch(() => {}); });
+    const rcState = () => rp.evaluate(() => ({ opened: window.__opened.slice(), events: window.__events.filter((n) => /whatsapp_enquiry_click|basket_quote_request/.test(n)).length }));
+    const cityLines = (url) => { try { return (new URL(url).searchParams.get('text') || '').split('\n').filter((l) => /^Recipient city:/.test(l)); } catch { return []; } };
+    // Product page (a bouquet): blocked, explained and focused; then once with the city.
+    await rp.goto(`${origin}/products/red-affair`, { waitUntil: 'load' });
+    await rp.locator('[data-simple-whatsapp]').tap(); await rp.waitForTimeout(400);
+    let st = await rcState();
+    const flagged = await rp.evaluate(() => { const c = document.querySelector('#recipient-city [data-destination-control]'); const sel = c?.querySelector('select'); return !!c && !c.querySelector('[data-destination-error]').hidden && sel.getAttribute('aria-invalid') === 'true' && document.activeElement === sel; });
+    check('recipient city: product page enquiry without a city is blocked, explained, focused; no enquiry event', st.opened.length === 0 && st.events === 0 && flagged, JSON.stringify({ ...st, flagged }));
+    await rp.selectOption('#recipient-city select', 'pune'); await rp.locator('[data-simple-whatsapp]').tap(); await rp.waitForTimeout(400);
+    st = await rcState();
+    check('recipient city: after choosing Pune the draft opens once naming Pune exactly once', st.opened.length === 1 && cityLines(st.opened[0]).join() === 'Recipient city: Pune' && st.events === 1, cityLines(st.opened[0] || '').join() + ` events ${st.events}`);
+    // A listing card (no selector on the page): the city step, then the same enquiry.
+    await rp.evaluate(() => { localStorage.removeItem('fresh_petals_destination_city'); localStorage.removeItem('fresh_petals_destination_confirmed'); });
+    await rp.goto(`${origin}/categories/bouquets`, { waitUntil: 'load' });
+    const card = rp.locator('[data-shop-item]:visible [data-whatsapp-order-link]').first();
+    await card.tap(); await rp.waitForTimeout(400);
+    const stepOpen = await rp.evaluate(() => { const d = document.querySelector('[data-city-step]'); return !!d?.open && document.activeElement === d.querySelector('select'); });
+    check('recipient city: card enquiry without a city opens the city step; nothing opened', stepOpen && rcPopups === 0 && (await rcState()).events === 0, `step ${stepOpen}, popups ${rcPopups}`);
+    await rp.selectOption('[data-city-step] select', 'hyderabad'); await rp.locator('[data-city-step-continue]').tap(); await rp.waitForTimeout(600);
+    const cardHref = await card.getAttribute('href');
+    check('recipient city: the city step continues the card enquiry with Hyderabad once', rcPopups === 1 && cityLines(cardHref).join() === 'Recipient city: Hyderabad', `${rcPopups} ${cityLines(cardHref).join()}`);
+    // A garland design page: the live check gets the chosen city.
+    await rp.goto(`${origin}/categories/garlands`, { waitUntil: 'load' });
+    const garlandPage = await rp.locator('[data-garland-card] a[href^="/products/"], a.garland-card__link').first().getAttribute('href').catch(() => null);
+    if (garlandPage) {
+      await rp.goto(origin + garlandPage, { waitUntil: 'load' });
+      const quote = rp.locator('[data-garland-quote-panel] [data-garland-quote]');
+      if (await quote.count()) {
+        await rp.evaluate(() => { localStorage.removeItem('fresh_petals_destination_city'); localStorage.removeItem('fresh_petals_destination_confirmed'); window.dispatchEvent(new CustomEvent('fresh-petals-destination-updated')); });
+        const before = rcPopups;
+        await quote.tap(); await rp.waitForTimeout(300);
+        const blocked = rcPopups === before;
+        await rp.selectOption('[data-garland-quote-panel] #recipient-city select', 'chennai'); await quote.tap(); await rp.waitForTimeout(600);
+        const href = new URL(await quote.getAttribute('href'), origin);
+        check('recipient city: garland enquiry blocked without a city, then the live check gets city=chennai once', blocked && rcPopups === before + 1 && href.pathname === '/garland-enquiry' && href.searchParams.getAll('city').join() === 'chennai', href.pathname + href.search);
+      } else check('recipient city: garland design page has an enquiry panel', false, garlandPage);
+    } else check('recipient city: a garland design page to test', false, 'none found');
+    // The live check itself, without a city: a page that asks, never a WhatsApp redirect.
+    const code = await rp.evaluate(() => document.querySelector('[data-garland-quote]')?.getAttribute('data-garland-quote'));
+    if (code) {
+      const r = await fetch(`${origin}/garland-enquiry?code=${encodeURIComponent(code)}&qty=1`, { redirect: 'manual' });
+      const body = await r.text();
+      check('recipient city: /garland-enquiry without a city asks for it (no redirect, no preselected city)', r.status === 200 && !r.headers.get('location') && /name="city" required/.test(body) && !/selected/.test(body), `${r.status} ${r.headers.get('location') ?? ''}`);
+    }
+    // The basket: blocked before the blank tab, the log and the event.
+    await rp.evaluate(() => { localStorage.removeItem('fresh_petals_destination_city'); localStorage.removeItem('fresh_petals_destination_confirmed'); });
+    await rp.goto(`${origin}/categories/bouquets`, { waitUntil: 'load' });
+    await rp.locator('[data-shop-item]:visible [data-add-to-cart]').first().tap();
+    await rp.goto(`${origin}/cart`, { waitUntil: 'load' }); await rp.waitForTimeout(400);
+    await rp.fill('[data-customer-name]', 'Audit Test'); await rp.fill('[data-customer-phone]', '9000000000');
+    await rp.fill('[data-delivery-date]', new Date(Date.now() + 3 * 864e5).toISOString().slice(0, 10)).catch(() => {});
+    const slotSelect = rp.locator('[data-delivery-slot]'); await slotSelect.selectOption(await slotSelect.locator('option').nth(1).getAttribute('value'));
+    await rp.fill('[data-recipient-name]', 'Audit Recipient'); await rp.fill('[data-recipient-phone]', '9000000001'); await rp.fill('[data-delivery-landmark]', 'Audit landmark');
+    const outBefore = rcOut.length;
+    await rp.locator('[data-send-cart-whatsapp]').tap(); await rp.waitForTimeout(600);
+    st = await rcState();
+    check('recipient city: basket without a city sends nothing, logs nothing, fires no basket event', st.opened.length === 0 && st.events === 0 && rcOut.length === outBefore, JSON.stringify({ opened: st.opened.length, events: st.events, out: rcOut.slice(outBefore) }));
+    await rp.selectOption('[data-destination-select]:visible', 'delhi'); await rp.locator('[data-send-cart-whatsapp]').tap(); await rp.waitForTimeout(2000);
+    st = await rcState();
+    const basketDraft = st.opened.find((u) => /wa\.me/.test(u)) || '';
+    check('recipient city: basket draft names Delhi exactly once', cityLines(basketDraft).join() === 'Recipient city: Delhi' && st.events === 1, cityLines(basketDraft).join());
+    check('recipient city: no script errors', rcErrors.length === 0, rcErrors.join(' | '));
+    await rp.evaluate(() => { localStorage.clear(); });
+    await rc.close();
+
     // ---- 2. homepage petal hand-over (desktop)
     const home = await browser.newContext({ viewport: { width: 1440, height: 900 } });
     await home.route('**/*', (route) => (route.request().url().startsWith(origin + '/') || route.request().url().startsWith('data:') ? route.continue() : route.abort()));

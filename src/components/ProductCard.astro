@@ -76,7 +76,12 @@ const finalMessage = whatsappText || (quoteOnly
   ? [...[`Hi Fresh Petals, I'd like to enquire about ${named}.`, quantityLine, linkLine, ...journeyLines(journey)].filter(Boolean), "", QUOTE_ONLY_CLOSING]
   : [defaultMessage, `Price: ${priceLabel}`, quantityLine, linkLine, ...journeyLines(journey)].filter(Boolean)).join("\n");
 
-const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(finalMessage)}`;
+// Product enquiries need a recipient city the customer chose
+// (src/utils/productEnquiry.ts). The draft travels without one in
+// data-enquiry-text; the city line is added when the link is used. The
+// href never opens WhatsApp by itself: without scripts (no city can be
+// chosen) it leads to the product page.
+const enquiryFallbackHref = slug ? `${productUrl}#recipient-city` : "#";
 
 const priceBadge = quoteOnly
   ? "WhatsApp quote"
@@ -220,9 +225,9 @@ const priceBadgeShort =
          "Add to basket" collects several bouquets; both are primary
          actions, so both are Deep Rose with white lettering. -->
     <a
-      href={whatsappUrl}
-      target="_blank"
-      rel="noopener noreferrer"
+      href={enquiryFallbackHref}
+      data-product-enquiry
+      data-enquiry-text={finalMessage}
       data-whatsapp-order-link
       data-whatsapp-custom-text={whatsappText ? "true" : "false"}
       data-whatsapp-number={whatsappNumber}
@@ -255,7 +260,6 @@ const priceBadgeShort =
   import { QUOTE_ONLY_CLOSING } from "../shared/quoteOnly";
   import { journeyFromParams, journeyLines } from "../utils/journey";
   const contextFor = (element: Element) => { const link = element.closest("article")?.querySelector<HTMLAnchorElement>("[data-journey-link]"); return link ? journeyFromParams(new URL(link.href).searchParams) : null; };
-  import { DESTINATION_UPDATED_EVENT, cityName, getDestination } from "../utils/destination";
   // P1.5 (Phase 1 discovery hardening) -- same pattern DiscoveryPostCard.astro
   // and products/[slug].astro already use: a delegated listener plus a
   // SAVED_UPDATED_EVENT-driven repaint. Added directly here (not assumed
@@ -314,20 +318,17 @@ const priceBadgeShort =
 
   window.addEventListener(SAVED_UPDATED_EVENT, syncSaveButtons);
 
-  // Customer UX milestone — Simple Order (Journey A): the product card's
-  // WhatsApp link is server-rendered with a generic message (area is
-  // client-only, localStorage). Once mounted, if the customer has already
-  // selected an area, rebuild the message to include it — matching the
-  // preferred "FreshPetals Order Request" template. Links whose message
-  // was explicitly customized via the `whatsappText` prop are left alone.
-  function updateWhatsappLinks(area: string | null) {
-    // `area` is the recipient city's name (src/utils/destination.ts), or null.
+  // The card's enquiry draft follows the shopping context (occasion and
+  // intent from the filters). It never carries the recipient city: the
+  // enquiry gate (src/utils/productEnquiry.ts) adds the chosen city's line
+  // when the link is used, and blocks it until one is chosen. Links whose
+  // message was customised via the `whatsappText` prop are left alone.
+  function updateEnquiryDrafts() {
     const links = document.querySelectorAll<HTMLAnchorElement>(
       '[data-whatsapp-order-link][data-whatsapp-custom-text="false"]'
     );
 
     links.forEach((link) => {
-      const number = link.dataset.whatsappNumber || "";
       const productName = link.dataset.whatsappProductName || "";
       const priceLabel = link.dataset.whatsappPriceLabel || "";
       const quantityLine = link.dataset.whatsappQuantityLine || "Quantity: 1";
@@ -335,34 +336,15 @@ const priceBadgeShort =
       const journey = contextFor(link);
       const productLink = link.closest("article")?.querySelector<HTMLAnchorElement>("[data-journey-link]");
       const linkLine = productLink ? `Link: ${location.origin}${new URL(productLink.href).pathname}` : "";
-      if (link.dataset.whatsappQuoteOnly === "true") {
-        const lines = [`Hi Fresh Petals, I'd like to enquire about ${productName}.`, quantityLine, linkLine, ...journeyLines(journey), area ? `Recipient city: ${area}` : ""].filter(Boolean);
-        link.href = `https://wa.me/${number}?text=${encodeURIComponent([...lines, "", QUOTE_ONLY_CLOSING].join("\n"))}`;
-        return;
-      }
-      const base = area
-        ? [
-            "FreshPetals Order Request 🌸",
-            "",
-            "Product:",
-            productName,
-            "",
-            "Recipient city:",
-            area,
-            "",
-            "Please confirm availability, final price and delivery details.",
-          ].join("\n")
-        : `Hi Fresh Petals, I want to order ${productName}. Please confirm today's availability and price.`;
-
-      const message = [base, `Price: ${priceLabel}`, quantityLine, productLink ? `Link: ${location.origin}${new URL(productLink.href).pathname}` : "", ...journeyLines(journey)].filter(Boolean).join("\n");
-      link.href = `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
+      const lines = link.dataset.whatsappQuoteOnly === "true"
+        ? [...[`Hi Fresh Petals, I'd like to enquire about ${productName}.`, quantityLine, linkLine, ...journeyLines(journey)].filter(Boolean), "", QUOTE_ONLY_CLOSING]
+        : [`Hi Fresh Petals, I want to order ${productName}. Please confirm today's availability and price.`, `Price: ${priceLabel}`, quantityLine, linkLine, ...journeyLines(journey)].filter(Boolean);
+      link.dataset.enquiryText = lines.join("\n");
     });
   }
 
-  const destinationCityName = () => cityName(getDestination());
-  updateWhatsappLinks(destinationCityName());
-  document.addEventListener("fresh-petals-shop-updated", () => updateWhatsappLinks(destinationCityName()));
-  window.addEventListener(DESTINATION_UPDATED_EVENT, () => updateWhatsappLinks(destinationCityName()));
+  updateEnquiryDrafts();
+  document.addEventListener("fresh-petals-shop-updated", updateEnquiryDrafts);
 
   const buttons = document.querySelectorAll("[data-add-to-cart]");
 
