@@ -425,3 +425,51 @@ export function categoryMeta(slug: string): { name: string; slug: string; descri
 
 // A category with no written introduction (one added later through a new tag or category).
 const defaultIntro = (name: string) => `${name}: the designs listed under this name. Choose one and send it on WhatsApp; we confirm the flowers, price and delivery for your date before you pay.`;
+
+/**
+ * What an empty range means, from each range's own introduction above
+ * (CATEGORY_INTROS), so the page offers only what the business has said it does:
+ *   not-offered  the introduction says it is not sold: no enquiry, a link to what is sold instead
+ *   quote        the introduction asks for a quotation for a confirmed service (Bulk Flowers)
+ *   check        not listed, and the introduction only invites a question; nothing is
+ *                promised, so the page asks whether it is available (owner to confirm
+ *                any made-to-order offer before a range moves to "quote")
+ * An empty range missing here gets no enquiry button (the safe default).
+ */
+export type EmptyRangeKind = "not-offered" | "quote" | "check";
+export const EMPTY_RANGES: Record<string, { kind: EmptyRangeKind; see: { href: string; label: string } }> = {
+  "handcrafted-torans-and-streamers": { kind: "not-offered", see: { href: "/categories/flower-strings-and-torans", label: "Flower Strings & Torans" } },
+  "fairy-lights-tim-tim-lights": { kind: "not-offered", see: { href: "/categories/flower-strings-and-torans", label: "Flower Strings & Torans" } },
+  "diyas-and-tea-light-holders": { kind: "not-offered", see: { href: "/categories/pooja-flowers", label: "Pooja Flowers" } },
+  "planners-and-journal": { kind: "not-offered", see: { href: "/categories/add-ons", label: "Add-ons" } },
+  skincare: { kind: "not-offered", see: { href: "/categories/add-ons", label: "Add-ons" } },
+  tea: { kind: "not-offered", see: { href: "/categories/add-ons", label: "Add-ons" } },
+  "bulk-orders": { kind: "quote", see: { href: "/categories/garlands", label: "Garlands" } },
+  "eid-al-adha": { kind: "check", see: { href: "/categories/white-flowers", label: "White Flowers" } },
+  "mini-bouquets": { kind: "check", see: { href: "/categories/bouquets", label: "All Bouquets" } },
+  "pooja-urli-boxes": { kind: "check", see: { href: "/categories/pooja-flowers", label: "Pooja Flowers" } },
+  "flowers-and-jewellery": { kind: "check", see: { href: "/categories/wedding", label: "Wedding" } },
+  "tuberose-rajnigandha": { kind: "check", see: { href: "/categories/pooja-flowers", label: "Pooja Flowers" } },
+  hydrangeas: { kind: "check", see: { href: "/categories/pastel-flowers", label: "Pastel Flowers" } },
+  orchid: { kind: "check", see: { href: "/categories/lilies", label: "Lilies" } },
+};
+
+/** One wording per state, used by the heading, panel, button and the (unsent) WhatsApp draft. */
+export function emptyRangeCopy(kind: EmptyRangeKind | undefined, name: string) {
+  if (kind === "not-offered") return { eyebrow: "Not sold at the moment", heading: "Not sold by Fresh Petals", body: "There is nothing to order here.", cta: null, draft: null };
+  if (kind === "quote") return {
+    eyebrow: "Quoted on request",
+    heading: `Custom ${name} Orders`,
+    body: "Tell us the flowers, quantity, date and city on WhatsApp. We send a quotation, and you accept the price before you pay.",
+    cta: "Ask for a quotation",
+    draft: `Hi Fresh Petals, I'd like a quotation for ${name}.\nFlowers:\nQuantity:\nDate:\nCity:`,
+  };
+  if (kind === "check") return {
+    eyebrow: "Not listed at the moment",
+    heading: `Check availability: ${name}`,
+    body: "Nothing in this range is listed online. Ask on WhatsApp whether we can supply it for your date; we tell you if we can, and the price, before you pay.",
+    cta: "Check availability",
+    draft: `Hi Fresh Petals, I'd like to check availability for ${name}. It is not listed online; can you supply it for my date, and at what price?\nDate:\nCity:`,
+  };
+  return { eyebrow: "Not listed at the moment", heading: `Nothing listed in ${name}`, body: "There is nothing to order here.", cta: null, draft: null };
+}

@@ -28,7 +28,7 @@ import { bouquetLine, isVaseArrangement, poojaSections, presentationKind } from 
 import { productPhotoAlt } from "../../data/productPhotos";
 import { QUOTE_ONLY_ENQUIRE_LABEL, QUOTE_ONLY_PRICE_LABEL, isQuoteOnly } from "../../shared/quoteOnly";
 import { photoDimensions, photoVariants } from "../../data/photoManifest";
-import { cityEnquiryHref, cityProductEnquiryHref } from "../../utils/cityEnquiry";
+import { cityEnquiryHref, productEnquiryDraft } from "../../utils/cityEnquiry";
 import { BOUQUET_GUIDE, GARLAND_GUIDE, POOJA_GUIDE, SENDING_GUIDE, type Guide } from "../../data/guides";
 import { loadCityCatalogue } from "../../server/services/CityCatalogue";
 
@@ -72,6 +72,8 @@ type Card = {
   /** One line for the comparison list, from the record. */
   line: string | null;
   enquiryHref: string;
+  /** Product draft without a city (product cards only). */
+  enquiryText?: string;
   enquiryLabel: string;
   garland: boolean;
 };
@@ -98,7 +100,10 @@ function productCard(product: Product): Card {
     },
     price: quoteOnly ? QUOTE_ONLY_PRICE_LABEL : priced.priceLabel,
     line: isBouquet ? bouquetLine(product) : product.description,
-    enquiryHref: cityProductEnquiryHref({ name: enquiryName(product), url: new URL(`/products/${product.slug}`, origin).toString(), cityName: city!.name, quoteOnly, priceLabel: priced.priceLabel, quantityLine: enquiryQuantityLine(product) }),
+    // No WhatsApp without a chosen city: the link leads to the product's city selector, and the
+    // enquiry gate writes the draft with the chosen city (src/utils/productEnquiry.ts).
+    enquiryHref: `${withCity(`/products/${product.slug}`)}#recipient-city`,
+    enquiryText: productEnquiryDraft({ name: enquiryName(product), url: new URL(`/products/${product.slug}`, origin).toString(), quoteOnly, priceLabel: priced.priceLabel, quantityLine: enquiryQuantityLine(product) }),
     enquiryLabel: quoteOnly ? QUOTE_ONLY_ENQUIRE_LABEL : "Order on WhatsApp",
     garland: false,
   };
@@ -119,7 +124,8 @@ function garlandCard(product: GarlandProduct): Card {
     // the flowers in the garland.
     line: [design.image.alt.trim().replace(/([^.!?])$/, "$1."), flowers ? `Browse under: ${flowers}.` : ""].filter(Boolean).join(" ") || null,
     // Through the live enquiry check, like every garland card.
-    enquiryHref: garlandEnquiryHref({ code: design.code, quantity: 1, city: city!.slug }),
+    // The chosen recipient city is added when the link is used; never this page's city by itself.
+    enquiryHref: garlandEnquiryHref({ code: design.code, quantity: 1 }),
     enquiryLabel: QUOTE_ONLY_ENQUIRE_LABEL,
     garland: true,
   };
@@ -356,7 +362,7 @@ const steps = [
                         <a href={card.href} class="city-card__link group-hover:text-berry">{card.name}</a>
                       </h3>
                       <p class="mt-1.5 text-[13px] font-semibold text-ink" data-city-card-price>{card.price}</p>
-                      <a href={card.enquiryHref} target="_blank" rel="noopener noreferrer" data-garland-quote={card.code} class="relative z-20 mt-auto inline-flex min-h-[44px] items-center justify-center rounded-full bg-berry px-3 pt-0 text-center text-[11px] font-semibold leading-tight text-white transition hover:bg-berry-deep" style="margin-top:0.75rem">
+                      <a href={card.enquiryHref} target={card.garland ? "_blank" : undefined} rel={card.garland ? "noopener noreferrer" : undefined} data-product-enquiry data-enquiry-text={card.enquiryText} data-garland-quote={card.code} class="relative z-20 mt-auto inline-flex min-h-[44px] items-center justify-center rounded-full bg-berry px-3 pt-0 text-center text-[11px] font-semibold leading-tight text-white transition hover:bg-berry-deep" style="margin-top:0.75rem">
                         {card.enquiryLabel}
                       </a>
                     </div>

@@ -174,23 +174,14 @@ const isCurrent = (href: string) => path === href || (href !== "/" && path.start
 <script>
   import { getCartCount } from "../../utils/cart";
   import { getSavedCount, SAVED_UPDATED_EVENT } from "../../utils/saved";
-  import { DESTINATION_UPDATED_EVENT, cityName, getDestination, resolveDestination } from "../../utils/destination";
+  import { DESTINATION_UPDATED_EVENT, cityName, getDestination } from "../../utils/destination";
 
   // Recipient city ------------------------------------------------------
-  // Runs on every page: a shop link opened with ?city=<slug>, or a city page,
-  // sets the destination when none is decided (src/utils/destination.ts).
-  // Garland enquiry links then carry it to the live enquiry check, and the
-  // homepage strip names it.
-  resolveDestination();
+  // The homepage strip names the city the customer chose
+  // (src/utils/destination.ts). Product enquiry links get the city from the
+  // enquiry gate when they are used (src/utils/productEnquiry.ts).
   function applyDestination() {
     const destination = getDestination();
-    document.querySelectorAll<HTMLAnchorElement>('a[href^="/garland-enquiry"]').forEach((link) => {
-      const url = new URL(link.href);
-      if (url.searchParams.get("city") === destination) return;
-      if (destination) url.searchParams.set("city", destination);
-      else url.searchParams.delete("city");
-      link.href = url.pathname + url.search;
-    });
     const text = document.querySelector("[data-delivery-notice-text]");
     const action = document.querySelector("[data-delivery-notice-action]");
     const name = cityName(destination);
@@ -201,8 +192,6 @@ const isCurrent = (href: string) => path === href || (href !== "/" && path.start
   }
   applyDestination();
   window.addEventListener(DESTINATION_UPDATED_EVENT, applyDestination);
-  // Listings that add garland cards later (filters, "show more").
-  document.addEventListener("fresh-petals-shop-updated", applyDestination);
 
   // Counts -------------------------------------------------------------
   let previousCount = -1;

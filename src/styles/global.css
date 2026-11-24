@@ -190,6 +190,10 @@ body {
   font-size: var(--step-4);
   line-height: 0.98;
   text-wrap: balance;
+  /* A long single word (Thiruvananthapuram) breaks inside a narrow column
+     instead of pushing the page sideways (audit 18 Nov 2026, 390px). */
+  overflow-wrap: anywhere;
+  hyphens: auto;
 }
 
 .fp-h2 {

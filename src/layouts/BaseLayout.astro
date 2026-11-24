@@ -8,6 +8,7 @@ import SiteHeader from "../components/atelier/SiteHeader.astro";
 import SiteFooter from "../components/atelier/SiteFooter.astro";
 import RoundCategoryCarousel from "../components/RoundCategoryCarousel.astro";
 import Analytics from "../components/Analytics.astro";
+import RecipientCityStep from "../components/RecipientCityStep.astro";
 import InlineScript from "../components/InlineScript.astro";
 // Reviewed inline scripts, allowed by the page's CSP through their hashes.
 import pageFlags from "../scripts/inline/page-flags.js?raw";
@@ -128,6 +129,7 @@ const absoluteImageUrl = new URL(image, Astro.site);
       <slot />
     </div>
     <SiteFooter />
+    <RecipientCityStep />
     <Analytics />
 
     <InlineScript code={reveal} />

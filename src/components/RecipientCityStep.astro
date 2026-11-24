@@ -1,0 +1,99 @@
+---
+// The city step: asked before a product WhatsApp enquiry on a page with no
+// Recipient city selector of its own (a product card in a listing, a related
+// product, a guide, a saved item). The same selector and the same stored
+// choice as everywhere else (DestinationCity.astro); after a choice,
+// "Continue" opens the enquiry the customer started. Opened only by
+// src/utils/productEnquiry.ts. A native <dialog>: focus stays inside, Escape
+// closes it, and focus returns to the button that opened it.
+import DestinationCity from "./DestinationCity.astro";
+---
+
+<dialog class="city-step" data-city-step aria-labelledby="city-step-title" aria-describedby="city-step-text">
+  <form method="dialog" class="city-step__body">
+    <h2 id="city-step-title" class="city-step__title">Where are the flowers going?</h2>
+    <p id="city-step-text" class="city-step__text">Choose the recipient city. We add it to your WhatsApp enquiry and confirm availability and delivery for that city.</p>
+    <DestinationCity label="Recipient city" />
+    <div class="city-step__actions">
+      <button type="button" class="city-step__continue" data-city-step-continue>Continue to WhatsApp</button>
+      <button type="submit" value="cancel" class="city-step__cancel" data-city-step-cancel>Cancel</button>
+    </div>
+  </form>
+</dialog>
+
+<style>
+  .city-step {
+    margin: auto;
+    width: min(26rem, calc(100vw - 2rem));
+    max-height: calc(100dvh - 2rem);
+    border: 1px solid var(--color-line, #e3ddd0);
+    border-radius: 24px;
+    background: var(--color-paper, #fff);
+    color: var(--color-ink);
+    padding: 0;
+    box-shadow: 0 24px 60px rgba(28, 37, 31, 0.24);
+  }
+  .city-step::backdrop {
+    background: rgba(28, 37, 31, 0.45);
+  }
+  .city-step__body {
+    padding: 1.5rem;
+  }
+  .city-step__title {
+    font-family: var(--font-serif, serif);
+    font-size: 1.5rem;
+    line-height: 1.2;
+  }
+  .city-step__text {
+    margin: 0.5rem 0 1rem;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    color: var(--color-moss);
+  }
+  .city-step__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1.25rem;
+  }
+  .city-step__actions button {
+    min-height: 44px;
+    border-radius: 999px;
+    padding: 0 1.25rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .city-step__continue {
+    border: 1px solid var(--color-berry);
+    background: var(--color-berry);
+    color: #fff;
+  }
+  .city-step__cancel {
+    border: 1px solid var(--color-ink);
+    background: transparent;
+    color: var(--color-ink);
+  }
+</style>
+
+<script>
+  import { CITY_REQUIRED_MESSAGE, enquiryCity, flagSelector } from "../utils/productEnquiry";
+
+  const dialog = document.querySelector<HTMLDialogElement>("[data-city-step]");
+  dialog?.querySelector("[data-city-step-continue]")?.addEventListener("click", () => {
+    if (!enquiryCity()) {
+      const control = dialog.querySelector<HTMLElement>("[data-destination-control]");
+      if (control) flagSelector(control, CITY_REQUIRED_MESSAGE);
+      return;
+    }
+    dialog.close("continue");
+    // Still inside the customer's click, so the enquiry may open WhatsApp.
+    document.dispatchEvent(new CustomEvent("fresh-petals-city-step-continue"));
+  });
+  dialog?.addEventListener("close", () => {
+    if (dialog.returnValue !== "continue") document.dispatchEvent(new CustomEvent("fresh-petals-city-step-cancel"));
+    dialog.returnValue = "";
+  });
+</script>

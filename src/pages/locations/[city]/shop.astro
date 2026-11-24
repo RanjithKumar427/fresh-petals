@@ -21,7 +21,7 @@ import BaseLayout from "../../../layouts/BaseLayout.astro";
 import DestinationCity from "../../../components/DestinationCity.astro";
 import { CITY_PARAM, LOCATIONS_PATH, SERVICE_CITIES, findCity, serviceCityCount } from "../../../data/serviceCities";
 import { CITY_SHOP_PAGE_SIZE, loadCityCatalogue, type CatalogueItem } from "../../../server/services/CityCatalogue";
-import { cityEnquiryHref, cityProductEnquiryHref } from "../../../utils/cityEnquiry";
+import { cityEnquiryHref, productEnquiryDraft } from "../../../utils/cityEnquiry";
 import { garlandEnquiryHref } from "../../../utils/garlandEnquiry";
 import { QUOTE_ONLY_ENQUIRE_LABEL } from "../../../shared/quoteOnly";
 
@@ -42,8 +42,9 @@ const withCity = (path: string) => `${path}?${CITY_PARAM}=${city.slug}`;
 const recordFor = (item: CatalogueItem) => productCatalog.find((product) => product.slug === item.key);
 const action = (item: CatalogueItem) =>
   item.code
-    ? { href: garlandEnquiryHref({ code: item.code, quantity: 1, city: city.slug }), label: QUOTE_ONLY_ENQUIRE_LABEL }
-    : { href: cityProductEnquiryHref({ name: recordFor(item) ? enquiryName(recordFor(item)!) : item.name, url: new URL(item.path, origin).toString(), cityName: city.name, quoteOnly: item.quoteOnly, priceLabel: item.price, quantityLine: recordFor(item) ? enquiryQuantityLine(recordFor(item)!) : undefined }), label: item.quoteOnly ? QUOTE_ONLY_ENQUIRE_LABEL : "Order on WhatsApp" };
+    // The chosen recipient city is added when the link is used (src/utils/productEnquiry.ts); never this page's city by itself.
+    ? { href: garlandEnquiryHref({ code: item.code, quantity: 1 }), text: undefined, label: QUOTE_ONLY_ENQUIRE_LABEL }
+    : { href: `${withCity(item.path)}#recipient-city`, text: productEnquiryDraft({ name: recordFor(item) ? enquiryName(recordFor(item)!) : item.name, url: new URL(item.path, origin).toString(), quoteOnly: item.quoteOnly, priceLabel: item.price, quantityLine: recordFor(item) ? enquiryQuantityLine(recordFor(item)!) : undefined }), label: item.quoteOnly ? QUOTE_ONLY_ENQUIRE_LABEL : "Order on WhatsApp" };
 
 const heading = `All flowers and products for delivery in ${city.name}`;
 const title = `Full Catalogue for Delivery in ${city.name} | Fresh Petals`;
@@ -128,7 +129,7 @@ const chipClass = (current: boolean) => [chip, current ? "border-ink bg-ink text
                   <div class="flex flex-1 flex-col px-3 pb-3 pt-2.5">
                     <h2 class="text-[14px] font-semibold leading-snug text-ink"><a href={withCity(item.path)} class="shop-card__link group-hover:text-berry">{item.name}</a></h2>
                     <p class="mt-1.5 text-[13px] font-semibold text-ink" data-shop-card-price>{item.price}</p>
-                    <a href={cta.href} target="_blank" rel="noopener noreferrer" data-garland-quote={item.code} class="relative z-20 inline-flex min-h-[44px] items-center justify-center rounded-full bg-berry px-3 text-center text-[11px] font-semibold leading-tight text-white transition hover:bg-berry-deep" style="margin-top:auto;padding-top:0;margin-block-start:0.75rem">{cta.label}</a>
+                    <a href={cta.href} target={item.code ? "_blank" : undefined} rel={item.code ? "noopener noreferrer" : undefined} data-product-enquiry data-enquiry-text={cta.text} data-garland-quote={item.code} class="relative z-20 inline-flex min-h-[44px] items-center justify-center rounded-full bg-berry px-3 text-center text-[11px] font-semibold leading-tight text-white transition hover:bg-berry-deep" style="margin-top:auto;padding-top:0;margin-block-start:0.75rem">{cta.label}</a>
                   </div>
                 </article>
               </li>

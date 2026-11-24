@@ -12,7 +12,6 @@ import { loadPublicCatalogue } from "../../server/services/PublicCatalogue";
 import { slugify } from "../../server/utils/slugify";
 import imageVariants from "../../data/imageVariants.json";
 import imageDimensions from "../../data/imageDimensions.json";
-import { whatsappLink } from "../../config/storefront";
 import { QUOTE_ONLY_PRICE_LABEL, isQuoteOnly } from "../../shared/quoteOnly";
 import { photoStatus, productPhotoAlt, representativePhoto } from "../../data/productPhotos";
 import { presentationCheck } from "../../data/collectionGuidance";
@@ -434,9 +433,9 @@ const breadcrumbJsonLd = {
         {customisable && <p class="mt-5 text-sm leading-6 text-moss">
           Want different colours, flowers or size?
           <a
-            href={whatsappLink(`Hi Fresh Petals, I'd like to customise "${product.name}"${identity ? ` (${identityInSentence(identity)})` : ""}.\nProduct: ${new URL(`/products/${product.slug}`, Astro.site).toString()}\nWhat I'd like to change: \nOccasion and date: \nBudget (optional): `)}
-            target="_blank"
-            rel="noopener noreferrer"
+            href="#recipient-city"
+            data-product-enquiry
+            data-enquiry-text={`Hi Fresh Petals, I'd like to customise "${product.name}"${identity ? ` (${identityInSentence(identity)})` : ""}.\nProduct: ${new URL(`/products/${product.slug}`, Astro.site).toString()}\nWhat I'd like to change: \nOccasion and date: \nBudget (optional): `}
             data-customise-whatsapp
             class="font-semibold text-ink underline underline-offset-4"
           >Customise on WhatsApp</a>
