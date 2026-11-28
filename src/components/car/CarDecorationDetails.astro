@@ -1,0 +1,40 @@
+---
+// Product-page panel for Car Decoration products: how this one is fulfilled,
+// the safety points, and what the quote needs (src/data/carDecoration.ts).
+import type { Product } from "../../data/productCatalog";
+import { CAR_DECORATION_PATH, CAR_ENQUIRY_POINTS, FULFILMENT_COPY, VEHICLE_SAFETY, carDecorationFacts } from "../../data/carDecoration";
+
+type Props = { product: Product };
+const { product } = Astro.props;
+const facts = carDecorationFacts(product.slug);
+const mode = facts ? FULFILMENT_COPY[facts.fulfilment] : null;
+---
+
+{facts && mode && (
+  <div class="mt-10 grid gap-6 border-t border-line pt-8 md:grid-cols-2" data-car-details data-fulfilment={facts.fulfilment}>
+    <div>
+      <h2 class="text-[12px] font-semibold uppercase tracking-[0.28em] text-ink">How it is fulfilled</h2>
+      <p class="mt-4 text-sm leading-6 text-moss">
+        <span class="font-semibold text-ink">{mode.label}</span> · {facts.vehicle}
+      </p>
+      <p class="mt-2 text-sm leading-6 text-moss">{mode.detail}</p>
+      <h3 class="mt-6 text-[12px] font-semibold uppercase tracking-[0.28em] text-ink">For your quote</h3>
+      <ul class="mt-3 space-y-2 text-sm leading-6 text-moss">
+        {CAR_ENQUIRY_POINTS.map((point) => (
+          <li class="flex gap-2.5"><span class="mt-2.5 h-1 w-1 shrink-0 rounded-full border border-berry"></span><span><span class="font-semibold text-ink">{point.label}:</span> {point.detail}</span></li>
+        ))}
+      </ul>
+    </div>
+    <div>
+      <h2 class="text-[12px] font-semibold uppercase tracking-[0.28em] text-ink">Vehicle safety</h2>
+      <ul class="mt-4 space-y-2 text-sm leading-6 text-moss" data-car-safety>
+        {VEHICLE_SAFETY.map((point) => (
+          <li class="flex gap-2.5"><span class="mt-2.5 h-1 w-1 shrink-0 rounded-full bg-berry"></span>{point}</li>
+        ))}
+      </ul>
+      <p class="mt-4 text-sm leading-6 text-moss">
+        See every design in <a href={CAR_DECORATION_PATH} class="font-semibold text-ink underline underline-offset-4">Car Decoration</a>.
+      </p>
+    </div>
+  </div>
+)}

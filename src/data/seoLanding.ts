@@ -193,10 +193,54 @@ export const CATEGORY_LANDING: Record<string, LandingContent> = {
     links: [
       { href: "/guides/jasmine-pooja-flowers-and-gajra", label: "Jasmine, pooja flowers and gajra: which to order" },
       { href: "/categories/garlands", label: "Wedding garlands" },
+      { href: "/categories/car-decoration", label: "Vehicle pooja and car decoration" },
       { href: "/categories/subscriptions", label: "Flower subscriptions" },
       { href: "/categories/flowerbox", label: "Flower boxes" },
       { href: "/categories/baskets", label: "Flower baskets" },
       { href: "/occasions/wedding", label: "Wedding flowers" },
+    ],
+  },
+
+  // Vehicle flower decoration (src/data/carDecoration.ts). Every product is
+  // quoted; delivery of garlands and on-site decoration are kept apart, and
+  // on-site work is never promised for a city.
+  "car-decoration": {
+    title: "Car Decoration: Car Gajamala & Wedding Car Flowers | Fresh Petals",
+    description:
+      "Fresh flower car decoration: car gajamala and garlands for a new car or bike delivery, vehicle pooja flowers and wedding car decoration. Delivered ready to tie, or decorated on site where we can reach; quoted on WhatsApp.",
+    h1: "Car Decoration",
+    intro: [
+      "Fresh flowers for vehicles: a gajamala for a new car or bike on delivery day, flowers for a vehicle pooja, and full decoration for a wedding car. The designs below are vehicles we decorated, photographed with the registration plates blanked; the two marked “Concept image” show a style we make to order.",
+      "Every listing says whether it is a garland delivered ready to tie, or decoration our team fits on site. On-site decoration depends on where the vehicle is and when, so we confirm it on WhatsApp before anything is booked. Prices depend on the vehicle, the flowers and the date, and are quoted on WhatsApp.",
+    ],
+    faqs: [
+      {
+        question: "Do you decorate the car, or deliver the garland?",
+        answer:
+          "Both, and each design says which. Garlands and strings can be delivered ready for you to tie on. For on-site decoration our team fits the flowers at your home, venue or showroom, where we can reach on your date; we confirm that on WhatsApp first.",
+      },
+      {
+        question: "Can I drive with the flowers on?",
+        answer:
+          "Slowly and for short distances, such as from the showroom, a temple or a wedding venue. Keep the windscreen, mirrors, lights and number plates clear, and remove the flowers before a longer drive or a wash.",
+      },
+      {
+        question: "Which flowers are used?",
+        answer:
+          "Each photograph shows the flowers used on that vehicle — often roses, gerberas, chrysanthemums, marigold and orchids. Flowers depend on the day's market, so we confirm them, and any substitution, in your quote.",
+      },
+      {
+        question: "Do you decorate bikes and scooters?",
+        answer:
+          "We make rose garlands for two-wheelers, delivered ready to tie, for delivery day or Ayudha Pooja. The listing shows a concept image of the style. Keep the garland clear of the controls, brakes, wheel and the rider's view.",
+      },
+      AREA_FAQ,
+    ],
+    links: [
+      { href: "/categories/garlands", label: "Wedding garlands" },
+      { href: "/categories/pooja-flowers", label: "Pooja flowers" },
+      { href: "/occasions/wedding", label: "Wedding flowers" },
+      { href: "/custom-orders", label: "Custom orders" },
     ],
   },
 

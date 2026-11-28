@@ -1,0 +1,49 @@
+---
+// The Car Decoration category page's guidance under the designs: what a quote
+// needs, delivery versus on-site decoration, and vehicle safety
+// (src/data/carDecoration.ts). The enquiry goes through the recipient-city
+// gate like every product enquiry (src/utils/productEnquiry.ts): the city is
+// chosen first and written into the WhatsApp draft.
+import { CAR_ENQUIRY_DRAFT, CAR_ENQUIRY_POINTS, FULFILMENT_COPY, VEHICLE_SAFETY } from "../../data/carDecoration";
+---
+
+<div class="grid max-w-5xl gap-6 md:grid-cols-2" data-car-guide>
+  <div class="rounded-[24px] border border-line bg-paper p-6">
+    <h2 class="text-base font-semibold text-ink">What to send us on WhatsApp</h2>
+    <dl class="mt-3 space-y-3 text-sm leading-6">
+      {CAR_ENQUIRY_POINTS.map((point) => (
+        <div>
+          <dt class="font-semibold text-ink">{point.label}</dt>
+          <dd class="text-moss">{point.detail}</dd>
+        </div>
+      ))}
+    </dl>
+    <a
+      href="/custom-orders"
+      data-product-enquiry
+      data-enquiry-text={CAR_ENQUIRY_DRAFT}
+      data-car-enquiry
+      class="mt-5 inline-flex min-h-[44px] items-center rounded-full bg-berry px-6 text-sm font-semibold text-white transition hover:bg-berry-deep"
+    >
+      Ask about car decoration on WhatsApp
+    </a>
+    <p class="mt-2 text-xs leading-5 text-moss">You choose the city first; it goes into the message.</p>
+  </div>
+  <div class="space-y-6">
+    <div class="rounded-[24px] border border-line bg-linen p-6 text-sm leading-7 text-moss" data-car-fulfilment>
+      <h2 class="text-base font-semibold text-ink">Delivered or decorated on site</h2>
+      {Object.values(FULFILMENT_COPY).map((mode) => (
+        <p class="mt-2"><span class="font-semibold text-ink">{mode.label}.</span> {mode.detail}</p>
+      ))}
+    </div>
+  </div>
+  <section class="rounded-[24px] border border-line bg-paper p-6 text-sm leading-7 text-moss md:col-span-2" aria-labelledby="vehicle-safety-title" data-car-safety>
+    <h2 id="vehicle-safety-title" class="text-base font-semibold text-ink">Driving a decorated vehicle safely</h2>
+    <ul class="mt-3 grid gap-x-8 gap-y-2 md:grid-cols-2">
+      {VEHICLE_SAFETY.map((point) => (
+        <li class="flex gap-2.5"><span class="mt-2.5 h-1 w-1 shrink-0 rounded-full bg-berry"></span>{point}</li>
+      ))}
+    </ul>
+    <p class="mt-3 text-xs leading-6">Follow local traffic rules; the driver is responsible for a clear view and for removing anything that comes loose.</p>
+  </section>
+</div>

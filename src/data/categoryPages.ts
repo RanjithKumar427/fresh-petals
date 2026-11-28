@@ -273,6 +273,7 @@ export const CATEGORY_NAMES: Record<string, string> = {
   "room-mist-and-diffuser": "Room Mist & Diffuser",
   hampers: "Hampers",
   wedding: "Wedding",
+  "car-decoration": "Car Decoration",
   "by-stems": "By Stems",
   "eid-al-adha": "Eid Al-Adha",
   lilies: "Lilies: Bouquets, Arrangements & Stems",

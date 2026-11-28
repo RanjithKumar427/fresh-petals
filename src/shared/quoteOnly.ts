@@ -18,8 +18,8 @@ export const QUOTE_ONLY_ENQUIRE_LABEL = "Enquire on WhatsApp";
 /** The basket's final button when it holds quote-only products. */
 export const QUOTE_ONLY_BASKET_LABEL = "Request price on WhatsApp";
 
-/** Bouquets (hand-tied and lily arrangements) and garlands. */
-export const QUOTE_ONLY_CATEGORIES: readonly string[] = ["Bouquets", "Lilies", "Garlands"];
+/** Bouquets (hand-tied and lily arrangements), garlands and vehicle decoration (quoted per vehicle and date). */
+export const QUOTE_ONLY_CATEGORIES: readonly string[] = ["Bouquets", "Lilies", "Garlands", "Car Decoration"];
 /** Garland products filed under another category. */
 export const QUOTE_ONLY_SLUGS: readonly string[] = ["event-garlands"];
 

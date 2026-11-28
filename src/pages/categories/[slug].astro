@@ -8,6 +8,7 @@ import { type RelatedSection } from "../../data/catalogueRange";
 import { CATEGORY_GARLAND_LINKS, categoryMeta, categoryProducts, categorySlugs } from "../../data/categoryPages";
 import { loadGarlands } from "../../data/garlands";
 import { garlandCollection } from "../../data/garlandCollections";
+import { CAR_DECORATION_SLUG, carDecorationSections } from "../../data/carDecoration";
 
 type CategoryMeta = {
   name: string;
@@ -62,7 +63,7 @@ export async function getStaticPaths() {
 // and the flower pages as arrangements then stems (src/data/collectionGuidance.ts).
 const listed = (Astro.props as { products: Product[] }).products;
 const slug = Astro.params.slug ?? "";
-const sections = slug === "pooja-flowers" ? poojaSections(listed) : slug === "all-flowers" ? allFlowerSections(listed) : FLOWER_PAGES[slug] ? flowerSections(listed, FLOWER_PAGES[slug]) : [];
+const sections = slug === CAR_DECORATION_SLUG ? carDecorationSections(listed) : slug === "pooja-flowers" ? poojaSections(listed) : slug === "all-flowers" ? allFlowerSections(listed) : FLOWER_PAGES[slug] ? flowerSections(listed, FLOWER_PAGES[slug]) : [];
 const { category, products, related = [], countNoun, introLink } = Astro.props as {
   category: CategoryMeta;
   products: Product[];

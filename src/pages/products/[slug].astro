@@ -3,6 +3,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 import { productTitle } from "../../data/productTitles";
 import { guideForCategory } from "../../data/guides";
 import ProductOptions from "../../components/ProductOptions.astro";
+import CarDecorationDetails from "../../components/car/CarDecorationDetails.astro";
 import JourneyNote from "../../components/occasion/JourneyNote.astro";
 import ProductCard from "../../components/ProductCard.astro";
 import type { Product } from "../../data/productCatalog";
@@ -13,7 +14,7 @@ import { slugify } from "../../server/utils/slugify";
 import imageVariants from "../../data/imageVariants.json";
 import imageDimensions from "../../data/imageDimensions.json";
 import { QUOTE_ONLY_PRICE_LABEL, isQuoteOnly } from "../../shared/quoteOnly";
-import { photoStatus, productPhotoAlt, representativePhoto } from "../../data/productPhotos";
+import { isConceptImage, photoStatus, productPhotoAlt, representativePhoto } from "../../data/productPhotos";
 import { presentationCheck } from "../../data/collectionGuidance";
 import { categoryLabel, identityInSentence, flowerFact, idealForText, productKind, sellsFreshFlowers, preparationText, productIdentity, quantityBasis, quoteDrivers, substitutionText, suppliedItems, trustIndicators as trustFor } from "../../data/productSupply";
 
@@ -239,7 +240,11 @@ const breadcrumbJsonLd = {
           {/* On the photograph itself (as on guide cards), so the sticky desktop column never hides it. */}
           {representative && (
             <p class="absolute inset-x-3 bottom-3 z-10 rounded-xl bg-paper/95 px-3 py-2 text-[12px] leading-5 text-ink shadow-sm" data-representative-photo>
-              <span class="font-semibold">Representative photograph:</span> {lowerFirst(representative)}. It is not this exact product; what you receive is confirmed on WhatsApp.
+              {isConceptImage(product.image) ? (
+                <Fragment><span class="font-semibold">Concept image (AI-generated), not a photograph of our work:</span> {lowerFirst(representative)}. We make this style to order; the flowers and finished look are confirmed on WhatsApp.</Fragment>
+              ) : (
+                <Fragment><span class="font-semibold">Representative photograph:</span> {lowerFirst(representative)}. It is not this exact product; what you receive is confirmed on WhatsApp.</Fragment>
+              )}
             </p>
           )}
         </div>
@@ -499,6 +504,7 @@ const breadcrumbJsonLd = {
             </ul>
           </div>
         </div>
+        <CarDecorationDetails product={product} />
       </section>
     </div>
   </section>

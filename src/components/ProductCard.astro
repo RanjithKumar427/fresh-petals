@@ -1,4 +1,5 @@
 ---
+import { isConceptImage } from "../data/productPhotos";
 import imageVariants from "../data/imageVariants.json";
 import imageDimensions from "../data/imageDimensions.json";
 import { journeyHref, journeyLines, type Journey } from "../utils/journey";
@@ -94,6 +95,7 @@ const priceBadge = quoteOnly
         : "Today’s price";
 const priceBadgeShort =
   priceType === "fixed" ? "Fixed" : priceType === "from" ? "From" : priceType === "quote" ? "Quote" : "Today’s";
+const concept = isConceptImage(image);
 ---
 
 <article
@@ -132,6 +134,11 @@ const priceBadgeShort =
           </div>
         )
       }
+      {concept && (
+        <span class="absolute bottom-3 left-3 rounded-full bg-ink/85 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white" data-concept-image>
+          Concept image
+        </span>
+      )}
     </a>
 
     <!-- Short label on narrow cards so it never runs under the save button. -->
