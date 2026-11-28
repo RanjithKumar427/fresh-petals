@@ -273,6 +273,7 @@ export const GARLANDS_LANDING = {
     { href: "/locations/bengaluru", label: "Garlands for Bengaluru" },
     { href: "/occasions/wedding", label: "Wedding flowers" },
     { href: "/categories/pooja-flowers", label: "Pooja flowers" },
+    { href: "/categories/car-decoration", label: "Car gajamala and wedding car decoration" },
     { href: "/custom-orders", label: "Custom orders" },
   ] satisfies LandingLink[],
 };

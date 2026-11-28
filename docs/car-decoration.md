@@ -32,15 +32,25 @@ Every registration plate, including background vehicles, was blanked by localise
 ## Database
 
 ```
-node scripts/seed-car-decoration.mjs                    # dry run (rolled back)
-node scripts/seed-car-decoration.mjs --apply [--publish]
-node scripts/seed-car-decoration.mjs --sql [--publish]  # SQL for the Supabase SQL editor
-node scripts/seed-car-decoration.mjs --rollback-sql     # removes exactly these rows
+node scripts/seed-car-decoration.mjs [plan]     # report: status, seeded or not, admin-edited
+node scripts/seed-car-decoration.mjs apply      # missing products as DRAFTS (+ category, flower types)
+node scripts/seed-car-decoration.mjs publish    # publish seeded drafts no admin has saved since
+node scripts/seed-car-decoration.mjs rollback   # see below
+# --sql prints the transaction (Supabase SQL editor); --dry-run runs it and rolls back
 ```
 
-Additive and idempotent: adds the category, one seed media row per photograph (a `public/` path the build serves), the product (quote, WhatsApp confirmation), included items, care notes and flower types. Existing slugs are skipped. No occasion is assigned; assign occasions in the admin if wanted.
+A product is **seeded** only if it is in `car-decoration` and its primary photo is the seed's own media row (source `seed`, `/images/car-decoration/<slug>.webp`, created in the same transaction). A pre-existing product with one of the slugs, or one whose photo an admin replaced, is never published or removed — only reported. `publish` does not change `updated_at`, so a later admin save stays detectable. `rollback` deletes seeded products no admin has saved (with their details and seed media), moves admin-edited seeded products to draft keeping their edits, and removes the category only when it is empty and was created by the seed. Every action is one transaction and repeatable. `scripts/audit/car-seed-lifecycle.mjs` exercises all of this on a local or throwaway database.
+
+## Release order
+
+1. Merge PR #8 (code and photographs on `main`).
+2. `apply`: drafts only. The database fingerprint changes, so the scheduled *Production publish* rebuilds `main` with the new code and photographs while nothing new is public.
+3. Check `https://onlyfreshpetals.in/images/car-decoration/new-car-rose-gajamala.webp` is served.
+4. `publish`. The next production publish lists the range.
+5. Verify: `node scripts/audit/car-live-checks.mjs https://onlyfreshpetals.in --browser`.
+
+Never publish records before step 3: a build from older code would list them with placeholder photos.
 
 ## Rollback
 
-1. Unpublish (admin, or `--rollback-sql` to remove the rows). The next publish removes the pages.
-2. Code: revert the release commit on `main` (rollback target recorded in the PR).
+`rollback` (or unpublish in the admin), then the next production publish withdraws the pages. Code: revert the merge on `main`.

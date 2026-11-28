@@ -193,6 +193,7 @@ export const CATEGORY_LANDING: Record<string, LandingContent> = {
     links: [
       { href: "/guides/jasmine-pooja-flowers-and-gajra", label: "Jasmine, pooja flowers and gajra: which to order" },
       { href: "/categories/garlands", label: "Wedding garlands" },
+      { href: "/categories/car-decoration", label: "Vehicle pooja and car decoration" },
       { href: "/categories/subscriptions", label: "Flower subscriptions" },
       { href: "/categories/flowerbox", label: "Flower boxes" },
       { href: "/categories/baskets", label: "Flower baskets" },
