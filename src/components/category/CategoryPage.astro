@@ -3,6 +3,8 @@
 // grouped or plain product grid). Shared by the prebuilt category pages
 // (src/pages/categories/[slug].astro) and the bouquet list, which is
 // rendered on request (src/pages/categories/bouquets.astro).
+import CarDecorationGuide from "../car/CarDecorationGuide.astro";
+import { CAR_DECORATION_SLUG } from "../../data/carDecoration";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import ProductCard from "../ProductCard.astro";
 import type { Product } from "../../data/productCatalog";
@@ -367,6 +369,7 @@ const breadcrumbJsonLd = {
                     </div>
                   </section>
                 ))}
+                {category.slug === CAR_DECORATION_SLUG && <CarDecorationGuide />}
                 {category.slug === "pooja-flowers" && (
                 <Fragment>
                 <div class="grid max-w-5xl gap-6 md:grid-cols-[1.3fr_1fr]" data-pooja-enquiry>

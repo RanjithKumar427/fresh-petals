@@ -21,6 +21,8 @@ export type NavLink = { label: string; href: string };
 export type NavItem = { label: string; href: string; links?: NavLink[]; extra?: NavLink };
 
 export const POOJA_FLOWERS_LINK: NavLink = { label: "Pooja flowers", href: "/categories/pooja-flowers" };
+// Vehicle flower decoration (src/data/carDecoration.ts), a collection link like Pooja flowers.
+export const CAR_DECORATION_LINK: NavLink = { label: "Car decoration", href: "/categories/car-decoration" };
 // The whole public flower catalogue. Linked first.
 export const ALL_FLOWERS_LINK: NavLink = { label: "All flowers", href: "/categories/all-flowers" };
 
@@ -33,6 +35,7 @@ const shopLinks: NavLink[] = [
   ALL_FLOWERS_LINK,
   ...readyCategories().flatMap((category) => [{ label: `All ${category.label.toLowerCase()}`, href: category.href }, ...groupLinks(category.id, category.href)]),
   POOJA_FLOWERS_LINK,
+  CAR_DECORATION_LINK,
   // Local preview only: the garland drafts, clearly labelled.
   ...(GARLAND_PREVIEW ? [{ label: "Garlands / Poola Mala — draft preview", href: "/categories/garlands" }] : []),
 ];

@@ -17,7 +17,8 @@ import type { Product } from "./productCatalog";
 import { flowerDescriptor, formOf } from "./productTitles";
 import { OCCASION_FILTER_LABELS } from "./shoppingTaxonomy";
 
-export type ProductKind = "design" | "loose" | "plan" | "range" | "item" | "dried" | "plant";
+// "vehicle": flowers made for a car, bike or scooter, delivered or fitted on site (src/data/carDecoration.ts).
+export type ProductKind = "design" | "loose" | "plan" | "range" | "item" | "dried" | "plant" | "vehicle";
 
 const KIND_BY_CATEGORY: Record<string, ProductKind> = {
   Bouquets: "design",
@@ -38,6 +39,7 @@ const KIND_BY_CATEGORY: Record<string, ProductKind> = {
   "Room Mist & Diffuser": "item",
   "Dried Flowers": "dried",
   "Plants & Succulents": "plant",
+  "Car Decoration": "vehicle",
 };
 
 // Products whose record makes them a different kind from their category.
@@ -54,7 +56,7 @@ export function productKind(product: Pick<Product, "slug" | "category" | "flower
 }
 
 /** Fresh flowers are what is sold (or, for a plan or a budget band, what is delivered). */
-export const sellsFreshFlowers = (kind: ProductKind) => kind === "design" || kind === "loose" || kind === "plan" || kind === "range";
+export const sellsFreshFlowers = (kind: ProductKind) => kind === "design" || kind === "loose" || kind === "plan" || kind === "range" || kind === "vehicle";
 
 /**
  * The identity line for products that are not bouquets, written from each
@@ -104,6 +106,17 @@ export const PRODUCT_IDENTITY: Record<string, string> = {
   "event-garlands": "Event garlands, priced on the day",
   "roses-by-stem": "Rose stems, sold by the stem",
   "lilies-by-stem": "Lily stems, sold by the stem",
+  "new-car-rose-gajamala": "V-shaped rose garland for a car",
+  "vehicle-pooja-bonnet-posy": "Flower posy for a vehicle pooja",
+  "gerbera-rose-ribbon-car-decoration": "Bonnet arrangement with ribbons",
+  "red-rose-heart-car-decoration": "Red rose heart for the bonnet",
+  "gerbera-diagonal-bonnet-sash": "Diagonal flower band across the bonnet",
+  "windscreen-flower-border-car-decoration": "Flower border along the windscreen",
+  "wedding-car-centre-line-decoration": "Flower line down the bonnet",
+  "full-car-decoration-marigold-border": "Full car decoration with marigold",
+  "red-yellow-rose-bonnet-spray": "Rose spray for the bonnet",
+  "bike-scooter-flower-garland": "Rose garland for a bike or scooter",
+  "white-rose-pearl-wedding-car-decoration": "White rose and pearl door decoration",
 };
 
 const sentence = (text: string) => text.charAt(0).toUpperCase() + text.slice(1).toLowerCase().replace(/\basiatic\b/g, "Asiatic");
@@ -171,6 +184,7 @@ const KIND_QUANTITY: Record<ProductKind, string | null> = {
   item: "Tell us how many you need.",
   dried: null,
   plant: null,
+  vehicle: "One vehicle. Tell us the vehicle and how many, and we confirm the size and flowers in the quote.",
 };
 
 /** The quantity line, or null where one unit is the product itself (a bouquet, an arrangement, a dried bunch). */
@@ -182,6 +196,7 @@ export function quantityBasis(product: Pick<Product, "slug" | "category" | "flow
 export function trustIndicators(product: Pick<Product, "slug" | "category" | "flowerTypes">): string[] {
   const kind = productKind(product);
   const base = ["Delivery Confirmed on WhatsApp", "WhatsApp Ordering"];
+  if (kind === "vehicle") return ["Fresh Flowers", "Quoted on WhatsApp", "Delivery or on-site confirmed per enquiry"];
   if (kind === "design") return ["Fresh Flowers", ...base, "Hand-Arranged"];
   if (sellsFreshFlowers(kind)) return ["Fresh Flowers", ...base];
   return base;
@@ -207,6 +222,7 @@ export function idealForText(product: Pick<Product, "idealFor" | "occasionTags">
 export function preparationText(product: Pick<Product, "slug" | "category" | "flowerTypes" | "requiresConfirmation">): string {
   const kind = productKind(product);
   if (kind === "plan") return "The first delivery is arranged once the delivery days and start date are agreed on WhatsApp.";
+  if (kind === "vehicle") return "Made for your date once we confirm the vehicle, the flowers and whether we deliver or decorate on site.";
   if (kind === "item" || kind === "plant" || kind === "dried") return "Supplied once we confirm the option and price with you on WhatsApp.";
   return product.requiresConfirmation ? "Made to order once we confirm it with you on WhatsApp." : "Confirmed with you on WhatsApp before we prepare it.";
 }
@@ -224,6 +240,7 @@ export function quoteDrivers(product: Pick<Product, "slug" | "category" | "flowe
   if (kind === "item" || kind === "plant") return "The price depends on the option available, such as its type or size, and how many you need.";
   if (kind === "plan") return "The price depends on the flowers, the quantity per delivery and how often you want them.";
   if (kind === "dried") return "The price depends on the dried stems, the size and the presentation.";
+  if (kind === "vehicle") return "The price depends on the vehicle, the flowers and how much of it is covered, the date, and whether it is delivered or decorated on site.";
   return "The price depends on the design, flowers, quantity and date.";
 }
 

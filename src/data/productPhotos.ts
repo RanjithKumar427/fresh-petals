@@ -36,7 +36,29 @@ export const PHOTO_DESCRIPTIONS: Record<string, string> = {
   "/images/occasion-event.jpg": "A doorway framed with white and yellow flower strings",
   "/images/pooja-flowers.jpg": "A cane basket of loose flowers for pooja: yellow blooms, marigold, hibiscus, pink flowers, butterfly pea and jasmine",
   "/images/rose-bouquet.jpg": "Red roses tied with a red ribbon",
+  "/images/car-decoration/new-car-rose-gajamala.webp": "A V-shaped garland of red roses edged with small white flowers on the bonnet and grille of a new white SUV in a showroom, with a red rose posy on the bonnet; the number plate is blank",
+  "/images/car-decoration/vehicle-pooja-bonnet-posy.webp": "A low posy of white and yellow chrysanthemums, small purple flowers and rolled green leaves across the bonnet of a grey MPV parked at home; the number plates are blank",
+  "/images/car-decoration/gerbera-rose-ribbon-car-decoration.webp": "An oval arrangement of yellow gerberas, red roses and white flowers on the bonnet of a maroon sedan, with blue and yellow ribbons drawn up to the roof; the number plate is blank",
+  "/images/car-decoration/red-rose-heart-car-decoration.webp": "A heart of red roses on greenery on the bonnet of a white SUV, with pink ribbons to the roof and a small white flower V on the grille; the number plate is blank",
+  "/images/car-decoration/gerbera-diagonal-bonnet-sash.webp": "A diagonal band of red, white and yellow gerberas with gypsophila across the bonnet of a white sedan, with bows and ribbons on the roof; the number plate is blank",
+  "/images/car-decoration/windscreen-flower-border-car-decoration.webp": "A border of white chrysanthemums, red and pink roses and purple orchids along the base of the windscreen of a red SUV, with white ribbons across the bonnet; the number plates are blank",
+  "/images/car-decoration/wedding-car-centre-line-decoration.webp": "A long line of red roses, white chrysanthemums and gypsophila down the bonnet of a white sedan, with a red rose posy on the side mirror; the number plates are blank",
+  "/images/car-decoration/full-car-decoration-marigold-border.webp": "A white MPV decorated with a spray of white daisies and orange and pink gerberas on the bonnet, orange marigold strings around the bonnet and windscreen, ribbons and bows on the doors; faces and number plate are blurred or blank",
+  "/images/car-decoration/red-yellow-rose-bonnet-spray.webp": "A spray of red and yellow roses on long green leaves across the bonnet of a grey SUV, with single roses on the mirrors; the number plate is blank",
+  "/images/car-decoration/bike-scooter-flower-garland.webp": "a red rose garland with yellow marigold and gold accents hung in a V from the handlebar of a white scooter",
+  "/images/car-decoration/white-rose-pearl-wedding-car-decoration.webp": "a white sedan with white rose and gypsophila clusters on the front and rear doors, linked by draped pearl strands",
 };
+
+/**
+ * AI-generated concept images: they show a style we make to order, not work we
+ * photographed. Reviewed as "illustrative", never listed in the image sitemap,
+ * and labelled "Concept image" wherever they appear (cards, product page, alt).
+ */
+export const CONCEPT_IMAGES: ReadonlySet<string> = new Set([
+  "/images/car-decoration/bike-scooter-flower-garland.webp",
+  "/images/car-decoration/white-rose-pearl-wedding-car-decoration.webp",
+]);
+export const isConceptImage = (path: string | null | undefined) => Boolean(path && CONCEPT_IMAGES.has(path));
 
 export type PhotoVerdict = "product" | "unconfirmed" | "illustrative" | "unrelated";
 export type PhotoReview = { photo: string; sha256: string; verdict: PhotoVerdict };
@@ -133,6 +155,18 @@ export const PHOTO_REVIEWS: Record<string, PhotoReview> = {
   "flower-chocolate-hamper": { photo: "/images/cat-bouquets.jpg", sha256: "9abe0d6df649aaeb", verdict: "unrelated" },
   "bridal-flower-accessories": { photo: "/images/event-flowers.jpg", sha256: "e36f56a1324e1204", verdict: "unrelated" },
   "lilies-by-stem": { photo: "/images/bouquet-2.jpg", sha256: "e3c86144d5504e85", verdict: "unrelated" },
+  // car decoration (registration plates blanked; the two concept images are illustrative)
+  "new-car-rose-gajamala": { photo: "/images/car-decoration/new-car-rose-gajamala.webp", sha256: "2fe72f420956ecd7", verdict: "product" },
+  "vehicle-pooja-bonnet-posy": { photo: "/images/car-decoration/vehicle-pooja-bonnet-posy.webp", sha256: "3fc9498965fad30d", verdict: "product" },
+  "gerbera-rose-ribbon-car-decoration": { photo: "/images/car-decoration/gerbera-rose-ribbon-car-decoration.webp", sha256: "20637d4aa1c98dcc", verdict: "product" },
+  "red-rose-heart-car-decoration": { photo: "/images/car-decoration/red-rose-heart-car-decoration.webp", sha256: "cd1e0ce84467b9ec", verdict: "product" },
+  "gerbera-diagonal-bonnet-sash": { photo: "/images/car-decoration/gerbera-diagonal-bonnet-sash.webp", sha256: "bcfd73b46d5bf8bb", verdict: "product" },
+  "windscreen-flower-border-car-decoration": { photo: "/images/car-decoration/windscreen-flower-border-car-decoration.webp", sha256: "1de127c2ed389191", verdict: "product" },
+  "wedding-car-centre-line-decoration": { photo: "/images/car-decoration/wedding-car-centre-line-decoration.webp", sha256: "931135427d5f8f94", verdict: "product" },
+  "full-car-decoration-marigold-border": { photo: "/images/car-decoration/full-car-decoration-marigold-border.webp", sha256: "12798fa6748dd57c", verdict: "product" },
+  "red-yellow-rose-bonnet-spray": { photo: "/images/car-decoration/red-yellow-rose-bonnet-spray.webp", sha256: "d6af114caaf3bdcc", verdict: "product" },
+  "bike-scooter-flower-garland": { photo: "/images/car-decoration/bike-scooter-flower-garland.webp", sha256: "9010e628b5a8365d", verdict: "illustrative" },
+  "white-rose-pearl-wedding-car-decoration": { photo: "/images/car-decoration/white-rose-pearl-wedding-car-decoration.webp", sha256: "c766aec84a3c9c65", verdict: "illustrative" },
 };
 
 export const PLACEHOLDER_PHOTO = "/images/product-placeholder.svg";
@@ -170,6 +204,7 @@ export function productPhotoAlt(product: Product): string {
   const shows = photoDescription(product.image);
   if ((status === "product" || status === "unconfirmed") && isBouquet(product)) return bouquetPhotoAlt(product);
   if (status === "product" && shows) return `${product.name}: ${lowerFirst(shows)}`;
+  if (status === "illustrative" && shows && isConceptImage(product.image)) return `${product.name}: concept image, not a photograph — ${lowerFirst(shows)}`;
   if (status === "illustrative" && shows) return `${product.name}: representative photograph of ${lowerFirst(shows)}`;
   if (status === "missing") return `${product.name}: no photograph yet`;
   return product.name;
