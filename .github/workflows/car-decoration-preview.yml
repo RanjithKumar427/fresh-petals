@@ -43,6 +43,8 @@ jobs:
       - run: npm install --no-save --no-package-lock playwright-core@1.56.1
       - name: Fixture database and isolated build copy
         run: |
+          exec > >(tee -a "$RUNNER_TEMP/steps.log") 2>&1
+          echo '== fixture'
           node scripts/audit/local-fixture.mjs prepare
           # The fixture lists every catalogue product under a fixture category: remove the Car Decoration
           # slugs so the seed creates them as it will in production.
@@ -50,6 +52,8 @@ jobs:
           psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -c "delete from products where slug = any(string_to_array('$(cat "$RUNNER_TEMP/slugs")', ','))"
       - name: Seed lifecycle, then apply (twice) and publish
         run: |
+          exec > >(tee -a "$RUNNER_TEMP/steps.log") 2>&1
+          echo '== seed'
           node scripts/audit/car-seed-lifecycle.mjs
           node scripts/seed-car-decoration.mjs plan
           node scripts/seed-car-decoration.mjs apply
@@ -57,7 +61,10 @@ jobs:
           node scripts/seed-car-decoration.mjs publish
       - name: Cloudflare preview (build from the fixture database, deploy, checks)
         # In the fixture copy, whose database client connects to the loopback database without TLS.
-        run: cd "$FIXTURE" && node scripts/cloudflare/preview-pipeline.mjs
+        run: |
+          exec > >(tee -a "$RUNNER_TEMP/steps.log") 2>&1
+          echo '== preview pipeline'
+          cd "$FIXTURE" && node scripts/cloudflare/preview-pipeline.mjs
       - name: Car decoration checks on the preview
         if: always()
         run: |
@@ -73,3 +80,8 @@ jobs:
             '{name:"Car decoration preview checks", head_sha:$sha, status:"completed", conclusion:$c, output:{title:"Car decoration on the preview Worker", summary:($t|split("\n")|last // ""), text:("```\n"+$t+"\n```")}}' \
             | gh api "repos/$GITHUB_REPOSITORY/check-runs" --input - > /dev/null
           exit $code
+      - name: Step log as a check run
+        if: always()
+        run: |
+          sed -E 's#postgres(ql)?://[^ ]+#[redacted]#g' "$RUNNER_TEMP/steps.log" | tail -c 60000 > "$RUNNER_TEMP/out.txt" || true
+          jq -n --arg sha "$GITHUB_SHA" --rawfile t "$RUNNER_TEMP/out.txt" '{name:"Car decoration preview log", head_sha:$sha, status:"completed", conclusion:"neutral", output:{title:"Step log", summary:"Fixture, seed and preview pipeline output (tail).", text:("```\n"+$t+"\n```")}}' | gh api "repos/$GITHUB_REPOSITORY/check-runs" --input - > /dev/null
